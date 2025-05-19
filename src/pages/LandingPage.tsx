@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/layout/Header';
@@ -8,6 +8,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Play } from 'lucide-react';
 
 const LandingPage = () => {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleVideoPlay = () => {
+    setIsPlaying(true);
+  };
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -40,7 +46,7 @@ const LandingPage = () => {
               <div className="md:w-1/2 md:pl-10">
                 <div className="bg-white p-6 rounded-lg shadow-xl">
                   <img 
-                    src="/placeholder.svg" 
+                    src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
                     alt="CareGrowthAI Dashboard" 
                     className="rounded-md w-full"
                   />
@@ -62,17 +68,33 @@ const LandingPage = () => {
             
             <div className="max-w-4xl mx-auto">
               <div className="relative aspect-video bg-gray-200 rounded-xl overflow-hidden shadow-lg border border-gray-100">
-                {/* Video placeholder - replace with actual video embedding */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-caregrowth-blue rounded-full p-5 cursor-pointer hover:bg-blue-700 transition-colors shadow-lg">
-                    <Play className="h-12 w-12 text-white" />
+                {!isPlaying ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button 
+                      className="bg-caregrowth-blue rounded-full p-5 cursor-pointer hover:bg-blue-700 transition-colors shadow-lg"
+                      onClick={handleVideoPlay}
+                    >
+                      <Play className="h-12 w-12 text-white" />
+                    </button>
                   </div>
-                </div>
-                <img 
-                  src="/placeholder.svg" 
-                  alt="Video thumbnail" 
-                  className="w-full h-full object-cover opacity-80"
-                />
+                ) : null}
+                
+                {isPlaying ? (
+                  <iframe 
+                    className="w-full h-full absolute inset-0"
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" 
+                    title="CareGrowthAI Demo"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                ) : (
+                  <img 
+                    src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
+                    alt="Video thumbnail" 
+                    className="w-full h-full object-cover opacity-80"
+                  />
+                )}
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
@@ -242,7 +264,7 @@ const LandingPage = () => {
               <div className="flex flex-col md:flex-row items-center gap-10 mb-20">
                 <div className="md:w-1/2">
                   <img 
-                    src="/placeholder.svg" 
+                    src="https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
                     alt="Social Media Generator" 
                     className="rounded-lg shadow-lg border border-gray-100 w-full"
                   />
@@ -284,7 +306,7 @@ const LandingPage = () => {
               <div className="flex flex-col md:flex-row-reverse items-center gap-10">
                 <div className="md:w-1/2">
                   <img 
-                    src="/placeholder.svg" 
+                    src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
                     alt="Document Search" 
                     className="rounded-lg shadow-lg border border-gray-100 w-full"
                   />
