@@ -36,9 +36,9 @@ const LandingPage = () => {
                       Start Your Free Trial
                     </Button>
                   </Link>
-                  <Link to="#video">
+                  <Link to="#features">
                     <Button size="lg" variant="outline" className="border-white text-white hover:bg-blue-700">
-                      Watch How It Works
+                      See Features
                     </Button>
                   </Link>
                 </div>
@@ -46,7 +46,7 @@ const LandingPage = () => {
               <div className="md:w-1/2 md:pl-10">
                 <div className="bg-white p-6 rounded-lg shadow-xl">
                   <img 
-                    src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+                    src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
                     alt="CareGrowthAI Dashboard" 
                     className="rounded-md w-full"
                   />
