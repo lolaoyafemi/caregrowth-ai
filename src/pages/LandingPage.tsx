@@ -37,7 +37,7 @@ const LandingPage = () => {
                     </Button>
                   </Link>
                   <Link to="#features">
-                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-blue-700">
+                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-caregrowth-blue">
                       See Features
                     </Button>
                   </Link>
