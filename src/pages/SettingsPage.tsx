@@ -14,7 +14,12 @@ import {
   CircleDollarSign, 
   Users, 
   BadgeDollarSign,
-  CircleUser
+  CircleUser,
+  BellRing,
+  PaintBucket,
+  Shield,
+  Wallet,
+  Bell
 } from 'lucide-react';
 import {
   Breadcrumb,
@@ -24,6 +29,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const SettingsPage = () => {
   const { user } = useUser();
@@ -50,6 +61,258 @@ const SettingsPage = () => {
     { name: "Mark Johnson", email: "mark@caregrowth.ai", role: "Admin" },
     { name: "Sarah Wilson", email: "sarah@caregrowth.ai", role: "Developer" }
   ];
+  
+  // Sample data for agency team members
+  const agencyTeamMembers = [
+    { name: "John Doe", email: "john@agency.com", role: "Admin", status: "Active" },
+    { name: "Emma White", email: "emma@agency.com", role: "Editor", status: "Active" },
+    { name: "Michael Brown", email: "michael@agency.com", role: "Viewer", status: "Inactive" }
+  ];
+
+  const renderAgencyAdminSettings = () => {
+    if (!isAgencyAdmin && !isSuperAdmin) return null;
+
+    return (
+      <>
+        {/* Agency Branding */}
+        <Card className="shadow-md border-t-4 border-t-caregrowth-blue transition-all duration-200 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <PaintBucket className="h-6 w-6 text-caregrowth-blue" />
+            <div>
+              <CardTitle>Agency Branding</CardTitle>
+              <CardDescription>
+                Customize how your agency appears to clients
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="agencyName">Agency Name</Label>
+                <Input id="agencyName" defaultValue="CareGrowth Agency" />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="agencyLogo">Agency Logo</Label>
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 bg-caregrowth-lightblue rounded-md flex items-center justify-center text-caregrowth-blue">
+                    Logo
+                  </div>
+                  <Button variant="outline" size="sm">Upload New Logo</Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Brand Colors</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <div className="h-8 w-full bg-caregrowth-blue rounded-md mb-1"></div>
+                    <Input type="text" defaultValue="#0047AB" className="text-xs" />
+                  </div>
+                  <div>
+                    <div className="h-8 w-full bg-caregrowth-green rounded-md mb-1"></div>
+                    <Input type="text" defaultValue="#2E8B57" className="text-xs" />
+                  </div>
+                  <div>
+                    <div className="h-8 w-full bg-caregrowth-lightblue rounded-md mb-1"></div>
+                    <Input type="text" defaultValue="#ADD8E6" className="text-xs" />
+                  </div>
+                  <div>
+                    <div className="h-8 w-full bg-gray-800 rounded-md mb-1"></div>
+                    <Input type="text" defaultValue="#333333" className="text-xs" />
+                  </div>
+                </div>
+              </div>
+              
+              <Button className="mt-6">Save Branding</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Team Permissions */}
+        <Card className="shadow-md border-t-4 border-t-caregrowth-green transition-all duration-200 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <Shield className="h-6 w-6 text-caregrowth-green" />
+            <div>
+              <CardTitle>Team Permissions</CardTitle>
+              <CardDescription>
+                Control access levels for your team members
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {agencyTeamMembers.map((member, index) => (
+                  <TableRow key={index} className="hover:bg-gray-50 transition-colors">
+                    <TableCell className="font-medium">{member.name}</TableCell>
+                    <TableCell>{member.email}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        member.role === 'Admin' ? 'bg-blue-100 text-blue-800' : 
+                        member.role === 'Editor' ? 'bg-green-100 text-green-800' : 
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {member.role}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        member.status === 'Active' ? 'bg-green-100 text-green-800' : 
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {member.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">Edit</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            
+            <div className="flex justify-between mt-6">
+              <Button className="flex items-center gap-1">
+                <User className="h-4 w-4" />
+                Invite New Member
+              </Button>
+              <Button variant="outline">Manage Roles</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Token Limits */}
+        <Card className="shadow-md border-t-4 border-t-caregrowth-blue transition-all duration-200 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <Wallet className="h-6 w-6 text-caregrowth-blue" />
+            <div>
+              <CardTitle>Token Limits & Allocation</CardTitle>
+              <CardDescription>
+                Manage how tokens are distributed across your team
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="bg-caregrowth-lightblue/30 p-4 rounded-md">
+                <div className="flex justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium">Monthly Token Budget</h3>
+                    <p className="text-2xl font-bold text-caregrowth-blue">150,000</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Used This Month</h3>
+                    <p className="text-2xl font-bold text-gray-700">124,567</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Remaining</h3>
+                    <p className="text-2xl font-bold text-green-600">25,433</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">Auto-renew monthly allocation</p>
+                    <p className="text-sm text-gray-500">Automatically purchase tokens when low</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">Low token alerts</p>
+                    <p className="text-sm text-gray-500">Get notified when tokens are below 20%</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">Per-user allocation</p>
+                    <p className="text-sm text-gray-500">Set token limits for individual users</p>
+                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Switch />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Enable to set individual token limits for each team member</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+              
+              <Button className="mt-6">Update Token Settings</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notification Settings */}
+        <Card className="shadow-md border-t-4 border-t-caregrowth-green transition-all duration-200 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <Bell className="h-6 w-6 text-caregrowth-green" />
+            <div>
+              <CardTitle>Notification Alerts</CardTitle>
+              <CardDescription>
+                Manage how your team receives updates and alerts
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Low token alerts</p>
+                  <p className="text-sm text-gray-500">Get notified when tokens are running low</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Usage reports</p>
+                  <p className="text-sm text-gray-500">Weekly summary of token usage</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Team activity</p>
+                  <p className="text-sm text-gray-500">Get alerts about team member actions</p>
+                </div>
+                <Switch />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Feature updates</p>
+                  <p className="text-sm text-gray-500">Learn about new features and improvements</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+            </div>
+            
+            <Button className="mt-6">Save Notification Preferences</Button>
+          </CardContent>
+        </Card>
+      </>
+    );
+  };
 
   const renderSuperAdminSettings = () => {
     if (!isSuperAdmin) return null;
@@ -208,7 +471,7 @@ const SettingsPage = () => {
       
       <div className="space-y-6">
         {/* Account Settings */}
-        <Card className="shadow-md border-t-4 border-t-gray-400">
+        <Card className="shadow-md border-t-4 border-t-gray-400 transition-all duration-200 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center gap-2">
             <CircleUser className="h-6 w-6 text-gray-700" />
             <div>
@@ -233,14 +496,14 @@ const SettingsPage = () => {
                 <Input id="password" type="password" placeholder="Enter new password" />
               </div>
             </div>
-            <Button className="mt-6">Save Changes</Button>
+            <Button className="mt-6 transition-all duration-200 hover:shadow">Save Changes</Button>
           </CardContent>
         </Card>
         
         {/* Notification Settings */}
-        <Card className="shadow-md border-t-4 border-t-gray-400">
+        <Card className="shadow-md border-t-4 border-t-gray-400 transition-all duration-200 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center gap-2">
-            <Settings className="h-6 w-6 text-gray-700" />
+            <BellRing className="h-6 w-6 text-gray-700" />
             <div>
               <CardTitle>Notification Settings</CardTitle>
               <CardDescription>
@@ -272,9 +535,12 @@ const SettingsPage = () => {
                 <Switch defaultChecked={isAgencyAdmin || isSuperAdmin} />
               </div>
             </div>
-            <Button className="mt-6">Save Preferences</Button>
+            <Button className="mt-6 transition-all duration-200 hover:shadow">Save Preferences</Button>
           </CardContent>
         </Card>
+        
+        {/* Agency admin specific settings */}
+        {renderAgencyAdminSettings()}
         
         {/* Super Admin specific settings */}
         {renderSuperAdminSettings()}

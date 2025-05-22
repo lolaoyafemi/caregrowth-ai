@@ -12,10 +12,19 @@ import {
   MessageCircle,
   Settings,
   HelpCircle,
-  Shield
+  Shield,
+  Coins,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '../../contexts/UserContext';
+import { Progress } from '@/components/ui/progress';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -32,6 +41,14 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const showQAItems = userRole === 'super_admin' || userRole !== 'carer';
   
   const isSuperAdmin = userRole === 'super_admin';
+  
+  // Token wallet details (mock data)
+  const tokenWallet = {
+    available: 11250,
+    usedThisMonth: 3750,
+    totalAllocation: 15000,
+    percentUsed: 25
+  };
   
   return (
     <div className={cn(
@@ -64,6 +81,77 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
           <Menu size={20} />
         </Button>
       </div>
+
+      {/* Token Wallet */}
+      {(showAgencyAdminItems || showMarketingItems) && (
+        <div className={cn(
+          "px-3 py-3 border-b",
+          collapsed ? "items-center justify-center" : ""
+        )}>
+          {!collapsed ? (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-semibold text-caregrowth-blue flex items-center">
+                  <Coins size={14} className="mr-1" />
+                  TOKEN WALLET
+                </span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <ChevronRight size={12} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>View token details</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Available</span>
+                <span className="font-medium text-sm">{tokenWallet.available.toLocaleString()}</span>
+              </div>
+              <div className="space-y-1">
+                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-caregrowth-blue h-full rounded-full" 
+                    style={{ width: `${tokenWallet.percentUsed}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Used: {tokenWallet.usedThisMonth.toLocaleString()}</span>
+                  <span>{tokenWallet.percentUsed}%</span>
+                </div>
+              </div>
+              <Button 
+                className="w-full py-1 h-8 text-xs bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all"
+              >
+                Buy More Tokens
+              </Button>
+            </div>
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex flex-col items-center justify-center">
+                    <Coins size={20} className="text-caregrowth-blue mb-1" />
+                    <span className="text-xs font-medium">{tokenWallet.available.toLocaleString()}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <div className="space-y-2 w-48">
+                    <p className="font-medium">Token Wallet</p>
+                    <p className="text-sm">Available: {tokenWallet.available.toLocaleString()}</p>
+                    <p className="text-sm">Used: {tokenWallet.usedThisMonth.toLocaleString()}</p>
+                    <Progress value={tokenWallet.percentUsed} className="h-2" />
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      )}
 
       {/* Sidebar Content */}
       <div className="flex-1 px-3 py-4 overflow-y-auto">
