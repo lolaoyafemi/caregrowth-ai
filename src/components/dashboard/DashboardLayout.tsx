@@ -52,6 +52,7 @@ const DashboardLayout = () => {
     }
     
     // Agency admin validation - check if email contains @ and ends with .something
+    // This will accept any valid email format (gmail, yahoo, etc.)
     const emailRegex = /.+@.+\..+/;
     if (emailRegex.test(email) && password) {
       // Find existing user or create a new agency admin
