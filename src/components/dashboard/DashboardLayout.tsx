@@ -133,25 +133,6 @@ const DashboardLayout = () => {
           onSignup={handleSignup}
         />
       )}
-      
-      {/* Login Role Hint for Demo Purposes */}
-      {!isAuthenticated && (
-        <div className="fixed bottom-4 left-4 right-4 bg-white p-4 rounded-lg shadow-lg border border-gray-200 text-sm">
-          <h3 className="font-semibold mb-2">Demo Login Credentials:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-2 rounded bg-purple-50 border border-purple-200">
-              <p className="font-semibold text-purple-800">Super Admin:</p>
-              <p>Email: admin@caregrowth.ai</p>
-              <p>Password: SuperAdmin</p>
-            </div>
-            <div className="p-2 rounded bg-blue-50 border border-blue-200">
-              <p className="font-semibold text-blue-800">Agency Admin:</p>
-              <p>Email: any@email.com</p>
-              <p>Password: any password</p>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
