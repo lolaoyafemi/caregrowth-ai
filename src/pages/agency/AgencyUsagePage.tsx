@@ -19,14 +19,15 @@ const data = [
 const AgencyUsagePage = () => {
   const { user, hasPermission } = useUser();
   
-  // Only agency admins and super admins can access this page
-  if (!hasPermission(['agency_admin', 'super_admin'])) {
+  // Only agency admins can access this page
+  if (!hasPermission(['agency_admin'])) {
     return <Navigate to="/dashboard" replace />;
   }
 
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Agency Usage Analytics</h1>
+      <p className="text-gray-500 mb-6">As an Agency Admin, you can monitor your team's usage and activity.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card>

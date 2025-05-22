@@ -26,10 +26,10 @@ interface SidebarProps {
 const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   // Determine which menu items to show based on user role
   const showSuperAdminItems = userRole === 'super_admin';
-  const showAgencyAdminItems = userRole === 'agency_admin';
+  const showAgencyAdminItems = userRole === 'agency_admin' || userRole === 'super_admin';
   const showMarketingItems = userRole === 'marketing' || userRole === 'agency_admin' || userRole === 'super_admin';
   const showHRItems = userRole === 'hr_admin' || userRole === 'agency_admin' || userRole === 'super_admin';
-  const showQAItems = userRole === 'super_admin' || userRole !== 'carer'; // Fixed this line
+  const showQAItems = userRole === 'super_admin' || userRole !== 'carer';
   
   const isSuperAdmin = userRole === 'super_admin';
   
@@ -151,12 +151,13 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 {!collapsed ? "Agency Management" : "Agency"}
               </p>
               
+              {/* Only show team management to agency admins or super admins */}
               <NavLink
                 to="/dashboard/team-management"
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                    ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -165,12 +166,13 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 {!collapsed && <span>Team Management</span>}
               </NavLink>
               
+              {/* For agency admins, show their own usage. For super admins, this is a different view */}
               <NavLink
                 to="/dashboard/agency-usage"
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                    ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -194,7 +196,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
-                  ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                  ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                   : "text-gray-700 hover:bg-gray-100",
                 collapsed && "justify-center"
               )}
@@ -216,7 +218,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
-                  ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                  ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue")  
                   : "text-gray-700 hover:bg-gray-100",
                 collapsed && "justify-center"
               )}
@@ -232,7 +234,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
-                  ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                  ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                   : "text-gray-700 hover:bg-gray-100",
                 collapsed && "justify-center"
               )}

@@ -59,6 +59,7 @@ const UsageMonitoringPage = () => {
       
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">Token Usage by Agency</h2>
+        <p className="text-sm text-gray-500 mb-4">As a Super Admin, you can monitor token usage across all agencies in the system.</p>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -84,7 +85,8 @@ const UsageMonitoringPage = () => {
       </div>
       
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+        <h2 className="text-lg font-semibold mb-4">System-wide Recent Activity</h2>
+        <p className="text-sm text-gray-500 mb-4">Monitor activities across all agencies.</p>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="border-b pb-3 last:border-0">

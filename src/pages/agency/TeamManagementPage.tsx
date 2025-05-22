@@ -15,8 +15,8 @@ import { PlusCircle } from 'lucide-react';
 const TeamManagementPage = () => {
   const { user, hasPermission } = useUser();
   
-  // Only agency admins and super admins can access this page
-  if (!hasPermission(['agency_admin', 'super_admin'])) {
+  // Only agency admins can access this page
+  if (!hasPermission(['agency_admin'])) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -34,7 +34,7 @@ const TeamManagementPage = () => {
         <CardHeader>
           <CardTitle>Your Team</CardTitle>
           <CardDescription>
-            Add and manage users for your agency. Assign roles to control what tools they can access.
+            Add and manage users for your agency. As the Agency Admin, you have full control over your team members.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -133,7 +133,7 @@ const TeamManagementPage = () => {
             <div>
               <h3 className="font-semibold text-gray-800">Agency Admin</h3>
               <p className="text-gray-600 text-sm mt-1">
-                Full access to all tools and team management.
+                Full access to all tools and team management within your agency.
               </p>
             </div>
             <div>

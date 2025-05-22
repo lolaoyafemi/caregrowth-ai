@@ -17,7 +17,7 @@ const UserManagementPage = () => {
       
       <div className="bg-white rounded-lg shadow p-6">
         <p className="text-gray-700 mb-4">
-          This page allows super admins to manage all users and agencies in the system.
+          This page allows super admins to manage all users and agencies in the system. You have full control over all agencies and their team members.
         </p>
         
         <div className="border rounded-lg overflow-hidden mt-6">
@@ -99,6 +99,40 @@ const UserManagementPage = () => {
                   <button className="text-red-600 hover:text-red-900">Suspend</button>
                 </td>
               </tr>
+              
+              {/* Add more sample agencies */}
+              {["Care Plus Agency", "Golden Years Home Care", "Comfort Care"].map((agencyName, idx) => (
+                <tr key={idx}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
+                        {agencyName.split(' ').map(word => word[0]).join('').slice(0, 2)}
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{`${agencyName} Admin`}</div>
+                        <div className="text-sm text-gray-500">{`admin@${agencyName.toLowerCase().replace(/\s+/g, '')}.com`}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                      Agency Admin
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {agencyName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      Active
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button className="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
+                    <button className="text-red-600 hover:text-red-900">Suspend</button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
