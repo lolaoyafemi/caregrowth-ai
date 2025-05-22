@@ -38,34 +38,49 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
 
   const handleLogin = (email: string, password: string) => {
-    // In a real app, this would validate against a backend
-    console.log('Login attempt with:', email, password);
-    const foundUser = mockUsers.find(u => u.email === email);
-    
-    if (foundUser && password) {
-      setUser(foundUser);
+    // Super Admin login validation
+    if (email === 'admin@caregrowth.ai' && password === 'SuperAdmin') {
+      setUser(mockUsers[0]); // Set as Super Admin
       setAuthModalOpen(false);
       
-      // Welcome toast based on role
-      let welcomeMessage = '';
-      let variant: 'default' | 'destructive' = 'default';
+      toast({
+        title: "Super Admin Login Successful",
+        description: "Welcome to the Super Admin Dashboard",
+        variant: "default"
+      });
+      return;
+    }
+    
+    // Agency admin validation - check if email contains @ and ends with .something
+    const emailRegex = /.+@.+\..+/;
+    if (emailRegex.test(email) && password) {
+      // Find existing user or create a new agency admin
+      const foundUser = mockUsers.find(u => u.email === email);
       
-      if (foundUser.role === 'super_admin') {
-        welcomeMessage = 'Welcome to the Super Admin Dashboard';
-        variant = 'default';
+      if (foundUser) {
+        setUser(foundUser);
       } else {
-        welcomeMessage = `Welcome to your ${foundUser.role.replace('_', ' ')} Dashboard`;
+        // Create a new agency admin user
+        const newUser: User = {
+          id: `user_${Date.now()}`,
+          name: email.split('@')[0], // Use part of email as name
+          email,
+          role: 'agency_admin',
+          agencyId: `agency_${Date.now()}`
+        };
+        setUser(newUser);
       }
       
+      setAuthModalOpen(false);
       toast({
-        title: `Login Successful - ${foundUser.role === 'super_admin' ? 'Super Admin' : 'Agency Admin'}`,
-        description: welcomeMessage,
-        variant: variant
+        title: "Agency Admin Login Successful",
+        description: "Welcome to your Agency Dashboard",
+        variant: "default"
       });
     } else {
       toast({
         title: "Login Failed",
-        description: "Invalid email or password",
+        description: "Invalid email or password format",
         variant: "destructive"
       });
     }
@@ -126,11 +141,11 @@ const DashboardLayout = () => {
             <div className="p-2 rounded bg-purple-50 border border-purple-200">
               <p className="font-semibold text-purple-800">Super Admin:</p>
               <p>Email: admin@caregrowth.ai</p>
-              <p>Password: any password</p>
+              <p>Password: SuperAdmin</p>
             </div>
             <div className="p-2 rounded bg-blue-50 border border-blue-200">
               <p className="font-semibold text-blue-800">Agency Admin:</p>
-              <p>Email: agency@example.com</p>
+              <p>Email: any@email.com</p>
               <p>Password: any password</p>
             </div>
           </div>
