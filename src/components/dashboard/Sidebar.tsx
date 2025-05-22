@@ -28,7 +28,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const showAgencyAdminItems = userRole === 'agency_admin';
   const showMarketingItems = userRole === 'marketing' || userRole === 'agency_admin' || userRole === 'super_admin';
   const showHRItems = userRole === 'hr_admin' || userRole === 'agency_admin' || userRole === 'super_admin';
-  const showQAItems = userRole !== 'carer' || userRole === 'super_admin';
+  const showQAItems = userRole === 'super_admin' || userRole !== 'carer'; // Fixed this line
   
   return (
     <div className={cn(
