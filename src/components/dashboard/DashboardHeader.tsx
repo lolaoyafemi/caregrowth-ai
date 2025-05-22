@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Settings, LogOut, Shield } from 'lucide-react';
+import { LogOut, Shield } from 'lucide-react';
 import { useUser, UserRole } from '../../contexts/UserContext';
 import {
   DropdownMenu,
@@ -79,15 +79,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
         )}
       </div>
       
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell size={20} />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </Button>
-        <Button variant="ghost" size="icon">
-          <Settings size={20} />
-        </Button>
-        
+      <div className="flex items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Avatar className={`h-9 w-9 cursor-pointer ${isSuperAdmin ? 'ring-2 ring-purple-400' : ''}`}>
@@ -100,10 +92,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
               <span>{getRoleDisplayName(userRole)} Account</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
