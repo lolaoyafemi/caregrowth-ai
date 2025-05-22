@@ -47,13 +47,20 @@ const DashboardLayout = () => {
       setAuthModalOpen(false);
       
       // Welcome toast based on role
-      const welcomeMessage = foundUser.role === 'super_admin' 
-        ? 'Welcome to the Super Admin Dashboard' 
-        : `Welcome to your ${foundUser.role.replace('_', ' ')} Dashboard`;
+      let welcomeMessage = '';
+      let variant: 'default' | 'destructive' = 'default';
+      
+      if (foundUser.role === 'super_admin') {
+        welcomeMessage = 'Welcome to the Super Admin Dashboard';
+        variant = 'default';
+      } else {
+        welcomeMessage = `Welcome to your ${foundUser.role.replace('_', ' ')} Dashboard`;
+      }
       
       toast({
-        title: "Login Successful",
-        description: welcomeMessage
+        title: `Login Successful - ${foundUser.role === 'super_admin' ? 'Super Admin' : 'Agency Admin'}`,
+        description: welcomeMessage,
+        variant: variant
       });
     } else {
       toast({
@@ -80,8 +87,8 @@ const DashboardLayout = () => {
       setUser(newUser);
       setAuthModalOpen(false);
       toast({
-        title: "Account Created",
-        description: "Welcome to CareGrowthAI!"
+        title: "Agency Admin Account Created",
+        description: "Welcome to CareGrowthAI! You've been registered as an Agency Admin."
       });
     }
   };
@@ -97,7 +104,7 @@ const DashboardLayout = () => {
           />
           <div className="flex-1 flex flex-col overflow-hidden">
             <DashboardHeader userRole={user?.role} userName={user?.name} />
-            <main className="flex-1 overflow-auto bg-gray-50">
+            <main className={`flex-1 overflow-auto ${user?.role === 'super_admin' ? 'bg-purple-50/30' : 'bg-gray-50'}`}>
               <Outlet />
             </main>
           </div>
@@ -109,6 +116,25 @@ const DashboardLayout = () => {
           onLogin={handleLogin}
           onSignup={handleSignup}
         />
+      )}
+      
+      {/* Login Role Hint for Demo Purposes */}
+      {!isAuthenticated && (
+        <div className="fixed bottom-4 left-4 right-4 bg-white p-4 rounded-lg shadow-lg border border-gray-200 text-sm">
+          <h3 className="font-semibold mb-2">Demo Login Credentials:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-2 rounded bg-purple-50 border border-purple-200">
+              <p className="font-semibold text-purple-800">Super Admin:</p>
+              <p>Email: admin@caregrowth.ai</p>
+              <p>Password: any password</p>
+            </div>
+            <div className="p-2 rounded bg-blue-50 border border-blue-200">
+              <p className="font-semibold text-blue-800">Agency Admin:</p>
+              <p>Email: agency@example.com</p>
+              <p>Password: any password</p>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

@@ -11,7 +11,8 @@ import {
   FileText,
   MessageCircle,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '../../contexts/UserContext';
@@ -30,18 +31,29 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const showHRItems = userRole === 'hr_admin' || userRole === 'agency_admin' || userRole === 'super_admin';
   const showQAItems = userRole === 'super_admin' || userRole !== 'carer'; // Fixed this line
   
+  const isSuperAdmin = userRole === 'super_admin';
+  
   return (
     <div className={cn(
-      "flex flex-col border-r bg-white transition-all duration-300",
-      collapsed ? "w-[80px]" : "w-[250px]"
+      "flex flex-col border-r transition-all duration-300",
+      collapsed ? "w-[80px]" : "w-[250px]",
+      isSuperAdmin ? "bg-purple-50 border-purple-200" : "bg-white"
     )}>
       {/* Sidebar Header */}
-      <div className="p-4 flex items-center border-b h-16">
+      <div className={cn(
+        "p-4 flex items-center border-b h-16",
+        isSuperAdmin ? "border-purple-200" : ""
+      )}>
         {!collapsed && (
-          <span className="text-xl font-bold text-caregrowth-blue">CareGrowthAI</span>
+          <span className="text-xl font-bold text-caregrowth-blue flex items-center gap-2">
+            {isSuperAdmin && <Shield size={18} className="text-purple-700" />}
+            CareGrowthAI
+          </span>
         )}
         {collapsed && (
-          <span className="text-xl font-bold text-caregrowth-blue">CAI</span>
+          <span className="text-xl font-bold text-caregrowth-blue">
+            {isSuperAdmin ? "SA" : "CAI"}
+          </span>
         )}
         <Button 
           variant="ghost" 
@@ -68,7 +80,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             className={({ isActive }) => cn(
               "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
               isActive 
-                ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                 : "text-gray-700 hover:bg-gray-100",
               collapsed && "justify-center"
             )}
@@ -80,7 +92,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
           {/* Super Admin Tools */}
           {showSuperAdminItems && (
             <>
-              <p className={cn("text-xs font-semibold text-gray-500 mt-6 mb-2", 
+              <p className={cn("text-xs font-semibold text-purple-600 mt-6 mb-2", 
                 collapsed && "text-center"
               )}>
                 {!collapsed ? "Admin Controls" : "Admin"}
@@ -91,7 +103,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                    ? "bg-purple-100 text-purple-800" 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -105,7 +117,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                    ? "bg-purple-100 text-purple-800" 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -119,7 +131,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                    ? "bg-purple-100 text-purple-800" 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -133,7 +145,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
           {/* Agency Admin Tools */}
           {showAgencyAdminItems && (
             <>
-              <p className={cn("text-xs font-semibold text-gray-500 mt-6 mb-2", 
+              <p className={cn("text-xs font-semibold text-blue-600 mt-6 mb-2", 
                 collapsed && "text-center"
               )}>
                 {!collapsed ? "Agency Management" : "Agency"}
@@ -240,7 +252,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             className={({ isActive }) => cn(
               "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
               isActive 
-                ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                 : "text-gray-700 hover:bg-gray-100",
               collapsed && "justify-center"
             )}
@@ -254,7 +266,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             className={({ isActive }) => cn(
               "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
               isActive 
-                ? "bg-caregrowth-lightblue text-caregrowth-blue" 
+                ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                 : "text-gray-700 hover:bg-gray-100",
               collapsed && "justify-center"
             )}
