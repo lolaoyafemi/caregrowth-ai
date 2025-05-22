@@ -6,6 +6,24 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { 
+  Settings, 
+  User, 
+  ChartBar, 
+  CircleDollarSign, 
+  Users, 
+  BadgeDollarSign,
+  CircleUser
+} from 'lucide-react';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 const SettingsPage = () => {
   const { user } = useUser();
@@ -13,18 +31,192 @@ const SettingsPage = () => {
   const isSuperAdmin = user?.role === 'super_admin';
   const isAgencyAdmin = user?.role === 'agency_admin';
 
+  // Sample data for performance monitoring
+  const performanceData = {
+    tokensThisMonth: 2345678,
+    monthlyRevenue: 14785.50,
+    quarterlyRevenue: 43250.75,
+    lifetimeRevenue: 197630.25,
+    topAgencies: [
+      { name: "Healthcare Solutions Ltd", spend: 4350.75, usage: 678500 },
+      { name: "CarePlus Agency", spend: 3275.25, usage: 498700 },
+      { name: "WellBeing Services", spend: 2980.50, usage: 425300 }
+    ]
+  };
+
+  // Sample data for super admin team
+  const adminTeam = [
+    { name: "Jane Smith", email: "jane@caregrowth.ai", role: "Owner" },
+    { name: "Mark Johnson", email: "mark@caregrowth.ai", role: "Admin" },
+    { name: "Sarah Wilson", email: "sarah@caregrowth.ai", role: "Developer" }
+  ];
+
+  const renderSuperAdminSettings = () => {
+    if (!isSuperAdmin) return null;
+
+    return (
+      <>
+        {/* Performance Monitoring Panel */}
+        <Card className="shadow-md border-t-4 border-t-caregrowth-blue">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <ChartBar className="h-6 w-6 text-caregrowth-blue" />
+            <div>
+              <CardTitle>Performance Monitoring</CardTitle>
+              <CardDescription>
+                Platform usage metrics and revenue insights
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="bg-caregrowth-lightblue p-4 rounded-lg flex flex-col">
+                <span className="text-sm text-gray-600">Total Tokens (This Month)</span>
+                <div className="flex items-center mt-1">
+                  <BadgeDollarSign className="h-5 w-5 mr-2 text-caregrowth-blue" />
+                  <span className="text-2xl font-semibold">{performanceData.tokensThisMonth.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="bg-caregrowth-lightgreen p-4 rounded-lg flex flex-col">
+                <span className="text-sm text-gray-600">Monthly Revenue</span>
+                <div className="flex items-center mt-1">
+                  <CircleDollarSign className="h-5 w-5 mr-2 text-caregrowth-green" />
+                  <span className="text-2xl font-semibold">${performanceData.monthlyRevenue.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="bg-caregrowth-lightblue p-4 rounded-lg flex flex-col">
+                <span className="text-sm text-gray-600">Lifetime Revenue</span>
+                <div className="flex items-center mt-1">
+                  <CircleDollarSign className="h-5 w-5 mr-2 text-caregrowth-blue" />
+                  <span className="text-2xl font-semibold">${performanceData.lifetimeRevenue.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            <h3 className="text-lg font-medium mb-4 flex items-center">
+              <Users className="h-5 w-5 mr-2 text-caregrowth-blue" />
+              Top Performing Agencies
+            </h3>
+            
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Agency Name</TableHead>
+                  <TableHead>Monthly Spend</TableHead>
+                  <TableHead>Token Usage</TableHead>
+                  <TableHead>Auto-Renew</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {performanceData.topAgencies.map((agency, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{agency.name}</TableCell>
+                    <TableCell>${agency.spend.toLocaleString()}</TableCell>
+                    <TableCell>{agency.usage.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Switch defaultChecked={index < 2} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Super Admin Team */}
+        <Card className="shadow-md border-t-4 border-t-purple-500">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <Users className="h-6 w-6 text-purple-600" />
+            <div>
+              <CardTitle>Super Admin Roles &amp; Permissions</CardTitle>
+              <CardDescription>
+                Manage platform administrator access and privileges
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {adminTeam.map((admin, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <CircleUser className="h-5 w-5 text-gray-500" />
+                        {admin.name}
+                      </div>
+                    </TableCell>
+                    <TableCell>{admin.email}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        admin.role === 'Owner' ? 'bg-purple-100 text-purple-800' : 
+                        admin.role === 'Admin' ? 'bg-blue-100 text-blue-800' : 
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {admin.role}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" className="ml-2">Edit</Button>
+                      {admin.role !== 'Owner' && (
+                        <Button variant="ghost" size="sm" className="ml-2 text-red-600 hover:text-red-800 hover:bg-red-50">Remove</Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            
+            <Button className="mt-6">
+              <User className="mr-2 h-4 w-4" />
+              Add New Admin
+            </Button>
+          </CardContent>
+        </Card>
+      </>
+    );
+  };
+
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/settings">Settings</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Platform Settings</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <h1 className="text-2xl font-bold mt-3 flex items-center">
+          <Settings className="mr-2 h-6 w-6" /> Settings
+        </h1>
+      </div>
       
       <div className="space-y-6">
         {/* Account Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Settings</CardTitle>
-            <CardDescription>
-              Update your personal information and preferences.
-            </CardDescription>
+        <Card className="shadow-md border-t-4 border-t-gray-400">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <CircleUser className="h-6 w-6 text-gray-700" />
+            <div>
+              <CardTitle>Account Settings</CardTitle>
+              <CardDescription>
+                Update your personal information and preferences.
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -46,12 +238,15 @@ const SettingsPage = () => {
         </Card>
         
         {/* Notification Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Notification Settings</CardTitle>
-            <CardDescription>
-              Control when and how you receive notifications.
-            </CardDescription>
+        <Card className="shadow-md border-t-4 border-t-gray-400">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <Settings className="h-6 w-6 text-gray-700" />
+            <div>
+              <CardTitle>Notification Settings</CardTitle>
+              <CardDescription>
+                Control when and how you receive notifications.
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -80,6 +275,9 @@ const SettingsPage = () => {
             <Button className="mt-6">Save Preferences</Button>
           </CardContent>
         </Card>
+        
+        {/* Super Admin specific settings */}
+        {renderSuperAdminSettings()}
       </div>
     </div>
   );
