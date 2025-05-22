@@ -80,35 +80,6 @@ const SettingsPage = () => {
             <Button className="mt-6">Save Preferences</Button>
           </CardContent>
         </Card>
-        
-        {/* Display Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Display Settings</CardTitle>
-            <CardDescription>
-              Customize your dashboard appearance.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Compact Layout</p>
-                  <p className="text-sm text-gray-500">Use a more compact dashboard layout</p>
-                </div>
-                <Switch />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Dark Mode</p>
-                  <p className="text-sm text-gray-500">Use dark theme for the dashboard</p>
-                </div>
-                <Switch />
-              </div>
-            </div>
-            <Button className="mt-6">Save Display Settings</Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
