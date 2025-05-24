@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from "sonner";
+import { Building2 } from 'lucide-react';
+import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
 
 interface GeneratedSection {
   hook: string;
@@ -25,6 +26,7 @@ interface GeneratedContent {
 const SocialMediaTool = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+  const [showBusinessForm, setShowBusinessForm] = useState(false);
   
   // Form states
   const [audience, setAudience] = useState('');
@@ -141,8 +143,20 @@ const SocialMediaTool = () => {
   return (
     <div className="p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Social Media Content Generator</h1>
-        <p className="text-gray-600 mt-2">Generate engaging social media content for multiple platforms with AI assistance.</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Social Media Content Generator</h1>
+            <p className="text-gray-600 mt-2">Generate engaging social media content for multiple platforms with AI assistance.</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowBusinessForm(true)}
+            className="flex items-center gap-2"
+          >
+            <Building2 size={16} />
+            More about my business
+          </Button>
+        </div>
       </div>
 
       <Card className="p-6 mb-8">
@@ -369,6 +383,10 @@ const SocialMediaTool = () => {
             </div>
           </Card>
         </div>
+      )}
+
+      {showBusinessForm && (
+        <BusinessDetailsForm onClose={() => setShowBusinessForm(false)} />
       )}
     </div>
   );

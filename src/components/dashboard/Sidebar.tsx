@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -147,9 +146,8 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                     <Progress value={creditBalance.percentUsed} className="h-2" />
                   </div>
                 </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+              </TooltipProvider>
+            )}
         </div>
       )}
 
@@ -300,13 +298,14 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             </NavLink>
           )}
 
-          {showContentWriterItems && (
+          {/* Only show Prompts Library to super admins */}
+          {showSuperAdminItems && (
             <NavLink
               to="/dashboard/prompts"
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
-                  ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                  ? "bg-purple-100 text-purple-800" 
                   : "text-gray-700 hover:bg-gray-100",
                 collapsed && "justify-center"
               )}
