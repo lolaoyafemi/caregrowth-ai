@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -32,12 +31,12 @@ const LandingPage = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link to="/dashboard">
-                    <Button size="lg" className="bg-white text-caregrowth-blue hover:bg-blue-50">
+                    <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700">
                       Start Your Free Trial
                     </Button>
                   </Link>
                   <Link to="#features">
-                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-caregrowth-blue">
+                    <Button size="lg" variant="outline" className="border-white text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-100">
                       See Features
                     </Button>
                   </Link>
@@ -220,7 +219,7 @@ const LandingPage = () => {
               <div className="bg-white p-8 rounded-lg shadow-md border border-gray-100 transform transition-all hover:scale-105">
                 <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-caregrowth-blue">
-                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 13.8214 2.48697 15.5291 3.33782 17L2.5 21.5L7 20.6622C8.47087 21.513 10.1786 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M12 17V17.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M12 13.5C12 12.6716 12.6716 12 13.5 12C14.3284 12 15 11.3284 15 10.5C15 9.67157 14.3284 9 13.5 9H12C11.1716 9 10.5 9.67157 10.5 10.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
