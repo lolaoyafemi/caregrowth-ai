@@ -50,6 +50,7 @@ const App = () => (
               
               {/* Tool Routes */}
               <Route path="social-media" element={<SocialMediaTool />} />
+              <Route path="prompts" element={<PromptsPage />} />
               <Route path="document-search" element={<DocumentSearchTool />} />
               <Route path="qa-assistant" element={<QAAssistantTool />} />
               
