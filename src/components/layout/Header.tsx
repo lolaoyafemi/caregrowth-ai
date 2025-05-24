@@ -2,6 +2,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
+import SupportDialog from '@/components/ui/SupportDialog';
+import ContactDialog from '@/components/ui/ContactDialog';
 
 const Header = () => {
   const location = useLocation();
@@ -45,6 +47,16 @@ const Header = () => {
             >
               Pricing
             </button>
+            <SupportDialog>
+              <button className="text-gray-600 hover:text-caregrowth-blue transition-colors cursor-pointer bg-transparent border-none">
+                Support
+              </button>
+            </SupportDialog>
+            <ContactDialog>
+              <button className="text-gray-600 hover:text-caregrowth-blue transition-colors cursor-pointer bg-transparent border-none">
+                Contact
+              </button>
+            </ContactDialog>
           </nav>
           <div className="flex items-center gap-4">
             <Link to="/dashboard">
