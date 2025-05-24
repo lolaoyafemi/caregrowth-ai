@@ -18,7 +18,7 @@ const DashboardHome = () => {
     socialContent: { used: 24, total: 50, percent: 48 },
     documentSearch: { used: 3, total: 5, percent: 60 },
     qaAssistant: { used: 62, total: 100, percent: 62 },
-    tokensLeft: 11250,
+    creditsLeft: 11250,
     monthlyUsage: 3750,
   };
 
@@ -30,13 +30,13 @@ const DashboardHome = () => {
           <p className="text-gray-600 mt-2">Your AI-powered agency growth assistant</p>
         </div>
         
-        {/* Token Wallet Module */}
+        {/* Credit Balance Module */}
         <Card className="w-64 bg-gradient-to-br from-caregrowth-lightblue to-white border-caregrowth-blue">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg font-semibold flex items-center">
                 <Coins className="mr-2 h-5 w-5 text-caregrowth-blue" />
-                Token Wallet
+                Credit Balance
               </CardTitle>
               <TooltipProvider>
                 <Tooltip>
@@ -44,7 +44,7 @@ const DashboardHome = () => {
                     <HelpCircle className="h-4 w-4 text-gray-400" />
                   </TooltipTrigger>
                   <TooltipContent className="w-80 p-2">
-                    <p>Tokens power all AI features. Each generation consumes tokens from your agency wallet.</p>
+                    <p>Credits power all AI features. Each generation consumes credits from your agency wallet.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -52,14 +52,14 @@ const DashboardHome = () => {
           </CardHeader>
           <CardContent>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">Available Tokens</span>
-              <span className="font-bold text-xl">{usageMetrics.tokensLeft.toLocaleString()}</span>
+              <span className="text-sm text-gray-600">Available Credits</span>
+              <span className="font-bold text-xl">{usageMetrics.creditsLeft.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center mb-4 text-xs text-gray-500">
               <span>Used this month: {usageMetrics.monthlyUsage.toLocaleString()}</span>
             </div>
             <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
-              Buy More Tokens
+              Buy More Credits
             </Button>
           </CardContent>
         </Card>

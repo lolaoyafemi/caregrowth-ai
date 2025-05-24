@@ -42,8 +42,8 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   
   const isSuperAdmin = userRole === 'super_admin';
   
-  // Token wallet details (mock data)
-  const tokenWallet = {
+  // Credit balance details (mock data)
+  const creditBalance = {
     available: 11250,
     usedThisMonth: 3750,
     totalAllocation: 15000,
@@ -82,7 +82,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
         </Button>
       </div>
 
-      {/* Token Wallet */}
+      {/* Credit Balance */}
       {(showAgencyAdminItems || showMarketingItems) && (
         <div className={cn(
           "px-3 py-3 border-b",
@@ -93,7 +93,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               <div className="flex justify-between items-center">
                 <span className="text-xs font-semibold text-caregrowth-blue flex items-center">
                   <Coins size={14} className="mr-1" />
-                  TOKEN WALLET
+                  CREDIT BALANCE
                 </span>
                 <TooltipProvider>
                   <Tooltip>
@@ -103,31 +103,31 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>View token details</p>
+                      <p>View credit details</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Available</span>
-                <span className="font-medium text-sm">{tokenWallet.available.toLocaleString()}</span>
+                <span className="font-medium text-sm">{creditBalance.available.toLocaleString()}</span>
               </div>
               <div className="space-y-1">
                 <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                   <div 
                     className="bg-caregrowth-blue h-full rounded-full" 
-                    style={{ width: `${tokenWallet.percentUsed}%` }}
+                    style={{ width: `${creditBalance.percentUsed}%` }}
                   ></div>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>Used: {tokenWallet.usedThisMonth.toLocaleString()}</span>
-                  <span>{tokenWallet.percentUsed}%</span>
+                  <span>Used: {creditBalance.usedThisMonth.toLocaleString()}</span>
+                  <span>{creditBalance.percentUsed}%</span>
                 </div>
               </div>
               <Button 
                 className="w-full py-1 h-8 text-xs bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all"
               >
-                Buy More Tokens
+                Buy More Credits
               </Button>
             </div>
           ) : (
@@ -136,15 +136,15 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center justify-center">
                     <Coins size={20} className="text-caregrowth-blue mb-1" />
-                    <span className="text-xs font-medium">{tokenWallet.available.toLocaleString()}</span>
+                    <span className="text-xs font-medium">{creditBalance.available.toLocaleString()}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   <div className="space-y-2 w-48">
-                    <p className="font-medium">Token Wallet</p>
-                    <p className="text-sm">Available: {tokenWallet.available.toLocaleString()}</p>
-                    <p className="text-sm">Used: {tokenWallet.usedThisMonth.toLocaleString()}</p>
-                    <Progress value={tokenWallet.percentUsed} className="h-2" />
+                    <p className="font-medium">Credit Balance</p>
+                    <p className="text-sm">Available: {creditBalance.available.toLocaleString()}</p>
+                    <p className="text-sm">Used: {creditBalance.usedThisMonth.toLocaleString()}</p>
+                    <Progress value={creditBalance.percentUsed} className="h-2" />
                   </div>
                 </TooltipContent>
               </Tooltip>

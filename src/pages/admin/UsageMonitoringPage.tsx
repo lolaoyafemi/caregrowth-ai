@@ -9,13 +9,13 @@ import { PlusCircle, Users, Building, TrendingUp } from 'lucide-react';
 
 // Sample data for the chart
 const data = [
-  { name: 'Agency 1', tokens: 4000 },
-  { name: 'Agency 2', tokens: 3000 },
-  { name: 'Agency 3', tokens: 2000 },
-  { name: 'Agency 4', tokens: 2780 },
-  { name: 'Agency 5', tokens: 1890 },
-  { name: 'Agency 6', tokens: 2390 },
-  { name: 'Agency 7', tokens: 3490 },
+  { name: 'Agency 1', credits: 4000 },
+  { name: 'Agency 2', credits: 3000 },
+  { name: 'Agency 3', credits: 2000 },
+  { name: 'Agency 4', credits: 2780 },
+  { name: 'Agency 5', credits: 1890 },
+  { name: 'Agency 6', credits: 2390 },
+  { name: 'Agency 7', credits: 3490 },
 ];
 
 const UsageMonitoringPage = () => {
@@ -57,7 +57,7 @@ const UsageMonitoringPage = () => {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">API Tokens Used (30 days)</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">API Credits Used (30 days)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">245,367</div>
@@ -66,8 +66,8 @@ const UsageMonitoringPage = () => {
       </div>
       
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Token Usage by Agency</h2>
-        <p className="text-sm text-gray-500 mb-4">As a Super Admin, you can monitor token usage across all agencies in the system.</p>
+        <h2 className="text-lg font-semibold mb-4">Credit Usage by Agency</h2>
+        <p className="text-sm text-gray-500 mb-4">As a Super Admin, you can monitor credit usage across all agencies in the system.</p>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -86,7 +86,7 @@ const UsageMonitoringPage = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="tokens" fill="#8884d8" />
+              <Bar dataKey="credits" fill="#8884d8" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -111,7 +111,7 @@ const UsageMonitoringPage = () => {
                     Users
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tokens Used
+                    Credits Used
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Last Active
@@ -147,7 +147,7 @@ const UsageMonitoringPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <TrendingUp className="h-4 w-4 mr-1 text-gray-500" />
-                        <span>{agency.tokens.toLocaleString()}</span>
+                        <span>{agency.credits.toLocaleString()}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -179,7 +179,7 @@ const UsageMonitoringPage = () => {
               <div className="flex justify-between">
                 <div>
                   <p className="font-medium">Agency {i} generated social media content</p>
-                  <p className="text-sm text-gray-500">Used 1,245 tokens</p>
+                  <p className="text-sm text-gray-500">Used 1,245 credits</p>
                 </div>
                 <div className="text-sm text-gray-500">2 hours ago</div>
               </div>
