@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { Navigate } from 'react-router-dom';
@@ -169,24 +168,6 @@ const UsageMonitoringPage = () => {
           </div>
         </CardContent>
       </Card>
-      
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">System-wide Recent Activity</h2>
-        <p className="text-sm text-gray-500 mb-4">Monitor activities across all agencies.</p>
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="border-b pb-3 last:border-0">
-              <div className="flex justify-between">
-                <div>
-                  <p className="font-medium">Agency {i} generated social media content</p>
-                  <p className="text-sm text-gray-500">Used 1,245 credits</p>
-                </div>
-                <div className="text-sm text-gray-500">2 hours ago</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

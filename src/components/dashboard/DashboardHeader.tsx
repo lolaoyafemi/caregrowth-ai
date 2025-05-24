@@ -29,7 +29,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
   const getRoleBadgeClass = (role?: UserRole) => {
     switch (role) {
       case 'super_admin':
-        return 'bg-purple-100 text-purple-800 border border-purple-300';
+        return 'bg-green-100 text-green-800 border border-green-300';
       case 'agency_admin':
         return 'bg-blue-100 text-blue-800 border border-blue-300';
       case 'admin':
@@ -63,32 +63,32 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
   const isSuperAdmin = userRole === 'super_admin';
 
   return (
-    <header className={`border-b h-16 px-6 flex items-center justify-between ${isSuperAdmin ? 'bg-purple-50' : 'bg-white'}`}>
+    <header className={`border-b h-16 px-6 flex items-center justify-between ${isSuperAdmin ? 'bg-green-50' : 'bg-white'}`}>
       <div className="flex items-center">
         <h1 className="text-xl font-semibold text-gray-800">CareGrowthAI</h1>
         
         {userRole && (
           <div className={`ml-4 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${getRoleBadgeClass(userRole)}`}>
-            {isSuperAdmin && <Shield size={14} className="text-purple-800" />}
+            {isSuperAdmin && <Shield size={14} className="text-green-800" />}
             {getRoleDisplayName(userRole)}
           </div>
         )}
         
         {isSuperAdmin && (
-          <div className="ml-4 text-sm font-medium text-purple-700">System Administration</div>
+          <div className="ml-4 text-sm font-medium text-green-700">System Administration</div>
         )}
       </div>
       
       <div className="flex items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Avatar className={`h-9 w-9 cursor-pointer ${isSuperAdmin ? 'ring-2 ring-purple-400' : ''}`}>
-              <AvatarFallback className={isSuperAdmin ? 'bg-purple-100 text-purple-800' : ''}>{getInitials(userName)}</AvatarFallback>
+            <Avatar className={`h-9 w-9 cursor-pointer ${isSuperAdmin ? 'ring-2 ring-green-400' : ''}`}>
+              <AvatarFallback className={isSuperAdmin ? 'bg-green-100 text-green-800' : ''}>{getInitials(userName)}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel className="flex items-center gap-2">
-              {isSuperAdmin && <Shield size={14} className="text-purple-800" />}
+              {isSuperAdmin && <Shield size={14} className="text-green-800" />}
               <span>{getRoleDisplayName(userRole)} Account</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

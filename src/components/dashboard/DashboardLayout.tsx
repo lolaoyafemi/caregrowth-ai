@@ -119,7 +119,7 @@ const DashboardLayout = () => {
           />
           <div className="flex-1 flex flex-col overflow-hidden">
             <DashboardHeader userRole={user?.role} userName={user?.name} />
-            <main className={`flex-1 overflow-auto ${user?.role === 'super_admin' ? 'bg-purple-50/30' : 'bg-gray-50'}`}>
+            <main className={`flex-1 overflow-auto ${user?.role === 'super_admin' ? 'bg-green-50/30' : 'bg-gray-50'}`}>
               <Outlet />
             </main>
           </div>
