@@ -146,8 +146,9 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                     <Progress value={creditBalance.percentUsed} className="h-2" />
                   </div>
                 </TooltipContent>
-              </TooltipProvider>
-            )}
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       )}
 
