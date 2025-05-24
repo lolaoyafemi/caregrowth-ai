@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +33,7 @@ const PromptsPage = () => {
       id: 1,
       name: "Problem-Solution Hook",
       platform: "all",
-      category: "business",
+      category: "trust-authority",
       hook: "🔥 Attention {audience}! Struggling with your daily challenges?",
       body: "We understand the unique needs of {audience} and have developed solutions that can help you achieve remarkable results. With our proven approach, you'll be able to overcome challenges and reach your goals faster than ever.\n\nOne of our clients recently reported a 40% increase in productivity after implementing our solutions!",
       cta: "Ready to transform your business? Click the link in bio to learn more or DM us for a free consultation! ⏰ Limited spots available.",
@@ -44,7 +43,7 @@ const PromptsPage = () => {
       id: 2,
       name: "Announcement Style",
       platform: "linkedin",
-      category: "professional",
+      category: "educational-helpful",
       hook: "I'm excited to announce our newest solution for {audience} looking to maximize efficiency.",
       body: "After months of research and development, our team has created a solution specifically designed for {audience}.\n\nThe results?\n\n✅ 35% reduction in operational costs\n✅ 50% less time spent on administrative tasks\n✅ Improved team satisfaction and retention\n\nIn today's competitive landscape, businesses can't afford to fall behind on innovation.",
       cta: "If you're interested in learning how our solution can benefit your organization, let's connect. I'm offering 5 free strategy sessions this week to qualified professionals.",
@@ -61,7 +60,7 @@ const PromptsPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     platform: 'all',
-    category: 'business',
+    category: 'trust-authority',
     hook: '',
     body: '',
     cta: ''
@@ -83,7 +82,7 @@ const PromptsPage = () => {
     setFormData({
       name: '',
       platform: 'all',
-      category: 'business',
+      category: 'trust-authority',
       hook: '',
       body: '',
       cta: ''
@@ -118,7 +117,7 @@ const PromptsPage = () => {
     setFormData({
       name: '',
       platform: 'all',
-      category: 'business',
+      category: 'trust-authority',
       hook: '',
       body: '',
       cta: ''
@@ -142,6 +141,21 @@ const PromptsPage = () => {
     const categoryMatch = filterCategory === 'all' || prompt.category === filterCategory;
     return platformMatch && categoryMatch;
   });
+
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'trust-authority':
+        return 'Trust & Authority';
+      case 'heartfelt-relatable':
+        return 'Heartfelt & Relatable';
+      case 'educational-helpful':
+        return 'Educational & Helpful';
+      case 'results-offers':
+        return 'Results & Offers';
+      default:
+        return category;
+    }
+  };
 
   return (
     <div className="p-6">
@@ -172,10 +186,10 @@ const PromptsPage = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="business">Business</SelectItem>
-              <SelectItem value="professional">Professional</SelectItem>
-              <SelectItem value="casual">Casual</SelectItem>
-              <SelectItem value="promotional">Promotional</SelectItem>
+              <SelectItem value="trust-authority">Trust & Authority</SelectItem>
+              <SelectItem value="heartfelt-relatable">Heartfelt & Relatable</SelectItem>
+              <SelectItem value="educational-helpful">Educational & Helpful</SelectItem>
+              <SelectItem value="results-offers">Results & Offers</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -230,10 +244,10 @@ const PromptsPage = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="casual">Casual</SelectItem>
-                    <SelectItem value="promotional">Promotional</SelectItem>
+                    <SelectItem value="trust-authority">Trust & Authority</SelectItem>
+                    <SelectItem value="heartfelt-relatable">Heartfelt & Relatable</SelectItem>
+                    <SelectItem value="educational-helpful">Educational & Helpful</SelectItem>
+                    <SelectItem value="results-offers">Results & Offers</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -295,8 +309,8 @@ const PromptsPage = () => {
                   <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-caregrowth-lightblue text-caregrowth-blue capitalize">
                     {prompt.platform}
                   </span>
-                  <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700 capitalize">
-                    {prompt.category}
+                  <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700">
+                    {getCategoryLabel(prompt.category)}
                   </span>
                 </div>
               </div>
@@ -386,10 +400,10 @@ const PromptsPage = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="casual">Casual</SelectItem>
-                    <SelectItem value="promotional">Promotional</SelectItem>
+                    <SelectItem value="trust-authority">Trust & Authority</SelectItem>
+                    <SelectItem value="heartfelt-relatable">Heartfelt & Relatable</SelectItem>
+                    <SelectItem value="educational-helpful">Educational & Helpful</SelectItem>
+                    <SelectItem value="results-offers">Results & Offers</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
