@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -53,16 +54,16 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
     <div className={cn(
       "flex flex-col border-r transition-all duration-300",
       collapsed ? "w-[80px]" : "w-[250px]",
-      isSuperAdmin ? "bg-purple-50 border-purple-200" : "bg-white"
+      isSuperAdmin ? "bg-green-50 border-green-200" : "bg-white"
     )}>
       {/* Sidebar Header */}
       <div className={cn(
         "p-4 flex items-center border-b h-16",
-        isSuperAdmin ? "border-purple-200" : ""
+        isSuperAdmin ? "border-green-200" : ""
       )}>
         {!collapsed && (
           <span className="text-xl font-bold text-caregrowth-blue flex items-center gap-2">
-            {isSuperAdmin && <Shield size={18} className="text-purple-700" />}
+            {isSuperAdmin && <Shield size={18} className="text-green-700" />}
             CareGrowthAI
           </span>
         )}
@@ -167,7 +168,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             className={({ isActive }) => cn(
               "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
               isActive 
-                ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                 : "text-gray-700 hover:bg-gray-100",
               collapsed && "justify-center"
             )}
@@ -179,7 +180,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
           {/* Super Admin Tools */}
           {showSuperAdminItems && (
             <>
-              <p className={cn("text-xs font-semibold text-purple-600 mt-6 mb-2", 
+              <p className={cn("text-xs font-semibold text-green-600 mt-6 mb-2", 
                 collapsed && "text-center"
               )}>
                 {!collapsed ? "Admin Controls" : "Admin"}
@@ -190,7 +191,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? "bg-purple-100 text-purple-800" 
+                    ? "bg-green-100 text-green-800" 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -204,7 +205,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? "bg-purple-100 text-purple-800" 
+                    ? "bg-green-100 text-green-800" 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -218,7 +219,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? "bg-purple-100 text-purple-800" 
+                    ? "bg-green-100 text-green-800" 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -244,7 +245,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                    ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -259,7 +260,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                    ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -283,7 +284,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
-                  ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                  ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                   : "text-gray-700 hover:bg-gray-100",
                 collapsed && "justify-center"
               )}
@@ -306,7 +307,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
-                  ? "bg-purple-100 text-purple-800" 
+                  ? "bg-green-100 text-green-800" 
                   : "text-gray-700 hover:bg-gray-100",
                 collapsed && "justify-center"
               )}
@@ -322,7 +323,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
-                  ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue")  
+                  ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue")  
                   : "text-gray-700 hover:bg-gray-100",
                 collapsed && "justify-center"
               )}
@@ -338,7 +339,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
-                  ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                  ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                   : "text-gray-700 hover:bg-gray-100",
                 collapsed && "justify-center"
               )}
@@ -358,7 +359,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             className={({ isActive }) => cn(
               "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
               isActive 
-                ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                 : "text-gray-700 hover:bg-gray-100",
               collapsed && "justify-center"
             )}
@@ -372,7 +373,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             className={({ isActive }) => cn(
               "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
               isActive 
-                ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
                 : "text-gray-700 hover:bg-gray-100",
               collapsed && "justify-center"
             )}
