@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,13 @@ const LandingPage = () => {
 
   const handleVideoPlay = () => {
     setIsPlaying(true);
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
   };
   
   return (
@@ -35,11 +43,14 @@ const LandingPage = () => {
                       I'm Ready Now
                     </Button>
                   </Link>
-                  <Link to="#features">
-                    <Button size="lg" variant="outline" className="border-white text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700">
-                      See Features
-                    </Button>
-                  </Link>
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    className="border-white text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700"
+                    onClick={() => scrollToSection('features')}
+                  >
+                    See Features
+                  </Button>
                 </div>
               </div>
               <div className="md:w-1/2 md:pl-10">
