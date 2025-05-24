@@ -16,10 +16,8 @@ import {
   BadgeDollarSign,
   CircleUser,
   BellRing,
-  PaintBucket,
   Shield,
-  Wallet,
-  Bell
+  Wallet
 } from 'lucide-react';
 import {
   Breadcrumb,
@@ -74,61 +72,6 @@ const SettingsPage = () => {
 
     return (
       <>
-        {/* Agency Branding */}
-        <Card className="shadow-md border-t-4 border-t-caregrowth-blue transition-all duration-200 hover:shadow-lg">
-          <CardHeader className="flex flex-row items-center gap-2">
-            <PaintBucket className="h-6 w-6 text-caregrowth-blue" />
-            <div>
-              <CardTitle>Agency Branding</CardTitle>
-              <CardDescription>
-                Customize how your agency appears to clients
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="agencyName">Agency Name</Label>
-                <Input id="agencyName" defaultValue="CareGrowth Agency" />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="agencyLogo">Agency Logo</Label>
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 bg-caregrowth-lightblue rounded-md flex items-center justify-center text-caregrowth-blue">
-                    Logo
-                  </div>
-                  <Button variant="outline" size="sm">Upload New Logo</Button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Brand Colors</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <div className="h-8 w-full bg-caregrowth-blue rounded-md mb-1"></div>
-                    <Input type="text" defaultValue="#0047AB" className="text-xs" />
-                  </div>
-                  <div>
-                    <div className="h-8 w-full bg-caregrowth-green rounded-md mb-1"></div>
-                    <Input type="text" defaultValue="#2E8B57" className="text-xs" />
-                  </div>
-                  <div>
-                    <div className="h-8 w-full bg-caregrowth-lightblue rounded-md mb-1"></div>
-                    <Input type="text" defaultValue="#ADD8E6" className="text-xs" />
-                  </div>
-                  <div>
-                    <div className="h-8 w-full bg-gray-800 rounded-md mb-1"></div>
-                    <Input type="text" defaultValue="#333333" className="text-xs" />
-                  </div>
-                </div>
-              </div>
-              
-              <Button className="mt-6">Save Branding</Button>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Team Permissions */}
         <Card className="shadow-md border-t-4 border-t-caregrowth-green transition-all duration-200 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center gap-2">
@@ -258,56 +201,6 @@ const SettingsPage = () => {
               
               <Button className="mt-6">Update Token Settings</Button>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Notification Settings */}
-        <Card className="shadow-md border-t-4 border-t-caregrowth-green transition-all duration-200 hover:shadow-lg">
-          <CardHeader className="flex flex-row items-center gap-2">
-            <Bell className="h-6 w-6 text-caregrowth-green" />
-            <div>
-              <CardTitle>Notification Alerts</CardTitle>
-              <CardDescription>
-                Manage how your team receives updates and alerts
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Low token alerts</p>
-                  <p className="text-sm text-gray-500">Get notified when tokens are running low</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Usage reports</p>
-                  <p className="text-sm text-gray-500">Weekly summary of token usage</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Team activity</p>
-                  <p className="text-sm text-gray-500">Get alerts about team member actions</p>
-                </div>
-                <Switch />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Feature updates</p>
-                  <p className="text-sm text-gray-500">Learn about new features and improvements</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </div>
-            
-            <Button className="mt-6">Save Notification Preferences</Button>
           </CardContent>
         </Card>
       </>
