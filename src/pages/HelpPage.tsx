@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Accordion,
@@ -9,8 +9,236 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useUser } from '@/contexts/UserContext';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Shield, MessageSquare, User, Calendar } from 'lucide-react';
 
-const HelpPage = () => {
+// Mock support tickets data
+const mockSupportTickets = [
+  {
+    id: 1,
+    user: 'john@example.com',
+    userRole: 'agency_admin',
+    subject: 'How to add team members?',
+    question: 'I\'m having trouble adding new team members to my agency. The invite button doesn\'t seem to work.',
+    status: 'open',
+    createdAt: '2024-01-15',
+    priority: 'medium'
+  },
+  {
+    id: 2,
+    user: 'sarah@careagency.com',
+    userRole: 'admin',
+    subject: 'Social Media tool not generating content',
+    question: 'When I try to generate social media posts, I get an error message. This has been happening for the past 2 days.',
+    status: 'pending',
+    createdAt: '2024-01-14',
+    priority: 'high'
+  },
+  {
+    id: 3,
+    user: 'mike@homecare.com',
+    userRole: 'content_writer',
+    subject: 'API usage tracking question',
+    question: 'Where can I see how many API calls I\'ve used this month?',
+    status: 'resolved',
+    createdAt: '2024-01-13',
+    priority: 'low'
+  },
+  {
+    id: 4,
+    user: 'lisa@wellness.com',
+    userRole: 'collaborator',
+    subject: 'Document search not finding files',
+    question: 'I uploaded several documents but they don\'t appear in search results. Are there specific file formats required?',
+    status: 'open',
+    createdAt: '2024-01-12',
+    priority: 'medium'
+  }
+];
+
+const SuperAdminSupportDashboard = () => {
+  const [selectedTicket, setSelectedTicket] = useState<number | null>(null);
+  const [response, setResponse] = useState('');
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      open: { variant: 'destructive' as const, label: 'Open' },
+      pending: { variant: 'secondary' as const, label: 'Pending' },
+      resolved: { variant: 'default' as const, label: 'Resolved' }
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.open;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const priorityConfig = {
+      high: { variant: 'destructive' as const, label: 'High' },
+      medium: { variant: 'secondary' as const, label: 'Medium' },
+      low: { variant: 'outline' as const, label: 'Low' }
+    };
+    
+    const config = priorityConfig[priority as keyof typeof priorityConfig] || priorityConfig.medium;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const handleSendResponse = () => {
+    console.log('Sending response for ticket:', selectedTicket, 'Response:', response);
+    setResponse('');
+    setSelectedTicket(null);
+    // In a real app, this would send the response and update the ticket status
+  };
+
+  return (
+    <div className="container mx-auto p-6 bg-green-50/30">
+      <div className="flex items-center gap-3 mb-6">
+        <Shield className="text-green-700" size={24} />
+        <h1 className="text-2xl font-bold text-green-800">Support Dashboard</h1>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Support Tickets Table */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare size={20} />
+                Support Tickets
+              </CardTitle>
+              <CardDescription>
+                Manage and respond to user support requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockSupportTickets.map((ticket) => (
+                    <TableRow key={ticket.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User size={16} className="text-gray-500" />
+                          <div>
+                            <div className="font-medium">{ticket.user}</div>
+                            <div className="text-sm text-gray-500">{ticket.userRole}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        <div className="truncate">{ticket.subject}</div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                      <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Calendar size={14} className="text-gray-500" />
+                          {ticket.createdAt}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => setSelectedTicket(ticket.id)}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Ticket Details & Response */}
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Ticket Details</CardTitle>
+              <CardDescription>
+                {selectedTicket ? 'View and respond to ticket' : 'Select a ticket to view details'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {selectedTicket ? (
+                <div className="space-y-4">
+                  {(() => {
+                    const ticket = mockSupportTickets.find(t => t.id === selectedTicket);
+                    if (!ticket) return null;
+                    
+                    return (
+                      <>
+                        <div>
+                          <h4 className="font-medium mb-2">Question/Issue:</h4>
+                          <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
+                            {ticket.question}
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Response:</label>
+                          <Textarea
+                            placeholder="Type your response here..."
+                            value={response}
+                            onChange={(e) => setResponse(e.target.value)}
+                            className="min-h-[100px]"
+                          />
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleSendResponse}
+                            disabled={!response.trim()}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            Send Response
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setSelectedTicket(null)}
+                          >
+                            Close
+                          </Button>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">
+                  Select a ticket from the table to view details and respond
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RegularUserHelpPage = () => {
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Help & Support</h1>
@@ -101,6 +329,13 @@ const HelpPage = () => {
       </Card>
     </div>
   );
+};
+
+const HelpPage = () => {
+  const { user } = useUser();
+  const isSuperAdmin = user?.role === 'super_admin';
+
+  return isSuperAdmin ? <SuperAdminSupportDashboard /> : <RegularUserHelpPage />;
 };
 
 export default HelpPage;
