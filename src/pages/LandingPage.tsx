@@ -527,7 +527,7 @@ const LandingPage = () => {
             </p>
             <Link to="/dashboard">
               <Button size="lg" className="bg-white text-caregrowth-blue hover:bg-blue-50">
-                Start Your Free 14-Day Trial
+                I'm Ready Now
               </Button>
             </Link>
             <p className="mt-4 text-blue-200">No credit card required. Cancel anytime.</p>
