@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,7 +68,7 @@ const DashboardHome = () => {
         <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
-              <CardTitle>Client Content Creation</CardTitle>
+              <CardTitle>Social Media Post</CardTitle>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
