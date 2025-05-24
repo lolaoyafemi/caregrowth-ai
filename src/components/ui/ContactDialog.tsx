@@ -8,34 +8,51 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Instagram, Twitter, Mail } from 'lucide-react';
 
 interface ContactDialogProps {
   children: React.ReactNode;
 }
 
 const ContactDialog = ({ children }: ContactDialogProps) => {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSend = () => {
-    const subject = `Contact Request from ${fullName}`;
-    const body = `Name: ${fullName}\nEmail: ${email}\n\nMessage:\n${message}`;
-    const mailtoLink = `mailto:admin@caregrowth.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
-    window.location.href = mailtoLink;
-    setIsOpen(false);
-    
-    // Reset form
-    setFullName('');
-    setEmail('');
-    setMessage('');
-  };
+  const contactOptions = [
+    {
+      platform: 'Instagram',
+      handle: '@caregrowth',
+      link: 'https://instagram.com/caregrowth',
+      icon: Instagram,
+      color: 'text-pink-600'
+    },
+    {
+      platform: 'Twitter',
+      handle: '@caregrowth',
+      link: 'https://twitter.com/caregrowth',
+      icon: Twitter,
+      color: 'text-blue-400'
+    },
+    {
+      platform: 'WhatsApp',
+      handle: '+2348068920166',
+      link: 'https://wa.me/2348068920166',
+      icon: () => (
+        <img 
+          src="https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=24&h=24&fit=crop&crop=center" 
+          alt="WhatsApp" 
+          className="w-6 h-6 rounded-full"
+        />
+      ),
+      color: 'text-green-600'
+    },
+    {
+      platform: 'Email',
+      handle: 'app@caregrowth.ai',
+      link: 'mailto:app@caregrowth.ai',
+      icon: Mail,
+      color: 'text-gray-600'
+    }
+  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -46,51 +63,30 @@ const ContactDialog = ({ children }: ContactDialogProps) => {
         <DialogHeader>
           <DialogTitle>Contact Us</DialogTitle>
           <DialogDescription>
-            Get in touch with our team. We'd love to hear from you!
+            Get in touch with us through any of these platforms. We'd love to hear from you!
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Enter your full name"
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">Contact Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email address"
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="message">Message</Label>
-            <Textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Tell us how we can help you"
-              rows={4}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSend}
-            disabled={!fullName || !email || !message}
-            className="bg-caregrowth-blue hover:bg-blue-700"
-          >
-            Send
-          </Button>
+          {contactOptions.map((option) => {
+            const IconComponent = option.icon;
+            return (
+              <a
+                key={option.platform}
+                href={option.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 rounded-lg border hover:bg-gray-50 transition-colors"
+              >
+                <div className={`${option.color}`}>
+                  <IconComponent />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">{option.platform}</div>
+                  <div className="text-sm text-gray-600">{option.handle}</div>
+                </div>
+              </a>
+            );
+          })}
         </div>
       </DialogContent>
     </Dialog>
