@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { Navigate } from 'react-router-dom';
@@ -299,12 +298,6 @@ const AgencyUsagePage = () => {
               </tr>
             </tbody>
           </table>
-          <div className="flex justify-end mt-4">
-            <Button variant="outline" size="sm" className="flex items-center">
-              <Settings className="mr-2 h-4 w-4" />
-              Set User Limits
-            </Button>
-          </div>
         </div>
       </div>
     </div>
