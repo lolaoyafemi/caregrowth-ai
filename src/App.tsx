@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardHome from "./pages/DashboardHome";
 import SocialMediaTool from "./pages/SocialMediaTool";
+import PromptsPage from "./pages/PromptsPage";
 import DocumentSearchTool from "./pages/DocumentSearchTool";
 import QAAssistantTool from "./pages/QAAssistantTool";
 import NotFound from "./pages/NotFound";

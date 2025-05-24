@@ -300,6 +300,22 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             </NavLink>
           )}
 
+          {showContentWriterItems && (
+            <NavLink
+              to="/dashboard/prompts"
+              className={({ isActive }) => cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+                isActive 
+                  ? (isSuperAdmin ? "bg-purple-100 text-purple-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                  : "text-gray-700 hover:bg-gray-100",
+                collapsed && "justify-center"
+              )}
+            >
+              <FileText size={20} />
+              {!collapsed && <span>Prompts Library</span>}
+            </NavLink>
+          )}
+
           {showCollaboratorItems && (
             <NavLink
               to="/dashboard/document-search"
