@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +16,9 @@ import {
   CircleUser,
   BellRing,
   Shield,
-  Wallet
+  Wallet,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import {
   Breadcrumb,
@@ -33,9 +34,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import EditMemberDialog from '@/components/team/EditMemberDialog';
+import DeleteMemberDialog from '@/components/team/DeleteMemberDialog';
 
 const SettingsPage = () => {
   const { user } = useUser();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<{
+    name: string;
+    email: string;
+    role: string;
+  } | null>(null);
   
   const isSuperAdmin = user?.role === 'super_admin';
   const isAgencyAdmin = user?.role === 'agency_admin';
@@ -66,6 +76,16 @@ const SettingsPage = () => {
     { name: "Emma White", email: "emma@agency.com", role: "Editor", status: "Active" },
     { name: "Michael Brown", email: "michael@agency.com", role: "Viewer", status: "Inactive" }
   ];
+  
+  const handleEditMember = (member: { name: string; email: string; role: string }) => {
+    setSelectedMember(member);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteMember = (member: { name: string; email: string; role: string }) => {
+    setSelectedMember(member);
+    setDeleteDialogOpen(true);
+  };
 
   const renderAgencyAdminSettings = () => {
     if (!isAgencyAdmin && !isSuperAdmin) return null;
@@ -117,20 +137,31 @@ const SettingsPage = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">Edit</Button>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleEditMember(member)}
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDeleteMember(member)}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-            
-            <div className="flex justify-between mt-6">
-              <Button className="flex items-center gap-1">
-                <User className="h-4 w-4" />
-                Invite New Member
-              </Button>
-              <Button variant="outline">Manage Roles</Button>
-            </div>
           </CardContent>
         </Card>
 
@@ -438,6 +469,24 @@ const SettingsPage = () => {
         {/* Super Admin specific settings */}
         {renderSuperAdminSettings()}
       </div>
+
+      {/* Dialogs */}
+      {selectedMember && (
+        <>
+          <EditMemberDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            memberName={selectedMember.name}
+            currentRole={selectedMember.role}
+          />
+          <DeleteMemberDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            memberName={selectedMember.name}
+            memberEmail={selectedMember.email}
+          />
+        </>
+      )}
     </div>
   );
 };
