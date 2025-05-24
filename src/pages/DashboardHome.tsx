@@ -172,7 +172,7 @@ const DashboardHome = () => {
           <CardContent>
             <Link to="/dashboard/social-media">
               <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
-                Create Client Content
+                Create Your Next Post
               </Button>
             </Link>
           </CardContent>
