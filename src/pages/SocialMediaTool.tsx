@@ -27,8 +27,6 @@ const SocialMediaTool = () => {
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   
   // Form states
-  const [industry, setIndustry] = useState('');
-  const [offerName, setOfferName] = useState('');
   const [audience, setAudience] = useState('');
   const [tone, setTone] = useState('professional');
   const [platform, setPlatform] = useState('all');
@@ -40,14 +38,14 @@ const SocialMediaTool = () => {
   const [savedPosts, setSavedPosts] = useState<Array<{
     id: number, 
     platform: string,
-    offerName: string, 
+    audience: string, 
     content: string,
     date: string
   }>>([]);
 
   const handleGenerate = () => {
-    if (!industry || !offerName || !audience) {
-      toast.error("Please fill in all required fields.");
+    if (!audience) {
+      toast.error("Please fill in the target audience field.");
       return;
     }
     
@@ -57,24 +55,24 @@ const SocialMediaTool = () => {
     setTimeout(() => {
       const content: GeneratedContent = {
         facebook: {
-          hook: `🔥 Attention ${audience}! Struggling with [common pain point in ${industry}]?`,
-          body: `Our ${offerName} has been helping businesses just like yours achieve remarkable results. With our proven approach, you'll be able to overcome challenges and reach your goals faster than ever.\n\nOne of our clients recently reported a 40% increase in productivity after implementing our solutions!`,
-          cta: `Ready to transform your ${industry} business? Click the link in bio to learn more about ${offerName} or DM us for a free consultation! ⏰ Limited spots available.`
+          hook: `🔥 Attention ${audience}! Struggling with your daily challenges?`,
+          body: `We understand the unique needs of ${audience} and have developed solutions that can help you achieve remarkable results. With our proven approach, you'll be able to overcome challenges and reach your goals faster than ever.\n\nOne of our clients recently reported a 40% increase in productivity after implementing our solutions!`,
+          cta: `Ready to transform your business? Click the link in bio to learn more or DM us for a free consultation! ⏰ Limited spots available.`
         },
         twitter: {
-          hook: `${audience} in ${industry}: Your workflow is about to change forever.`,
-          body: `Introducing ${offerName}: the solution you've been waiting for. Stop wasting time on inefficient processes.`,
-          cta: `Click here to see how we're helping businesses save 20+ hours per week. #${industry.replace(/\s+/g, '')} #Productivity`
+          hook: `${audience}: Your workflow is about to change forever.`,
+          body: `Introducing our latest solution: the game-changer you've been waiting for. Stop wasting time on inefficient processes.`,
+          cta: `Click here to see how we're helping professionals save 20+ hours per week. #Productivity #Success`
         },
         linkedin: {
-          hook: `I'm excited to announce our newest solution for ${industry} professionals looking to maximize efficiency.`,
-          body: `After months of research and development, our team at CareGrowth has created ${offerName} specifically designed for ${audience}.\n\nThe results?\n\n✅ 35% reduction in operational costs\n✅ 50% less time spent on administrative tasks\n✅ Improved team satisfaction and retention\n\nIn today's competitive landscape, businesses can't afford to fall behind on innovation.`,
-          cta: `If you're interested in learning how ${offerName} can benefit your organization, let's connect. I'm offering 5 free strategy sessions this week to qualified businesses.`
+          hook: `I'm excited to announce our newest solution for ${audience} looking to maximize efficiency.`,
+          body: `After months of research and development, our team has created a solution specifically designed for ${audience}.\n\nThe results?\n\n✅ 35% reduction in operational costs\n✅ 50% less time spent on administrative tasks\n✅ Improved team satisfaction and retention\n\nIn today's competitive landscape, businesses can't afford to fall behind on innovation.`,
+          cta: `If you're interested in learning how our solution can benefit your organization, let's connect. I'm offering 5 free strategy sessions this week to qualified professionals.`
         },
         instagram: {
-          hook: `Double tap if you're tired of the same old ${industry} problems! 👇`,
-          body: `We get it. Being a ${audience} is challenging enough without having to deal with [specific industry pain point].\n\nThat's why we created ${offerName}.\n\nImagine having all the tools you need to succeed, wrapped in one simple solution.`,
-          cta: `Swipe up to learn more about how ${offerName} is changing the game for ${audience} everywhere! Limited time offer: Get 15% off when you sign up this week.`
+          hook: `Double tap if you're tired of the same old problems! 👇`,
+          body: `We get it. Being a ${audience} is challenging enough without having to deal with daily frustrations.\n\nThat's why we created our solution.\n\nImagine having all the tools you need to succeed, wrapped in one simple platform.`,
+          cta: `Swipe up to learn more about how we're changing the game for ${audience} everywhere! Limited time offer: Get 15% off when you sign up this week.`
         }
       };
       
@@ -93,15 +91,15 @@ const SocialMediaTool = () => {
         switch (section) {
           case 'hook':
             updatedContent[platform as keyof GeneratedContent].hook = 
-              `NEW HOOK: Are you a ${audience} tired of struggling with ${industry} challenges? This will change everything...`;
+              `NEW HOOK: Are you a ${audience} tired of struggling with daily challenges? This will change everything...`;
             break;
           case 'body':
             updatedContent[platform as keyof GeneratedContent].body = 
-              `NEW BODY: We developed ${offerName} specifically for people like you. Our solution addresses the exact problems you're facing daily, with proven results for businesses in your position.\n\nIn fact, our latest case study showed an average ROI of 300% within just 90 days!`;
+              `NEW BODY: We developed our solution specifically for people like you. Our approach addresses the exact problems you're facing daily, with proven results for professionals in your position.\n\nIn fact, our latest case study showed an average ROI of 300% within just 90 days!`;
             break;
           case 'cta':
             updatedContent[platform as keyof GeneratedContent].cta = 
-              `NEW CTA: Don't miss this opportunity to revolutionize your ${industry} business. Click now to secure your spot before we reach capacity!`;
+              `NEW CTA: Don't miss this opportunity to revolutionize your business. Click now to secure your spot before we reach capacity!`;
             break;
         }
         setGeneratedContent(updatedContent);
@@ -131,7 +129,7 @@ const SocialMediaTool = () => {
     const newPost = {
       id: Date.now(),
       platform,
-      offerName,
+      audience,
       content: fullText,
       date: new Date().toISOString().split('T')[0]
     };
@@ -150,24 +148,6 @@ const SocialMediaTool = () => {
       <Card className="p-6 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div className="mb-4">
-              <Label htmlFor="industry">Industry</Label>
-              <Input
-                id="industry"
-                placeholder="e.g., Digital Marketing, Healthcare, Real Estate"
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-              />
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="offerName">Offer Name</Label>
-              <Input
-                id="offerName"
-                placeholder="e.g., Social Media Management Package"
-                value={offerName}
-                onChange={(e) => setOfferName(e.target.value)}
-              />
-            </div>
             <div className="mb-4">
               <Label htmlFor="audience">Target Audience</Label>
               <Input
@@ -362,7 +342,7 @@ const SocialMediaTool = () => {
                 <SelectContent>
                   <SelectItem value="date">Sort by Date</SelectItem>
                   <SelectItem value="platform">Sort by Platform</SelectItem>
-                  <SelectItem value="offer">Sort by Offer</SelectItem>
+                  <SelectItem value="audience">Sort by Audience</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -382,7 +362,7 @@ const SocialMediaTool = () => {
                       <Button variant="ghost" size="sm">Delete</Button>
                     </div>
                   </div>
-                  <h4 className="font-medium mb-1">{post.offerName}</h4>
+                  <h4 className="font-medium mb-1">{post.audience}</h4>
                   <p className="text-sm text-gray-700 line-clamp-2">{post.content}</p>
                 </div>
               ))}
