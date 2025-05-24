@@ -39,6 +39,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     
     switch (user.role) {
       case 'super_admin':
+        // Super admins can access everything except team_management (they use settings instead)
+        return tool !== 'team_management';
       case 'agency_admin':
       case 'admin':
         return true; // Admin roles have access to everything

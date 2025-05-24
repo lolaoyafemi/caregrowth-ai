@@ -35,7 +35,7 @@ interface SidebarProps {
 const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   // Determine which menu items to show based on user role
   const showSuperAdminItems = userRole === 'super_admin';
-  const showAgencyAdminItems = userRole === 'agency_admin' || userRole === 'super_admin';
+  const showAgencyAdminItems = userRole === 'agency_admin';
   const showAdminItems = userRole === 'admin' || userRole === 'agency_admin' || userRole === 'super_admin';
   const showCollaboratorItems = userRole === 'collaborator' || userRole === 'admin' || userRole === 'agency_admin' || userRole === 'super_admin';
   const showContentWriterItems = userRole === 'content_writer' || userRole === 'admin' || userRole === 'agency_admin' || userRole === 'super_admin';
@@ -230,7 +230,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             </>
           )}
           
-          {/* Agency Admin Tools */}
+          {/* Agency Admin Tools - Only show Team Management for agency admins, not super admins */}
           {showAgencyAdminItems && (
             <>
               <p className={cn("text-xs font-semibold text-blue-600 mt-6 mb-2", 
@@ -239,13 +239,12 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 {!collapsed ? "Agency Management" : "Agency"}
               </p>
               
-              {/* Only show team management to agency admins or super admins */}
               <NavLink
                 to="/dashboard/team-management"
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
-                    ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                    ? "bg-caregrowth-lightblue text-caregrowth-blue" 
                     : "text-gray-700 hover:bg-gray-100",
                   collapsed && "justify-center"
                 )}
@@ -254,7 +253,6 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 {!collapsed && <span>Team Management</span>}
               </NavLink>
               
-              {/* For agency admins, show their own usage. For super admins, this is a different view */}
               <NavLink
                 to="/dashboard/agency-usage"
                 className={({ isActive }) => cn(
