@@ -32,11 +32,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
         return 'bg-purple-100 text-purple-800 border border-purple-300';
       case 'agency_admin':
         return 'bg-blue-100 text-blue-800 border border-blue-300';
-      case 'marketing':
+      case 'admin':
         return 'bg-green-100 text-green-800 border border-green-300';
-      case 'hr_admin':
+      case 'collaborator':
         return 'bg-orange-100 text-orange-800 border border-orange-300';
-      case 'carer':
+      case 'content_writer':
         return 'bg-pink-100 text-pink-800 border border-pink-300';
       default:
         return 'bg-gray-100 text-gray-800 border border-gray-300';
@@ -49,12 +49,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
         return 'Super Admin';
       case 'agency_admin':
         return 'Agency Admin';
-      case 'marketing':
-        return 'Marketing';
-      case 'hr_admin':
-        return 'HR Admin';
-      case 'carer':
-        return 'Carer';
+      case 'admin':
+        return 'Admin';
+      case 'collaborator':
+        return 'Collaborator';
+      case 'content_writer':
+        return 'Content Writer';
       default:
         return 'User';
     }

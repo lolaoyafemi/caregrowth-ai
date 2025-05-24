@@ -36,9 +36,9 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   // Determine which menu items to show based on user role
   const showSuperAdminItems = userRole === 'super_admin';
   const showAgencyAdminItems = userRole === 'agency_admin' || userRole === 'super_admin';
-  const showMarketingItems = userRole === 'marketing' || userRole === 'agency_admin' || userRole === 'super_admin';
-  const showHRItems = userRole === 'hr_admin' || userRole === 'agency_admin' || userRole === 'super_admin';
-  const showQAItems = userRole === 'super_admin' || userRole !== 'carer';
+  const showAdminItems = userRole === 'admin' || userRole === 'agency_admin' || userRole === 'super_admin';
+  const showCollaboratorItems = userRole === 'collaborator' || userRole === 'admin' || userRole === 'agency_admin' || userRole === 'super_admin';
+  const showContentWriterItems = userRole === 'content_writer' || userRole === 'admin' || userRole === 'agency_admin' || userRole === 'super_admin';
   
   const isSuperAdmin = userRole === 'super_admin';
   
@@ -83,7 +83,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
       </div>
 
       {/* Credit Balance */}
-      {(showAgencyAdminItems || showMarketingItems) && (
+      {(showAgencyAdminItems || showAdminItems) && (
         <div className={cn(
           "px-3 py-3 border-b",
           collapsed ? "items-center justify-center" : ""
@@ -278,7 +278,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             {!collapsed ? "AI Tools" : "Tools"}
           </p>
           
-          {showMarketingItems && (
+          {showContentWriterItems && (
             <NavLink
               to="/dashboard/social-media"
               className={({ isActive }) => cn(
@@ -300,7 +300,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             </NavLink>
           )}
 
-          {showHRItems && (
+          {showCollaboratorItems && (
             <NavLink
               to="/dashboard/document-search"
               className={({ isActive }) => cn(
@@ -316,7 +316,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             </NavLink>
           )}
 
-          {showQAItems && (
+          {showCollaboratorItems && (
             <NavLink
               to="/dashboard/qa-assistant"
               className={({ isActive }) => cn(

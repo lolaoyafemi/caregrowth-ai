@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
@@ -24,9 +23,9 @@ const mockUsers: User[] = [
   },
   {
     id: '3',
-    name: 'Marketing Lead',
-    email: 'marketing@example.com',
-    role: 'marketing',
+    name: 'Admin User',
+    email: 'admin@example.com',
+    role: 'admin',
     agencyId: 'agency1'
   }
 ];
