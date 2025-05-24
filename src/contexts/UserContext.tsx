@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export type UserRole = 'super_admin' | 'agency_admin' | 'carer' | 'marketing' | 'hr_admin';
+export type UserRole = 'super_admin' | 'agency_admin' | 'admin' | 'collaborator' | 'content_writer';
 
 export interface User {
   id: string;
@@ -17,6 +17,7 @@ interface UserContextType {
   setUser: (user: User | null) => void;
   logout: () => void;
   hasPermission: (requiredRoles: UserRole[]) => boolean;
+  canAccessTool: (tool: 'social_media' | 'document_search' | 'qa_assistant' | 'team_management') => boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -33,6 +34,23 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return requiredRoles.includes(user.role);
   };
 
+  const canAccessTool = (tool: 'social_media' | 'document_search' | 'qa_assistant' | 'team_management') => {
+    if (!user) return false;
+    
+    switch (user.role) {
+      case 'super_admin':
+      case 'agency_admin':
+      case 'admin':
+        return true; // Admin roles have access to everything
+      case 'collaborator':
+        return tool === 'document_search' || tool === 'qa_assistant';
+      case 'content_writer':
+        return tool === 'social_media';
+      default:
+        return false;
+    }
+  };
+
   return (
     <UserContext.Provider 
       value={{ 
@@ -40,7 +58,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: !!user, 
         setUser, 
         logout,
-        hasPermission
+        hasPermission,
+        canAccessTool
       }}
     >
       {children}
