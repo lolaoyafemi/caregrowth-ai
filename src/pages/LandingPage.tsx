@@ -32,11 +32,11 @@ const LandingPage = () => {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link to="/dashboard">
                     <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700">
-                      Start Your Free Trial
+                      I'm Ready Now
                     </Button>
                   </Link>
                   <Link to="#features">
-                    <Button size="lg" variant="outline" className="border-white text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-100">
+                    <Button size="lg" variant="outline" className="border-white text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-700">
                       See Features
                     </Button>
                   </Link>
@@ -427,7 +427,7 @@ const LandingPage = () => {
                     </li>
                   </ul>
                   <Link to="/dashboard">
-                    <Button className="w-full" variant="outline">Start Free Trial</Button>
+                    <Button className="w-full" variant="outline">I'm Ready Now</Button>
                   </Link>
                 </div>
               </div>
@@ -470,7 +470,7 @@ const LandingPage = () => {
                     </li>
                   </ul>
                   <Link to="/dashboard">
-                    <Button className="w-full bg-caregrowth-blue">Start Free Trial</Button>
+                    <Button className="w-full bg-caregrowth-blue">I'm Ready Now</Button>
                   </Link>
                 </div>
               </div>
