@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,8 @@ const SocialMediaTool = () => {
   
   // Form states
   const [audience, setAudience] = useState('');
-  const [tone, setTone] = useState('professional');
+  const [contentCategory, setContentCategory] = useState('');
+  const [toneOfPost, setToneOfPost] = useState('professional');
   const [platform, setPlatform] = useState('all');
   
   // Regeneration states
@@ -48,6 +50,10 @@ const SocialMediaTool = () => {
   const handleGenerate = () => {
     if (!audience) {
       toast.error("Please fill in the target audience field.");
+      return;
+    }
+    if (!contentCategory) {
+      toast.error("Please select a content category.");
       return;
     }
     
@@ -171,11 +177,27 @@ const SocialMediaTool = () => {
                 onChange={(e) => setAudience(e.target.value)}
               />
             </div>
+            <div className="mb-4">
+              <Label htmlFor="contentCategory">Type of Content</Label>
+              <Select value={contentCategory} onValueChange={setContentCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select content type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="educational">Educational posts</SelectItem>
+                  <SelectItem value="mission-driven">Mission-driven posts</SelectItem>
+                  <SelectItem value="heartfelt">Heartfelt & relatable</SelectItem>
+                  <SelectItem value="offer-teasers">Offer teasers</SelectItem>
+                  <SelectItem value="faq-style">FAQ-style</SelectItem>
+                  <SelectItem value="promotional">Promotional posts</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div>
             <div className="mb-4">
-              <Label htmlFor="tone">Tone of Voice</Label>
-              <Select value={tone} onValueChange={setTone}>
+              <Label htmlFor="tone">Tone of Post</Label>
+              <Select value={toneOfPost} onValueChange={setToneOfPost}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select tone" />
                 </SelectTrigger>
