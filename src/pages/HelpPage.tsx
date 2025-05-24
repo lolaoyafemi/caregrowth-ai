@@ -15,45 +15,7 @@ const HelpPage = () => {
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Help & Support</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Knowledge Base</CardTitle>
-            <CardDescription>
-              Find answers to common questions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full">Browse Articles</Button>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact Support</CardTitle>
-            <CardDescription>
-              Get help from our support team
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full">Send Message</Button>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Video Tutorials</CardTitle>
-            <CardDescription>
-              Learn how to use CareGrowthAI
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full">Watch Tutorials</Button>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div>
           <Card>
             <CardHeader>
@@ -123,6 +85,20 @@ const HelpPage = () => {
           </Card>
         </div>
       </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Contact Support</CardTitle>
+          <CardDescription>
+            Get help from our support team
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild variant="outline" className="w-full">
+            <a href="mailto:admin@blahblah.com">Send Message</a>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };
