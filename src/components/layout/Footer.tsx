@@ -1,5 +1,7 @@
 
 import { Link } from 'react-router-dom';
+import SupportDialog from '@/components/ui/SupportDialog';
+import ContactDialog from '@/components/ui/ContactDialog';
 
 const Footer = () => {
   return (
@@ -23,14 +25,26 @@ const Footer = () => {
             <h4 className="font-semibold text-gray-900 mb-4">Resources</h4>
             <ul className="space-y-2">
               <li><Link to="#" className="text-gray-600 hover:text-caregrowth-blue">Documentation</Link></li>
-              <li><Link to="#" className="text-gray-600 hover:text-caregrowth-blue">Support</Link></li>
+              <li>
+                <SupportDialog>
+                  <button className="text-gray-600 hover:text-caregrowth-blue bg-transparent border-none p-0 text-left">
+                    Support
+                  </button>
+                </SupportDialog>
+              </li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Company</h4>
             <ul className="space-y-2">
               <li><Link to="#" className="text-gray-600 hover:text-caregrowth-blue">About</Link></li>
-              <li><Link to="#" className="text-gray-600 hover:text-caregrowth-blue">Contact</Link></li>
+              <li>
+                <ContactDialog>
+                  <button className="text-gray-600 hover:text-caregrowth-blue bg-transparent border-none p-0 text-left">
+                    Contact
+                  </button>
+                </ContactDialog>
+              </li>
             </ul>
           </div>
         </div>
