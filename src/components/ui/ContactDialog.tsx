@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Instagram, Twitter, Mail } from 'lucide-react';
+import { Instagram, Twitter, Mail, MessageCircle } from 'lucide-react';
 
 interface ContactDialogProps {
   children: React.ReactNode;
@@ -36,13 +36,7 @@ const ContactDialog = ({ children }: ContactDialogProps) => {
       platform: 'WhatsApp',
       handle: '+2348068920166',
       link: 'https://wa.me/2348068920166',
-      icon: () => (
-        <img 
-          src="https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=24&h=24&fit=crop&crop=center" 
-          alt="WhatsApp" 
-          className="w-6 h-6 rounded-full"
-        />
-      ),
+      icon: MessageCircle,
       color: 'text-green-600'
     },
     {
