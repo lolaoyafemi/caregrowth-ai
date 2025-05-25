@@ -13,6 +13,7 @@ import DocumentSearchTool from "./pages/DocumentSearchTool";
 import QAAssistantTool from "./pages/QAAssistantTool";
 import NotFound from "./pages/NotFound";
 import { UserProvider } from "./contexts/UserContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 // Placeholder pages for new routes - these would be implemented fully in a real app
 import UserManagementPage from "./pages/admin/UserManagementPage";
@@ -27,44 +28,46 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <UserProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            
-            {/* Dashboard Routes */}
-            <Route path="/dashboard" element={<DashboardLayout />}>
-              <Route index element={<DashboardHome />} />
+    <AuthProvider>
+      <UserProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
               
-              {/* Super Admin Routes */}
-              <Route path="user-management" element={<UserManagementPage />} />
-              <Route path="usage-monitoring" element={<UsageMonitoringPage />} />
-              <Route path="api-keys" element={<ApiKeyManagementPage />} />
+              {/* Dashboard Routes */}
+              <Route path="/dashboard" element={<DashboardLayout />}>
+                <Route index element={<DashboardHome />} />
+                
+                {/* Super Admin Routes */}
+                <Route path="user-management" element={<UserManagementPage />} />
+                <Route path="usage-monitoring" element={<UsageMonitoringPage />} />
+                <Route path="api-keys" element={<ApiKeyManagementPage />} />
+                
+                {/* Agency Admin Routes */}
+                <Route path="team-management" element={<TeamManagementPage />} />
+                <Route path="agency-usage" element={<AgencyUsagePage />} />
+                
+                {/* Tool Routes */}
+                <Route path="social-media" element={<SocialMediaTool />} />
+                <Route path="prompts" element={<PromptsPage />} />
+                <Route path="document-search" element={<DocumentSearchTool />} />
+                <Route path="qa-assistant" element={<QAAssistantTool />} />
+                
+                {/* General Routes */}
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="help" element={<HelpPage />} />
+              </Route>
               
-              {/* Agency Admin Routes */}
-              <Route path="team-management" element={<TeamManagementPage />} />
-              <Route path="agency-usage" element={<AgencyUsagePage />} />
-              
-              {/* Tool Routes */}
-              <Route path="social-media" element={<SocialMediaTool />} />
-              <Route path="prompts" element={<PromptsPage />} />
-              <Route path="document-search" element={<DocumentSearchTool />} />
-              <Route path="qa-assistant" element={<QAAssistantTool />} />
-              
-              {/* General Routes */}
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="help" element={<HelpPage />} />
-            </Route>
-            
-            {/* Not Found Route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </UserProvider>
+              {/* Not Found Route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </UserProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      google_documents: {
+        Row: {
+          created_at: string
+          doc_link: string
+          doc_title: string | null
+          fetched: boolean
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doc_link: string
+          doc_title?: string | null
+          fetched?: boolean
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doc_link?: string
+          doc_title?: string | null
+          fetched?: boolean
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       social_posts: {
         Row: {
           content: string | null
