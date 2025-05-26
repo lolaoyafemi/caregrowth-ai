@@ -58,34 +58,53 @@ const SocialMediaTool = () => {
     }
     
     setIsGenerating(true);
+try {
+  const { data } = await supabase.auth.getUser();
+  const userId = data?.user?.id;
+
+  if (!userId) {
+    toast.error("User not logged in.");
+    return;
+  }
+
+  const response = await fetch('/api/generate-post', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: userId,
+      post_type: contentCategory,
+      tone: toneOfPost,
+      platform: platform
+    })
+  });
+
+  const result = await response.json();
+
+  if (result.post) {
+    const content: GeneratedContent = {
+      facebook: {
+        hook: result.post.split('\n')[0],
+        body: result.post,
+        cta: "Let’s chat if this resonates!"
+      },
+      twitter: { hook: "", body: "", cta: "" },
+      linkedin: { hook: "", body: "", cta: "" },
+      instagram: { hook: "", body: "", cta: "" }
+    };
+
+    setGeneratedContent(content);
+    toast.success("Content generated successfully!");
+  } else {
+    toast.error("No post returned.");
+  }
+} catch (error) {
+  console.error("GPT error:", error);
+  toast.error("Error generating post.");
+} finally {
+  setIsGenerating(false);
+}
+
     
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      const content: GeneratedContent = {
-        facebook: {
-          hook: `🔥 Attention ${audience}! Struggling with your daily challenges?`,
-          body: `We understand the unique needs of ${audience} and have developed solutions that can help you achieve remarkable results. With our proven approach, you'll be able to overcome challenges and reach your goals faster than ever.\n\nOne of our clients recently reported a 40% increase in productivity after implementing our solutions!`,
-          cta: `Ready to transform your business? Click the link in bio to learn more or DM us for a free consultation! ⏰ Limited spots available.`
-        },
-        twitter: {
-          hook: `${audience}: Your workflow is about to change forever.`,
-          body: `Introducing our latest solution: the game-changer you've been waiting for. Stop wasting time on inefficient processes.`,
-          cta: `Click here to see how we're helping professionals save 20+ hours per week. #Productivity #Success`
-        },
-        linkedin: {
-          hook: `I'm excited to announce our newest solution for ${audience} looking to maximize efficiency.`,
-          body: `After months of research and development, our team has created a solution specifically designed for ${audience}.\n\nThe results?\n\n✅ 35% reduction in operational costs\n✅ 50% less time spent on administrative tasks\n✅ Improved team satisfaction and retention\n\nIn today's competitive landscape, businesses can't afford to fall behind on innovation.`,
-          cta: `If you're interested in learning how our solution can benefit your organization, let's connect. I'm offering 5 free strategy sessions this week to qualified professionals.`
-        },
-        instagram: {
-          hook: `Double tap if you're tired of the same old problems! 👇`,
-          body: `We get it. Being a ${audience} is challenging enough without having to deal with daily frustrations.\n\nThat's why we created our solution.\n\nImagine having all the tools you need to succeed, wrapped in one simple platform.`,
-          cta: `Swipe up to learn more about how we're changing the game for ${audience} everywhere! Limited time offer: Get 15% off when you sign up this week.`
-        }
-      };
-      
-      setGeneratedContent(content);
-      setIsGenerating(false);
       toast.success("Content generated successfully!");
     }, 2000);
   };
