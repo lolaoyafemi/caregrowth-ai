@@ -71,6 +71,57 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          big_promise: string | null
+          business_name: string
+          created_at: string | null
+          differentiator: string | null
+          id: string
+          ideal_client: string | null
+          location: string | null
+          main_offer: string | null
+          objections: string[] | null
+          pain_points: string[] | null
+          services: string | null
+          testimonial: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          big_promise?: string | null
+          business_name: string
+          created_at?: string | null
+          differentiator?: string | null
+          id?: string
+          ideal_client?: string | null
+          location?: string | null
+          main_offer?: string | null
+          objections?: string[] | null
+          pain_points?: string[] | null
+          services?: string | null
+          testimonial?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          big_promise?: string | null
+          business_name?: string
+          created_at?: string | null
+          differentiator?: string | null
+          id?: string
+          ideal_client?: string | null
+          location?: string | null
+          main_offer?: string | null
+          objections?: string[] | null
+          pain_points?: string[] | null
+          services?: string | null
+          testimonial?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null
