@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
+import { generatePost } from '@/utils/generatePost';
 
 interface GeneratedSection {
   hook: string;
@@ -68,18 +69,7 @@ const SocialMediaTool = () => {
         return;
       }
 
-      const response = await fetch('/api/generate-post', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          post_type: contentCategory,
-          tone: toneOfPost,
-          platform: platform
-        })
-      });
-
-      const result = await response.json();
+      const result = await generatePost(userId, contentCategory, toneOfPost, platform);
 
       if (result.post) {
         const content: GeneratedContent = {
