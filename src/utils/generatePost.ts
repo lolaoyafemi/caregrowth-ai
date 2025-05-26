@@ -1,10 +1,5 @@
 
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/integrations/supabase/client'
 
 export const generatePost = async (userId: string, postType: string, tone: string, platform: string) => {
   try {
