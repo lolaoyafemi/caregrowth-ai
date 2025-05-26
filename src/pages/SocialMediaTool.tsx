@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from "sonner";
 import { Building2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
 
 interface GeneratedSection {
@@ -47,7 +47,7 @@ const SocialMediaTool = () => {
     date: string
   }>>([]);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!audience) {
       toast.error("Please fill in the target audience field.");
       return;
@@ -58,55 +58,52 @@ const SocialMediaTool = () => {
     }
     
     setIsGenerating(true);
-try {
-  const { data } = await supabase.auth.getUser();
-  const userId = data?.user?.id;
-
-  if (!userId) {
-    toast.error("User not logged in.");
-    return;
-  }
-
-  const response = await fetch('/api/generate-post', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      user_id: userId,
-      post_type: contentCategory,
-      tone: toneOfPost,
-      platform: platform
-    })
-  });
-
-  const result = await response.json();
-
-  if (result.post) {
-    const content: GeneratedContent = {
-      facebook: {
-        hook: result.post.split('\n')[0],
-        body: result.post,
-        cta: "Let’s chat if this resonates!"
-      },
-      twitter: { hook: "", body: "", cta: "" },
-      linkedin: { hook: "", body: "", cta: "" },
-      instagram: { hook: "", body: "", cta: "" }
-    };
-
-    setGeneratedContent(content);
-    toast.success("Content generated successfully!");
-  } else {
-    toast.error("No post returned.");
-  }
-} catch (error) {
-  console.error("GPT error:", error);
-  toast.error("Error generating post.");
-} finally {
-  setIsGenerating(false);
-}
-
     
-      toast.success("Content generated successfully!");
-    }, 2000);
+    try {
+      const { data } = await supabase.auth.getUser();
+      const userId = data?.user?.id;
+
+      if (!userId) {
+        toast.error("User not logged in.");
+        return;
+      }
+
+      const response = await fetch('/api/generate-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          post_type: contentCategory,
+          tone: toneOfPost,
+          platform: platform
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.post) {
+        const content: GeneratedContent = {
+          facebook: {
+            hook: result.post.split('\n')[0],
+            body: result.post,
+            cta: "Let's chat if this resonates!"
+          },
+          twitter: { hook: "", body: "", cta: "" },
+          linkedin: { hook: "", body: "", cta: "" },
+          instagram: { hook: "", body: "", cta: "" }
+        };
+
+        setGeneratedContent(content);
+        toast.success("Content generated successfully!");
+      } else {
+        toast.error("No post returned.");
+      }
+    } catch (error) {
+      console.error("Error generating post:", error);
+      toast.error("Error generating post.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleRegenerateSection = (platform: string, section: string) => {
