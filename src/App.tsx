@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import PaymentPage from "./pages/PaymentPage";
+import StripePaymentPage from "./pages/StripePaymentPage";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardHome from "./pages/DashboardHome";
 import SocialMediaTool from "./pages/SocialMediaTool";
@@ -38,6 +39,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/payment" element={<PaymentPage />} />
+              <Route path="/stripe-payment" element={<StripePaymentPage />} />
               
               {/* Dashboard Routes */}
               <Route path="/dashboard" element={<DashboardLayout />}>
