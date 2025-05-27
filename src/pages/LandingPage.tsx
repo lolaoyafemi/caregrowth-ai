@@ -68,7 +68,7 @@ const LandingPage = () => {
                     I'm Ready Now
                   </Button>
                 </Link>
-                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-caregrowth-blue px-8 py-4 text-lg">
+                <Button variant="outline" size="lg" className="border-white text-caregrowth-blue bg-white hover:bg-gray-100 px-8 py-4 text-lg">
                   See Features
                 </Button>
               </div>
