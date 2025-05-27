@@ -37,7 +37,7 @@ const LandingPage = () => {
                   Say goodbye to content blocks and tedious document searches. CareGrowthAI is your team's AI co-pilot for creating killer content, finding answers fast, and scaling your agency without the headaches.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link to="/payment">
+                  <Link to="/stripe-payment">
                     <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700">
                       I'm Ready Now
                     </Button>
@@ -415,7 +415,6 @@ const LandingPage = () => {
                     <span className="text-4xl font-bold">$49</span>
                     <span className="text-gray-600">/month</span>
                   </div>
-                  <p className="text-gray-600 mb-8">Perfect for small agencies just getting started</p>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
@@ -436,7 +435,7 @@ const LandingPage = () => {
                       <span>100 Q&A Queries</span>
                     </li>
                   </ul>
-                  <Link to="/payment">
+                  <Link to="/stripe-payment">
                     <Button className="w-full" variant="outline">I'm Ready Now</Button>
                   </Link>
                 </div>
@@ -452,7 +451,6 @@ const LandingPage = () => {
                     <span className="text-4xl font-bold">$99</span>
                     <span className="text-gray-600">/month</span>
                   </div>
-                  <p className="text-gray-600 mb-8">Ideal for growing agencies with multiple clients</p>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
@@ -479,7 +477,7 @@ const LandingPage = () => {
                       <span>Priority Support</span>
                     </li>
                   </ul>
-                  <Link to="/payment">
+                  <Link to="/stripe-payment">
                     <Button className="w-full bg-caregrowth-blue">I'm Ready Now</Button>
                   </Link>
                 </div>
@@ -492,7 +490,6 @@ const LandingPage = () => {
                     <span className="text-4xl font-bold">$249</span>
                     <span className="text-gray-600">/month</span>
                   </div>
-                  <p className="text-gray-600 mb-8">For established agencies with high volume needs</p>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
@@ -519,7 +516,7 @@ const LandingPage = () => {
                       <span>Dedicated Account Manager</span>
                     </li>
                   </ul>
-                  <Link to="/payment">
+                  <Link to="/stripe-payment">
                     <Button className="w-full" variant="outline">Contact Sales</Button>
                   </Link>
                 </div>
@@ -535,7 +532,7 @@ const LandingPage = () => {
             <p className="text-xl mb-8 max-w-2xl mx-auto">
               Join hundreds of agencies already using CareGrowthAI to create better content, access knowledge faster, and make smarter business decisions.
             </p>
-            <Link to="/payment">
+            <Link to="/stripe-payment">
               <Button size="lg" className="bg-white text-caregrowth-blue hover:bg-blue-50">
                 I'm Ready Now
               </Button>

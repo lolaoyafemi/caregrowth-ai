@@ -21,7 +21,6 @@ const StripePaymentPage = () => {
       name: 'Starter',
       price: 49,
       priceId: 'price_starter', // Replace with actual Stripe price ID
-      description: 'Perfect for small agencies just getting started',
       features: [
         '50 Social Media Posts',
         '5 Documents (up to 25 pages each)',
@@ -34,7 +33,6 @@ const StripePaymentPage = () => {
       name: 'Professional',
       price: 99,
       priceId: 'price_professional', // Replace with actual Stripe price ID
-      description: 'Ideal for growing agencies with multiple clients',
       features: [
         '200 Social Media Posts',
         '20 Documents (up to 50 pages each)',
@@ -49,7 +47,6 @@ const StripePaymentPage = () => {
       name: 'Enterprise',
       price: 249,
       priceId: 'price_enterprise', // Replace with actual Stripe price ID
-      description: 'For established agencies with high volume needs',
       features: [
         'Unlimited Social Media Posts',
         'Unlimited Documents',
@@ -162,7 +159,6 @@ const StripePaymentPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <CardTitle className="text-xl">{plan.name}</CardTitle>
-                          <p className="text-gray-600 text-sm">{plan.description}</p>
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold">${plan.price}</div>
