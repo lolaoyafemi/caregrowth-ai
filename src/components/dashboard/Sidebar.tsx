@@ -42,7 +42,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   
   const isSuperAdmin = userRole === 'super_admin';
   
-  // Credit balance details (mock data)
+  // Credit balance details (mock data) - only show for non-super admins
   const creditBalance = {
     available: 11250,
     usedThisMonth: 3750,
@@ -82,8 +82,8 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
         </Button>
       </div>
 
-      {/* Credit Balance */}
-      {(showAgencyAdminItems || showAdminItems) && (
+      {/* Credit Balance - Only show for agency admins and regular admins, not super admins */}
+      {(showAgencyAdminItems || showAdminItems) && !isSuperAdmin && (
         <div className={cn(
           "px-3 py-3 border-b",
           collapsed ? "items-center justify-center" : ""
