@@ -20,6 +20,7 @@ const StripePaymentPage = () => {
       id: 'starter',
       name: 'Starter',
       price: 49,
+      priceId: 'price_starter', // Replace with actual Stripe price ID
       features: [
         '50 Social Media Posts',
         '5 Documents (up to 25 pages each)',
@@ -31,6 +32,7 @@ const StripePaymentPage = () => {
       id: 'professional',
       name: 'Professional',
       price: 99,
+      priceId: 'price_professional', // Replace with actual Stripe price ID
       features: [
         '200 Social Media Posts',
         '20 Documents (up to 50 pages each)',
@@ -44,6 +46,7 @@ const StripePaymentPage = () => {
       id: 'enterprise',
       name: 'Enterprise',
       price: 249,
+      priceId: 'price_enterprise', // Replace with actual Stripe price ID
       features: [
         'Unlimited Social Media Posts',
         'Unlimited Documents',
@@ -70,7 +73,6 @@ const StripePaymentPage = () => {
           description: "Please sign in to continue with payment",
           variant: "destructive"
         });
-        navigate('/auth');
         setIsLoading(false);
         return;
       }
@@ -78,6 +80,7 @@ const StripePaymentPage = () => {
       // Call Stripe checkout function
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
+          priceId: selectedPlanData?.priceId,
           planName: selectedPlanData?.name,
           amount: selectedPlanData?.price
         }
@@ -122,16 +125,16 @@ const StripePaymentPage = () => {
 
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">Purchase Credits</h1>
+            <h1 className="text-4xl font-bold mb-4">Complete Your Purchase</h1>
             <p className="text-xl text-gray-600">
-              One-time credit packages for your AI tools
+              Secure payment processing powered by Stripe
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Plan Selection */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6">Choose Your Credit Package</h2>
+              <h2 className="text-2xl font-bold mb-6">Choose Your Plan</h2>
               
               <div className="space-y-4">
                 {plans.map((plan) => (
@@ -159,7 +162,7 @@ const StripePaymentPage = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold">${plan.price}</div>
-                          <div className="text-gray-600 text-sm">one-time</div>
+                          <div className="text-gray-600 text-sm">/month</div>
                         </div>
                       </div>
                     </CardHeader>
@@ -197,17 +200,17 @@ const StripePaymentPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">{selectedPlanData?.name} Credits</span>
-                    <span className="font-bold">${selectedPlanData?.price}</span>
+                    <span className="font-medium">{selectedPlanData?.name} Plan</span>
+                    <span className="font-bold">${selectedPlanData?.price}/month</span>
                   </div>
                   
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center text-lg font-bold">
-                      <span>Total</span>
+                      <span>Total Due Today</span>
                       <span className="text-caregrowth-blue">${selectedPlanData?.price}</span>
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
-                      One-time purchase
+                      Recurring monthly subscription
                     </p>
                   </div>
 
@@ -260,7 +263,7 @@ const StripePaymentPage = () => {
           <div className="text-center mt-12 pt-8 border-t">
             <p className="text-gray-600 mb-4">
               ✓ 30-day money-back guarantee &nbsp;&nbsp;&nbsp; 
-              ✓ One-time purchase &nbsp;&nbsp;&nbsp; 
+              ✓ Cancel anytime &nbsp;&nbsp;&nbsp; 
               ✓ Secure payment processing
             </p>
           </div>

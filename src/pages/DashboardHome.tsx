@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,7 +43,7 @@ const DashboardHome = () => {
                     <HelpCircle className="h-4 w-4 text-gray-400" />
                   </TooltipTrigger>
                   <TooltipContent className="w-80 p-2">
-                    <p>Credits power all AI features. Each generation consumes credits from your account.</p>
+                    <p>Credits power all AI features. Each generation consumes credits from your agency wallet.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -58,11 +57,9 @@ const DashboardHome = () => {
             <div className="flex justify-between items-center mb-4 text-xs text-gray-500">
               <span>Used this month: {usageMetrics.monthlyUsage.toLocaleString()}</span>
             </div>
-            <Link to="/stripe-payment">
-              <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
-                Buy More Credits
-              </Button>
-            </Link>
+            <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
+              Buy More Credits
+            </Button>
           </CardContent>
         </Card>
       </div>
