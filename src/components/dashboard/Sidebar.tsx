@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { UserRole } from '../../contexts/UserContext';
 import { Progress } from '@/components/ui/progress';
+import { Link } from 'react-router-dom';
 import {
   Tooltip,
   TooltipContent,
@@ -124,11 +125,13 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                   <span>{creditBalance.percentUsed}%</span>
                 </div>
               </div>
-              <Button 
-                className="w-full py-1 h-8 text-xs bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all"
-              >
-                Buy More Credits
-              </Button>
+              <Link to="/stripe-payment">
+                <Button 
+                  className="w-full py-1 h-8 text-xs bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all"
+                >
+                  Buy More Credits
+                </Button>
+              </Link>
             </div>
           ) : (
             <TooltipProvider>
