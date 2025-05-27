@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -403,7 +404,7 @@ const LandingPage = () => {
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Choose the plan that fits your agency's needs
+                Choose the credit package that fits your agency's needs
               </p>
             </div>
 
@@ -413,7 +414,7 @@ const LandingPage = () => {
                   <h3 className="text-2xl font-bold mb-3">Starter</h3>
                   <div className="mb-5">
                     <span className="text-4xl font-bold">$49</span>
-                    <span className="text-gray-600">/month</span>
+                    <span className="text-gray-600"> credits</span>
                   </div>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
@@ -436,7 +437,7 @@ const LandingPage = () => {
                     </li>
                   </ul>
                   <Link to="/stripe-payment">
-                    <Button className="w-full" variant="outline">I'm Ready Now</Button>
+                    <Button className="w-full" variant="outline">Buy Credits Now</Button>
                   </Link>
                 </div>
               </div>
@@ -449,7 +450,7 @@ const LandingPage = () => {
                   <h3 className="text-2xl font-bold mb-3">Professional</h3>
                   <div className="mb-5">
                     <span className="text-4xl font-bold">$99</span>
-                    <span className="text-gray-600">/month</span>
+                    <span className="text-gray-600"> credits</span>
                   </div>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
@@ -478,7 +479,7 @@ const LandingPage = () => {
                     </li>
                   </ul>
                   <Link to="/stripe-payment">
-                    <Button className="w-full bg-caregrowth-blue">I'm Ready Now</Button>
+                    <Button className="w-full bg-caregrowth-blue">Buy Credits Now</Button>
                   </Link>
                 </div>
               </div>
@@ -488,7 +489,7 @@ const LandingPage = () => {
                   <h3 className="text-2xl font-bold mb-3">Enterprise</h3>
                   <div className="mb-5">
                     <span className="text-4xl font-bold">$249</span>
-                    <span className="text-gray-600">/month</span>
+                    <span className="text-gray-600"> credits</span>
                   </div>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
@@ -517,7 +518,7 @@ const LandingPage = () => {
                     </li>
                   </ul>
                   <Link to="/stripe-payment">
-                    <Button className="w-full" variant="outline">Contact Sales</Button>
+                    <Button className="w-full" variant="outline">Buy Credits Now</Button>
                   </Link>
                 </div>
               </div>
