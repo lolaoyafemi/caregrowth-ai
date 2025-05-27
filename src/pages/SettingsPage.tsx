@@ -14,7 +14,6 @@ import AccountSettings from '@/components/settings/AccountSettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import TeamPermissionsSection from '@/components/settings/TeamPermissionsSection';
 import TokenLimitsSection from '@/components/settings/TokenLimitsSection';
-import PerformanceMonitoringSection from '@/components/settings/PerformanceMonitoringSection';
 
 const SettingsPage = () => {
   const { user } = useUser();
@@ -48,8 +47,7 @@ const SettingsPage = () => {
         <AccountSettings />
         <NotificationSettings />
         <TeamPermissionsSection isVisible={isAgencyAdmin || isSuperAdmin} />
-        <TokenLimitsSection isVisible={isAgencyAdmin || isSuperAdmin} />
-        <PerformanceMonitoringSection isVisible={isSuperAdmin} />
+        <TokenLimitsSection isVisible={isAgencyAdmin && !isSuperAdmin} />
       </div>
     </div>
   );

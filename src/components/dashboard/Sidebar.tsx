@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -227,20 +226,6 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <BarChart size={20} />
                 {!collapsed && <span>Usage Monitoring</span>}
               </NavLink>
-              
-              <NavLink
-                to="/dashboard/api-keys"
-                className={({ isActive }) => cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
-                  isActive 
-                    ? "bg-green-100 text-green-800" 
-                    : "text-gray-700 hover:bg-gray-100",
-                  collapsed && "justify-center"
-                )}
-              >
-                <Key size={20} />
-                {!collapsed && <span>API Key Management</span>}
-              </NavLink>
             </>
           )}
           
@@ -305,7 +290,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M7 10H9V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M15 10H17L15 13.5H17V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M11 10H13V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M11 10H13V17" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M8 7H8.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               {!collapsed && <span>Social Media</span>}

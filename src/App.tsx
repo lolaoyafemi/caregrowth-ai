@@ -19,7 +19,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 // Placeholder pages for new routes - these would be implemented fully in a real app
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import UsageMonitoringPage from "./pages/admin/UsageMonitoringPage";
-import ApiKeyManagementPage from "./pages/admin/ApiKeyManagementPage";
 import TeamManagementPage from "./pages/agency/TeamManagementPage";
 import AgencyUsagePage from "./pages/agency/AgencyUsagePage";
 import SettingsPage from "./pages/SettingsPage";
@@ -46,7 +45,6 @@ const App = () => (
                 {/* Super Admin Routes */}
                 <Route path="user-management" element={<UserManagementPage />} />
                 <Route path="usage-monitoring" element={<UsageMonitoringPage />} />
-                <Route path="api-keys" element={<ApiKeyManagementPage />} />
                 
                 {/* Agency Admin Routes */}
                 <Route path="team-management" element={<TeamManagementPage />} />

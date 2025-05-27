@@ -1,12 +1,14 @@
+
 import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from "sonner";
-import { Edit, Trash2, Plus, Copy } from 'lucide-react';
+import { Edit, Trash2, Plus, Copy, Eye } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -53,6 +55,7 @@ const PromptsPage = () => {
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
+  const [viewingPrompt, setViewingPrompt] = useState<Prompt | null>(null);
   const [filterPlatform, setFilterPlatform] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
 
@@ -155,6 +158,10 @@ const PromptsPage = () => {
       default:
         return category;
     }
+  };
+
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   return (
@@ -298,61 +305,133 @@ const PromptsPage = () => {
         </Dialog>
       </div>
 
-      {/* Prompts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredPrompts.map((prompt) => (
-          <Card key={prompt.id} className="p-6">
-            <div className="flex justify-between items-start mb-4">
+      {/* Prompts Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Prompt Templates</CardTitle>
+          <CardDescription>
+            Manage your collection of reusable prompt templates
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Platform</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Hook Preview</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredPrompts.map((prompt) => (
+                <TableRow key={prompt.id}>
+                  <TableCell className="font-medium">{prompt.name}</TableCell>
+                  <TableCell>
+                    <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-caregrowth-lightblue text-caregrowth-blue capitalize">
+                      {prompt.platform}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700">
+                      {getCategoryLabel(prompt.category)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="max-w-xs">
+                    <p className="text-sm text-gray-600 truncate">
+                      {truncateText(prompt.hook, 60)}
+                    </p>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-500">
+                    {prompt.dateCreated}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setViewingPrompt(prompt)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Eye size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleCopyPrompt(prompt)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Copy size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleEditPrompt(prompt)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleDeletePrompt(prompt.id)}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          
+          {filteredPrompts.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No prompts found matching your filters.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* View Prompt Dialog */}
+      {viewingPrompt && (
+        <Dialog open={!!viewingPrompt} onOpenChange={() => setViewingPrompt(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{viewingPrompt.name}</DialogTitle>
+              <DialogDescription>
+                Preview of the prompt template
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-lg">{prompt.name}</h3>
-                <div className="flex gap-2 mt-1">
-                  <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-caregrowth-lightblue text-caregrowth-blue capitalize">
-                    {prompt.platform}
-                  </span>
-                  <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700">
-                    {getCategoryLabel(prompt.category)}
-                  </span>
-                </div>
+                <Label className="text-sm font-medium text-gray-700">Hook:</Label>
+                <p className="mt-1 p-3 bg-gray-50 rounded text-sm">{viewingPrompt.hook}</p>
               </div>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => handleCopyPrompt(prompt)}>
-                  <Copy size={14} />
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Body:</Label>
+                <p className="mt-1 p-3 bg-gray-50 rounded text-sm whitespace-pre-wrap">{viewingPrompt.body}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Call to Action:</Label>
+                <p className="mt-1 p-3 bg-gray-50 rounded text-sm">{viewingPrompt.cta}</p>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setViewingPrompt(null)}>
+                  Close
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleEditPrompt(prompt)}>
-                  <Edit size={14} />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleDeletePrompt(prompt.id)}>
-                  <Trash2 size={14} />
+                <Button onClick={() => handleCopyPrompt(viewingPrompt)} className="bg-caregrowth-blue">
+                  Copy to Clipboard
                 </Button>
               </div>
             </div>
-
-            <div className="space-y-3 text-sm">
-              <div>
-                <p className="font-medium text-gray-700">Hook:</p>
-                <p className="text-gray-600 line-clamp-2">{prompt.hook}</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-700">Body:</p>
-                <p className="text-gray-600 line-clamp-3">{prompt.body}</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-700">CTA:</p>
-                <p className="text-gray-600 line-clamp-2">{prompt.cta}</p>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t text-xs text-gray-500">
-              Created: {prompt.dateCreated}
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {filteredPrompts.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No prompts found matching your filters.</p>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Edit Dialog */}
