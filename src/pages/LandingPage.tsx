@@ -76,8 +76,8 @@ const LandingPage = () => {
             <div className="relative">
               <div className="bg-white rounded-lg shadow-2xl p-6">
                 <img 
-                  src="/lovable-uploads/98e532e2-ec1b-4eef-9b99-c7fa21e65e07.png" 
-                  alt="CareGrowthAI Dashboard" 
+                  src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=2426&h=1728" 
+                  alt="Laptop computer on glass-top table" 
                   className="w-full h-auto rounded-lg"
                 />
               </div>
