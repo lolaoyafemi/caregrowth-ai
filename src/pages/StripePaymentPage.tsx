@@ -68,21 +68,17 @@ const StripePaymentPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please sign in to continue with payment",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
+        // If no user is logged in, proceed with guest checkout using default email
+        console.log('No user session found, proceeding with guest checkout');
       }
 
-      // Call Stripe checkout function
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      // Call Stripe payment function for one-time payment
+      const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           priceId: selectedPlanData?.priceId,
           planName: selectedPlanData?.name,
-          amount: selectedPlanData?.price
+          amount: selectedPlanData?.price,
+          email: session?.user?.email || 'guest@example.com'
         }
       });
 
@@ -91,8 +87,8 @@ const StripePaymentPage = () => {
       }
 
       if (data?.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = data.url;
+        // Open Stripe checkout in a new tab
+        window.open(data.url, '_blank');
       }
     } catch (error) {
       console.error('Checkout error:', error);
@@ -134,7 +130,7 @@ const StripePaymentPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Plan Selection */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6">Choose Your Plan</h2>
+              <h2 className="text-2xl font-bold mb-6">Choose Your Credit Package</h2>
               
               <div className="space-y-4">
                 {plans.map((plan) => (
@@ -162,7 +158,7 @@ const StripePaymentPage = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold">${plan.price}</div>
-                          <div className="text-gray-600 text-sm">/month</div>
+                          <div className="text-gray-600 text-sm">one-time</div>
                         </div>
                       </div>
                     </CardHeader>
@@ -200,17 +196,17 @@ const StripePaymentPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">{selectedPlanData?.name} Plan</span>
-                    <span className="font-bold">${selectedPlanData?.price}/month</span>
+                    <span className="font-medium">{selectedPlanData?.name} Credits</span>
+                    <span className="font-bold">${selectedPlanData?.price}</span>
                   </div>
                   
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center text-lg font-bold">
-                      <span>Total Due Today</span>
+                      <span>Total Due</span>
                       <span className="text-caregrowth-blue">${selectedPlanData?.price}</span>
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
-                      Recurring monthly subscription
+                      One-time credit purchase
                     </p>
                   </div>
 
@@ -262,9 +258,9 @@ const StripePaymentPage = () => {
           {/* Trust indicators */}
           <div className="text-center mt-12 pt-8 border-t">
             <p className="text-gray-600 mb-4">
-              ✓ 30-day money-back guarantee &nbsp;&nbsp;&nbsp; 
-              ✓ Cancel anytime &nbsp;&nbsp;&nbsp; 
-              ✓ Secure payment processing
+              ✓ Instant credit delivery &nbsp;&nbsp;&nbsp; 
+              ✓ Secure payment processing &nbsp;&nbsp;&nbsp; 
+              ✓ 24/7 customer support
             </p>
           </div>
         </div>

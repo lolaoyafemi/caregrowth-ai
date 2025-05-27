@@ -60,10 +60,8 @@ const PaymentPage = () => {
   };
 
   const handleCheckout = (planId: string) => {
-    // TODO: Implement Stripe checkout integration
-    console.log('Proceeding to checkout for plan:', planId);
-    // For now, redirect to dashboard
-    window.location.href = '/dashboard';
+    // Redirect to Stripe payment page with selected plan
+    window.location.href = `/stripe-payment?plan=${planId}`;
   };
 
   return (
@@ -86,11 +84,11 @@ const PaymentPage = () => {
           {/* Header */}
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Choose Your Plan
+              Choose Your Credit Package
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Select the perfect plan to supercharge your agency's growth. 
-              Start your journey with CareGrowthAI today.
+              Select the perfect credit package to supercharge your agency's growth. 
+              Get instant access to all CareGrowthAI features with your credit purchase.
             </p>
           </div>
 
@@ -117,7 +115,7 @@ const PaymentPage = () => {
                   <CardTitle className="text-2xl font-bold mb-2">{plan.name}</CardTitle>
                   <div className="mb-4">
                     <span className="text-4xl font-bold">${plan.price}</span>
-                    <span className="text-gray-600">/month</span>
+                    <span className="text-gray-600"> credits</span>
                   </div>
                   <p className="text-gray-600">{plan.description}</p>
                 </CardHeader>
@@ -144,7 +142,7 @@ const PaymentPage = () => {
                             : ''
                       }`}
                     >
-                      {selectedPlan === plan.id ? 'Selected' : 'Select Plan'}
+                      {selectedPlan === plan.id ? 'Selected' : 'Select Package'}
                     </Button>
 
                     {selectedPlan === plan.id && (
@@ -152,7 +150,7 @@ const PaymentPage = () => {
                         onClick={() => handleCheckout(plan.id)}
                         className="w-full bg-caregrowth-green hover:bg-green-700 text-white"
                       >
-                        Proceed to Checkout
+                        Buy Credits Now
                       </Button>
                     )}
                   </div>
@@ -164,9 +162,9 @@ const PaymentPage = () => {
           {/* Trust Indicators */}
           <div className="text-center mt-16">
             <p className="text-gray-600 mb-4">
-              ✓ 30-day money-back guarantee &nbsp;&nbsp;&nbsp; 
-              ✓ Cancel anytime &nbsp;&nbsp;&nbsp; 
-              ✓ Secure payment processing
+              ✓ Instant credit delivery &nbsp;&nbsp;&nbsp; 
+              ✓ Secure payment processing &nbsp;&nbsp;&nbsp; 
+              ✓ 24/7 customer support
             </p>
             <div className="flex justify-center items-center space-x-8 opacity-60">
               <div className="text-sm font-medium">Powered by Stripe</div>
