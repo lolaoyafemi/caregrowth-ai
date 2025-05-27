@@ -42,7 +42,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   
   const isSuperAdmin = userRole === 'super_admin';
   
-  // Credit balance details (mock data) - only show for non-super admins
+  // Credit balance details (mock data) - show for both super admins and main admins
   const creditBalance = {
     available: 11250,
     usedThisMonth: 3750,
@@ -82,8 +82,8 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
         </Button>
       </div>
 
-      {/* Credit Balance - Only show for agency admins and regular admins, not super admins */}
-      {(showAgencyAdminItems || showAdminItems) && !isSuperAdmin && (
+      {/* Credit Balance - Show for both super admins and main admins */}
+      {(showSuperAdminItems || showAdminItems) && (
         <div className={cn(
           "px-3 py-3 border-b",
           collapsed ? "items-center justify-center" : ""
@@ -91,7 +91,10 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
           {!collapsed ? (
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold text-caregrowth-blue flex items-center">
+                <span className={cn(
+                  "text-xs font-semibold flex items-center",
+                  isSuperAdmin ? "text-green-700" : "text-caregrowth-blue"
+                )}>
                   <Coins size={14} className="mr-1" />
                   CREDIT BALANCE
                 </span>
@@ -115,7 +118,10 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               <div className="space-y-1">
                 <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                   <div 
-                    className="bg-caregrowth-blue h-full rounded-full" 
+                    className={cn(
+                      "h-full rounded-full",
+                      isSuperAdmin ? "bg-green-600" : "bg-caregrowth-blue"
+                    )}
                     style={{ width: `${creditBalance.percentUsed}%` }}
                   ></div>
                 </div>
@@ -125,7 +131,12 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 </div>
               </div>
               <Button 
-                className="w-full py-1 h-8 text-xs bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all"
+                className={cn(
+                  "w-full py-1 h-8 text-xs transition-all",
+                  isSuperAdmin 
+                    ? "bg-green-600 hover:bg-green-700" 
+                    : "bg-caregrowth-blue hover:bg-caregrowth-blue/90"
+                )}
               >
                 Buy More Credits
               </Button>
@@ -135,7 +146,10 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center justify-center">
-                    <Coins size={20} className="text-caregrowth-blue mb-1" />
+                    <Coins size={20} className={cn(
+                      "mb-1",
+                      isSuperAdmin ? "text-green-600" : "text-caregrowth-blue"
+                    )} />
                     <span className="text-xs font-medium">{creditBalance.available.toLocaleString()}</span>
                   </div>
                 </TooltipTrigger>

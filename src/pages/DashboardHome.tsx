@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { useUser } from '@/contexts/UserContext';
 const DashboardHome = () => {
   const { user } = useUser();
   const isSuperAdmin = user?.role === 'super_admin';
+  const isMainAdmin = user?.role === 'admin';
   
   // Sample data for usage metrics
   const usageMetrics = {
@@ -33,8 +35,8 @@ const DashboardHome = () => {
           <p className="text-gray-600 mt-2">Your AI-powered agency growth assistant</p>
         </div>
         
-        {/* Credit Balance Module - Only show for non-super admins */}
-        {!isSuperAdmin && (
+        {/* Credit Balance Module - Only show for main admins */}
+        {isMainAdmin && (
           <Card className="w-64 bg-gradient-to-br from-caregrowth-lightblue to-white border-caregrowth-blue">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
