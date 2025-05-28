@@ -110,6 +110,63 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          audience_problems: string | null
+          big_promise: string | null
+          business_name: string | null
+          core_service: string | null
+          created_at: string
+          differentiator: string | null
+          id: string
+          ideal_client: string | null
+          location: string | null
+          main_offer: string | null
+          objections: string[] | null
+          pain_points: string[] | null
+          services: string | null
+          testimonial: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audience_problems?: string | null
+          big_promise?: string | null
+          business_name?: string | null
+          core_service?: string | null
+          created_at?: string
+          differentiator?: string | null
+          id?: string
+          ideal_client?: string | null
+          location?: string | null
+          main_offer?: string | null
+          objections?: string[] | null
+          pain_points?: string[] | null
+          services?: string | null
+          testimonial?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audience_problems?: string | null
+          big_promise?: string | null
+          business_name?: string | null
+          core_service?: string | null
+          created_at?: string
+          differentiator?: string | null
+          id?: string
+          ideal_client?: string | null
+          location?: string | null
+          main_offer?: string | null
+          objections?: string[] | null
+          pain_points?: string[] | null
+          services?: string | null
+          testimonial?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null

@@ -13,6 +13,25 @@ interface BusinessDetailsFormProps {
   onClose: () => void;
 }
 
+interface UserProfile {
+  id: string;
+  user_id: string;
+  business_name: string | null;
+  location: string | null;
+  core_service: string | null;
+  services: string | null;
+  ideal_client: string | null;
+  main_offer: string | null;
+  big_promise: string | null;
+  audience_problems: string | null;
+  pain_points: string[] | null;
+  objections: string[] | null;
+  differentiator: string | null;
+  testimonial: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
   const [formData, setFormData] = useState({
     businessName: '',
@@ -44,7 +63,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
         console.error('Error loading profile:', error);
@@ -52,17 +71,18 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
       }
 
       if (profile) {
+        const typedProfile = profile as UserProfile;
         setFormData({
-          businessName: profile.business_name || '',
-          location: profile.location || '',
-          coreService: profile.core_service || '',
-          idealClient: profile.ideal_client || '',
-          mainOffer: profile.main_offer || '',
-          bigPromise: profile.big_promise || '',
-          audienceProblems: profile.audience_problems || '',
-          objections: profile.objections?.join(', ') || '',
-          differentiator: profile.differentiator || '',
-          testimonials: profile.testimonial || ''
+          businessName: typedProfile.business_name || '',
+          location: typedProfile.location || '',
+          coreService: typedProfile.core_service || '',
+          idealClient: typedProfile.ideal_client || '',
+          mainOffer: typedProfile.main_offer || '',
+          bigPromise: typedProfile.big_promise || '',
+          audienceProblems: typedProfile.audience_problems || '',
+          objections: typedProfile.objections?.join(', ') || '',
+          differentiator: typedProfile.differentiator || '',
+          testimonials: typedProfile.testimonial || ''
         });
       }
     } catch (error) {
