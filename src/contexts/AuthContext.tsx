@@ -30,57 +30,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const { setUser: setUserContext } = useUser();
 
-  const fetchUserProfile = async (userId: string, userEmail: string) => {
+  const setUserFromProfile = async (userId: string, userEmail: string) => {
     try {
-      console.log('Fetching profile for user:', userId, userEmail);
-      const { data: profile, error } = await supabase
+      console.log('Setting user context for:', userId, userEmail);
+      
+      // Try to fetch profile, but don't let it block the auth process
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, email, role, agency_id')
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        return;
-      }
+      console.log('Profile data:', profile);
 
-      if (profile) {
-        console.log('Profile found:', profile);
-        setUserContext({
-          id: profile.id,
-          name: profile.full_name || profile.email || userEmail || '',
-          email: profile.email || userEmail || '',
-          role: profile.role || 'admin',
-          agencyId: profile.agency_id || undefined
-        });
-      } else {
-        console.log('No profile found, creating default user context');
-        setUserContext({
-          id: userId,
-          name: userEmail || '',
-          email: userEmail || '',
-          role: 'admin',
-          agencyId: undefined
-        });
-      }
+      // Set user context based on profile or fallback to defaults
+      const userRole = profile?.role || 'admin';
+      const userName = profile?.full_name || userEmail.split('@')[0] || '';
+      
+      setUserContext({
+        id: userId,
+        name: userName,
+        email: userEmail,
+        role: userRole,
+        agencyId: profile?.agency_id || undefined
+      });
+      
+      console.log('User context set with role:', userRole);
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
+      console.error('Error setting user context:', error);
+      // Set a basic user context even if profile fetch fails
+      setUserContext({
+        id: userId,
+        name: userEmail.split('@')[0] || '',
+        email: userEmail,
+        role: 'admin',
+        agencyId: undefined
+      });
     }
   };
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Use setTimeout to defer Supabase calls and prevent infinite loops
+        if (session?.user && session.user.email) {
+          // Use setTimeout to defer the profile fetch
           setTimeout(() => {
-            fetchUserProfile(session.user.id, session.user.email || '');
-          }, 0);
+            if (mounted) {
+              setUserFromProfile(session.user.id, session.user.email!);
+            }
+          }, 100);
         } else {
           setUserContext(null);
         }
@@ -89,21 +96,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        // Use setTimeout to defer Supabase calls
-        setTimeout(() => {
-          fetchUserProfile(session.user.id, session.user.email || '');
-        }, 0);
-      }
-      setLoading(false);
-    });
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setLoading(false);
+          return;
+        }
 
-    return () => subscription.unsubscribe();
+        console.log('Initial session check:', session?.user?.email);
+        
+        if (!mounted) return;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user && session.user.email) {
+          setTimeout(() => {
+            if (mounted) {
+              setUserFromProfile(session.user.id, session.user.email!);
+            }
+          }, 100);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [setUserContext]);
 
   const signInWithEmail = async (email: string, password: string) => {
