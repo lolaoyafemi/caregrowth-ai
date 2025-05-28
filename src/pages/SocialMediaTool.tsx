@@ -190,12 +190,10 @@ const SocialMediaTool = () => {
                   <SelectValue placeholder="Select content type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="educational">Educational posts</SelectItem>
-                  <SelectItem value="mission-driven">Mission-driven posts</SelectItem>
-                  <SelectItem value="heartfelt">Heartfelt & relatable</SelectItem>
-                  <SelectItem value="offer-teasers">Offer teasers</SelectItem>
-                  <SelectItem value="faq-style">FAQ-style</SelectItem>
-                  <SelectItem value="promotional">Promotional posts</SelectItem>
+                  <SelectItem value="trust-authority">Trust & Authority</SelectItem>
+                  <SelectItem value="heartfelt-relatable">Heartfelt & Relatable</SelectItem>
+                  <SelectItem value="educational-helpful">Educational & Helpful</SelectItem>
+                  <SelectItem value="results-offers">Results & Offers</SelectItem>
                 </SelectContent>
               </Select>
             </div>

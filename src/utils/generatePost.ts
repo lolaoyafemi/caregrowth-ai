@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client'
 
 export const generatePost = async (userId: string, postType: string, tone: string, platform: string) => {
@@ -14,6 +13,11 @@ export const generatePost = async (userId: string, postType: string, tone: strin
     }
 
     const strategyMap: Record<string, string> = {
+      "trust-authority": "Build credibility and establish expertise in home care...",
+      "heartfelt-relatable": "Share emotional stories that connect with families...",
+      "educational-helpful": "Teach something useful about home care...",
+      "results-offers": "Highlight results and present compelling offers...",
+      // Keep legacy mappings for backward compatibility
       "educational": "Teach something useful about home care...",
       "mission-driven": "Show the heart behind the agency...",
       "heartfelt": "Speak directly to the emotions...",
