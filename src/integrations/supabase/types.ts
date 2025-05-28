@@ -112,8 +112,10 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          audience_problems: string | null
           big_promise: string | null
           business_name: string
+          core_service: string | null
           created_at: string | null
           differentiator: string | null
           id: string
@@ -128,8 +130,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          audience_problems?: string | null
           big_promise?: string | null
           business_name: string
+          core_service?: string | null
           created_at?: string | null
           differentiator?: string | null
           id?: string
@@ -144,8 +148,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          audience_problems?: string | null
           big_promise?: string | null
           business_name?: string
+          core_service?: string | null
           created_at?: string | null
           differentiator?: string | null
           id?: string

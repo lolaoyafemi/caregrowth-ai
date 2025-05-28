@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from "sonner";
 import { X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BusinessDetailsFormProps {
   onClose: () => void;
@@ -27,8 +28,51 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSave = () => {
+  // Load existing profile data when component mounts
+  useEffect(() => {
+    loadExistingProfile();
+  }, []);
+
+  const loadExistingProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+        console.error('Error loading profile:', error);
+        return;
+      }
+
+      if (profile) {
+        setFormData({
+          businessName: profile.business_name || '',
+          location: profile.location || '',
+          coreService: profile.core_service || '',
+          idealClient: profile.ideal_client || '',
+          mainOffer: profile.main_offer || '',
+          bigPromise: profile.big_promise || '',
+          audienceProblems: profile.audience_problems || '',
+          objections: profile.objections?.join(', ') || '',
+          differentiator: profile.differentiator || '',
+          testimonials: profile.testimonial || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
     // Check if required fields are filled
     if (!formData.businessName || !formData.location || !formData.coreService) {
       toast.error("Please fill in at least the business name, location, and core service.");
@@ -37,20 +81,78 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
 
     setIsSaving(true);
     
-    // Simulate saving to database
-    setTimeout(() => {
-      // Here you would normally save to your database
-      console.log('Saving business details:', formData);
-      
-      setIsSaving(false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("User not authenticated");
+        return;
+      }
+
+      // Prepare data for database
+      const profileData = {
+        user_id: user.id,
+        business_name: formData.businessName,
+        location: formData.location,
+        core_service: formData.coreService,
+        services: formData.coreService, // Keep for backward compatibility
+        ideal_client: formData.idealClient,
+        main_offer: formData.mainOffer,
+        big_promise: formData.bigPromise,
+        audience_problems: formData.audienceProblems,
+        pain_points: formData.audienceProblems ? [formData.audienceProblems] : [],
+        objections: formData.objections ? formData.objections.split(',').map(item => item.trim()) : [],
+        differentiator: formData.differentiator,
+        testimonial: formData.testimonials,
+        updated_at: new Date().toISOString()
+      };
+
+      // Try to update first, then insert if not exists
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update(profileData)
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        // If update failed, try to insert
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert([profileData]);
+
+        if (insertError) {
+          throw insertError;
+        }
+      }
+
       toast.success("Business details saved successfully!");
       onClose();
-    }, 1500);
+    } catch (error) {
+      console.error('Error saving business details:', error);
+      toast.error("Failed to save business details. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <Card className="w-full max-w-4xl p-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/2 mb-6"></div>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-20 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
