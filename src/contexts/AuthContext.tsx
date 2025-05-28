@@ -30,6 +30,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const { setUser: setUserContext } = useUser();
 
+  const fetchUserProfile = async (userId: string, userEmail: string) => {
+    try {
+      console.log('Fetching profile for user:', userId, userEmail);
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return;
+      }
+
+      if (profile) {
+        console.log('Profile found:', profile);
+        setUserContext({
+          id: profile.id,
+          name: profile.full_name || profile.email || userEmail || '',
+          email: profile.email || userEmail || '',
+          role: profile.role || 'admin',
+          agencyId: profile.agency_id || undefined
+        });
+      } else {
+        console.log('No profile found, creating default user context');
+        setUserContext({
+          id: userId,
+          name: userEmail || '',
+          email: userEmail || '',
+          role: 'admin',
+          agencyId: undefined
+        });
+      }
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -39,27 +77,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile from our profiles table
-          setTimeout(async () => {
-            try {
-              const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-
-              if (profile && !error) {
-                setUserContext({
-                  id: profile.id,
-                  name: profile.full_name || profile.email || '',
-                  email: profile.email || session.user.email || '',
-                  role: profile.role || 'admin',
-                  agencyId: profile.agency_id || undefined
-                });
-              }
-            } catch (error) {
-              console.error('Error fetching user profile:', error);
-            }
+          // Use setTimeout to defer Supabase calls and prevent infinite loops
+          setTimeout(() => {
+            fetchUserProfile(session.user.id, session.user.email || '');
           }, 0);
         } else {
           setUserContext(null);
@@ -75,27 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Fetch user profile for initial load
-        setTimeout(async () => {
-          try {
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (profile && !error) {
-              setUserContext({
-                id: profile.id,
-                name: profile.full_name || profile.email || '',
-                email: profile.email || session.user.email || '',
-                role: profile.role || 'admin',
-                agencyId: profile.agency_id || undefined
-              });
-            }
-          } catch (error) {
-            console.error('Error fetching initial user profile:', error);
-          }
+        // Use setTimeout to defer Supabase calls
+        setTimeout(() => {
+          fetchUserProfile(session.user.id, session.user.email || '');
         }, 0);
       }
       setLoading(false);
