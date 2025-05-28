@@ -2,46 +2,69 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, User } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { toast } from "@/hooks/use-toast";
 import ForgotPasswordModal from './ForgotPasswordModal';
 
-interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onLogin: (email: string, password: string) => void;
-  onSignup: (email: string, password: string, name: string) => void;
-}
-
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignup }) => {
+const AuthModal: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  
+  const { signInWithEmail, signUpWithEmail } = useAuth();
 
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
+    
     // Basic validation
     if (!email || !password) {
-      setError('Please fill in all required fields');
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
       return;
     }
 
-    if (isLogin) {
-      onLogin(email, password);
-    } else {
-      if (!name) {
-        setError('Please provide your name');
-        return;
+    if (!isLogin && !name) {
+      toast({
+        title: "Error", 
+        description: "Please provide your name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await signInWithEmail(email, password);
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
+        });
+      } else {
+        await signUpWithEmail(email, password, name);
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
+        });
       }
-      onSignup(email, password, name);
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      toast({
+        title: "Authentication Error",
+        description: error.message || "An error occurred during authentication",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,12 +92,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignu
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {error && (
-              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-
             {!isLogin && (
               <div className="space-y-2">
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -88,6 +105,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignu
                     onChange={(e) => setName(e.target.value)}
                     className="pl-10"
                     placeholder="John Doe"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -106,6 +124,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignu
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
                   placeholder="your@email.com"
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -122,11 +141,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignu
                   onChange={(e) => setPassword(e.target.value)}
                   className="pr-10"
                   placeholder="••••••••"
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={togglePasswordVisibility}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={loading}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -139,14 +160,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignu
                   type="button"
                   onClick={handleForgotPassword}
                   className="text-sm text-caregrowth-blue hover:underline"
+                  disabled={loading}
                 >
                   Forgot password?
                 </button>
               </div>
             )}
 
-            <Button type="submit" className="w-full bg-caregrowth-blue hover:bg-blue-700">
-              {isLogin ? 'Sign In' : 'Create Account'}
+            <Button 
+              type="submit" 
+              className="w-full bg-caregrowth-blue hover:bg-blue-700"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  {isLogin ? 'Signing In...' : 'Creating Account...'}
+                </div>
+              ) : (
+                isLogin ? 'Sign In' : 'Create Account'
+              )}
             </Button>
 
             <div className="text-center mt-4">
@@ -154,15 +187,24 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onSignu
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsLogin(!isLogin);
-                    setError('');
-                  }}
+                  onClick={() => setIsLogin(!isLogin)}
                   className="text-caregrowth-blue hover:underline font-medium"
+                  disabled={loading}
                 >
                   {isLogin ? 'Sign Up' : 'Sign In'}
                 </button>
               </p>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="text-center text-sm text-gray-600">
+                <p className="font-medium mb-2">Test Account Credentials:</p>
+                <div className="space-y-1 text-xs bg-gray-50 p-3 rounded">
+                  <p><strong>Super Admin:</strong> admin@caregrowth.ai / SuperAdmin</p>
+                  <p><strong>Normal Admin:</strong> andrewoyafemi@gmail.com / NormalAdmin</p>
+                  <p><strong>Normal Admin:</strong> hi@lolaoyafemi.com / NormalAdmin</p>
+                </div>
+              </div>
             </div>
           </form>
         </div>

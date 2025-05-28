@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, Shield } from 'lucide-react';
 import { useUser, UserRole } from '../../contexts/UserContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,15 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName }) => {
-  const { logout } = useUser();
+  const { signOut } = useAuth();
+  
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
   
   const getInitials = (name?: string) => {
     if (!name) return 'U';
@@ -92,7 +101,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
               <span>{getRoleDisplayName(userRole)} Account</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
