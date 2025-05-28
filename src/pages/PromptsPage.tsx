@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,41 +17,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useUser } from '@/contexts/UserContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Prompt {
-  id: number;
+  id: string;
   name: string;
   platform: string;
   category: string;
   hook: string;
   body: string;
   cta: string;
-  dateCreated: string;
+  created_at: string;
+  user_id: string;
 }
 
 const PromptsPage = () => {
-  const [prompts, setPrompts] = useState<Prompt[]>([
-    {
-      id: 1,
-      name: "Problem-Solution Hook",
-      platform: "all",
-      category: "trust-authority",
-      hook: "🔥 Attention {audience}! Struggling with your daily challenges?",
-      body: "We understand the unique needs of {audience} and have developed solutions that can help you achieve remarkable results. With our proven approach, you'll be able to overcome challenges and reach your goals faster than ever.\n\nOne of our clients recently reported a 40% increase in productivity after implementing our solutions!",
-      cta: "Ready to transform your business? Click the link in bio to learn more or DM us for a free consultation! ⏰ Limited spots available.",
-      dateCreated: "2024-01-15"
-    },
-    {
-      id: 2,
-      name: "Announcement Style",
-      platform: "linkedin",
-      category: "educational-helpful",
-      hook: "I'm excited to announce our newest solution for {audience} looking to maximize efficiency.",
-      body: "After months of research and development, our team has created a solution specifically designed for {audience}.\n\nThe results?\n\n✅ 35% reduction in operational costs\n✅ 50% less time spent on administrative tasks\n✅ Improved team satisfaction and retention\n\nIn today's competitive landscape, businesses can't afford to fall behind on innovation.",
-      cta: "If you're interested in learning how our solution can benefit your organization, let's connect. I'm offering 5 free strategy sessions this week to qualified professionals.",
-      dateCreated: "2024-01-10"
-    }
-  ]);
+  const { user } = useUser();
+  const queryClient = useQueryClient();
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
@@ -69,32 +54,132 @@ const PromptsPage = () => {
     cta: ''
   });
 
+  // Fetch prompts from Supabase
+  const { data: prompts = [], isLoading } = useQuery({
+    queryKey: ['prompts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prompts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching prompts:', error);
+        throw error;
+      }
+      
+      return data || [];
+    },
+  });
+
+  // Create prompt mutation
+  const createPromptMutation = useMutation({
+    mutationFn: async (promptData: typeof formData) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      const { data, error } = await supabase
+        .from('prompts')
+        .insert([{
+          ...promptData,
+          user_id: user.id
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prompts'] });
+      setFormData({
+        name: '',
+        platform: 'all',
+        category: 'trust-authority',
+        hook: '',
+        body: '',
+        cta: ''
+      });
+      setIsCreateDialogOpen(false);
+      toast.success("Prompt created successfully!");
+    },
+    onError: (error) => {
+      console.error('Error creating prompt:', error);
+      toast.error("Failed to create prompt. Please try again.");
+    }
+  });
+
+  // Update prompt mutation
+  const updatePromptMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: typeof formData }) => {
+      const { data, error } = await supabase
+        .from('prompts')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prompts'] });
+      setEditingPrompt(null);
+      setFormData({
+        name: '',
+        platform: 'all',
+        category: 'trust-authority',
+        hook: '',
+        body: '',
+        cta: ''
+      });
+      toast.success("Prompt updated successfully!");
+    },
+    onError: (error) => {
+      console.error('Error updating prompt:', error);
+      toast.error("Failed to update prompt. Please try again.");
+    }
+  });
+
+  // Delete prompt mutation
+  const deletePromptMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('prompts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prompts'] });
+      toast.success("Prompt deleted successfully!");
+    },
+    onError: (error) => {
+      console.error('Error deleting prompt:', error);
+      toast.error("Failed to delete prompt. Please try again.");
+    }
+  });
+
   const handleCreatePrompt = () => {
+    if (!isSuperAdmin) {
+      toast.error("Only super admins can create prompts.");
+      return;
+    }
+
     if (!formData.name || !formData.hook || !formData.body || !formData.cta) {
       toast.error("Please fill in all required fields.");
       return;
     }
 
-    const newPrompt: Prompt = {
-      id: Date.now(),
-      ...formData,
-      dateCreated: new Date().toISOString().split('T')[0]
-    };
-
-    setPrompts([newPrompt, ...prompts]);
-    setFormData({
-      name: '',
-      platform: 'all',
-      category: 'trust-authority',
-      hook: '',
-      body: '',
-      cta: ''
-    });
-    setIsCreateDialogOpen(false);
-    toast.success("Prompt created successfully!");
+    createPromptMutation.mutate(formData);
   };
 
   const handleEditPrompt = (prompt: Prompt) => {
+    if (!isSuperAdmin) {
+      toast.error("Only super admins can edit prompts.");
+      return;
+    }
+
     setEditingPrompt(prompt);
     setFormData({
       name: prompt.name,
@@ -109,28 +194,19 @@ const PromptsPage = () => {
   const handleUpdatePrompt = () => {
     if (!editingPrompt) return;
 
-    const updatedPrompts = prompts.map(p => 
-      p.id === editingPrompt.id 
-        ? { ...editingPrompt, ...formData }
-        : p
-    );
-
-    setPrompts(updatedPrompts);
-    setEditingPrompt(null);
-    setFormData({
-      name: '',
-      platform: 'all',
-      category: 'trust-authority',
-      hook: '',
-      body: '',
-      cta: ''
+    updatePromptMutation.mutate({
+      id: editingPrompt.id,
+      updates: formData
     });
-    toast.success("Prompt updated successfully!");
   };
 
-  const handleDeletePrompt = (id: number) => {
-    setPrompts(prompts.filter(p => p.id !== id));
-    toast.success("Prompt deleted successfully!");
+  const handleDeletePrompt = (id: string) => {
+    if (!isSuperAdmin) {
+      toast.error("Only super admins can delete prompts.");
+      return;
+    }
+
+    deletePromptMutation.mutate(id);
   };
 
   const handleCopyPrompt = (prompt: Prompt) => {
@@ -164,11 +240,30 @@ const PromptsPage = () => {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <p className="text-gray-500">Loading prompts...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Prompt Library</h1>
         <p className="text-gray-600 mt-2">Manage and organize your social media content prompts.</p>
+        {!isSuperAdmin && (
+          <p className="text-amber-600 mt-2 text-sm">
+            You can view and copy prompts, but only super admins can create, edit, or delete them.
+          </p>
+        )}
       </div>
 
       {/* Header Actions */}
@@ -201,108 +296,114 @@ const PromptsPage = () => {
           </Select>
         </div>
 
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-caregrowth-blue">
-              <Plus size={16} className="mr-2" />
-              Create Prompt
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create New Prompt</DialogTitle>
-              <DialogDescription>
-                Create a reusable prompt template for social media content generation.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Prompt Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="e.g., Problem-Solution Hook"
-                  />
+        {isSuperAdmin && (
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-caregrowth-blue">
+                <Plus size={16} className="mr-2" />
+                Create Prompt
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Create New Prompt</DialogTitle>
+                <DialogDescription>
+                  Create a reusable prompt template for social media content generation.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Prompt Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      placeholder="e.g., Problem-Solution Hook"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="platform">Platform</Label>
+                    <Select value={formData.platform} onValueChange={(value) => setFormData({...formData, platform: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Platforms</SelectItem>
+                        <SelectItem value="facebook">Facebook</SelectItem>
+                        <SelectItem value="twitter">Twitter</SelectItem>
+                        <SelectItem value="linkedin">LinkedIn</SelectItem>
+                        <SelectItem value="instagram">Instagram</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
                 <div>
-                  <Label htmlFor="platform">Platform</Label>
-                  <Select value={formData.platform} onValueChange={(value) => setFormData({...formData, platform: value})}>
+                  <Label htmlFor="category">Category</Label>
+                  <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Platforms</SelectItem>
-                      <SelectItem value="facebook">Facebook</SelectItem>
-                      <SelectItem value="twitter">Twitter</SelectItem>
-                      <SelectItem value="linkedin">LinkedIn</SelectItem>
-                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="trust-authority">Trust & Authority</SelectItem>
+                      <SelectItem value="heartfelt-relatable">Heartfelt & Relatable</SelectItem>
+                      <SelectItem value="educational-helpful">Educational & Helpful</SelectItem>
+                      <SelectItem value="results-offers">Results & Offers</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="trust-authority">Trust & Authority</SelectItem>
-                    <SelectItem value="heartfelt-relatable">Heartfelt & Relatable</SelectItem>
-                    <SelectItem value="educational-helpful">Educational & Helpful</SelectItem>
-                    <SelectItem value="results-offers">Results & Offers</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <Label htmlFor="hook">Hook Template</Label>
+                  <Textarea
+                    id="hook"
+                    value={formData.hook}
+                    onChange={(e) => setFormData({...formData, hook: e.target.value})}
+                    placeholder="Use {audience} as a placeholder for dynamic content"
+                    className="min-h-[80px]"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="hook">Hook Template</Label>
-                <Textarea
-                  id="hook"
-                  value={formData.hook}
-                  onChange={(e) => setFormData({...formData, hook: e.target.value})}
-                  placeholder="Use {audience} as a placeholder for dynamic content"
-                  className="min-h-[80px]"
-                />
-              </div>
+                <div>
+                  <Label htmlFor="body">Body Template</Label>
+                  <Textarea
+                    id="body"
+                    value={formData.body}
+                    onChange={(e) => setFormData({...formData, body: e.target.value})}
+                    placeholder="Use {audience} as a placeholder for dynamic content"
+                    className="min-h-[120px]"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="body">Body Template</Label>
-                <Textarea
-                  id="body"
-                  value={formData.body}
-                  onChange={(e) => setFormData({...formData, body: e.target.value})}
-                  placeholder="Use {audience} as a placeholder for dynamic content"
-                  className="min-h-[120px]"
-                />
-              </div>
+                <div>
+                  <Label htmlFor="cta">Call to Action Template</Label>
+                  <Textarea
+                    id="cta"
+                    value={formData.cta}
+                    onChange={(e) => setFormData({...formData, cta: e.target.value})}
+                    placeholder="Use {audience} as a placeholder for dynamic content"
+                    className="min-h-[80px]"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="cta">Call to Action Template</Label>
-                <Textarea
-                  id="cta"
-                  value={formData.cta}
-                  onChange={(e) => setFormData({...formData, cta: e.target.value})}
-                  placeholder="Use {audience} as a placeholder for dynamic content"
-                  className="min-h-[80px]"
-                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleCreatePrompt} 
+                    className="bg-caregrowth-blue"
+                    disabled={createPromptMutation.isPending}
+                  >
+                    {createPromptMutation.isPending ? 'Creating...' : 'Create Prompt'}
+                  </Button>
+                </div>
               </div>
-
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreatePrompt} className="bg-caregrowth-blue">
-                  Create Prompt
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Prompts Table */}
@@ -345,7 +446,7 @@ const PromptsPage = () => {
                     </p>
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
-                    {prompt.dateCreated}
+                    {formatDate(prompt.created_at)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
@@ -365,22 +466,27 @@ const PromptsPage = () => {
                       >
                         <Copy size={14} />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleEditPrompt(prompt)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit size={14} />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDeletePrompt(prompt.id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 size={14} />
-                      </Button>
+                      {isSuperAdmin && (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEditPrompt(prompt)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit size={14} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeletePrompt(prompt.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                            disabled={deletePromptMutation.isPending}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -391,6 +497,9 @@ const PromptsPage = () => {
           {filteredPrompts.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500">No prompts found matching your filters.</p>
+              {isSuperAdmin && prompts.length === 0 && (
+                <p className="text-gray-400 mt-2">Create your first prompt template to get started.</p>
+              )}
             </div>
           )}
         </CardContent>
@@ -435,7 +544,7 @@ const PromptsPage = () => {
       )}
 
       {/* Edit Dialog */}
-      {editingPrompt && (
+      {editingPrompt && isSuperAdmin && (
         <Dialog open={!!editingPrompt} onOpenChange={() => setEditingPrompt(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -521,8 +630,12 @@ const PromptsPage = () => {
                 <Button variant="outline" onClick={() => setEditingPrompt(null)}>
                   Cancel
                 </Button>
-                <Button onClick={handleUpdatePrompt} className="bg-caregrowth-blue">
-                  Update Prompt
+                <Button 
+                  onClick={handleUpdatePrompt} 
+                  className="bg-caregrowth-blue"
+                  disabled={updatePromptMutation.isPending}
+                >
+                  {updatePromptMutation.isPending ? 'Updating...' : 'Update Prompt'}
                 </Button>
               </div>
             </div>
