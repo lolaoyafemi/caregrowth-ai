@@ -36,36 +36,6 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
-        Row: {
-          agency_id: string | null
-          created_at: string | null
-          email: string | null
-          full_name: string | null
-          id: string
-          role: Database["public"]["Enums"]["user_role"] | null
-          updated_at: string | null
-        }
-        Insert: {
-          agency_id?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id: string
-          role?: Database["public"]["Enums"]["user_role"] | null
-          updated_at?: string | null
-        }
-        Update: {
-          agency_id?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["user_role"] | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       prompts: {
         Row: {
           body: string
@@ -139,63 +109,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_profiles: {
-        Row: {
-          audience_problems: string | null
-          big_promise: string | null
-          business_name: string
-          core_service: string | null
-          created_at: string | null
-          differentiator: string | null
-          id: string
-          ideal_client: string | null
-          location: string | null
-          main_offer: string | null
-          objections: string[] | null
-          pain_points: string[] | null
-          services: string | null
-          testimonial: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          audience_problems?: string | null
-          big_promise?: string | null
-          business_name: string
-          core_service?: string | null
-          created_at?: string | null
-          differentiator?: string | null
-          id?: string
-          ideal_client?: string | null
-          location?: string | null
-          main_offer?: string | null
-          objections?: string[] | null
-          pain_points?: string[] | null
-          services?: string | null
-          testimonial?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          audience_problems?: string | null
-          big_promise?: string | null
-          business_name?: string
-          core_service?: string | null
-          created_at?: string | null
-          differentiator?: string | null
-          id?: string
-          ideal_client?: string | null
-          location?: string | null
-          main_offer?: string | null
-          objections?: string[] | null
-          pain_points?: string[] | null
-          services?: string | null
-          testimonial?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
       }
       users: {
         Row: {

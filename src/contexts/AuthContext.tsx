@@ -30,35 +30,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const { setUser: setUserContext } = useUser();
 
-  const setUserFromProfile = async (userId: string, userEmail: string) => {
+  const fetchUserFromPublicTable = async (userId: string, userEmail: string) => {
     try {
-      console.log('Setting user context for:', userId, userEmail);
+      console.log('Fetching user data from public.users for:', userId);
       
-      // Try to fetch profile, but don't let it block the auth process
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, role, agency_id')
+      // Fetch user data from public.users table
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('id, name, email, role, plan, credits')
         .eq('id', userId)
         .maybeSingle();
 
-      console.log('Profile data:', profile);
+      if (error) {
+        console.error('Error fetching user data:', error);
+        // Set basic user context with default values if fetch fails
+        setUserContext({
+          id: userId,
+          name: userEmail.split('@')[0] || '',
+          email: userEmail,
+          role: 'admin',
+          agencyId: undefined
+        });
+        return;
+      }
 
-      // Set user context based on profile or fallback to defaults
-      const userRole = profile?.role || 'admin';
-      const userName = profile?.full_name || userEmail.split('@')[0] || '';
-      
-      setUserContext({
-        id: userId,
-        name: userName,
-        email: userEmail,
-        role: userRole,
-        agencyId: profile?.agency_id || undefined
-      });
-      
-      console.log('User context set with role:', userRole);
+      if (userData) {
+        console.log('User data from public.users:', userData);
+        // Map the role from public.users to UserContext format
+        const userRole = userData.role === 'super_admin' ? 'super_admin' : 'admin';
+        
+        setUserContext({
+          id: userData.id,
+          name: userData.name || userEmail.split('@')[0] || '',
+          email: userData.email || userEmail,
+          role: userRole,
+          agencyId: undefined // Will be added when agencies are implemented
+        });
+      } else {
+        console.log('No user data found in public.users, user may not be created yet');
+        // Set basic user context for new users
+        setUserContext({
+          id: userId,
+          name: userEmail.split('@')[0] || '',
+          email: userEmail,
+          role: 'admin',
+          agencyId: undefined
+        });
+      }
     } catch (error) {
-      console.error('Error setting user context:', error);
-      // Set a basic user context even if profile fetch fails
+      console.error('Error in fetchUserFromPublicTable:', error);
+      // Fallback user context
       setUserContext({
         id: userId,
         name: userEmail.split('@')[0] || '',
@@ -82,10 +103,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user && session.user.email) {
-          // Use setTimeout to defer the profile fetch
+          // Fetch user data from public.users table
           setTimeout(() => {
             if (mounted) {
-              setUserFromProfile(session.user.id, session.user.email!);
+              fetchUserFromPublicTable(session.user.id, session.user.email!);
             }
           }, 100);
         } else {
@@ -116,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user && session.user.email) {
           setTimeout(() => {
             if (mounted) {
-              setUserFromProfile(session.user.id, session.user.email!);
+              fetchUserFromPublicTable(session.user.id, session.user.email!);
             }
           }, 100);
         }
