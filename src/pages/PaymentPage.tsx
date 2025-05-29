@@ -61,7 +61,7 @@ const PaymentPage = () => {
 
   const handleCheckout = (planId: string) => {
     // Redirect to Stripe payment page with selected plan
-    window.location.href = `/stripe-payment?plan=${planId}`;
+    window.location.href = `https://www.spicymessaging.com/stripe-payment?plan=${planId}`;
   };
 
   return (
