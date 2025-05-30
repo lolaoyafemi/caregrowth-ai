@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
@@ -18,7 +19,6 @@ import TeamManagementPage from './pages/agency/TeamManagementPage';
 import AgencyUsagePage from './pages/agency/AgencyUsagePage';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider } from './contexts/AuthContext';
-import { QueryClient } from 'react-query';
 import { Toaster } from '@/components/ui/toaster';
 
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
