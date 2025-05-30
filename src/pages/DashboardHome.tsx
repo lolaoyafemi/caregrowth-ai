@@ -18,13 +18,13 @@ const DashboardHome = () => {
   const isSuperAdmin = user?.role === 'super_admin';
   const isMainAdmin = user?.role === 'admin';
   
-  // Sample data for usage metrics
+  // Reset usage metrics to zero for new users
   const usageMetrics = {
-    socialContent: { used: 24, total: 50, percent: 48 },
-    documentSearch: { used: 3, total: 5, percent: 60 },
-    qaAssistant: { used: 62, total: 100, percent: 62 },
-    creditsLeft: 11250,
-    monthlyUsage: 3750,
+    socialContent: { used: 0, total: 50, percent: 0 },
+    documentSearch: { used: 0, total: 5, percent: 0 },
+    qaAssistant: { used: 0, total: 100, percent: 0 },
+    creditsLeft: 0,
+    monthlyUsage: 0,
   };
 
   return (
@@ -64,9 +64,11 @@ const DashboardHome = () => {
               <div className="flex justify-between items-center mb-4 text-xs text-gray-500">
                 <span>Used this month: {usageMetrics.monthlyUsage.toLocaleString()}</span>
               </div>
-              <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
-                Buy More Credits
-              </Button>
+              <Link to="/payment">
+                <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
+                  Buy More Credits
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         )}

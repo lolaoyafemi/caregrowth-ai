@@ -39,8 +39,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/dashboard?payment=success`,
-      cancel_url: `${req.headers.get("origin")}/stripe-payment?payment=cancelled`,
+      success_url: `https://www.spicymessaging.com/dashboard?payment=success`,
+      cancel_url: `https://www.spicymessaging.com/stripe-payment?payment=cancelled`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

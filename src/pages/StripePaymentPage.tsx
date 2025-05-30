@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -111,11 +110,11 @@ const StripePaymentPage = () => {
           {/* Back Navigation */}
           <div className="mb-8">
             <Link 
-              to="/" 
+              to="/payment" 
               className="inline-flex items-center text-caregrowth-blue hover:text-blue-700 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
+              Back to Plans
             </Link>
           </div>
 
