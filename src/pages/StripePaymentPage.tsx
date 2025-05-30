@@ -107,7 +107,7 @@ const StripePaymentPage = () => {
 
       if (data?.url) {
         console.log('Redirecting to Stripe checkout:', data.url);
-        // Open Stripe checkout in the same window to preserve localStorage
+        // Use window.location.href to preserve localStorage
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
@@ -132,7 +132,6 @@ const StripePaymentPage = () => {
       
       <main className="flex-grow py-12">
         <div className="container mx-auto px-4 max-w-4xl">
-          {/* Back Navigation */}
           <div className="mb-8">
             <Link 
               to="/payment" 
@@ -143,7 +142,6 @@ const StripePaymentPage = () => {
             </Link>
           </div>
 
-          {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Complete Your Purchase</h1>
             <p className="text-xl text-gray-600">
@@ -152,7 +150,6 @@ const StripePaymentPage = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Plan Selection */}
             <div className="space-y-6">
               <h2 className="text-2xl font-bold mb-6">Choose Your Credit Package</h2>
               
@@ -208,11 +205,9 @@ const StripePaymentPage = () => {
               </div>
             </div>
 
-            {/* Payment Summary */}
             <div className="space-y-6">
               <h2 className="text-2xl font-bold mb-6">Payment Summary</h2>
               
-              {/* Email Input */}
               <Card className="border-2 border-gray-200">
                 <CardHeader>
                   <CardTitle>Contact Information</CardTitle>
@@ -281,7 +276,6 @@ const StripePaymentPage = () => {
                     )}
                   </Button>
 
-                  {/* Security badges */}
                   <div className="flex items-center justify-center space-x-4 pt-4 border-t">
                     <div className="flex items-center text-sm text-gray-600">
                       <Shield className="w-4 h-4 mr-1" />
@@ -299,7 +293,6 @@ const StripePaymentPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Features Preview */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">What's Included</CardTitle>
@@ -318,7 +311,6 @@ const StripePaymentPage = () => {
             </div>
           </div>
 
-          {/* Trust indicators */}
           <div className="text-center mt-12 pt-8 border-t">
             <p className="text-gray-600 mb-4">
               ✓ Instant credit delivery &nbsp;&nbsp;&nbsp; 
