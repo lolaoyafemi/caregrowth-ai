@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
 import PaymentPage from './pages/PaymentPage';
 import StripePaymentPage from './pages/StripePaymentPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import HelpPage from './pages/HelpPage';
 import NotFound from './pages/NotFound';
 import DashboardLayout from './components/dashboard/DashboardLayout';
@@ -20,8 +21,6 @@ import AgencyUsagePage from './pages/agency/AgencyUsagePage';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
-
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
 
 function App() {
   return (
