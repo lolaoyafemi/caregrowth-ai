@@ -18,6 +18,7 @@ import UserManagementPage from './pages/admin/UserManagementPage';
 import UsageMonitoringPage from './pages/admin/UsageMonitoringPage';
 import TeamManagementPage from './pages/agency/TeamManagementPage';
 import AgencyUsagePage from './pages/agency/AgencyUsagePage';
+import LoginPage from './pages/LoginPage';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -31,6 +32,7 @@ function App() {
             <Toaster />
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/payment" element={<PaymentPage />} />
               <Route path="/stripe-payment" element={<StripePaymentPage />} />
               <Route path="/payment-success" element={<PaymentSuccessPage />} />

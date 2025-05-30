@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import DashboardHeader from './DashboardHeader';
-import AuthModal from '../auth/AuthModal';
 import { useUser } from '../../contexts/UserContext';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -24,26 +23,25 @@ const DashboardLayout = () => {
     );
   }
 
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
-    <>
-      {isAuthenticated ? (
-        <div className="flex h-screen">
-          <Sidebar 
-            collapsed={collapsed} 
-            setCollapsed={setCollapsed} 
-            userRole={userContextUser?.role} 
-          />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <DashboardHeader userRole={userContextUser?.role} userName={userContextUser?.name} />
-            <main className={`flex-1 overflow-auto ${userContextUser?.role === 'super_admin' ? 'bg-green-50/30' : 'bg-gray-50'}`}>
-              <Outlet />
-            </main>
-          </div>
-        </div>
-      ) : (
-        <AuthModal />
-      )}
-    </>
+    <div className="flex h-screen">
+      <Sidebar 
+        collapsed={collapsed} 
+        setCollapsed={setCollapsed} 
+        userRole={userContextUser?.role} 
+      />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <DashboardHeader userRole={userContextUser?.role} userName={userContextUser?.name} />
+        <main className={`flex-1 overflow-auto ${userContextUser?.role === 'super_admin' ? 'bg-green-50/30' : 'bg-gray-50'}`}>
+          <Outlet />
+        </main>
+      </div>
+    </div>
   );
 };
 
