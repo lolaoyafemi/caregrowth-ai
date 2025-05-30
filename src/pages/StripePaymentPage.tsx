@@ -19,7 +19,7 @@ const StripePaymentPage = () => {
     {
       id: 'starter',
       name: 'Starter',
-      price: 49,
+      price: 1,
       features: [
         '50 Social Media Posts',
         '5 Documents (up to 25 pages each)',
@@ -30,7 +30,7 @@ const StripePaymentPage = () => {
     {
       id: 'professional',
       name: 'Professional',
-      price: 99,
+      price: 2,
       features: [
         '200 Social Media Posts',
         '20 Documents (up to 50 pages each)',
@@ -43,7 +43,7 @@ const StripePaymentPage = () => {
     {
       id: 'enterprise',
       name: 'Enterprise',
-      price: 249,
+      price: 3,
       features: [
         'Unlimited Social Media Posts',
         'Unlimited Documents',

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ const PaymentPage = () => {
     {
       id: 'starter',
       name: 'Starter',
-      price: 49,
+      price: 1,
       description: 'Perfect for small agencies just getting started',
       features: [
         '50 Social Media Posts',
@@ -26,7 +27,7 @@ const PaymentPage = () => {
     {
       id: 'professional',
       name: 'Professional',
-      price: 99,
+      price: 2,
       description: 'Ideal for growing agencies with multiple clients',
       features: [
         '200 Social Media Posts',
@@ -40,7 +41,7 @@ const PaymentPage = () => {
     {
       id: 'enterprise',
       name: 'Enterprise',
-      price: 249,
+      price: 3,
       description: 'For established agencies with high volume needs',
       features: [
         'Unlimited Social Media Posts',
