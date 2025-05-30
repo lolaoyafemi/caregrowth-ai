@@ -59,9 +59,9 @@ const PaymentPage = () => {
     setSelectedPlan(planId);
   };
 
-  const handleCheckout = (planId: string) => {
-    // Redirect to Stripe payment page with selected plan
-    window.location.href = `/stripe-payment?plan=${planId}`;
+  const handleCheckout = () => {
+    // Redirect directly to your Stripe payment link
+    window.open('https://buy.stripe.com/bJe8wQeXfaAmelGeFCeUU08', '_blank');
   };
 
   return (
@@ -147,7 +147,7 @@ const PaymentPage = () => {
 
                     {selectedPlan === plan.id && (
                       <Button
-                        onClick={() => handleCheckout(plan.id)}
+                        onClick={handleCheckout}
                         className="w-full bg-caregrowth-green hover:bg-green-700 text-white"
                       >
                         Buy Credits Now

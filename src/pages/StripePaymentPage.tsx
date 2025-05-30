@@ -1,25 +1,20 @@
+
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 const StripePaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
   const plans = [
     {
       id: 'starter',
       name: 'Starter',
       price: 49,
-      priceId: 'price_starter', // Replace with actual Stripe price ID
       features: [
         '50 Social Media Posts',
         '5 Documents (up to 25 pages each)',
@@ -31,7 +26,6 @@ const StripePaymentPage = () => {
       id: 'professional',
       name: 'Professional',
       price: 99,
-      priceId: 'price_professional', // Replace with actual Stripe price ID
       features: [
         '200 Social Media Posts',
         '20 Documents (up to 50 pages each)',
@@ -45,7 +39,6 @@ const StripePaymentPage = () => {
       id: 'enterprise',
       name: 'Enterprise',
       price: 249,
-      priceId: 'price_enterprise', // Replace with actual Stripe price ID
       features: [
         'Unlimited Social Media Posts',
         'Unlimited Documents',
@@ -59,46 +52,9 @@ const StripePaymentPage = () => {
 
   const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
 
-  const handleCheckout = async () => {
-    setIsLoading(true);
-    
-    try {
-      // Get the current user session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        // If no user is logged in, proceed with guest checkout using default email
-        console.log('No user session found, proceeding with guest checkout');
-      }
-
-      // Call Stripe payment function for one-time payment
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          priceId: selectedPlanData?.priceId,
-          planName: selectedPlanData?.name,
-          amount: selectedPlanData?.price,
-          email: session?.user?.email || 'guest@example.com'
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data?.url) {
-        // Open Stripe checkout in a new tab
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast({
-        title: "Checkout Error",
-        description: "There was an error processing your request. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleCheckout = () => {
+    // Redirect to your Stripe payment link
+    window.open('https://buy.stripe.com/bJe8wQeXfaAmelGeFCeUU08', '_blank');
   };
 
   return (
@@ -211,10 +167,9 @@ const StripePaymentPage = () => {
 
                   <Button 
                     onClick={handleCheckout}
-                    disabled={isLoading}
                     className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg font-medium"
                   >
-                    {isLoading ? 'Processing...' : `Pay $${selectedPlanData?.price} - Continue to Stripe`}
+                    Pay ${selectedPlanData?.price} - Continue to Stripe
                   </Button>
 
                   {/* Security badges */}
