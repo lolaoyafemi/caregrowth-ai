@@ -9,18 +9,18 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
   const [showSignup, setShowSignup] = useState(false);
-  const [signupData, setSignupData] = useState<any>(null);
+  const [paymentData, setPaymentData] = useState<any>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     password: '',
     confirmPassword: ''
   });
-  const [creditsAllocated, setCreditsAllocated] = useState<number | null>(null);
   const { signUpWithEmail } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -37,42 +37,43 @@ const PaymentSuccessPage = () => {
           return;
         }
 
-        // Get pending signup data from localStorage
-        const pendingSignupData = localStorage.getItem('pendingSignup');
-        console.log('Raw pending signup data from localStorage:', pendingSignupData);
-        
-        if (pendingSignupData) {
-          try {
-            const signupInfo = JSON.parse(pendingSignupData);
-            console.log('Parsed signup info:', signupInfo);
-            
-            // Determine credits from the stored data
-            const credits = signupInfo.credits || 50; // Default fallback
-            setCreditsAllocated(credits);
-            setSignupData(signupInfo);
-            
-            console.log('Setting up signup form with:', { email: signupInfo.email, credits });
-            
-            setShowSignup(true);
-            
-            toast({
-              title: "Payment Successful!",
-              description: `Payment confirmed! Please create your account to access your ${credits} credits.`,
-            });
-          } catch (parseError) {
-            console.error('Error parsing signup data:', parseError);
-            // Fall back to basic flow
-            setCreditsAllocated(100);
-            setShowSignup(false);
-          }
-        } else {
-          console.log('No pending signup data found in localStorage');
-          // Fallback: show basic success message
-          setCreditsAllocated(100); // Default credits
-          setShowSignup(false);
+        // Get payment data from Supabase using session ID
+        const { data: payment, error } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('stripe_session_id', sessionId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching payment:', error);
+          toast({
+            title: "Payment Error",
+            description: "Could not find payment information. Please contact support.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        console.log('Payment data found:', payment);
+        setPaymentData(payment);
+
+        // Check if user already exists
+        const { data: userData } = await supabase.auth.admin.listUsers();
+        const existingUser = userData?.users?.find(u => u.email === payment.email);
+
+        if (existingUser) {
+          // User exists, redirect to login
           toast({
             title: "Payment Successful!",
-            description: "Payment confirmed! Please contact support to access your account.",
+            description: "Please log in to access your credits.",
+          });
+          navigate('/login');
+        } else {
+          // User doesn't exist, show signup form
+          setShowSignup(true);
+          toast({
+            title: "Payment Successful!",
+            description: "Please create your account to access your credits.",
           });
         }
 
@@ -94,7 +95,7 @@ const PaymentSuccessPage = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!signupData?.email) {
+    if (!paymentData?.email) {
       toast({
         title: "Email Missing",
         description: "Email information is missing. Please contact support.",
@@ -124,11 +125,38 @@ const PaymentSuccessPage = () => {
     try {
       setIsProcessing(true);
       
-      console.log('Creating account for:', signupData.email);
-      await signUpWithEmail(signupData.email, formData.password, formData.fullName);
+      console.log('Creating account for:', paymentData.email);
+      await signUpWithEmail(paymentData.email, formData.password, formData.fullName);
       
-      // Clear the pending signup data after successful account creation
-      localStorage.removeItem('pendingSignup');
+      // After successful signup, allocate the credits
+      // The handle_new_user trigger will create the user record
+      // We need to update it with the purchased credits
+      setTimeout(async () => {
+        try {
+          const { error: creditError } = await supabase
+            .from('users')
+            .update({ 
+              credits: paymentData.credits_granted + 100, // 100 default + purchased credits
+              plan: paymentData.plan_name.toLowerCase()
+            })
+            .eq('email', paymentData.email);
+
+          if (creditError) {
+            console.error('Error allocating credits:', creditError);
+          }
+
+          // Update payment record with user_id
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from('payments')
+              .update({ user_id: user.id })
+              .eq('stripe_session_id', paymentData.stripe_session_id);
+          }
+        } catch (error) {
+          console.error('Error in post-signup credit allocation:', error);
+        }
+      }, 2000); // Wait 2 seconds for user creation to complete
       
       toast({
         title: "Account Created!",
@@ -186,49 +214,47 @@ const PaymentSuccessPage = () => {
             <p className="text-xl text-gray-600">
               {showSignup 
                 ? "Thank you for your purchase. Complete your account setup to access your credits." 
-                : "Thank you for your purchase. Please contact support to access your account."
+                : "Thank you for your purchase. Please log in to access your credits."
               }
             </p>
           </div>
 
           {/* Purchase Summary */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <CreditCard className="w-5 h-5 mr-2" />
-                Purchase Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Credits Purchased:</span>
-                  <span className="font-bold text-2xl text-caregrowth-blue">
-                    {creditsAllocated || 'Processing...'}
-                  </span>
+          {paymentData && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Purchase Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Credits Purchased:</span>
+                    <span className="font-bold text-2xl text-caregrowth-blue">
+                      {paymentData.credits_granted}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Plan:</span>
+                    <span className="font-medium capitalize">{paymentData.plan_name}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Amount Paid:</span>
+                    <span className="font-medium">${(paymentData.amount / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Status:</span>
+                    <span className="text-green-600 font-medium">Completed</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Status:</span>
-                  <span className="text-green-600 font-medium">Completed</span>
-                </div>
-                {signupData && (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Plan:</span>
-                      <span className="font-medium capitalize">{signupData.planName || signupData.plan}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Amount Paid:</span>
-                      <span className="font-medium">${signupData.amount}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Account Creation Form */}
-          {showSignup && (
+          {showSignup && paymentData && (
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -245,7 +271,7 @@ const PaymentSuccessPage = () => {
                     <Input
                       id="email"
                       type="email"
-                      value={signupData?.email || ''}
+                      value={paymentData.email}
                       disabled
                       className="bg-gray-50"
                     />

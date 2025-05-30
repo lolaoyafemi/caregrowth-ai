@@ -63,18 +63,7 @@ serve(async (req) => {
         return new Response("No customer email", { status: 400 });
       }
 
-      // Find user by email
-      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-      if (userError) {
-        console.error('Error fetching users:', userError);
-        return new Response("Failed to fetch users", { status: 500 });
-      }
-
-      const user = userData.users.find(u => u.email === customerEmail);
-      if (!user) {
-        console.error('User not found for email:', customerEmail);
-        return new Response("User not found", { status: 404 });
-      }
+      console.log('Processing payment for email:', customerEmail);
 
       // Determine credits based on amount paid
       const amountTotal = session.amount_total || 0;
@@ -82,28 +71,44 @@ serve(async (req) => {
       let creditsGranted = 0;
 
       // Map amount to credits (amounts are in cents)
-      if (amountTotal === 4900) { // $49
+      if (amountTotal === 100) { // $1
         planName = 'Starter';
         creditsGranted = 50;
-      } else if (amountTotal === 9900) { // $99
+      } else if (amountTotal === 200) { // $2
         planName = 'Professional';
         creditsGranted = 200;
-      } else if (amountTotal === 24900) { // $249
+      } else if (amountTotal === 300) { // $3
         planName = 'Enterprise';
         creditsGranted = 500;
       } else {
-        // Default mapping - could be customized
-        creditsGranted = Math.floor(amountTotal / 100); // 1 credit per dollar
+        // Default mapping based on amount
+        creditsGranted = Math.floor(amountTotal / 2); // Rough conversion
         planName = 'Custom';
       }
 
       console.log('Allocating credits:', { customerEmail, planName, creditsGranted, amount: amountTotal });
 
+      // Try to find existing user by email
+      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+      if (userError) {
+        console.error('Error fetching users:', userError);
+        return new Response("Failed to fetch users", { status: 500 });
+      }
+
+      let user = userData.users.find(u => u.email === customerEmail);
+      let userId = user?.id;
+
+      // If user doesn't exist, we'll create a payment record without user_id
+      // The account will be created later in the payment success flow
+      if (!user) {
+        console.log('User not found, will be created during signup:', customerEmail);
+      }
+
       // Create payment record
       const { data: paymentData, error: paymentError } = await supabase
         .from('payments')
         .insert({
-          user_id: user.id,
+          user_id: userId || null, // null if user doesn't exist yet
           email: customerEmail,
           stripe_session_id: session.id,
           plan_name: planName,
@@ -121,17 +126,21 @@ serve(async (req) => {
 
       console.log('Payment record created successfully:', paymentData);
 
-      // Verify credits were allocated (should happen automatically via trigger)
-      const { data: updatedUser, error: fetchError } = await supabase
-        .from('users')
-        .select('credits')
-        .eq('id', user.id)
-        .single();
+      // If user exists, allocate credits immediately
+      if (userId) {
+        const { error: creditError } = await supabase
+          .from('users')
+          .update({ 
+            credits: supabase.sql`credits + ${creditsGranted}`,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
 
-      if (fetchError) {
-        console.error('Error fetching updated user:', fetchError);
-      } else {
-        console.log('User credits after payment:', updatedUser.credits);
+        if (creditError) {
+          console.error('Error updating user credits:', creditError);
+        } else {
+          console.log('Credits allocated successfully to existing user');
+        }
       }
     }
 
