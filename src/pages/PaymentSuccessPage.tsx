@@ -58,8 +58,20 @@ const PaymentSuccessPage = () => {
         setPaymentData(payment);
 
         // Check if user already exists
-        const { data: userData } = await supabase.auth.admin.listUsers();
-        const existingUser = userData?.users?.find(u => u.email === payment.email);
+        const { data: userData, error: userListError } = await supabase.auth.admin.listUsers();
+        
+        if (userListError) {
+          console.error('Error fetching users:', userListError);
+          // If we can't check users, assume new user and show signup
+          setShowSignup(true);
+          toast({
+            title: "Payment Successful!",
+            description: "Please create your account to access your credits.",
+          });
+          return;
+        }
+
+        const existingUser = userData.users.find((u: any) => u.email === payment.email);
 
         if (existingUser) {
           // User exists, redirect to login
