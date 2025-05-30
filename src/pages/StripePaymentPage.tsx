@@ -53,8 +53,11 @@ const StripePaymentPage = () => {
   const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
 
   const handleCheckout = () => {
-    // Redirect to your Stripe payment link
-    window.open('https://buy.stripe.com/bJe8wQeXfaAmelGeFCeUU08', '_blank');
+    const baseUrl = 'https://buy.stripe.com/bJe8wQeXfaAmelGeFCeUU08';
+    const successUrl = `https://www.spicymessaging.com/payment-success?plan=${selectedPlan}`;
+    
+    // Redirect to your Stripe payment link with custom success URL
+    window.open(`${baseUrl}?success_url=${encodeURIComponent(successUrl)}`, '_blank');
   };
 
   return (

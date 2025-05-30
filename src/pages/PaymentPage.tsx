@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -60,8 +59,11 @@ const PaymentPage = () => {
   };
 
   const handleCheckout = () => {
-    // Redirect directly to your Stripe payment link
-    window.open('https://buy.stripe.com/bJe8wQeXfaAmelGeFCeUU08', '_blank');
+    const baseUrl = 'https://buy.stripe.com/bJe8wQeXfaAmelGeFCeUU08';
+    const successUrl = `https://www.spicymessaging.com/payment-success?plan=${selectedPlan || 'professional'}`;
+    
+    // Redirect directly to your Stripe payment link with custom success URL
+    window.open(`${baseUrl}?success_url=${encodeURIComponent(successUrl)}`, '_blank');
   };
 
   return (

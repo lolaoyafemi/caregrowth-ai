@@ -36,6 +36,45 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          credits_granted: number
+          email: string
+          id: string
+          plan_name: string
+          status: string
+          stripe_session_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          credits_granted: number
+          email: string
+          id?: string
+          plan_name: string
+          status?: string
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          credits_granted?: number
+          email?: string
+          id?: string
+          plan_name?: string
+          status?: string
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       prompts: {
         Row: {
           body: string
@@ -170,7 +209,7 @@ export type Database = {
       users: {
         Row: {
           created_at: string | null
-          credits: number | null
+          credits: number
           email: string | null
           id: string
           name: string | null
@@ -179,7 +218,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          credits?: number | null
+          credits?: number
           email?: string | null
           id: string
           name?: string | null
@@ -188,7 +227,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          credits?: number | null
+          credits?: number
           email?: string | null
           id?: string
           name?: string | null

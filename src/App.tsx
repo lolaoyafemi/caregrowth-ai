@@ -1,74 +1,67 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Index from './pages/Index';
+import PaymentPage from './pages/PaymentPage';
+import StripePaymentPage from './pages/StripePaymentPage';
+import HelpPage from './pages/HelpPage';
+import NotFound from './pages/NotFound';
+import DashboardLayout from './components/dashboard/DashboardLayout';
+import DashboardHome from './pages/DashboardHome';
+import SocialMediaTool from './pages/SocialMediaTool';
+import DocumentSearchTool from './pages/DocumentSearchTool';
+import QAAssistantTool from './pages/QAAssistantTool';
+import PromptsPage from './pages/PromptsPage';
+import SettingsPage from './pages/SettingsPage';
+import UserManagementPage from './pages/admin/UserManagementPage';
+import UsageMonitoringPage from './pages/admin/UsageMonitoringPage';
+import TeamManagementPage from './pages/agency/TeamManagementPage';
+import AgencyUsagePage from './pages/agency/AgencyUsagePage';
+import { UserProvider } from './contexts/UserContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { QueryClient } from 'react-query';
+import { Toaster } from '@/components/ui/toaster';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
-import StripePaymentPage from "./pages/StripePaymentPage";
-import DashboardLayout from "./components/dashboard/DashboardLayout";
-import DashboardHome from "./pages/DashboardHome";
-import SocialMediaTool from "./pages/SocialMediaTool";
-import PromptsPage from "./pages/PromptsPage";
-import DocumentSearchTool from "./pages/DocumentSearchTool";
-import QAAssistantTool from "./pages/QAAssistantTool";
-import NotFound from "./pages/NotFound";
-import { UserProvider } from "./contexts/UserContext";
-import { AuthProvider } from "./contexts/AuthContext";
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
 
-// Placeholder pages for new routes - these would be implemented fully in a real app
-import UserManagementPage from "./pages/admin/UserManagementPage";
-import UsageMonitoringPage from "./pages/admin/UsageMonitoringPage";
-import TeamManagementPage from "./pages/agency/TeamManagementPage";
-import AgencyUsagePage from "./pages/agency/AgencyUsagePage";
-import SettingsPage from "./pages/SettingsPage";
-import HelpPage from "./pages/HelpPage";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+function App() {
+  return (
     <UserProvider>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <BrowserRouter>
+          <div className="min-h-screen bg-gray-50">
+            <Toaster />
             <Routes>
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<Index />} />
+              <Route path="/payment" element={<PaymentPage />} />
               <Route path="/stripe-payment" element={<StripePaymentPage />} />
+              <Route path="/payment-success" element={<PaymentSuccessPage />} />
+              <Route path="/help" element={<HelpPage />} />
               
-              {/* Dashboard Routes */}
+              {/* Dashboard routes */}
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<DashboardHome />} />
-                
-                {/* Super Admin Routes */}
-                <Route path="user-management" element={<UserManagementPage />} />
-                <Route path="usage-monitoring" element={<UsageMonitoringPage />} />
-                
-                {/* Agency Admin Routes */}
-                <Route path="team-management" element={<TeamManagementPage />} />
-                <Route path="agency-usage" element={<AgencyUsagePage />} />
-                
-                {/* Tool Routes */}
                 <Route path="social-media" element={<SocialMediaTool />} />
-                <Route path="prompts" element={<PromptsPage />} />
                 <Route path="document-search" element={<DocumentSearchTool />} />
                 <Route path="qa-assistant" element={<QAAssistantTool />} />
-                
-                {/* General Routes */}
+                <Route path="prompts" element={<PromptsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
-                <Route path="help" element={<HelpPage />} />
+                
+                {/* Admin routes */}
+                <Route path="admin/users" element={<UserManagementPage />} />
+                <Route path="admin/usage" element={<UsageMonitoringPage />} />
+                
+                {/* Agency routes */}
+                <Route path="agency/team" element={<TeamManagementPage />} />
+                <Route path="agency/usage" element={<AgencyUsagePage />} />
               </Route>
               
-              {/* Not Found Route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+          </div>
+        </BrowserRouter>
       </AuthProvider>
     </UserProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;
