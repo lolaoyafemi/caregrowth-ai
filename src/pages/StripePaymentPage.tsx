@@ -20,6 +20,7 @@ const StripePaymentPage = () => {
       id: 'starter',
       name: 'Starter',
       price: 1,
+      credits: 50,
       features: [
         '50 Social Media Posts',
         '5 Documents (up to 25 pages each)',
@@ -31,6 +32,7 @@ const StripePaymentPage = () => {
       id: 'professional',
       name: 'Professional',
       price: 2,
+      credits: 200,
       features: [
         '200 Social Media Posts',
         '20 Documents (up to 50 pages each)',
@@ -44,6 +46,7 @@ const StripePaymentPage = () => {
       id: 'enterprise',
       name: 'Enterprise',
       price: 3,
+      credits: 500,
       features: [
         'Unlimited Social Media Posts',
         'Unlimited Documents',
@@ -72,6 +75,23 @@ const StripePaymentPage = () => {
     setLoading(true);
 
     try {
+      // Store signup data BEFORE creating checkout session
+      const signupData = {
+        email: email.trim(),
+        plan: selectedPlan,
+        planName: selectedPlanData.name,
+        amount: selectedPlanData.price,
+        credits: selectedPlanData.credits,
+        timestamp: Date.now()
+      };
+      
+      console.log('Storing pending signup data:', signupData);
+      localStorage.setItem('pendingSignup', JSON.stringify(signupData));
+      
+      // Verify it was stored
+      const stored = localStorage.getItem('pendingSignup');
+      console.log('Verified stored data:', stored);
+
       // Create dynamic Stripe checkout session
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
@@ -86,15 +106,9 @@ const StripePaymentPage = () => {
       }
 
       if (data?.url) {
-        // Store email and plan in localStorage for post-payment signup
-        localStorage.setItem('pendingSignup', JSON.stringify({
-          email: email.trim(),
-          plan: selectedPlan,
-          amount: selectedPlanData.price
-        }));
-
-        // Open Stripe checkout in new tab
-        window.open(data.url, '_blank');
+        console.log('Redirecting to Stripe checkout:', data.url);
+        // Open Stripe checkout in the same window to preserve localStorage
+        window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
       }
@@ -105,6 +119,8 @@ const StripePaymentPage = () => {
         description: "Failed to create checkout session. Please try again.",
         variant: "destructive"
       });
+      // Clear stored data on error
+      localStorage.removeItem('pendingSignup');
     } finally {
       setLoading(false);
     }
@@ -163,6 +179,7 @@ const StripePaymentPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <CardTitle className="text-xl">{plan.name}</CardTitle>
+                          <p className="text-sm text-gray-600 mt-1">{plan.credits} credits</p>
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold">${plan.price}</div>
@@ -232,6 +249,11 @@ const StripePaymentPage = () => {
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{selectedPlanData?.name} Credits</span>
                     <span className="font-bold">${selectedPlanData?.price}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-sm text-gray-600">
+                    <span>Credits included:</span>
+                    <span className="font-medium">{selectedPlanData?.credits} credits</span>
                   </div>
                   
                   <div className="border-t pt-4">

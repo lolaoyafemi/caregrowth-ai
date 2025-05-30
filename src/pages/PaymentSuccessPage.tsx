@@ -39,35 +39,37 @@ const PaymentSuccessPage = () => {
 
         // Get pending signup data from localStorage
         const pendingSignupData = localStorage.getItem('pendingSignup');
-        console.log('Pending signup data:', pendingSignupData);
+        console.log('Raw pending signup data from localStorage:', pendingSignupData);
         
         if (pendingSignupData) {
-          const signupInfo = JSON.parse(pendingSignupData);
-          console.log('Using pending signup info:', signupInfo);
-          
-          // Determine credits based on plan/amount
-          const planCredits = {
-            starter: 50,
-            professional: 200,
-            enterprise: 500
-          };
-          
-          const credits = planCredits[signupInfo.plan as keyof typeof planCredits] || signupInfo.amount * 50;
-          setCreditsAllocated(credits);
-          setSignupData(signupInfo);
-          
-          // Clear the pending signup data
-          localStorage.removeItem('pendingSignup');
-          
-          setShowSignup(true);
-          
-          toast({
-            title: "Payment Successful!",
-            description: `Payment confirmed! Please create your account to access your ${credits} credits.`,
-          });
+          try {
+            const signupInfo = JSON.parse(pendingSignupData);
+            console.log('Parsed signup info:', signupInfo);
+            
+            // Determine credits from the stored data
+            const credits = signupInfo.credits || 50; // Default fallback
+            setCreditsAllocated(credits);
+            setSignupData(signupInfo);
+            
+            console.log('Setting up signup form with:', { email: signupInfo.email, credits });
+            
+            setShowSignup(true);
+            
+            toast({
+              title: "Payment Successful!",
+              description: `Payment confirmed! Please create your account to access your ${credits} credits.`,
+            });
+          } catch (parseError) {
+            console.error('Error parsing signup data:', parseError);
+            // Fall back to basic flow
+            setCreditsAllocated(100);
+            setShowSignup(false);
+          }
         } else {
+          console.log('No pending signup data found in localStorage');
           // Fallback: show basic success message
           setCreditsAllocated(100); // Default credits
+          setShowSignup(false);
           toast({
             title: "Payment Successful!",
             description: "Payment confirmed! Please contact support to access your account.",
@@ -124,6 +126,9 @@ const PaymentSuccessPage = () => {
       
       console.log('Creating account for:', signupData.email);
       await signUpWithEmail(signupData.email, formData.password, formData.fullName);
+      
+      // Clear the pending signup data after successful account creation
+      localStorage.removeItem('pendingSignup');
       
       toast({
         title: "Account Created!",
@@ -207,10 +212,16 @@ const PaymentSuccessPage = () => {
                   <span className="text-green-600 font-medium">Completed</span>
                 </div>
                 {signupData && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Plan:</span>
-                    <span className="font-medium capitalize">{signupData.plan}</span>
-                  </div>
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Plan:</span>
+                      <span className="font-medium capitalize">{signupData.planName || signupData.plan}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Amount Paid:</span>
+                      <span className="font-medium">${signupData.amount}</span>
+                    </div>
+                  </>
                 )}
               </div>
             </CardContent>
