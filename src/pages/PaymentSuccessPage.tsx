@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { CheckCircle, CreditCard, ArrowRight, User, Lock } from 'lucide-react';
+import { CheckCircle, CreditCard, ArrowRight, User } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,37 +29,50 @@ const PaymentSuccessPage = () => {
     const processPayment = async () => {
       try {
         const sessionId = searchParams.get('session_id');
-        const pendingSignupData = localStorage.getItem('pendingSignup');
+        console.log('Processing payment success with session ID:', sessionId);
         
-        if (!pendingSignupData) {
-          console.log('No pending signup data found');
+        if (!sessionId) {
+          console.log('No session ID found, redirecting to home');
           navigate('/');
           return;
         }
 
-        const signupInfo = JSON.parse(pendingSignupData);
-        console.log('Processing payment for:', signupInfo);
-
-        // Determine credits based on plan
-        const planCredits = {
-          starter: 50,
-          professional: 200,
-          enterprise: 500
-        };
-
-        const credits = planCredits[signupInfo.plan as keyof typeof planCredits] || 200;
-        setCreditsAllocated(credits);
-        setSignupData(signupInfo);
-
-        // Clear the pending signup data
-        localStorage.removeItem('pendingSignup');
+        // Get pending signup data from localStorage
+        const pendingSignupData = localStorage.getItem('pendingSignup');
+        console.log('Pending signup data:', pendingSignupData);
         
-        setShowSignup(true);
-        
-        toast({
-          title: "Payment Successful!",
-          description: `Payment confirmed! Please create your account to access your ${credits} credits.`,
-        });
+        if (pendingSignupData) {
+          const signupInfo = JSON.parse(pendingSignupData);
+          console.log('Using pending signup info:', signupInfo);
+          
+          // Determine credits based on plan/amount
+          const planCredits = {
+            starter: 50,
+            professional: 200,
+            enterprise: 500
+          };
+          
+          const credits = planCredits[signupInfo.plan as keyof typeof planCredits] || signupInfo.amount * 50;
+          setCreditsAllocated(credits);
+          setSignupData(signupInfo);
+          
+          // Clear the pending signup data
+          localStorage.removeItem('pendingSignup');
+          
+          setShowSignup(true);
+          
+          toast({
+            title: "Payment Successful!",
+            description: `Payment confirmed! Please create your account to access your ${credits} credits.`,
+          });
+        } else {
+          // Fallback: show basic success message
+          setCreditsAllocated(100); // Default credits
+          toast({
+            title: "Payment Successful!",
+            description: "Payment confirmed! Please contact support to access your account.",
+          });
+        }
 
       } catch (error) {
         console.error('Error processing payment:', error);
@@ -77,6 +91,15 @@ const PaymentSuccessPage = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!signupData?.email) {
+      toast({
+        title: "Email Missing",
+        description: "Email information is missing. Please contact support.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -99,6 +122,7 @@ const PaymentSuccessPage = () => {
     try {
       setIsProcessing(true);
       
+      console.log('Creating account for:', signupData.email);
       await signUpWithEmail(signupData.email, formData.password, formData.fullName);
       
       toast({
@@ -155,11 +179,45 @@ const PaymentSuccessPage = () => {
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">Payment Successful!</h1>
             <p className="text-xl text-gray-600">
-              Thank you for your purchase. Complete your account setup to access your credits.
+              {showSignup 
+                ? "Thank you for your purchase. Complete your account setup to access your credits." 
+                : "Thank you for your purchase. Please contact support to access your account."
+              }
             </p>
           </div>
 
-          {showSignup ? (
+          {/* Purchase Summary */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <CreditCard className="w-5 h-5 mr-2" />
+                Purchase Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Credits Purchased:</span>
+                  <span className="font-bold text-2xl text-caregrowth-blue">
+                    {creditsAllocated || 'Processing...'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Status:</span>
+                  <span className="text-green-600 font-medium">Completed</span>
+                </div>
+                {signupData && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Plan:</span>
+                    <span className="font-medium capitalize">{signupData.plan}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Account Creation Form */}
+          {showSignup && (
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -242,29 +300,6 @@ const PaymentSuccessPage = () => {
                     )}
                   </Button>
                 </form>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Purchase Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Credits Purchased:</span>
-                    <span className="font-bold text-2xl text-caregrowth-blue">
-                      {creditsAllocated || 'Processing...'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Status:</span>
-                    <span className="text-green-600 font-medium">Completed</span>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           )}
