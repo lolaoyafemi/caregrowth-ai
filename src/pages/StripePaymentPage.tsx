@@ -6,9 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const StripePaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const { toast } = useToast();
 
   const plans = [
     {
@@ -52,12 +57,57 @@ const StripePaymentPage = () => {
 
   const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
 
-  const handleCheckout = () => {
-    const baseUrl = 'https://buy.stripe.com/bJe8wQeXfaAmelGeFCeUU08';
-    const successUrl = `https://www.spicymessaging.com/payment-success?plan=${selectedPlan}`;
-    
-    // Redirect to your Stripe payment link with custom success URL
-    window.open(`${baseUrl}?success_url=${encodeURIComponent(successUrl)}`, '_blank');
+  const handleCheckout = async () => {
+    if (!email.trim()) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedPlanData) return;
+
+    setLoading(true);
+
+    try {
+      // Create dynamic Stripe checkout session
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          planName: selectedPlanData.name,
+          amount: selectedPlanData.price,
+          email: email.trim()
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        // Store email and plan in localStorage for post-payment signup
+        localStorage.setItem('pendingSignup', JSON.stringify({
+          email: email.trim(),
+          plan: selectedPlan,
+          amount: selectedPlanData.price
+        }));
+
+        // Open Stripe checkout in new tab
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Error",
+        description: "Failed to create checkout session. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -145,6 +195,32 @@ const StripePaymentPage = () => {
             <div className="space-y-6">
               <h2 className="text-2xl font-bold mb-6">Payment Summary</h2>
               
+              {/* Email Input */}
+              <Card className="border-2 border-gray-200">
+                <CardHeader>
+                  <CardTitle>Contact Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-caregrowth-blue focus:border-caregrowth-blue"
+                      required
+                    />
+                    <p className="text-xs text-gray-600">
+                      You'll use this email to create your account after payment
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card className="border-2 border-gray-200">
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -170,9 +246,17 @@ const StripePaymentPage = () => {
 
                   <Button 
                     onClick={handleCheckout}
-                    className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg font-medium"
+                    disabled={loading || !email.trim()}
+                    className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg font-medium disabled:opacity-50"
                   >
-                    Pay ${selectedPlanData?.price} - Continue to Stripe
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Creating Checkout...
+                      </div>
+                    ) : (
+                      `Pay $${selectedPlanData?.price} - Continue to Stripe`
+                    )}
                   </Button>
 
                   {/* Security badges */}

@@ -1,66 +1,64 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, CreditCard, ArrowRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { CheckCircle, CreditCard, ArrowRight, User, Lock } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { supabase } from '@/integrations/supabase/client';
-import { useUser } from '@/contexts/UserContext';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } = from '@/hooks/use-toast';
 
 const PaymentSuccessPage = () => {
+  const [searchParams] = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
+  const [showSignup, setShowSignup] = useState(false);
+  const [signupData, setSignupData] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    password: '',
+    confirmPassword: ''
+  });
   const [creditsAllocated, setCreditsAllocated] = useState<number | null>(null);
-  const { user } = useUser();
+  const { signUpWithEmail } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     const processPayment = async () => {
-      if (!user?.email) {
-        console.log('No user found, redirecting to home');
-        navigate('/');
-        return;
-      }
-
       try {
-        // Get URL parameters to determine which plan was purchased
-        const urlParams = new URLSearchParams(window.location.search);
-        const planParam = urlParams.get('plan') || 'professional';
+        const sessionId = searchParams.get('session_id');
+        const pendingSignupData = localStorage.getItem('pendingSignup');
         
-        // Define plan details
-        const planDetails = {
-          starter: { name: 'Starter', amount: 49, credits: 50 },
-          professional: { name: 'Professional', amount: 99, credits: 200 },
-          enterprise: { name: 'Enterprise', amount: 249, credits: 500 }
-        };
-
-        const selectedPlan = planDetails[planParam as keyof typeof planDetails] || planDetails.professional;
-
-        console.log('Processing payment for plan:', selectedPlan);
-
-        // Process the payment and allocate credits
-        const { data, error } = await supabase.functions.invoke('process-payment', {
-          body: {
-            email: user.email,
-            planName: selectedPlan.name,
-            amount: selectedPlan.amount,
-            creditsGranted: selectedPlan.credits
-          }
-        });
-
-        if (error) {
-          throw error;
+        if (!pendingSignupData) {
+          console.log('No pending signup data found');
+          navigate('/');
+          return;
         }
 
-        console.log('Payment processed successfully:', data);
-        setCreditsAllocated(selectedPlan.credits);
+        const signupInfo = JSON.parse(pendingSignupData);
+        console.log('Processing payment for:', signupInfo);
+
+        // Determine credits based on plan
+        const planCredits = {
+          starter: 50,
+          professional: 200,
+          enterprise: 500
+        };
+
+        const credits = planCredits[signupInfo.plan as keyof typeof planCredits] || 200;
+        setCreditsAllocated(credits);
+        setSignupData(signupInfo);
+
+        // Clear the pending signup data
+        localStorage.removeItem('pendingSignup');
+        
+        setShowSignup(true);
         
         toast({
           title: "Payment Successful!",
-          description: `${selectedPlan.credits} credits have been added to your account.`,
+          description: `Payment confirmed! Please create your account to access your ${credits} credits.`,
         });
 
       } catch (error) {
@@ -76,9 +74,57 @@ const PaymentSuccessPage = () => {
     };
 
     processPayment();
-  }, [user, navigate, toast]);
+  }, [searchParams, navigate, toast]);
 
-  if (isProcessing) {
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "Passwords do not match. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      await signUpWithEmail(signupData.email, formData.password, formData.fullName);
+      
+      toast({
+        title: "Account Created!",
+        description: "Your account has been created successfully. You can now access your dashboard.",
+      });
+
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      toast({
+        title: "Account Creation Error",
+        description: error.message || "Failed to create account. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (isProcessing && !showSignup) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header />
@@ -88,7 +134,7 @@ const PaymentSuccessPage = () => {
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-caregrowth-blue mx-auto mb-4"></div>
                 <h2 className="text-xl font-semibold mb-2">Processing Your Payment</h2>
-                <p className="text-gray-600">Please wait while we allocate your credits...</p>
+                <p className="text-gray-600">Please wait while we confirm your payment...</p>
               </div>
             </CardContent>
           </Card>
@@ -110,55 +156,123 @@ const PaymentSuccessPage = () => {
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">Payment Successful!</h1>
             <p className="text-xl text-gray-600">
-              Thank you for your purchase. Your credits have been added to your account.
+              Thank you for your purchase. Complete your account setup to access your credits.
             </p>
           </div>
 
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <CreditCard className="w-5 h-5 mr-2" />
-                Purchase Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Credits Purchased:</span>
-                  <span className="font-bold text-2xl text-caregrowth-blue">
-                    {creditsAllocated || 'Processing...'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Status:</span>
-                  <span className="text-green-600 font-medium">Completed</span>
-                </div>
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-gray-600">
-                    Your credits are now available in your dashboard. Start creating amazing content!
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {showSignup ? (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="w-5 h-5 mr-2" />
+                  Create Your Account
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={signupData?.email || ''}
+                      disabled
+                      className="bg-gray-50"
+                    />
+                  </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/dashboard">
-              <Button className="bg-caregrowth-blue hover:bg-blue-700 text-white px-8 py-3">
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-            <Link to="/dashboard/social-media">
-              <Button variant="outline" className="px-8 py-3">
-                Start Creating Content
-              </Button>
-            </Link>
-          </div>
+                  <div>
+                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name
+                    </label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                      placeholder="Enter your full name"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                      Password
+                    </label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      placeholder="Create a password (min 6 characters)"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm Password
+                    </label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                      placeholder="Confirm your password"
+                      required
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit"
+                    disabled={isProcessing}
+                    className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-3"
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Creating Account...
+                      </div>
+                    ) : (
+                      <>
+                        Create Account & Access Dashboard
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Purchase Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Credits Purchased:</span>
+                    <span className="font-bold text-2xl text-caregrowth-blue">
+                      {creditsAllocated || 'Processing...'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Status:</span>
+                    <span className="text-green-600 font-medium">Completed</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="text-center mt-8">
             <p className="text-gray-600">
-              Need help? <Link to="/help" className="text-caregrowth-blue hover:underline">Contact our support team</Link>
+              Need help? <a href="/help" className="text-caregrowth-blue hover:underline">Contact our support team</a>
             </p>
           </div>
         </div>
