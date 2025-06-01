@@ -43,10 +43,10 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   
   // Credit balance details (mock data) - show for both super admins and main admins
   const creditBalance = {
-    available: 11250,
-    usedThisMonth: 3750,
-    totalAllocation: 15000,
-    percentUsed: 25
+    available: 0,
+    usedThisMonth: 0,
+    totalAllocation: 0,
+    percentUsed: 
   };
   
   return (
