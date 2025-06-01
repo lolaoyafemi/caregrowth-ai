@@ -46,7 +46,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
     available: 0,
     usedThisMonth: 0,
     totalAllocation: 0,
-    percentUsed: 
+    percentUsed: 0
   };
   
   return (
