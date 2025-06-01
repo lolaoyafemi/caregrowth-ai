@@ -132,20 +132,25 @@ serve(async (req) => {
 
       console.log('Allocating credits:', { customerEmail, planName, creditsGranted, amount: amountTotal });
 
-      // Try to find existing user by email
-      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-      if (userError) {
-        console.error('Error fetching users:', userError);
-        return new Response("Failed to fetch users", { status: 500 });
-      }
+      // Try to find existing user by checking the users table directly
+      let userId = null;
+      try {
+        const { data: existingUser, error: userQueryError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', customerEmail)
+          .maybeSingle();
 
-      let user = userData.users.find((u: any) => u.email === customerEmail);
-      let userId = user?.id;
-
-      // If user doesn't exist, we'll create a payment record without user_id
-      // The account will be created later in the payment success flow
-      if (!user) {
-        console.log('User not found, will be created during signup:', customerEmail);
+        if (userQueryError) {
+          console.log('Error querying users table:', userQueryError);
+        } else if (existingUser) {
+          userId = existingUser.id;
+          console.log('Found existing user:', userId);
+        } else {
+          console.log('User not found in users table, will be created during signup:', customerEmail);
+        }
+      } catch (error) {
+        console.log('Could not query users table, continuing without user_id:', error);
       }
 
       // Create payment record
