@@ -8,6 +8,43 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
+// Helper function to verify webhook signature manually
+async function verifySignature(payload: string, signature: string, secret: string): Promise<boolean> {
+  try {
+    const elements = signature.split(',');
+    let timestamp: string | null = null;
+    let v1: string | null = null;
+    
+    for (const element of elements) {
+      const [key, value] = element.split('=');
+      if (key === 't') timestamp = value;
+      if (key === 'v1') v1 = value;
+    }
+    
+    if (!timestamp || !v1) return false;
+    
+    const signedPayload = `${timestamp}.${payload}`;
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    
+    const signature_bytes = await crypto.subtle.sign('HMAC', key, encoder.encode(signedPayload));
+    const expected = Array.from(new Uint8Array(signature_bytes))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    return expected === v1;
+  } catch (error) {
+    console.error('Signature verification error:', error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -28,20 +65,27 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Verify webhook signature
+    // Verify webhook signature manually
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     if (!webhookSecret) {
       console.error('No webhook secret configured');
       return new Response("Webhook secret not configured", { status: 500 });
     }
 
+    const isValidSignature = await verifySignature(body, signature, webhookSecret);
+    if (!isValidSignature) {
+      console.error('Invalid webhook signature');
+      return new Response("Invalid signature", { status: 400 });
+    }
+
+    // Parse the event
     let event;
     try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      event = JSON.parse(body);
       console.log('Webhook verified:', event.type);
     } catch (err) {
-      console.error('Webhook signature verification failed:', err);
-      return new Response("Invalid signature", { status: 400 });
+      console.error('Failed to parse webhook body:', err);
+      return new Response("Invalid JSON", { status: 400 });
     }
 
     // Initialize Supabase with service role key to bypass RLS
@@ -53,7 +97,7 @@ serve(async (req) => {
 
     // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object;
       console.log('Processing completed checkout session:', session.id);
 
       // Get customer email
@@ -95,7 +139,7 @@ serve(async (req) => {
         return new Response("Failed to fetch users", { status: 500 });
       }
 
-      let user = userData.users.find(u => u.email === customerEmail);
+      let user = userData.users.find((u: any) => u.email === customerEmail);
       let userId = user?.id;
 
       // If user doesn't exist, we'll create a payment record without user_id
