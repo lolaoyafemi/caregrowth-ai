@@ -26,6 +26,7 @@ const PaymentSuccessPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    navigate("/dashboard");
     const processPayment = async () => {
       try {
         const sessionId = searchParams.get('session_id');
