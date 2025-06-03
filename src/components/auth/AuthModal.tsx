@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 const AuthModal: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(false); // Default to signup
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

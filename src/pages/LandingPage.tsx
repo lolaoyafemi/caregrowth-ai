@@ -38,7 +38,7 @@ const LandingPage = () => {
                   Say goodbye to content blocks and tedious document searches. CareGrowthAI is your team's AI co-pilot for creating killer content, finding answers fast, and scaling your agency without the headaches.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link to="/stripe-payment">
+                  <Link to="/login">
                     <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700">
                       I'm Ready Now
                     </Button>
@@ -436,7 +436,7 @@ const LandingPage = () => {
                       <span>100 Q&A Queries</span>
                     </li>
                   </ul>
-                  <Link to="/stripe-payment">
+                  <Link to="/login">
                     <Button className="w-full" variant="outline">Buy Credits Now</Button>
                   </Link>
                 </div>
@@ -478,7 +478,7 @@ const LandingPage = () => {
                       <span>Priority Support</span>
                     </li>
                   </ul>
-                  <Link to="/stripe-payment">
+                  <Link to="/login">
                     <Button className="w-full bg-caregrowth-blue">Buy Credits Now</Button>
                   </Link>
                 </div>
@@ -517,7 +517,7 @@ const LandingPage = () => {
                       <span>Dedicated Account Manager</span>
                     </li>
                   </ul>
-                  <Link to="/stripe-payment">
+                  <Link to="/login">
                     <Button className="w-full" variant="outline">Buy Credits Now</Button>
                   </Link>
                 </div>
@@ -533,7 +533,7 @@ const LandingPage = () => {
             <p className="text-xl mb-8 max-w-2xl mx-auto">
               Join hundreds of agencies already using CareGrowthAI to create better content, access knowledge faster, and make smarter business decisions.
             </p>
-            <Link to="/stripe-payment">
+            <Link to="/login">
               <Button size="lg" className="bg-white text-caregrowth-blue hover:bg-blue-50">
                 I'm Ready Now
               </Button>
