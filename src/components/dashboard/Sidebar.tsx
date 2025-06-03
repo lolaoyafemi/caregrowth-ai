@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
@@ -32,6 +33,8 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
+  const navigate = useNavigate();
+  
   // Determine which menu items to show based on user role
   const showSuperAdminItems = userRole === 'super_admin';
   const showAgencyAdminItems = userRole === 'agency_admin';
@@ -47,6 +50,10 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
     usedThisMonth: 0,
     totalAllocation: 0,
     percentUsed: 0
+  };
+
+  const handleBuyCredits = () => {
+    navigate('/stripe-payment');
   };
   
   return (
@@ -130,6 +137,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 </div>
               </div>
               <Button 
+                onClick={handleBuyCredits}
                 className={cn(
                   "w-full py-1 h-8 text-xs transition-all",
                   isSuperAdmin 
