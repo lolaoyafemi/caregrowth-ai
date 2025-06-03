@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -204,11 +203,25 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               <p className={cn("text-xs font-semibold text-green-600 mt-6 mb-2", 
                 collapsed && "text-center"
               )}>
-                {!collapsed ? "Admin Controls" : "Admin"}
+                {!collapsed ? "Super Admin" : "SA"}
               </p>
               
               <NavLink
-                to="/dashboard/user-management"
+                to="/dashboard/super-admin"
+                className={({ isActive }) => cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+                  isActive 
+                    ? "bg-green-100 text-green-800" 
+                    : "text-gray-700 hover:bg-gray-100",
+                  collapsed && "justify-center"
+                )}
+              >
+                <Shield size={20} />
+                {!collapsed && <span>Credit Management</span>}
+              </NavLink>
+              
+              <NavLink
+                to="/dashboard/admin/users"
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
@@ -222,7 +235,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               </NavLink>
               
               <NavLink
-                to="/dashboard/usage-monitoring"
+                to="/dashboard/admin/usage"
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
@@ -247,7 +260,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               </p>
               
               <NavLink
-                to="/dashboard/team-management"
+                to="/dashboard/agency/team"
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 
@@ -261,7 +274,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               </NavLink>
               
               <NavLink
-                to="/dashboard/agency-usage"
+                to="/dashboard/agency/usage"
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                   isActive 

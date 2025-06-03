@@ -16,6 +16,7 @@ import PromptsPage from './pages/PromptsPage';
 import SettingsPage from './pages/SettingsPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import UsageMonitoringPage from './pages/admin/UsageMonitoringPage';
+import SuperAdminDashboard from './pages/admin/SuperAdminDashboard';
 import TeamManagementPage from './pages/agency/TeamManagementPage';
 import AgencyUsagePage from './pages/agency/AgencyUsagePage';
 import LoginPage from './pages/LoginPage';
@@ -46,6 +47,9 @@ function App() {
                 <Route path="qa-assistant" element={<QAAssistantTool />} />
                 <Route path="prompts" element={<PromptsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                
+                {/* Super Admin route */}
+                <Route path="super-admin" element={<SuperAdminDashboard />} />
                 
                 {/* Admin routes */}
                 <Route path="admin/users" element={<UserManagementPage />} />
