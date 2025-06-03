@@ -51,6 +51,39 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_sales_log: {
+        Row: {
+          amount_paid: number
+          credits_purchased: number
+          email: string
+          id: string
+          plan_name: string
+          stripe_session_id: string | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          amount_paid: number
+          credits_purchased: number
+          email: string
+          id?: string
+          plan_name: string
+          stripe_session_id?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount_paid?: number
+          credits_purchased?: number
+          email?: string
+          id?: string
+          plan_name?: string
+          stripe_session_id?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       google_documents: {
         Row: {
           created_at: string

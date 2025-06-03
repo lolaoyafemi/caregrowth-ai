@@ -158,6 +158,40 @@ serve(async (req) => {
 
     console.log('Successfully updated credit inventory:', inventoryData);
 
+    // Insert record into credit_sales_log
+    console.log('Logging credit sale:', { 
+      user_id, 
+      credits: creditsToAdd, 
+      amount: session.amount_total,
+      plan 
+    });
+
+    const { data: salesLogData, error: salesLogError } = await supabase
+      .from('credit_sales_log')
+      .insert({
+        user_id: user_id,
+        email: session.customer_details?.email || '',
+        credits_purchased: creditsToAdd,
+        amount_paid: (session.amount_total || 0) / 100, // Convert from cents to dollars
+        plan_name: plan,
+        stripe_session_id: sessionId
+      })
+      .select('id, email, credits_purchased, amount_paid, plan_name');
+
+    if (salesLogError) {
+      console.error('Error logging credit sale:', salesLogError);
+      return new Response(JSON.stringify({ 
+        error: "Failed to log credit sale",
+        details: salesLogError.message,
+        userUpdate: "User credits and inventory were updated successfully, but sales logging failed"
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    console.log('Successfully logged credit sale:', salesLogData);
+
     return new Response(JSON.stringify({ 
       success: true,
       message: "Payment confirmed and user updated successfully",
@@ -166,7 +200,8 @@ serve(async (req) => {
       inventoryUpdate: {
         creditsDeducted: creditsToAdd,
         newInventoryState: inventoryData?.[0] || null
-      }
+      },
+      salesLog: salesLogData?.[0] || null
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
