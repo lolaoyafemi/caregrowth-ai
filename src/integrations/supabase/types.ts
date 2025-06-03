@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      credit_inventory: {
+        Row: {
+          available_balance: number | null
+          id: string
+          sold_to_agencies: number
+          total_purchased: number
+          updated_at: string
+        }
+        Insert: {
+          available_balance?: number | null
+          id?: string
+          sold_to_agencies?: number
+          total_purchased?: number
+          updated_at?: string
+        }
+        Update: {
+          available_balance?: number | null
+          id?: string
+          sold_to_agencies?: number
+          total_purchased?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_pricing: {
+        Row: {
+          id: string
+          last_updated: string
+          price_per_credit: number
+        }
+        Insert: {
+          id?: string
+          last_updated?: string
+          price_per_credit?: number
+        }
+        Update: {
+          id?: string
+          last_updated?: string
+          price_per_credit?: number
+        }
+        Relationships: []
+      }
       google_documents: {
         Row: {
           created_at: string
@@ -33,6 +75,30 @@ export type Database = {
           fetched?: boolean
           id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      openai_keys: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          key_name: string
+          secret_key: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          key_name: string
+          secret_key: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          key_name?: string
+          secret_key?: string
         }
         Relationships: []
       }
