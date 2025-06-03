@@ -1,6 +1,4 @@
 
-# A string used to distinguish different Supabase projects on the same host. Defaults to the
-# working directory name when running `supabase init`.
 project_id = "ljtikbkilyeyuexzhaqd"
 
 [api]
@@ -67,4 +65,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.generate-post]
+verify_jwt = true
+
+[functions.create-checkout-session]
 verify_jwt = true
