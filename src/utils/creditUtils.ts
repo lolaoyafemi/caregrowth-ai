@@ -36,7 +36,17 @@ export const deductCredits = async (
     }
 
     console.log('Credit deduction result:', data);
-    return data as CreditDeductionResult;
+    
+    // Safely convert the Json response to our expected type
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      return data as CreditDeductionResult;
+    }
+    
+    // Fallback if data structure is unexpected
+    return {
+      success: false,
+      error: 'Unexpected response format from database'
+    };
   } catch (error) {
     console.error('Exception during credit deduction:', error);
     return {
