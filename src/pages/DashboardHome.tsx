@@ -64,7 +64,7 @@ const DashboardHome = () => {
               <div className="flex justify-between items-center mb-4 text-xs text-gray-500">
                 <span>Used this month: {usageMetrics.monthlyUsage.toLocaleString()}</span>
               </div>
-              <Link to="/payment">
+              <Link to="/stripe-payment">
                 <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
                   Buy More Credits
                 </Button>
