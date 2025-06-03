@@ -132,11 +132,41 @@ serve(async (req) => {
 
     console.log('Successfully updated user:', updatedUser);
 
+    // Update credit inventory - deduct from total_purchased and add to sold_to_agencies
+    console.log('Updating credit inventory:', { creditsToDeduct: creditsToAdd });
+    
+    const { data: inventoryData, error: inventoryError } = await supabase
+      .from('credit_inventory')
+      .update({
+        total_purchased: supabase.sql`COALESCE(total_purchased, 0) - ${creditsToAdd}`,
+        sold_to_agencies: supabase.sql`COALESCE(sold_to_agencies, 0) + ${creditsToAdd}`,
+        updated_at: new Date().toISOString()
+      })
+      .select('id, total_purchased, sold_to_agencies, available_balance');
+
+    if (inventoryError) {
+      console.error('Error updating credit inventory:', inventoryError);
+      return new Response(JSON.stringify({ 
+        error: "Failed to update credit inventory",
+        details: inventoryError.message,
+        userUpdate: "User credits were updated successfully, but inventory tracking failed"
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    console.log('Successfully updated credit inventory:', inventoryData);
+
     return new Response(JSON.stringify({ 
       success: true,
       message: "Payment confirmed and user updated successfully",
       user: updatedUser,
-      creditsAdded: creditsToAdd
+      creditsAdded: creditsToAdd,
+      inventoryUpdate: {
+        creditsDeducted: creditsToAdd,
+        newInventoryState: inventoryData?.[0] || null
+      }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
