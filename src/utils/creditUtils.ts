@@ -39,7 +39,7 @@ export const deductCredits = async (
     
     // Safely convert the Json response to our expected type
     if (data && typeof data === 'object' && !Array.isArray(data)) {
-      return data as CreditDeductionResult;
+      return data as unknown as CreditDeductionResult;
     }
     
     // Fallback if data structure is unexpected
