@@ -8,6 +8,7 @@ import { Check, ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const StripePaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
@@ -59,25 +60,23 @@ const StripePaymentPage = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
           plan: selectedPlan,
           planName: selectedPlanData.name,
           amount: selectedPlanData.price,
           credits: selectedPlanData.credits,
           email: user.email,
           user_id: user.id
-        })
+        }
       });
 
-      const { url } = await response.json();
+      if (error) {
+        throw error;
+      }
 
-      if (url) {
-        window.location.href = url;
+      if (data?.url) {
+        window.location.href = data.url;
       } else {
         throw new Error("No checkout URL returned.");
       }
@@ -116,7 +115,7 @@ const StripePaymentPage = () => {
               {plans.map(plan => (
                 <Card
                   key={plan.id}
-                  className={\`\${selectedPlan === plan.id ? 'border-2 border-caregrowth-blue shadow-md' : 'border'} cursor-pointer\`}
+                  className={`${selectedPlan === plan.id ? 'border-2 border-caregrowth-blue shadow-md' : 'border'} cursor-pointer`}
                   onClick={() => setSelectedPlan(plan.id)}
                 >
                   <CardHeader className="pb-4">
@@ -164,7 +163,7 @@ const StripePaymentPage = () => {
                     disabled={loading}
                     className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg"
                   >
-                    {loading ? 'Redirecting...' : \`Pay $${selectedPlanData?.price} with Stripe\`}
+                    {loading ? 'Redirecting...' : `Pay $${selectedPlanData?.price} with Stripe`}
                   </Button>
                 </CardContent>
               </Card>
