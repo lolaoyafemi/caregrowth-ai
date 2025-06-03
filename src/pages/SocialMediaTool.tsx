@@ -11,6 +11,7 @@ import { Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
 import { generatePost } from '@/utils/generatePost';
+import { deductCredits, handleCreditError } from '@/utils/creditUtils';
 
 interface GeneratedSection {
   hook: string;
@@ -69,6 +70,21 @@ const SocialMediaTool = () => {
         return;
       }
 
+      // Deduct credits before generating content (1 credit per generation)
+      const creditResult = await deductCredits(
+        userId, 
+        'social_media', 
+        1, 
+        `Generated ${platform} content for ${contentCategory} targeting ${audience}`
+      );
+
+      if (!creditResult.success) {
+        handleCreditError(creditResult);
+        return;
+      }
+
+      toast.success(`1 credit deducted. Remaining credits: ${creditResult.remainingCredits}`);
+
       const result = await generatePost(userId, contentCategory, toneOfPost, platform);
 
       if (result.post) {
@@ -96,32 +112,60 @@ const SocialMediaTool = () => {
     }
   };
 
-  const handleRegenerateSection = (platform: string, section: string) => {
+  const handleRegenerateSection = async (platform: string, section: string) => {
+    const { data } = await supabase.auth.getUser();
+    const userId = data?.user?.id;
+
+    if (!userId) {
+      toast.error("User not logged in.");
+      return;
+    }
+
     setRegeneratingSection({platform, section});
-    
-    setTimeout(() => {
-      if (generatedContent) {
-        const updatedContent = {...generatedContent};
-        switch (section) {
-          case 'hook':
-            updatedContent[platform as keyof GeneratedContent].hook = 
-              `NEW HOOK: Are you a ${audience} tired of struggling with daily challenges? This will change everything...`;
-            break;
-          case 'body':
-            updatedContent[platform as keyof GeneratedContent].body = 
-              `NEW BODY: We developed our solution specifically for people like you. Our approach addresses the exact problems you're facing daily, with proven results for professionals in your position.\n\nIn fact, our latest case study showed an average ROI of 300% within just 90 days!`;
-            break;
-          case 'cta':
-            updatedContent[platform as keyof GeneratedContent].cta = 
-              `NEW CTA: Don't miss this opportunity to revolutionize your business. Click now to secure your spot before we reach capacity!`;
-            break;
-        }
-        setGeneratedContent(updatedContent);
+
+    try {
+      // Deduct credits for regeneration (0.5 credits per section regeneration)
+      const creditResult = await deductCredits(
+        userId, 
+        'social_media', 
+        1, 
+        `Regenerated ${section} for ${platform}`
+      );
+
+      if (!creditResult.success) {
+        handleCreditError(creditResult);
+        setRegeneratingSection(null);
+        return;
       }
-      
+
+      setTimeout(() => {
+        if (generatedContent) {
+          const updatedContent = {...generatedContent};
+          switch (section) {
+            case 'hook':
+              updatedContent[platform as keyof GeneratedContent].hook = 
+                `NEW HOOK: Are you a ${audience} tired of struggling with daily challenges? This will change everything...`;
+              break;
+            case 'body':
+              updatedContent[platform as keyof GeneratedContent].body = 
+                `NEW BODY: We developed our solution specifically for people like you. Our approach addresses the exact problems you're facing daily, with proven results for professionals in your position.\n\nIn fact, our latest case study showed an average ROI of 300% within just 90 days!`;
+              break;
+            case 'cta':
+              updatedContent[platform as keyof GeneratedContent].cta = 
+                `NEW CTA: Don't miss this opportunity to revolutionize your business. Click now to secure your spot before we reach capacity!`;
+              break;
+          }
+          setGeneratedContent(updatedContent);
+        }
+        
+        setRegeneratingSection(null);
+        toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} regenerated! Remaining credits: ${creditResult.remainingCredits}`);
+      }, 1500);
+    } catch (error) {
+      console.error("Error regenerating section:", error);
+      toast.error("Error regenerating section.");
       setRegeneratingSection(null);
-      toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} regenerated!`);
-    }, 1500);
+    }
   };
 
   const handleCopy = (platform: string) => {
@@ -159,6 +203,7 @@ const SocialMediaTool = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Social Media Content Generator</h1>
             <p className="text-gray-600 mt-2">Generate engaging social media content for multiple platforms with AI assistance.</p>
+            <p className="text-sm text-gray-500 mt-1">Cost: 1 credit per generation, 1 credit per section regeneration</p>
           </div>
           <Button
             variant="outline"

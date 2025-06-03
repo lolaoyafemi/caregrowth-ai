@@ -84,6 +84,33 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_usage_log: {
+        Row: {
+          credits_used: number
+          description: string | null
+          id: string
+          tool: string
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          credits_used: number
+          description?: string | null
+          id?: string
+          tool: string
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          credits_used?: number
+          description?: string | null
+          id?: string
+          tool?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       google_documents: {
         Row: {
           created_at: string
@@ -340,7 +367,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      deduct_credits_and_log: {
+        Args: {
+          p_user_id: string
+          p_tool: string
+          p_credits_used: number
+          p_description?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       user_role:
