@@ -19,17 +19,26 @@ serve(async (req) => {
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
 
-    // Get session_id from query parameters
-    const url = new URL(req.url);
-    const sessionId = url.searchParams.get("session_id");
-
-    console.log('Session ID from query params:', sessionId);
+    // Get session_id from request body
+    let sessionId: string | null = null;
+    
+    try {
+      const body = await req.json();
+      sessionId = body.session_id;
+      console.log('Session ID from request body:', sessionId);
+    } catch (bodyError) {
+      console.error('Error parsing request body:', bodyError);
+      // Fallback: try to get from URL query parameters
+      const url = new URL(req.url);
+      sessionId = url.searchParams.get("session_id");
+      console.log('Session ID from query params (fallback):', sessionId);
+    }
 
     if (!sessionId) {
-      console.error('ERROR: No session_id provided in query parameters');
+      console.error('ERROR: No session_id provided in request body or query parameters');
       return new Response(JSON.stringify({ 
         success: false,
-        error: "session_id parameter is required" 
+        error: "session_id is required in request body" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,

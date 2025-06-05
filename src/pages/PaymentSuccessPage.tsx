@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -34,14 +33,9 @@ const PaymentSuccessPage = () => {
       try {
         console.log('Calling confirm-payment function with session ID:', sessionId);
         
-        // Call the edge function with session_id as a query parameter
+        // Call the edge function with session_id in the body
         const { data, error: functionError } = await supabase.functions.invoke('confirm-payment', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: null, // No body needed for GET request
-          query: { session_id: sessionId } // Pass session_id as query parameter
+          body: { session_id: sessionId }
         });
 
         console.log('Function response data:', data);
