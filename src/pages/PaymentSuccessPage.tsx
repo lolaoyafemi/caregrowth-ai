@@ -34,11 +34,14 @@ const PaymentSuccessPage = () => {
       try {
         console.log('Calling confirm-payment function with session ID:', sessionId);
         
+        // Call the edge function with session_id as a query parameter
         const { data, error: functionError } = await supabase.functions.invoke('confirm-payment', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
+          body: null, // No body needed for GET request
+          query: { session_id: sessionId } // Pass session_id as query parameter
         });
 
         console.log('Function response data:', data);
