@@ -19,7 +19,7 @@ serve(async (req) => {
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
 
-    // Get session_id from query parameters (primary method for Stripe redirects)
+    // ✅ 1. Extract session_id from query parameters (primary method for Stripe redirects)
     const url = new URL(req.url);
     let sessionId = url.searchParams.get("session_id");
     
@@ -47,7 +47,7 @@ serve(async (req) => {
       });
     }
 
-    // Check if Stripe secret key is available
+    // ✅ 2. Check if Stripe secret key is available
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     console.log('Stripe key available:', !!stripeKey);
     
@@ -69,7 +69,7 @@ serve(async (req) => {
 
     console.log('Attempting to retrieve Stripe session:', sessionId);
 
-    // Retrieve the session from Stripe
+    // ✅ 2. Retrieve the session from Stripe
     let session;
     try {
       session = await stripe.checkout.sessions.retrieve(sessionId);
@@ -91,7 +91,7 @@ serve(async (req) => {
       });
     }
 
-    // Verify payment status is 'paid'
+    // ✅ 3. Verify payment status is 'paid'
     if (session.payment_status !== 'paid') {
       console.error('Payment not completed. Status:', session.payment_status);
       return new Response(JSON.stringify({ 
@@ -103,7 +103,7 @@ serve(async (req) => {
       });
     }
 
-    // Extract and validate metadata
+    // ✅ 4. Extract and validate metadata
     const metadata = session.metadata || {};
     console.log('Session metadata:', metadata);
     
@@ -207,12 +207,36 @@ serve(async (req) => {
       });
     }
 
-    // Update user's credits and plan
+    // ✅ 5. Update user's credits and plan (FIXED: removed supabase.sql usage)
     console.log('Updating user credits and plan...');
+    
+    // First get current credits
+    const { data: currentUser, error: getCurrentError } = await supabase
+      .from('users')
+      .select('credits')
+      .eq('id', user_id)
+      .single();
+
+    if (getCurrentError) {
+      console.error('Error getting current user:', getCurrentError);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: `Failed to get current user: ${getCurrentError.message}` 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    const currentCredits = currentUser?.credits || 0;
+    const newCredits = currentCredits + creditsToAdd;
+    
+    console.log('Current credits:', currentCredits, 'Adding:', creditsToAdd, 'New total:', newCredits);
+
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update({
-        credits: supabase.sql`COALESCE(credits, 0) + ${creditsToAdd}`,
+        credits: newCredits,
         plan: plan.toLowerCase()
       })
       .eq('id', user_id)
@@ -232,13 +256,28 @@ serve(async (req) => {
 
     console.log('User updated successfully:', updatedUser);
 
-    // Update credit inventory (decrement total_purchased, increment sold_to_agencies)
+    // ✅ 6. Update credit inventory (decrement total_purchased, increment sold_to_agencies)
     console.log('Updating credit inventory...');
+    
+    // Get current inventory
+    const { data: currentInventory, error: getInventoryError } = await supabase
+      .from('credit_inventory')
+      .select('total_purchased, sold_to_agencies')
+      .eq('id', '00000000-0000-0000-0000-000000000001')
+      .single();
+
+    if (getInventoryError) {
+      console.error('Error getting current inventory:', getInventoryError);
+    }
+
+    const currentTotalPurchased = currentInventory?.total_purchased || 0;
+    const currentSoldToAgencies = currentInventory?.sold_to_agencies || 0;
+    
     const { data: inventoryUpdate, error: inventoryError } = await supabase
       .from('credit_inventory')
       .update({
-        total_purchased: supabase.sql`COALESCE(total_purchased, 0) - ${creditsToAdd}`,
-        sold_to_agencies: supabase.sql`COALESCE(sold_to_agencies, 0) + ${creditsToAdd}`,
+        total_purchased: Math.max(0, currentTotalPurchased - creditsToAdd),
+        sold_to_agencies: currentSoldToAgencies + creditsToAdd,
         updated_at: new Date().toISOString()
       })
       .eq('id', '00000000-0000-0000-0000-000000000001')
@@ -280,7 +319,7 @@ serve(async (req) => {
 
     console.log('=== PAYMENT CONFIRMATION COMPLETED SUCCESSFULLY ===');
 
-    // Return success response with all details
+    // ✅ 7. Return success response with 200 status
     return new Response(JSON.stringify({ 
       success: true,
       updatedCredits: updatedUser.credits,
