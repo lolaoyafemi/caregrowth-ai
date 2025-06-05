@@ -19,7 +19,11 @@ const PaymentSuccessPage = () => {
     const confirmPayment = async () => {
       const sessionId = searchParams.get("session_id");
 
+      console.log('PaymentSuccessPage: Starting payment confirmation');
+      console.log('Session ID from URL:', sessionId);
+
       if (!sessionId) {
+        console.error('No session ID found in URL');
         setError("No session ID found. Please contact support.");
         setLoading(false);
         return;
@@ -28,7 +32,7 @@ const PaymentSuccessPage = () => {
       setLoading(true);
 
       try {
-        console.log('Confirming payment with session ID:', sessionId);
+        console.log('Calling confirm-payment function with session ID:', sessionId);
         
         const { data, error: functionError } = await supabase.functions.invoke('confirm-payment', {
           method: 'GET',
@@ -37,16 +41,27 @@ const PaymentSuccessPage = () => {
           }
         });
 
+        console.log('Function response data:', data);
+        console.log('Function response error:', functionError);
+
         if (functionError) {
-          throw new Error(functionError.message || "Could not confirm payment");
+          console.error('Function invocation error:', functionError);
+          throw new Error(`Function error: ${functionError.message || "Could not confirm payment"}`);
         }
 
         if (data?.success) {
           console.log('Payment confirmed successfully:', data);
           setConfirmed(true);
-          toast.success("Payment confirmed! Your credits have been added to your account.");
+          
+          if (data.alreadyProcessed) {
+            toast.success("Payment already processed! Your credits are available in your account.");
+          } else {
+            toast.success(`Payment confirmed! ${data.creditsAdded || 0} credits have been added to your account.`);
+          }
         } else {
-          throw new Error(data?.error || "Payment confirmation failed");
+          const errorMsg = data?.error || "Payment confirmation failed";
+          console.error('Payment confirmation failed:', errorMsg);
+          throw new Error(errorMsg);
         }
       } catch (err) {
         console.error("Payment confirmation error:", err);
@@ -99,7 +114,7 @@ const PaymentSuccessPage = () => {
                 <div className="text-red-600 text-lg font-semibold">
                   ❌ Payment verification failed
                 </div>
-                <p className="text-gray-600">{error}</p>
+                <p className="text-gray-600 text-sm">{error}</p>
                 <div className="space-y-2">
                   <Button 
                     onClick={() => navigate('/dashboard')}
