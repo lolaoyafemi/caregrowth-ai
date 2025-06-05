@@ -107,13 +107,31 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // Check if this payment has already been processed
+    const { data: existingPayment } = await supabase
+      .from('credit_sales_log')
+      .select('id')
+      .eq('stripe_session_id', sessionId)
+      .single();
+
+    if (existingPayment) {
+      console.log('Payment already processed for session:', sessionId);
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: "Payment already processed",
+        alreadyProcessed: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     // Update user's credits and plan
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update({
         credits: supabase.sql`COALESCE(credits, 0) + ${creditsToAdd}`,
-        plan: plan.toLowerCase(),
-        updated_at: new Date().toISOString()
+        plan: plan.toLowerCase()
       })
       .eq('id', user_id)
       .select('id, credits, plan')
@@ -131,32 +149,6 @@ serve(async (req) => {
     }
 
     console.log('Successfully updated user:', updatedUser);
-
-    // Update credit inventory - deduct from total_purchased and add to sold_to_agencies
-    console.log('Updating credit inventory:', { creditsToDeduct: creditsToAdd });
-    
-    const { data: inventoryData, error: inventoryError } = await supabase
-      .from('credit_inventory')
-      .update({
-        total_purchased: supabase.sql`COALESCE(total_purchased, 0) - ${creditsToAdd}`,
-        sold_to_agencies: supabase.sql`COALESCE(sold_to_agencies, 0) + ${creditsToAdd}`,
-        updated_at: new Date().toISOString()
-      })
-      .select('id, total_purchased, sold_to_agencies, available_balance');
-
-    if (inventoryError) {
-      console.error('Error updating credit inventory:', inventoryError);
-      return new Response(JSON.stringify({ 
-        error: "Failed to update credit inventory",
-        details: inventoryError.message,
-        userUpdate: "User credits were updated successfully, but inventory tracking failed"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
-    }
-
-    console.log('Successfully updated credit inventory:', inventoryData);
 
     // Insert record into credit_sales_log
     console.log('Logging credit sale:', { 
@@ -176,14 +168,15 @@ serve(async (req) => {
         plan_name: plan,
         stripe_session_id: sessionId
       })
-      .select('id, email, credits_purchased, amount_paid, plan_name');
+      .select('id, email, credits_purchased, amount_paid, plan_name')
+      .single();
 
     if (salesLogError) {
       console.error('Error logging credit sale:', salesLogError);
       return new Response(JSON.stringify({ 
         error: "Failed to log credit sale",
         details: salesLogError.message,
-        userUpdate: "User credits and inventory were updated successfully, but sales logging failed"
+        userUpdate: "User credits were updated successfully, but sales logging failed"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
@@ -197,11 +190,7 @@ serve(async (req) => {
       message: "Payment confirmed and user updated successfully",
       user: updatedUser,
       creditsAdded: creditsToAdd,
-      inventoryUpdate: {
-        creditsDeducted: creditsToAdd,
-        newInventoryState: inventoryData?.[0] || null
-      },
-      salesLog: salesLogData?.[0] || null
+      salesLog: salesLogData
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
