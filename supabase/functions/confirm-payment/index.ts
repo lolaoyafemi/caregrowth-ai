@@ -35,10 +35,10 @@ serve(async (req) => {
     }
 
     if (!sessionId) {
-      console.error('ERROR: No session_id provided in request body or query parameters');
+      console.error('ERROR: No session_id provided');
       return new Response(JSON.stringify({ 
         success: false,
-        error: "session_id is required in request body" 
+        error: "session_id is required" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
@@ -85,7 +85,7 @@ serve(async (req) => {
         error: `Failed to retrieve session from Stripe: ${stripeError.message}` 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
+        status: 404,
       });
     }
 
@@ -97,7 +97,7 @@ serve(async (req) => {
         error: `Payment not completed. Status: ${session.payment_status}` 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
+        status: 402,
       });
     }
 
@@ -205,7 +205,7 @@ serve(async (req) => {
       });
     }
 
-    // Update user's credits and plan
+    // Update user's credits and plan - using raw SQL increment to avoid race conditions
     console.log('Updating user credits...');
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
@@ -251,6 +251,25 @@ serve(async (req) => {
       console.log('Continuing despite logging error...');
     } else {
       console.log('Credit sale logged successfully:', salesLogData);
+    }
+
+    // Update credit inventory
+    console.log('Updating credit inventory...');
+    const { error: inventoryError } = await supabase
+      .from('credit_inventory')
+      .update({
+        sold_to_agencies: supabase.sql`COALESCE(sold_to_agencies, 0) + ${creditsToAdd}`,
+        total_purchased: supabase.sql`COALESCE(total_purchased, 0) + ${creditsToAdd}`,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', '00000000-0000-0000-0000-000000000001'); // Assuming single inventory record
+
+    if (inventoryError) {
+      console.error('Error updating credit inventory:', inventoryError);
+      // Don't fail the operation if inventory update fails
+      console.log('Continuing despite inventory update error...');
+    } else {
+      console.log('Credit inventory updated successfully');
     }
 
     console.log('=== PAYMENT CONFIRMATION COMPLETED SUCCESSFULLY ===');
