@@ -19,19 +19,21 @@ serve(async (req) => {
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
 
-    // Get session_id from request body
-    let sessionId: string | null = null;
+    // Get session_id from query parameters (primary method for Stripe redirects)
+    const url = new URL(req.url);
+    let sessionId = url.searchParams.get("session_id");
     
-    try {
-      const body = await req.json();
-      sessionId = body.session_id;
-      console.log('Session ID from request body:', sessionId);
-    } catch (bodyError) {
-      console.error('Error parsing request body:', bodyError);
-      // Fallback: try to get from URL query parameters
-      const url = new URL(req.url);
-      sessionId = url.searchParams.get("session_id");
-      console.log('Session ID from query params (fallback):', sessionId);
+    // Fallback: try to get from request body if not in query params
+    if (!sessionId) {
+      try {
+        const body = await req.json();
+        sessionId = body.session_id;
+        console.log('Session ID from request body (fallback):', sessionId);
+      } catch (bodyError) {
+        console.log('No session_id in body either, continuing with null');
+      }
+    } else {
+      console.log('Session ID from query params:', sessionId);
     }
 
     if (!sessionId) {
@@ -60,7 +62,7 @@ serve(async (req) => {
       });
     }
 
-    // Initialize Stripe
+    // Initialize Stripe with the secret key
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
@@ -89,7 +91,7 @@ serve(async (req) => {
       });
     }
 
-    // Check if payment was successful
+    // Verify payment status is 'paid'
     if (session.payment_status !== 'paid') {
       console.error('Payment not completed. Status:', session.payment_status);
       return new Response(JSON.stringify({ 
@@ -181,7 +183,7 @@ serve(async (req) => {
       auth: { persistSession: false }
     });
 
-    // Check if this payment has already been processed
+    // Check for duplicate payment processing
     console.log('Checking for existing payment record...');
     const { data: existingPayment, error: existingError } = await supabase
       .from('credit_sales_log')
@@ -205,8 +207,8 @@ serve(async (req) => {
       });
     }
 
-    // Update user's credits and plan - using raw SQL increment to avoid race conditions
-    console.log('Updating user credits...');
+    // Update user's credits and plan
+    console.log('Updating user credits and plan...');
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update({
@@ -230,7 +232,30 @@ serve(async (req) => {
 
     console.log('User updated successfully:', updatedUser);
 
-    // Insert record into credit_sales_log
+    // Update credit inventory (decrement total_purchased, increment sold_to_agencies)
+    console.log('Updating credit inventory...');
+    const { data: inventoryUpdate, error: inventoryError } = await supabase
+      .from('credit_inventory')
+      .update({
+        total_purchased: supabase.sql`COALESCE(total_purchased, 0) - ${creditsToAdd}`,
+        sold_to_agencies: supabase.sql`COALESCE(sold_to_agencies, 0) + ${creditsToAdd}`,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', '00000000-0000-0000-0000-000000000001')
+      .select('total_purchased, sold_to_agencies, available_balance')
+      .single();
+
+    let inventoryResult = null;
+    if (inventoryError) {
+      console.error('Error updating credit inventory:', inventoryError);
+      // Don't fail the entire operation if inventory update fails
+      console.log('Continuing despite inventory update error...');
+    } else {
+      console.log('Credit inventory updated successfully:', inventoryUpdate);
+      inventoryResult = inventoryUpdate;
+    }
+
+    // Log the credit sale
     console.log('Logging credit sale...');
     const { data: salesLogData, error: salesLogError } = await supabase
       .from('credit_sales_log')
@@ -253,33 +278,17 @@ serve(async (req) => {
       console.log('Credit sale logged successfully:', salesLogData);
     }
 
-    // Update credit inventory
-    console.log('Updating credit inventory...');
-    const { error: inventoryError } = await supabase
-      .from('credit_inventory')
-      .update({
-        sold_to_agencies: supabase.sql`COALESCE(sold_to_agencies, 0) + ${creditsToAdd}`,
-        total_purchased: supabase.sql`COALESCE(total_purchased, 0) + ${creditsToAdd}`,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', '00000000-0000-0000-0000-000000000001'); // Assuming single inventory record
-
-    if (inventoryError) {
-      console.error('Error updating credit inventory:', inventoryError);
-      // Don't fail the operation if inventory update fails
-      console.log('Continuing despite inventory update error...');
-    } else {
-      console.log('Credit inventory updated successfully');
-    }
-
     console.log('=== PAYMENT CONFIRMATION COMPLETED SUCCESSFULLY ===');
 
+    // Return success response with all details
     return new Response(JSON.stringify({ 
       success: true,
-      message: "Payment confirmed and user updated successfully",
-      user: updatedUser,
+      updatedCredits: updatedUser.credits,
+      plan: updatedUser.plan,
       creditsAdded: creditsToAdd,
-      salesLog: salesLogData || null
+      inventoryUpdate: inventoryResult,
+      salesLog: salesLogData || null,
+      message: "Payment confirmed and user updated successfully"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
