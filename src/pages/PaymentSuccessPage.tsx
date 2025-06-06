@@ -34,8 +34,8 @@ const PaymentSuccessPage = () => {
       try {
         console.log('Calling confirm-payment function with session ID:', sessionId);
         
-        // Create the URL with session_id as query parameter
-        const confirmUrl = `${supabase.supabaseUrl}/functions/v1/confirm-payment?session_id=${sessionId}`;
+        // Create the URL with session_id as query parameter using the correct Supabase URL
+        const confirmUrl = `https://ljtikbkilyeyuexzhaqd.supabase.co/functions/v1/confirm-payment?session_id=${sessionId}`;
         
         console.log('Full confirm URL:', confirmUrl);
         
@@ -43,7 +43,7 @@ const PaymentSuccessPage = () => {
         const response = await fetch(confirmUrl, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${supabase.supabaseKey}`,
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqdGlrYmtpbHlleXVleHpoYXFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgxOTYyOTEsImV4cCI6MjA2Mzc3MjI5MX0.sAsOSuzaNTq3ii_rkBvH4Q7X8wn2weny0E5VjI-mrys`,
             'Content-Type': 'application/json'
           }
         });

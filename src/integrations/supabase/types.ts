@@ -88,6 +88,7 @@ export type Database = {
         Row: {
           credits_used: number
           description: string | null
+          email: string
           id: string
           tool: string
           used_at: string
@@ -96,6 +97,7 @@ export type Database = {
         Insert: {
           credits_used: number
           description?: string | null
+          email: string
           id?: string
           tool: string
           used_at?: string
@@ -104,6 +106,7 @@ export type Database = {
         Update: {
           credits_used?: number
           description?: string | null
+          email?: string
           id?: string
           tool?: string
           used_at?: string
