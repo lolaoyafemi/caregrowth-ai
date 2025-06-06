@@ -26,7 +26,7 @@ export class PaymentProcessor {
       // Get payment record
       const paymentRecord = await this.databaseService.getPaymentRecord(sessionId);
 
-      // Calculate total credits
+      // Calculate total credits including the current payment (since we'll mark it as completed)
       const existingCredits = await this.databaseService.calculateTotalCredits(customerEmail);
       const totalCredits = existingCredits + paymentRecord.credits_granted;
 

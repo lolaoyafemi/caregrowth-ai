@@ -46,9 +46,9 @@ export class DatabaseService {
       throw new Error('Error querying payments');
     }
 
-    const existingCredits = allPayments?.reduce((sum, payment) => sum + payment.credits_granted, 0) || 0;
-    logStep('Calculated existing credits', { existingCredits });
-    return existingCredits;
+    const totalCredits = allPayments?.reduce((sum, payment) => sum + payment.credits_granted, 0) || 0;
+    logStep('Calculated total credits from all completed payments', { totalCredits });
+    return totalCredits;
   }
 
   async upsertUserProfile(email: string, paymentRecord: PaymentRecord, totalCredits: number, businessName?: string): Promise<string> {
