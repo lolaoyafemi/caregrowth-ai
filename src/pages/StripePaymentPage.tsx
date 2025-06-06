@@ -213,7 +213,7 @@ const StripePaymentPage = () => {
                       onClick={() => handleAddCredits(pkg.credits, pkg.planName)}
                       disabled={addingCredits === pkg.credits.toString()}
                       variant="outline"
-                      className="w-full text-left justify-between border-2 border-blue-400 hover:border-caregrowth-blue"
+                      className="w-full text-left justify-between border-2 border-black-400 hover:border-caregrowth-blue"
                     >
                       <span>Add {pkg.label}</span>
                       {addingCredits === pkg.credits.toString() ? (
