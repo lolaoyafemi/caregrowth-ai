@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 const StripePaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
   const [loading, setLoading] = useState(false);
+  const [addingCredits, setAddingCredits] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -40,6 +41,12 @@ const StripePaymentPage = () => {
       credits: 500,
       features: ['Unlimited Posts', 'Unlimited Docs', 'Unlimited Q&A', 'Account Manager']
     }
+  ];
+
+  const creditPackages = [
+    { credits: 50, label: '50 Credits', planName: 'Starter Package' },
+    { credits: 200, label: '200 Credits', planName: 'Professional Package' },
+    { credits: 500, label: '500 Credits', planName: 'Enterprise Package' }
   ];
 
   const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
@@ -89,6 +96,51 @@ const StripePaymentPage = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddCredits = async (credits: number, planName: string) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to add credits.",
+        variant: "destructive"
+      });
+      navigate('/login');
+      return;
+    }
+
+    setAddingCredits(credits.toString());
+
+    try {
+      const { data, error } = await supabase.functions.invoke('add-credits', {
+        body: {
+          credits,
+          planName
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Credits Added!",
+          description: `Successfully added ${credits} credits to your account. Total: ${data.total_credits}`,
+        });
+      } else {
+        throw new Error(data?.error || "Failed to add credits");
+      }
+    } catch (error) {
+      console.error('Add credits error:', error);
+      toast({
+        title: "Failed to Add Credits",
+        description: error.message || "Unable to add credits to your account.",
+        variant: "destructive"
+      });
+    } finally {
+      setAddingCredits(null);
     }
   };
 
@@ -142,6 +194,32 @@ const StripePaymentPage = () => {
                   </CardContent>
                 </Card>
               ))}
+
+              {/* Free Credit Addition Section */}
+              <div className="mt-8">
+                <h3 className="text-xl font-bold mb-4">Or Add Credits Directly (Free for Testing)</h3>
+                <div className="space-y-3">
+                  {creditPackages.map((pkg) => (
+                    <Button
+                      key={pkg.credits}
+                      onClick={() => handleAddCredits(pkg.credits, pkg.planName)}
+                      disabled={addingCredits === pkg.credits.toString()}
+                      variant="outline"
+                      className="w-full text-left justify-between border-2 border-dashed border-gray-300 hover:border-caregrowth-blue"
+                    >
+                      <span>Add {pkg.label}</span>
+                      {addingCredits === pkg.credits.toString() ? (
+                        <span className="text-sm">Adding...</span>
+                      ) : (
+                        <span className="text-sm text-gray-500">Free</span>
+                      )}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  * These buttons add credits directly to your account for testing purposes
+                </p>
+              </div>
             </div>
 
             <div className="space-y-6">
