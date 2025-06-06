@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,28 +34,34 @@ const PaymentSuccessPage = () => {
       try {
         console.log('Calling confirm-payment function with session ID:', sessionId);
         
-        // Call the edge function with session_id in the body
-        const { data, error: functionError } = await supabase.functions.invoke('confirm-payment', {
-          body: { session_id: sessionId }
+        // Create the URL with session_id as query parameter
+        const confirmUrl = `${supabase.supabaseUrl}/functions/v1/confirm-payment?session_id=${sessionId}`;
+        
+        console.log('Full confirm URL:', confirmUrl);
+        
+        // Make direct fetch request to match the edge function's expected format
+        const response = await fetch(confirmUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${supabase.supabaseKey}`,
+            'Content-Type': 'application/json'
+          }
         });
 
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
         console.log('Function response data:', data);
-        console.log('Function response error:', functionError);
 
-        if (functionError) {
-          console.error('Function invocation error:', functionError);
-          throw new Error(`Function error: ${functionError.message || "Could not confirm payment"}`);
+        if (!response.ok) {
+          console.error('Function response not ok:', response.status, data);
+          throw new Error(`Function error: ${data.error || `HTTP ${response.status}`}`);
         }
 
         if (data?.success) {
           console.log('Payment confirmed successfully:', data);
           setConfirmed(true);
-          
-          if (data.alreadyProcessed) {
-            toast.success("Payment already processed! Your credits are available in your account.");
-          } else {
-            toast.success(`Payment confirmed! ${data.creditsAdded || 0} credits have been added to your account.`);
-          }
+          toast.success("Payment confirmed! Your credits have been added to your account.");
         } else {
           const errorMsg = data?.error || "Payment confirmation failed";
           console.error('Payment confirmation failed:', errorMsg);
