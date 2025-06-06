@@ -197,7 +197,7 @@ const StripePaymentPage = () => {
 
               {/* Free Credit Addition Section */}
               <div className="mt-8">
-                <h3 className="text-xl font-bold mb-4">Or Add Credits Directly (Free for Testing)</h3>
+                <h3 className="text-xl font-bold mb-4">Add Credits Directly (Free for Testing)</h3>
                 <div className="space-y-3">
                   {creditPackages.map((pkg) => (
                     <Button
@@ -216,9 +216,7 @@ const StripePaymentPage = () => {
                     </Button>
                   ))}
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  * These buttons add credits directly to your account for testing purposes
-                </p>
+
               </div>
             </div>
 
