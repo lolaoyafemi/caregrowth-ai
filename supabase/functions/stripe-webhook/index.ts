@@ -132,32 +132,31 @@ serve(async (req) => {
 
       console.log('Allocating credits:', { customerEmail, planName, creditsGranted, amount: amountTotal });
 
-      // Try to find existing user by checking the users table directly
+      // Try to find existing user by checking the auth.users table
       let userId = null;
       try {
-        const { data: existingUser, error: userQueryError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', customerEmail)
-          .maybeSingle();
-
+        const { data: { users }, error: userQueryError } = await supabase.auth.admin.listUsers();
+        
         if (userQueryError) {
-          console.log('Error querying users table:', userQueryError);
-        } else if (existingUser) {
-          userId = existingUser.id;
-          console.log('Found existing user:', userId);
+          console.log('Error querying users:', userQueryError);
         } else {
-          console.log('User not found in users table, will be created during signup:', customerEmail);
+          const existingUser = users.find(user => user.email === customerEmail);
+          if (existingUser) {
+            userId = existingUser.id;
+            console.log('Found existing user:', userId);
+          } else {
+            console.log('User not found, will be created during signup:', customerEmail);
+          }
         }
       } catch (error) {
-        console.log('Could not query users table, continuing without user_id:', error);
+        console.log('Could not query users, continuing without user_id:', error);
       }
 
       // Create payment record
       const { data: paymentData, error: paymentError } = await supabase
         .from('payments')
         .insert({
-          user_id: userId || null, // null if user doesn't exist yet
+          user_id: userId || null,
           email: customerEmail,
           stripe_session_id: session.id,
           plan_name: planName,
@@ -175,20 +174,54 @@ serve(async (req) => {
 
       console.log('Payment record created successfully:', paymentData);
 
-      // If user exists, allocate credits immediately
-      if (userId) {
-        const { error: creditError } = await supabase
-          .from('users')
-          .update({ 
-            credits: supabase.sql`credits + ${creditsGranted}`,
+      // Update or create user_profiles record directly
+      const businessName = session.customer_details?.name || null;
+      
+      // First, check if profile exists
+      const { data: existingProfile, error: profileQueryError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('email', customerEmail)
+        .maybeSingle();
+
+      if (profileQueryError) {
+        console.error('Error querying user profile:', profileQueryError);
+      }
+
+      if (existingProfile) {
+        // Update existing profile
+        const newCredits = (existingProfile.credits || 0) + creditsGranted;
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({
+            credits: newCredits,
+            plan_name: planName,
+            business_name: businessName || existingProfile.business_name,
             updated_at: new Date().toISOString()
           })
-          .eq('id', userId);
+          .eq('id', existingProfile.id);
 
-        if (creditError) {
-          console.error('Error updating user credits:', creditError);
+        if (updateError) {
+          console.error('Error updating user profile:', updateError);
         } else {
-          console.log('Credits allocated successfully to existing user');
+          console.log('Credits allocated successfully to existing profile:', newCredits);
+        }
+      } else {
+        // Create new profile
+        const { error: createError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: userId,
+            email: customerEmail,
+            credits: creditsGranted,
+            plan_name: planName,
+            business_name: businessName
+          });
+
+        if (createError) {
+          console.error('Error creating user profile:', createError);
+        } else {
+          console.log('Credits allocated to new profile:', creditsGranted);
         }
       }
     }

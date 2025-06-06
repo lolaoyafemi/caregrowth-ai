@@ -109,10 +109,11 @@ export class DatabaseService {
       profileId = newProfile.id;
       logStep('Created new user profile', { profileId, totalCredits });
     } else {
-      // Update existing profile
+      // Update existing profile - ensure we properly update the credits
       const updateData: any = {
         credits: totalCredits,
-        plan_name: paymentRecord.plan_name
+        plan_name: paymentRecord.plan_name,
+        updated_at: new Date().toISOString()
       };
 
       // Only update user_id if we have one and it's not already set
@@ -207,7 +208,8 @@ export class DatabaseService {
         .update({
           credits: newTotalCredits,
           plan_name: planName,
-          user_id: userId || existingProfile.user_id
+          user_id: userId || existingProfile.user_id,
+          updated_at: new Date().toISOString()
         })
         .eq('id', existingProfile.id);
 

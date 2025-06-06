@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useUserCredits } from '@/hooks/useUserCredits';
 
 const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,7 @@ const PaymentSuccessPage = () => {
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { refetch } = useUserCredits();
 
   useEffect(() => {
     const confirmPayment = async () => {
@@ -62,6 +64,11 @@ const PaymentSuccessPage = () => {
           console.log('Payment confirmed successfully:', data);
           setConfirmed(true);
           toast.success("Payment confirmed! Your credits have been added to your account.");
+          
+          // Refresh credits to reflect the new purchase
+          setTimeout(() => {
+            refetch();
+          }, 1000);
         } else {
           const errorMsg = data?.error || "Payment confirmation failed";
           console.error('Payment confirmation failed:', errorMsg);
@@ -78,7 +85,7 @@ const PaymentSuccessPage = () => {
     };
 
     confirmPayment();
-  }, [searchParams]);
+  }, [searchParams, refetch]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
