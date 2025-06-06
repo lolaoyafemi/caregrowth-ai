@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useUserCredits } from '@/hooks/useUserCredits';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -33,6 +35,7 @@ interface SidebarProps {
 
 const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const navigate = useNavigate();
+  const { credits, loading } = useUserCredits();
   
   // Determine which menu items to show based on user role
   const showSuperAdminItems = userRole === 'super_admin';
@@ -43,11 +46,11 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   
   const isSuperAdmin = userRole === 'super_admin';
   
-  // Credit balance details (mock data) - show for both super admins and main admins
+  // Credit balance details - show for both super admins and main admins
   const creditBalance = {
-    available: 0,
+    available: credits,
     usedThisMonth: 0,
-    totalAllocation: 0,
+    totalAllocation: credits,
     percentUsed: 0
   };
 
@@ -118,7 +121,9 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Available</span>
-                <span className="font-medium text-sm">{creditBalance.available.toLocaleString()}</span>
+                <span className="font-medium text-sm">
+                  {loading ? '...' : creditBalance.available.toLocaleString()}
+                </span>
               </div>
               <div className="space-y-1">
                 <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
@@ -156,13 +161,15 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                       "mb-1",
                       isSuperAdmin ? "text-green-600" : "text-caregrowth-blue"
                     )} />
-                    <span className="text-xs font-medium">{creditBalance.available.toLocaleString()}</span>
+                    <span className="text-xs font-medium">
+                      {loading ? '...' : creditBalance.available.toLocaleString()}
+                    </span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   <div className="space-y-2 w-48">
                     <p className="font-medium">Credit Balance</p>
-                    <p className="text-sm">Available: {creditBalance.available.toLocaleString()}</p>
+                    <p className="text-sm">Available: {loading ? '...' : creditBalance.available.toLocaleString()}</p>
                     <p className="text-sm">Used: {creditBalance.usedThisMonth.toLocaleString()}</p>
                     <Progress value={creditBalance.percentUsed} className="h-2" />
                   </div>
@@ -311,7 +318,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M7 10H9V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M15 10H17L15 13.5H17V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M11 10H13V17" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M11 10H13V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M8 7H8.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               {!collapsed && <span>Social Media</span>}

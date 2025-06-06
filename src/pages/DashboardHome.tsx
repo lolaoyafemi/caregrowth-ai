@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,9 +11,11 @@ import {
 } from '@/components/ui/tooltip';
 import { Coins, HelpCircle, FileText, MessageCircle } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
+import { useUserCredits } from '@/hooks/useUserCredits';
 
 const DashboardHome = () => {
   const { user } = useUser();
+  const { credits, loading } = useUserCredits();
   const isSuperAdmin = user?.role === 'super_admin';
   const isMainAdmin = user?.role === 'admin';
   
@@ -23,7 +24,7 @@ const DashboardHome = () => {
     socialContent: { used: 0, total: 50, percent: 0 },
     documentSearch: { used: 0, total: 5, percent: 0 },
     qaAssistant: { used: 0, total: 100, percent: 0 },
-    creditsLeft: 0,
+    creditsLeft: credits,
     monthlyUsage: 0,
   };
 
@@ -59,7 +60,9 @@ const DashboardHome = () => {
             <CardContent>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-gray-600">Available Credits</span>
-                <span className="font-bold text-xl">{usageMetrics.creditsLeft.toLocaleString()}</span>
+                <span className="font-bold text-xl">
+                  {loading ? '...' : usageMetrics.creditsLeft.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between items-center mb-4 text-xs text-gray-500">
                 <span>Used this month: {usageMetrics.monthlyUsage.toLocaleString()}</span>
