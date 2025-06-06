@@ -88,17 +88,17 @@ serve(async (req) => {
 
     console.log('Found payment record:', paymentRecord.id, 'Credits:', paymentRecord.credits_granted);
 
-    // Find or create user by email
-    let { data: existingUser, error: userQueryError } = await supabase
-      .from('users')
-      .select('*')
+    // Calculate total credits from all completed payments for this email
+    const { data: allPayments, error: paymentsError } = await supabase
+      .from('payments')
+      .select('credits_granted')
       .eq('email', customerEmail)
-      .maybeSingle();
+      .eq('status', 'completed');
 
-    if (userQueryError) {
-      console.error('Error querying user:', userQueryError);
+    if (paymentsError) {
+      console.error('Error querying payments:', paymentsError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Error querying user' }),
+        JSON.stringify({ success: false, error: 'Error querying payments' }),
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -106,25 +106,50 @@ serve(async (req) => {
       );
     }
 
-    let userId = existingUser?.id;
+    // Calculate total credits including the current payment
+    const existingCredits = allPayments?.reduce((sum, payment) => sum + payment.credits_granted, 0) || 0;
+    const totalCredits = existingCredits + paymentRecord.credits_granted;
 
-    if (!existingUser) {
-      // Create new user if doesn't exist
-      const { data: newUser, error: createUserError } = await supabase
-        .from('users')
+    console.log('Calculated total credits:', totalCredits, '(existing:', existingCredits, '+ new:', paymentRecord.credits_granted, ')');
+
+    // Find or create user profile by email
+    let { data: existingProfile, error: profileQueryError } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('email', customerEmail)
+      .maybeSingle();
+
+    if (profileQueryError) {
+      console.error('Error querying user profile:', profileQueryError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Error querying user profile' }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    let profileId = existingProfile?.id;
+
+    if (!existingProfile) {
+      // Create new user profile if doesn't exist
+      const { data: newProfile, error: createProfileError } = await supabase
+        .from('user_profiles')
         .insert({
+          user_id: paymentRecord.user_id, // This might be null if user doesn't exist in auth
           email: customerEmail,
-          credits: paymentRecord.credits_granted,
-          plan: paymentRecord.plan_name.toLowerCase(),
-          name: session.customer_details?.name || null
+          credits: totalCredits,
+          plan_name: paymentRecord.plan_name,
+          business_name: session.customer_details?.name || null
         })
         .select()
         .single();
 
-      if (createUserError || !newUser) {
-        console.error('Error creating user:', createUserError);
+      if (createProfileError || !newProfile) {
+        console.error('Error creating user profile:', createProfileError);
         return new Response(
-          JSON.stringify({ success: false, error: 'Error creating user' }),
+          JSON.stringify({ success: false, error: 'Error creating user profile' }),
           { 
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -132,22 +157,23 @@ serve(async (req) => {
         );
       }
 
-      userId = newUser.id;
-      console.log('Created new user:', userId, 'with credits:', paymentRecord.credits_granted);
+      profileId = newProfile.id;
+      console.log('Created new user profile:', profileId, 'with total credits:', totalCredits);
     } else {
-      // Update existing user's credits and plan
-      const { error: updateUserError } = await supabase
-        .from('users')
+      // Update existing user profile
+      const { error: updateProfileError } = await supabase
+        .from('user_profiles')
         .update({
-          credits: (existingUser.credits || 0) + paymentRecord.credits_granted,
-          plan: paymentRecord.plan_name.toLowerCase()
+          credits: totalCredits,
+          plan_name: paymentRecord.plan_name,
+          user_id: paymentRecord.user_id || existingProfile.user_id // Keep existing user_id if new one is null
         })
-        .eq('id', existingUser.id);
+        .eq('id', existingProfile.id);
 
-      if (updateUserError) {
-        console.error('Error updating user credits:', updateUserError);
+      if (updateProfileError) {
+        console.error('Error updating user profile:', updateProfileError);
         return new Response(
-          JSON.stringify({ success: false, error: 'Error updating user credits' }),
+          JSON.stringify({ success: false, error: 'Error updating user profile' }),
           { 
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -155,15 +181,14 @@ serve(async (req) => {
         );
       }
 
-      console.log('Updated existing user:', userId, 'added credits:', paymentRecord.credits_granted);
+      console.log('Updated existing user profile:', profileId, 'with total credits:', totalCredits);
     }
 
-    // Update payment record status to completed and link to user
+    // Update payment record status to completed
     const { error: updatePaymentError } = await supabase
       .from('payments')
       .update({
         status: 'completed',
-        user_id: userId,
         updated_at: new Date().toISOString()
       })
       .eq('id', paymentRecord.id);
@@ -183,7 +208,8 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true,
-      message: 'Payment confirmed and credits added successfully'
+      message: 'Payment confirmed and credits added successfully',
+      total_credits: totalCredits
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

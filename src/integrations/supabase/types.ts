@@ -285,13 +285,16 @@ export type Database = {
           business_name: string | null
           core_service: string | null
           created_at: string
+          credits: number | null
           differentiator: string | null
+          email: string | null
           id: string
           ideal_client: string | null
           location: string | null
           main_offer: string | null
           objections: string[] | null
           pain_points: string[] | null
+          plan_name: string | null
           services: string | null
           testimonial: string | null
           updated_at: string
@@ -303,13 +306,16 @@ export type Database = {
           business_name?: string | null
           core_service?: string | null
           created_at?: string
+          credits?: number | null
           differentiator?: string | null
+          email?: string | null
           id?: string
           ideal_client?: string | null
           location?: string | null
           main_offer?: string | null
           objections?: string[] | null
           pain_points?: string[] | null
+          plan_name?: string | null
           services?: string | null
           testimonial?: string | null
           updated_at?: string
@@ -321,13 +327,16 @@ export type Database = {
           business_name?: string | null
           core_service?: string | null
           created_at?: string
+          credits?: number | null
           differentiator?: string | null
+          email?: string | null
           id?: string
           ideal_client?: string | null
           location?: string | null
           main_offer?: string | null
           objections?: string[] | null
           pain_points?: string[] | null
+          plan_name?: string | null
           services?: string | null
           testimonial?: string | null
           updated_at?: string
