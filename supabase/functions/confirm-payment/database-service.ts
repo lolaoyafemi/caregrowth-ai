@@ -16,11 +16,11 @@ export class DatabaseService {
   async getPaymentRecord(sessionId: string): Promise<PaymentRecord> {
     logStep('Finding payment record', { sessionId });
     
+    // Look for payment record with any status (not just pending)
     const { data: paymentRecord, error: paymentError } = await this.supabase
       .from('payments')
       .select('*')
       .eq('stripe_session_id', sessionId)
-      .eq('status', 'pending')
       .single();
 
     if (paymentError || !paymentRecord) {
@@ -28,27 +28,28 @@ export class DatabaseService {
       throw new Error('Payment record not found');
     }
 
-    logStep('Found payment record', { id: paymentRecord.id, credits: paymentRecord.credits_granted });
+    logStep('Found payment record', { id: paymentRecord.id, credits: paymentRecord.credits_granted, status: paymentRecord.status });
     return paymentRecord;
   }
 
   async calculateTotalCredits(email: string): Promise<number> {
     logStep('Calculating total credits for email', { email });
     
-    const { data: allPayments, error: paymentsError } = await this.supabase
-      .from('payments')
-      .select('credits_granted')
+    // Get credits from user_profiles table directly
+    const { data: profile, error: profileError } = await this.supabase
+      .from('user_profiles')
+      .select('credits')
       .eq('email', email)
-      .eq('status', 'completed');
+      .maybeSingle();
 
-    if (paymentsError) {
-      logStep('Error querying payments', { error: paymentsError });
-      throw new Error('Error querying payments');
+    if (profileError) {
+      logStep('Error querying user profile', { error: profileError });
+      return 0;
     }
 
-    const totalCredits = allPayments?.reduce((sum, payment) => sum + payment.credits_granted, 0) || 0;
-    logStep('Calculated total credits from all completed payments', { totalCredits });
-    return totalCredits;
+    const currentCredits = profile?.credits || 0;
+    logStep('Current credits from profile', { currentCredits });
+    return currentCredits;
   }
 
   async upsertUserProfile(email: string, paymentRecord: PaymentRecord, totalCredits: number, businessName?: string): Promise<string> {
@@ -109,9 +110,12 @@ export class DatabaseService {
       profileId = newProfile.id;
       logStep('Created new user profile', { profileId, totalCredits });
     } else {
-      // Update existing profile - ensure we properly update the credits
+      // Update existing profile - ADD credits instead of replacing
+      const currentCredits = existingProfile.credits || 0;
+      const newCredits = currentCredits + paymentRecord.credits_granted;
+      
       const updateData: any = {
-        credits: totalCredits,
+        credits: newCredits, // Add to existing credits
         plan_name: paymentRecord.plan_name,
         updated_at: new Date().toISOString()
       };
@@ -141,7 +145,7 @@ export class DatabaseService {
         throw new Error('Error updating user profile');
       }
 
-      logStep('Updated existing user profile', { profileId, totalCredits });
+      logStep('Updated existing user profile', { profileId, previousCredits: currentCredits, newCredits });
     }
 
     return profileId;
@@ -169,7 +173,7 @@ export class DatabaseService {
   async addCreditsDirectly(email: string, userId: string | null, credits: number, planName: string): Promise<void> {
     logStep('Adding credits directly', { email, userId, credits, planName });
 
-    // First, find or create user profile
+    // First, find existing user profile
     let { data: existingProfile, error: profileQueryError } = await this.supabase
       .from('user_profiles')
       .select('*')
@@ -202,7 +206,7 @@ export class DatabaseService {
 
       logStep('Created new user profile with credits', { email, credits: newTotalCredits });
     } else {
-      // Update existing profile
+      // Update existing profile - ADD to existing credits
       const { error: updateError } = await this.supabase
         .from('user_profiles')
         .update({
@@ -218,7 +222,7 @@ export class DatabaseService {
         throw new Error('Error updating user profile');
       }
 
-      logStep('Updated user profile with credits', { email, credits: newTotalCredits });
+      logStep('Updated user profile with credits', { email, previousCredits: currentCredits, newCredits: newTotalCredits });
     }
   }
 }

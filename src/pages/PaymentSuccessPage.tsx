@@ -36,28 +36,17 @@ const PaymentSuccessPage = () => {
       try {
         console.log('Calling confirm-payment function with session ID:', sessionId);
         
-        // Create the URL with session_id as query parameter using the correct Supabase URL
-        const confirmUrl = `https://ljtikbkilyeyuexzhaqd.supabase.co/functions/v1/confirm-payment?session_id=${sessionId}`;
-        
-        console.log('Full confirm URL:', confirmUrl);
-        
-        // Make direct fetch request to match the edge function's expected format
-        const response = await fetch(confirmUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqdGlrYmtpbHlleXVleHpoYXFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgxOTYyOTEsImV4cCI6MjA2Mzc3MjI5MX0.sAsOSuzaNTq3ii_rkBvH4Q7X8wn2weny0E5VjI-mrys`,
-            'Content-Type': 'application/json'
-          }
+        // Use the Supabase client to invoke the edge function
+        const { data, error: functionError } = await supabase.functions.invoke('confirm-payment', {
+          body: { session_id: sessionId }
         });
 
-        console.log('Response status:', response.status);
-        
-        const data = await response.json();
-        console.log('Function response data:', data);
+        console.log('Function response:', data);
+        console.log('Function error:', functionError);
 
-        if (!response.ok) {
-          console.error('Function response not ok:', response.status, data);
-          throw new Error(`Function error: ${data.error || `HTTP ${response.status}`}`);
+        if (functionError) {
+          console.error('Function error:', functionError);
+          throw new Error(`Function error: ${functionError.message}`);
         }
 
         if (data?.success) {
