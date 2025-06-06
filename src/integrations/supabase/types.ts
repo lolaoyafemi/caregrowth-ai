@@ -204,6 +204,44 @@ export type Database = {
         }
         Relationships: []
       }
+      post_history: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          platform: string | null
+          prompt_category: string | null
+          tone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          platform?: string | null
+          prompt_category?: string | null
+          tone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          platform?: string | null
+          prompt_category?: string | null
+          tone?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       prompts: {
         Row: {
           body: string
