@@ -211,6 +211,7 @@ export type Database = {
           id: string
           platform: string | null
           prompt_category: string | null
+          regenerated_from: string | null
           tone: string | null
           user_id: string | null
         }
@@ -220,6 +221,7 @@ export type Database = {
           id?: string
           platform?: string | null
           prompt_category?: string | null
+          regenerated_from?: string | null
           tone?: string | null
           user_id?: string | null
         }
@@ -229,6 +231,7 @@ export type Database = {
           id?: string
           platform?: string | null
           prompt_category?: string | null
+          regenerated_from?: string | null
           tone?: string | null
           user_id?: string | null
         }

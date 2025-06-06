@@ -10,12 +10,28 @@ serve(async (req) => {
   }
 
   try {
+    let session_id: string | null = null;
+
+    // Try to get session_id from query parameters first
     const url = new URL(req.url);
-    const session_id = url.searchParams.get('session_id');
+    session_id = url.searchParams.get('session_id');
+
+    // If not found in query params, try request body
+    if (!session_id && req.method === 'POST') {
+      try {
+        const body = await req.json();
+        session_id = body.session_id;
+      } catch (error) {
+        console.log('No JSON body or failed to parse:', error);
+      }
+    }
 
     if (!session_id) {
+      console.error('Missing session_id in both query params and body');
       return createErrorResponse('Missing session_id', 400);
     }
+
+    console.log('Processing payment confirmation for session:', session_id);
 
     const processor = new PaymentProcessor();
     const result = await processor.processPaymentConfirmation(session_id);
@@ -25,6 +41,6 @@ serve(async (req) => {
   } catch (err) {
     console.error('Function error:', err);
     const errorMessage = err instanceof Error ? err.message : 'Internal server error';
-    return createErrorResponse(errorMessage);
+    return createErrorResponse(errorMessage, 500);
   }
 });

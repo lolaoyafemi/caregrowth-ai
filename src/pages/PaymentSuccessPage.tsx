@@ -36,7 +36,7 @@ const PaymentSuccessPage = () => {
       try {
         console.log('Calling confirm-payment function with session ID:', sessionId);
         
-        // Use the Supabase client to invoke the edge function
+        // Use the Supabase client to invoke the edge function with session_id in body
         const { data, error: functionError } = await supabase.functions.invoke('confirm-payment', {
           body: { session_id: sessionId }
         });
