@@ -8,64 +8,64 @@ export const useUserCredits = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    const fetchUserCredits = async () => {
-      if (!user) {
-        setCredits(0);
-        setLoading(false);
-        return;
-      }
+  const fetchUserCredits = async () => {
+    if (!user) {
+      setCredits(0);
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('credits')
-          .eq('user_id', user.id)
-          .single();
+    try {
+      console.log('Fetching credits for user:', user.id);
+      
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('credits')
+        .eq('user_id', user.id)
+        .single();
 
-        if (error) {
-          console.error('Error fetching user credits:', error);
+      if (error) {
+        console.error('Error fetching user credits:', error);
+        // If no profile exists, try to create one
+        if (error.code === 'PGRST116') {
+          console.log('No profile found, creating one...');
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: user.id,
+              email: user.email,
+              credits: 0
+            });
+          
+          if (insertError) {
+            console.error('Error creating profile:', insertError);
+          }
           setCredits(0);
         } else {
-          setCredits(data?.credits || 0);
+          setCredits(0);
         }
-      } catch (error) {
-        console.error('Error fetching user credits:', error);
-        setCredits(0);
-      } finally {
-        setLoading(false);
+      } else {
+        console.log('Credits fetched:', data?.credits || 0);
+        setCredits(data?.credits || 0);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching user credits:', error);
+      setCredits(0);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUserCredits();
   }, [user]);
 
-  return { credits, loading, refetch: () => {
+  const refetch = () => {
     if (user) {
       setLoading(true);
-      // Re-run the fetch logic
-      const fetchUserCredits = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('user_profiles')
-            .select('credits')
-            .eq('user_id', user.id)
-            .single();
-
-          if (error) {
-            console.error('Error fetching user credits:', error);
-            setCredits(0);
-          } else {
-            setCredits(data?.credits || 0);
-          }
-        } catch (error) {
-          console.error('Error fetching user credits:', error);
-          setCredits(0);
-        } finally {
-          setLoading(false);
-        }
-      };
       fetchUserCredits();
     }
-  }};
+  };
+
+  return { credits, loading, refetch };
 };

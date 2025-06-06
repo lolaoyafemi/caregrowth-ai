@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
@@ -35,7 +35,18 @@ interface SidebarProps {
 
 const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const navigate = useNavigate();
-  const { credits, loading } = useUserCredits();
+  const { credits, loading, refetch } = useUserCredits();
+  
+  // Add effect to refetch credits when component mounts
+  useEffect(() => {
+    refetch();
+  }, []);
+
+  // Add debugging
+  useEffect(() => {
+    console.log('Sidebar - Credits:', credits);
+    console.log('Sidebar - Loading:', loading);
+  }, [credits, loading]);
   
   // Determine which menu items to show based on user role
   const showSuperAdminItems = userRole === 'super_admin';
@@ -109,12 +120,18 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0"
+                        onClick={refetch}
+                        disabled={loading}
+                      >
                         <ChevronRight size={12} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>View credit details</p>
+                      <p>Refresh credits</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

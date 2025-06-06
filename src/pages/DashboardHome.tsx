@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -15,9 +15,21 @@ import { useUserCredits } from '@/hooks/useUserCredits';
 
 const DashboardHome = () => {
   const { user } = useUser();
-  const { credits, loading } = useUserCredits();
+  const { credits, loading, refetch } = useUserCredits();
   const isSuperAdmin = user?.role === 'super_admin';
   const isMainAdmin = user?.role === 'admin';
+
+  // Add effect to refetch credits when component mounts
+  useEffect(() => {
+    refetch();
+  }, []);
+
+  // Add debugging
+  useEffect(() => {
+    console.log('Dashboard - User:', user);
+    console.log('Dashboard - Credits:', credits);
+    console.log('Dashboard - Loading:', loading);
+  }, [user, credits, loading]);
   
   // Reset usage metrics to zero for new users
   const usageMetrics = {
@@ -61,17 +73,27 @@ const DashboardHome = () => {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-gray-600">Available Credits</span>
                 <span className="font-bold text-xl">
-                  {loading ? '...' : usageMetrics.creditsLeft.toLocaleString()}
+                  {loading ? '...' : credits.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between items-center mb-4 text-xs text-gray-500">
                 <span>Used this month: {usageMetrics.monthlyUsage.toLocaleString()}</span>
               </div>
-              <Link to="/stripe-payment">
-                <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
-                  Buy More Credits
+              <div className="flex gap-2">
+                <Link to="/stripe-payment" className="flex-1">
+                  <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
+                    Buy More Credits
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refetch}
+                  disabled={loading}
+                >
+                  Refresh
                 </Button>
-              </Link>
+              </div>
             </CardContent>
           </Card>
         )}
