@@ -113,7 +113,8 @@ const SocialMediaTool = () => {
 
       toast.success(`1 credit deducted. Remaining credits: ${creditResult.remainingCredits}`);
 
-      const result = await generatePost(userId, contentCategory, toneOfPost, platform);
+      const result = await generatePost(userId, contentCategory, toneOfPost, platform, audience);
+
       console.log('Generation result:', result);
 
       if (result && result.post) {
