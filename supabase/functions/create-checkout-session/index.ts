@@ -17,6 +17,50 @@ serve(async (req) => {
   try {
     console.log('=== CHECKOUT SESSION START ===');
     
+    // Get the authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      return new Response(JSON.stringify({ 
+        error: "Authentication required - no authorization header" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    // Initialize Supabase client with anon key for auth verification
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Missing Supabase configuration");
+      return new Response(JSON.stringify({ error: "Server configuration error" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false }
+    });
+
+    // Verify the user authentication
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return new Response(JSON.stringify({ 
+        error: "Authentication failed - invalid token" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    console.log('User authenticated:', { userId: user.id, email: user.email });
+
     // Parse the request body
     let requestBody;
     try {
@@ -34,18 +78,35 @@ serve(async (req) => {
 
     const { email, user_id, plan, planName, credits, amount } = requestBody;
     
-    // Enhanced validation with specific error messages
-    if (!email) {
-      console.error("Missing email field");
-      return new Response(JSON.stringify({ error: "Email is required" }), {
+    // Verify the authenticated user matches the request
+    if (user_id && user_id !== user.id) {
+      console.error("User ID mismatch:", { authenticated: user.id, requested: user_id });
+      return new Response(JSON.stringify({ 
+        error: "User ID mismatch - authentication error" 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
+        status: 403,
       });
     }
 
-    if (!user_id) {
-      console.error("Missing user_id field");
-      return new Response(JSON.stringify({ error: "User ID is required" }), {
+    if (email && email !== user.email) {
+      console.error("Email mismatch:", { authenticated: user.email, requested: email });
+      return new Response(JSON.stringify({ 
+        error: "Email mismatch - authentication error" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
+    // Use authenticated user's data
+    const userEmail = user.email;
+    const userId = user.id;
+
+    // Enhanced validation with specific error messages
+    if (!userEmail) {
+      console.error("No email available for authenticated user");
+      return new Response(JSON.stringify({ error: "User email not available" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
@@ -128,8 +189,8 @@ serve(async (req) => {
     }
 
     console.log('Validation passed:', { 
-      email, 
-      user_id, 
+      email: userEmail, 
+      user_id: userId, 
       plan, 
       planName, 
       credits: numericCredits, 
@@ -155,8 +216,8 @@ serve(async (req) => {
     const siteUrl = Deno.env.get("SITE_URL") || req.headers.get("origin") || "http://localhost:3000";
     
     console.log('Creating Stripe checkout session with:', { 
-      email, 
-      user_id, 
+      email: userEmail, 
+      user_id: userId, 
       plan, 
       planName, 
       credits: numericCredits, 
@@ -166,10 +227,10 @@ serve(async (req) => {
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
-      customer_email: email,
-      client_reference_id: user_id,
+      customer_email: userEmail,
+      client_reference_id: userId,
       metadata: {
-        user_id,
+        user_id: userId,
         plan,
         credits: numericCredits.toString(),
         plan_name: planName,
@@ -198,13 +259,12 @@ serve(async (req) => {
     console.log('Stripe checkout session created successfully:', session.id);
 
     // Initialize Supabase client with service role key for writing
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Supabase configuration missing");
+    if (!supabaseServiceKey) {
+      console.error("Supabase service key missing");
     } else {
-      const supabase = createClient(
+      const supabaseService = createClient(
         supabaseUrl,
         supabaseServiceKey,
         { 
@@ -214,11 +274,11 @@ serve(async (req) => {
       );
 
       // Create payment record in database
-      const { error: paymentError } = await supabase
+      const { error: paymentError } = await supabaseService
         .from('payments')
         .insert({
-          user_id,
-          email,
+          user_id: userId,
+          email: userEmail,
           stripe_session_id: session.id,
           plan_name: planName,
           amount: Math.round(numericAmount * 100),

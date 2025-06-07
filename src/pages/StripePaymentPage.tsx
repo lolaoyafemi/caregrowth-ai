@@ -14,7 +14,7 @@ const StripePaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
   const [loading, setLoading] = useState(false);
   const [addingCredits, setAddingCredits] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -51,11 +51,34 @@ const StripePaymentPage = () => {
 
   const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
 
+  // Show loading while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-caregrowth-blue mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!user || !session) {
+    toast({
+      title: "Login Required",
+      description: "Please log in before proceeding to payment.",
+      variant: "destructive"
+    });
+    navigate('/login');
+    return null;
+  }
+
   const handleCheckout = async () => {
-    if (!user) {
+    if (!user || !session) {
       toast({
-        title: "Login Required",
-        description: "Please log in before proceeding to payment.",
+        title: "Authentication Required",
+        description: "Please log in to continue with payment.",
         variant: "destructive"
       });
       navigate('/login');
@@ -74,13 +97,14 @@ const StripePaymentPage = () => {
     setLoading(true);
 
     try {
-      console.log('Starting checkout with data:', {
+      console.log('Starting checkout with authenticated user:', {
+        userId: user.id,
+        email: user.email,
+        hasSession: !!session,
         plan: selectedPlan,
         planName: selectedPlanData.name,
         amount: selectedPlanData.price,
-        credits: selectedPlanData.credits,
-        email: user.email,
-        user_id: user.id
+        credits: selectedPlanData.credits
       });
 
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
@@ -91,6 +115,9 @@ const StripePaymentPage = () => {
           credits: selectedPlanData.credits,
           email: user.email,
           user_id: user.id
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         }
       });
 
@@ -98,7 +125,15 @@ const StripePaymentPage = () => {
 
       if (error) {
         console.error('Supabase function error:', error);
-        throw new Error(error.message || 'Failed to create checkout session');
+        let errorMessage = 'Failed to create checkout session';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (!data) {
@@ -110,7 +145,7 @@ const StripePaymentPage = () => {
       }
 
       if (data.url) {
-        console.log('Redirecting to:', data.url);
+        console.log('Redirecting to Stripe checkout:', data.url);
         window.location.href = data.url;
       } else {
         throw new Error("No checkout URL returned from payment service");
@@ -134,7 +169,7 @@ const StripePaymentPage = () => {
   };
 
   const handleAddCredits = async (credits: number, planName: string) => {
-    if (!user) {
+    if (!user || !session) {
       toast({
         title: "Login Required",
         description: "Please log in to add credits.",
@@ -151,6 +186,9 @@ const StripePaymentPage = () => {
         body: {
           credits,
           planName
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         }
       });
 
@@ -193,6 +231,9 @@ const StripePaymentPage = () => {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Complete Your Purchase</h1>
             <p className="text-xl text-gray-600">Secure payment powered by Stripe</p>
+            {user && (
+              <p className="text-sm text-gray-500 mt-2">Logged in as: {user.email}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -277,7 +318,7 @@ const StripePaymentPage = () => {
                   )}
                   <Button 
                     onClick={handleCheckout}
-                    disabled={loading || !selectedPlanData}
+                    disabled={loading || !selectedPlanData || !user || !session}
                     className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg transition-colors"
                   >
                     {loading ? (
@@ -285,6 +326,8 @@ const StripePaymentPage = () => {
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                         Processing...
                       </div>
+                    ) : !user || !session ? (
+                      'Please Log In'
                     ) : (
                       `Pay $${selectedPlanData?.price || 0} with Stripe`
                     )}
