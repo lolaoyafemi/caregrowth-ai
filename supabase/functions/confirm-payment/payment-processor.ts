@@ -51,15 +51,16 @@ export class PaymentProcessor {
           planName = 'Enterprise';
           creditsGranted = 500;
         } else {
-          // Default mapping based on amount
-          creditsGranted = Math.floor(amountTotal / 2);
+          // Default mapping based on amount - handle any amount properly
+          creditsGranted = Math.max(1, Math.floor(amountTotal / 2));
           planName = 'Custom';
         }
 
         logStep('No payment record found, adding credits directly', { 
           customerEmail, 
           creditsGranted, 
-          planName 
+          planName,
+          amountTotal 
         });
 
         // Add credits directly since webhook may have missed this

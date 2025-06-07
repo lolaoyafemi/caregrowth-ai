@@ -200,20 +200,12 @@ const StripePaymentPage = () => {
                 <h3 className="text-xl font-bold mb-4">Add Credits Directly (Free for Testing)</h3>
                 <div className="space-y-3">
                   {creditPackages.map((pkg) => (
-                    // <Button
-                    //   key={pkg.credits}
-                    //   onClick={() => handleAddCredits(pkg.credits, pkg.planName)}
-                    //   disabled={addingCredits === pkg.credits.toString()}
-                    //   variant="outline"
-                    //   className="w-full text-left justify-between border-2 border-dashed border-gray-300 hover:border-caregrowth-blue"
-                    // >
-
                     <Button
                       key={pkg.credits}
                       onClick={() => handleAddCredits(pkg.credits, pkg.planName)}
                       disabled={addingCredits === pkg.credits.toString()}
                       variant="outline"
-                      className="w-full text-left justify-between border-2 border-black-400 hover:border-caregrowth-blue"
+                      className="w-full text-left justify-between border-2 border-gray-300 hover:border-caregrowth-blue"
                     >
                       <span>Add {pkg.label}</span>
                       {addingCredits === pkg.credits.toString() ? (
@@ -224,7 +216,6 @@ const StripePaymentPage = () => {
                     </Button>
                   ))}
                 </div>
-
               </div>
             </div>
 
