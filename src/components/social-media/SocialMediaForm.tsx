@@ -1,0 +1,108 @@
+
+import React from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface SocialMediaFormProps {
+  audience: string;
+  setAudience: (value: string) => void;
+  contentCategory: string;
+  setContentCategory: (value: string) => void;
+  toneOfPost: string;
+  setToneOfPost: (value: string) => void;
+  platform: string;
+  setPlatform: (value: string) => void;
+  onGenerate: () => void;
+  isGenerating: boolean;
+}
+
+const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
+  audience,
+  setAudience,
+  contentCategory,
+  setContentCategory,
+  toneOfPost,
+  setToneOfPost,
+  platform,
+  setPlatform,
+  onGenerate,
+  isGenerating
+}) => {
+  return (
+    <Card className="p-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div className="mb-4">
+            <Label htmlFor="audience">Target Audience</Label>
+            <Input
+              id="audience"
+              placeholder="e.g., Small Business Owners, Marketing Managers"
+              value={audience}
+              onChange={(e) => setAudience(e.target.value)}
+            />
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="contentCategory">Type of Content</Label>
+            <Select value={contentCategory} onValueChange={setContentCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select content type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="trust-authority">Trust & Authority</SelectItem>
+                <SelectItem value="heartfelt-relatable">Heartfelt & Relatable</SelectItem>
+                <SelectItem value="educational-helpful">Educational & Helpful</SelectItem>
+                <SelectItem value="results-offers">Results & Offers</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div>
+          <div className="mb-4">
+            <Label htmlFor="tone">Tone of Post</Label>
+            <Select value={toneOfPost} onValueChange={setToneOfPost}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select tone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="professional">Professional</SelectItem>
+                <SelectItem value="conversational">Conversational</SelectItem>
+                <SelectItem value="enthusiastic">Enthusiastic</SelectItem>
+                <SelectItem value="authoritative">Authoritative</SelectItem>
+                <SelectItem value="humorous">Humorous</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="platform">Platform Focus</Label>
+            <Select value={platform} onValueChange={setPlatform}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select platform" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Platforms</SelectItem>
+                <SelectItem value="facebook">Facebook</SelectItem>
+                <SelectItem value="twitter">Twitter</SelectItem>
+                <SelectItem value="linkedin">LinkedIn</SelectItem>
+                <SelectItem value="instagram">Instagram</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mt-8">
+            <Button 
+              className="w-full bg-caregrowth-blue text-white"
+              onClick={onGenerate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "Generating Content..." : "Generate Content"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+export default SocialMediaForm;

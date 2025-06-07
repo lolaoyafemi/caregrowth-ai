@@ -1,0 +1,158 @@
+
+import React from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+
+interface GeneratedSection {
+  hook: string;
+  body: string;
+  cta: string;
+}
+
+interface GeneratedContent {
+  facebook: GeneratedSection;
+  twitter: GeneratedSection;
+  linkedin: GeneratedSection;
+  instagram: GeneratedSection;
+}
+
+interface GeneratedContentTabsProps {
+  generatedContent: GeneratedContent | null;
+  isGenerating: boolean;
+  regeneratingSection: {platform: string, section: string} | null;
+  onRegenerateSection: (platform: string, section: string) => void;
+  onCopy: (platform: string) => void;
+  onSavePost: (platform: string) => void;
+  onContentChange: (platform: string, section: string, value: string) => void;
+}
+
+const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
+  generatedContent,
+  isGenerating,
+  regeneratingSection,
+  onRegenerateSection,
+  onCopy,
+  onSavePost,
+  onContentChange
+}) => {
+  if (!generatedContent && !isGenerating) return null;
+
+  return (
+    <div className="mb-6">
+      <h2 className="text-xl font-semibold mb-4">Generated Content</h2>
+      <Tabs defaultValue="facebook">
+        <TabsList className="mb-6 w-full justify-start">
+          <TabsTrigger value="facebook">Facebook</TabsTrigger>
+          <TabsTrigger value="twitter">Twitter</TabsTrigger>
+          <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
+          <TabsTrigger value="instagram">Instagram</TabsTrigger>
+        </TabsList>
+        
+        {["facebook", "twitter", "linkedin", "instagram"].map((platform) => (
+          <TabsContent key={platform} value={platform}>
+            <Card className="p-6">
+              {isGenerating ? (
+                <div className="min-h-[200px] flex items-center justify-center">
+                  <div className="animate-pulse text-center">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-full mb-3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-5/6 mx-auto mb-3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-4/6 mx-auto"></div>
+                  </div>
+                </div>
+              ) : generatedContent && (
+                <>
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium">Hook</h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => onRegenerateSection(platform, 'hook')}
+                        disabled={regeneratingSection !== null}
+                      >
+                        {regeneratingSection?.platform === platform && regeneratingSection?.section === 'hook'
+                          ? "Regenerating..."
+                          : "Regenerate Hook"
+                        }
+                      </Button>
+                    </div>
+                    <Textarea 
+                      className="min-h-[80px]" 
+                      value={generatedContent[platform as keyof GeneratedContent].hook}
+                      onChange={(e) => onContentChange(platform, 'hook', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium">Body</h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => onRegenerateSection(platform, 'body')}
+                        disabled={regeneratingSection !== null}
+                      >
+                        {regeneratingSection?.platform === platform && regeneratingSection?.section === 'body'
+                          ? "Regenerating..."
+                          : "Regenerate Body"
+                        }
+                      </Button>
+                    </div>
+                    <Textarea 
+                      className="min-h-[150px]" 
+                      value={generatedContent[platform as keyof GeneratedContent].body}
+                      onChange={(e) => onContentChange(platform, 'body', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium">Call to Action</h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => onRegenerateSection(platform, 'cta')}
+                        disabled={regeneratingSection !== null}
+                      >
+                        {regeneratingSection?.platform === platform && regeneratingSection?.section === 'cta'
+                          ? "Regenerating..."
+                          : "Regenerate CTA"
+                        }
+                      </Button>
+                    </div>
+                    <Textarea 
+                      className="min-h-[80px]" 
+                      value={generatedContent[platform as keyof GeneratedContent].cta}
+                      onChange={(e) => onContentChange(platform, 'cta', e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => onCopy(platform)}
+                    >
+                      Copy to Clipboard
+                    </Button>
+                    <Button 
+                      className="flex-1 bg-caregrowth-green"
+                      onClick={() => onSavePost(platform)}
+                    >
+                      Save Post
+                    </Button>
+                  </div>
+                </>
+              )}
+            </Card>
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+};
+
+export default GeneratedContentTabs;
