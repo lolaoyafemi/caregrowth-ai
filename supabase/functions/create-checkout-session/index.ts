@@ -15,15 +15,53 @@ serve(async (req) => {
   }
 
   try {
-    // Parse the request body
-    const { email, user_id, plan, planName, credits, amount } = await req.json();
+    console.log('=== CHECKOUT SESSION START ===');
     
-    // Validate required fields
-    if (!email || !user_id || !plan || !planName || credits === undefined || amount === undefined) {
-      console.error("Missing required fields:", { email, user_id, plan, planName, credits, amount });
+    // Parse the request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Request body parsed:', requestBody);
+    } catch (parseError) {
+      console.error("Failed to parse request body:", parseError);
       return new Response(JSON.stringify({ 
-        error: "Missing required fields: email, user_id, plan, planName, credits, amount" 
+        error: "Invalid request body - must be valid JSON" 
       }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    const { email, user_id, plan, planName, credits, amount } = requestBody;
+    
+    // Enhanced validation with specific error messages
+    if (!email) {
+      console.error("Missing email field");
+      return new Response(JSON.stringify({ error: "Email is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    if (!user_id) {
+      console.error("Missing user_id field");
+      return new Response(JSON.stringify({ error: "User ID is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    if (!plan) {
+      console.error("Missing plan field");
+      return new Response(JSON.stringify({ error: "Plan is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    if (!planName) {
+      console.error("Missing planName field");
+      return new Response(JSON.stringify({ error: "Plan name is required" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
@@ -31,17 +69,29 @@ serve(async (req) => {
 
     // Validate and convert amount
     let numericAmount: number;
+    if (amount === undefined || amount === null) {
+      console.error("Missing amount field");
+      return new Response(JSON.stringify({ error: "Amount is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
     if (typeof amount === 'number') {
       numericAmount = amount;
+    } else if (typeof amount === 'string') {
+      numericAmount = parseFloat(amount);
     } else {
-      numericAmount = parseFloat(String(amount));
+      console.error("Invalid amount type:", typeof amount, amount);
+      return new Response(JSON.stringify({ error: "Amount must be a number" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
     
     if (isNaN(numericAmount) || numericAmount <= 0) {
-      console.error("Invalid amount:", amount);
-      return new Response(JSON.stringify({ 
-        error: "Amount must be a positive number" 
-      }), {
+      console.error("Invalid amount value:", numericAmount);
+      return new Response(JSON.stringify({ error: "Amount must be a positive number" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
@@ -49,27 +99,48 @@ serve(async (req) => {
 
     // Validate and convert credits
     let numericCredits: number;
-    if (typeof credits === 'number') {
-      numericCredits = credits;
-    } else {
-      numericCredits = parseInt(String(credits));
-    }
-    
-    if (isNaN(numericCredits) || numericCredits <= 0) {
-      console.error("Invalid credits:", credits);
-      return new Response(JSON.stringify({ 
-        error: "Credits must be a positive number" 
-      }), {
+    if (credits === undefined || credits === null) {
+      console.error("Missing credits field");
+      return new Response(JSON.stringify({ error: "Credits is required" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
 
+    if (typeof credits === 'number') {
+      numericCredits = credits;
+    } else if (typeof credits === 'string') {
+      numericCredits = parseInt(credits);
+    } else {
+      console.error("Invalid credits type:", typeof credits, credits);
+      return new Response(JSON.stringify({ error: "Credits must be a number" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+    
+    if (isNaN(numericCredits) || numericCredits <= 0) {
+      console.error("Invalid credits value:", numericCredits);
+      return new Response(JSON.stringify({ error: "Credits must be a positive number" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    console.log('Validation passed:', { 
+      email, 
+      user_id, 
+      plan, 
+      planName, 
+      credits: numericCredits, 
+      amount: numericAmount 
+    });
+
     // Initialize Stripe
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       console.error("Stripe secret key not configured");
-      return new Response(JSON.stringify({ error: "Stripe secret key not configured" }), {
+      return new Response(JSON.stringify({ error: "Payment system not configured" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
@@ -83,7 +154,7 @@ serve(async (req) => {
     // Get the site URL from the request origin or use environment variable
     const siteUrl = Deno.env.get("SITE_URL") || req.headers.get("origin") || "http://localhost:3000";
     
-    console.log('Creating Stripe checkout session for:', { 
+    console.log('Creating Stripe checkout session with:', { 
       email, 
       user_id, 
       plan, 
@@ -124,7 +195,7 @@ serve(async (req) => {
       billing_address_collection: 'auto',
     });
 
-    console.log('Stripe checkout session created:', session.id);
+    console.log('Stripe checkout session created successfully:', session.id);
 
     // Initialize Supabase client with service role key for writing
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -172,17 +243,19 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Checkout session creation error:", error);
+    console.error("=== CHECKOUT SESSION ERROR ===");
+    console.error("Error type:", error.constructor.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
     
+    let errorMessage = "An unexpected error occurred";
     if (error instanceof Error) {
-      console.error("Error name:", error.name);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+      errorMessage = error.message;
     }
 
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-      details: error instanceof Error ? error.name : "Unknown error type"
+      error: errorMessage,
+      details: "Please check your payment information and try again"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

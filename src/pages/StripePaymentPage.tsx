@@ -62,11 +62,27 @@ const StripePaymentPage = () => {
       return;
     }
 
-    if (!selectedPlanData) return;
+    if (!selectedPlanData) {
+      toast({
+        title: "Plan Selection Required",
+        description: "Please select a plan before proceeding.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setLoading(true);
 
     try {
+      console.log('Starting checkout with data:', {
+        plan: selectedPlan,
+        planName: selectedPlanData.name,
+        amount: selectedPlanData.price,
+        credits: selectedPlanData.credits,
+        email: user.email,
+        user_id: user.id
+      });
+
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           plan: selectedPlan,
@@ -78,20 +94,38 @@ const StripePaymentPage = () => {
         }
       });
 
+      console.log('Checkout response:', { data, error });
+
       if (error) {
-        throw error;
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to create checkout session');
       }
 
-      if (data?.url) {
+      if (!data) {
+        throw new Error('No response data received from checkout session');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (data.url) {
+        console.log('Redirecting to:', data.url);
         window.location.href = data.url;
       } else {
-        throw new Error("No checkout URL returned.");
+        throw new Error("No checkout URL returned from payment service");
       }
     } catch (error) {
       console.error('Checkout error:', error);
+      
+      let errorMessage = "Unable to create checkout session. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Checkout Failed",
-        description: "Unable to create checkout session.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -167,7 +201,7 @@ const StripePaymentPage = () => {
               {plans.map(plan => (
                 <Card
                   key={plan.id}
-                  className={`${selectedPlan === plan.id ? 'border-2 border-caregrowth-blue shadow-md' : 'border'} cursor-pointer`}
+                  className={`${selectedPlan === plan.id ? 'border-2 border-caregrowth-blue shadow-md' : 'border'} cursor-pointer transition-all hover:shadow-md`}
                   onClick={() => setSelectedPlan(plan.id)}
                 >
                   <CardHeader className="pb-4">
@@ -205,7 +239,7 @@ const StripePaymentPage = () => {
                       onClick={() => handleAddCredits(pkg.credits, pkg.planName)}
                       disabled={addingCredits === pkg.credits.toString()}
                       variant="outline"
-                      className="w-full text-left justify-between border-2 border-gray-300 hover:border-caregrowth-blue"
+                      className="w-full text-left justify-between border-2 border-gray-300 hover:border-caregrowth-blue transition-colors"
                     >
                       <span>Add {pkg.label}</span>
                       {addingCredits === pkg.credits.toString() ? (
@@ -229,17 +263,38 @@ const StripePaymentPage = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span>{selectedPlanData?.name} Credits</span>
-                    <span className="font-bold">${selectedPlanData?.price}</span>
-                  </div>
+                  {selectedPlanData && (
+                    <>
+                      <div className="flex justify-between">
+                        <span>{selectedPlanData.name} Credits</span>
+                        <span className="font-bold">${selectedPlanData.price}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>{selectedPlanData.credits} credits</span>
+                        <span>One-time payment</span>
+                      </div>
+                    </>
+                  )}
                   <Button 
                     onClick={handleCheckout}
-                    disabled={loading}
-                    className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg"
+                    disabled={loading || !selectedPlanData}
+                    className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg transition-colors"
                   >
-                    {loading ? 'Redirecting...' : `Pay $${selectedPlanData?.price} with Stripe`}
+                    {loading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </div>
+                    ) : (
+                      `Pay $${selectedPlanData?.price || 0} with Stripe`
+                    )}
                   </Button>
+                  
+                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 mt-4">
+                    <Shield className="w-4 h-4" />
+                    <span>Secure payment powered by Stripe</span>
+                    <Lock className="w-4 h-4" />
+                  </div>
                 </CardContent>
               </Card>
             </div>
