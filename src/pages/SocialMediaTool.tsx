@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -6,8 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { toast } from "sonner";
-import { Building2 } from 'lucide-react';
+import { Building2, Copy, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
 import { generatePost } from '@/utils/generatePost';
@@ -26,10 +28,23 @@ interface GeneratedContent {
   instagram: GeneratedSection;
 }
 
+interface PostHistoryItem {
+  id: string;
+  content: string;
+  prompt_category: string;
+  tone: string;
+  platform: string;
+  created_at: string;
+}
+
 const SocialMediaTool = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [showBusinessForm, setShowBusinessForm] = useState(false);
+  const [postHistory, setPostHistory] = useState<PostHistoryItem[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   
   // Form states
   const [audience, setAudience] = useState('');
@@ -48,6 +63,48 @@ const SocialMediaTool = () => {
     content: string,
     date: string
   }>>([]);
+
+  // Fetch post history
+  const fetchPostHistory = async (page: number = 1) => {
+    setIsLoadingHistory(true);
+    try {
+      const { data } = await supabase.auth.getUser();
+      const userId = data?.user?.id;
+
+      if (!userId) {
+        console.error("User not logged in");
+        return;
+      }
+
+      const itemsPerPage = 10;
+      const start = (page - 1) * itemsPerPage;
+      const end = start + itemsPerPage - 1;
+
+      const { data: posts, error, count } = await supabase
+        .from('post_history')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .range(start, end);
+
+      if (error) {
+        console.error('Error fetching post history:', error);
+        return;
+      }
+
+      setPostHistory(posts || []);
+      setTotalPages(Math.ceil((count || 0) / itemsPerPage));
+    } catch (error) {
+      console.error('Error fetching post history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Load post history on component mount
+  useEffect(() => {
+    fetchPostHistory(currentPage);
+  }, [currentPage]);
 
   const handleGenerate = async () => {
     if (!audience) {
@@ -101,6 +158,10 @@ const SocialMediaTool = () => {
 
         setGeneratedContent(content);
         toast.success("Content generated successfully!");
+        
+        // Refresh post history after generation
+        fetchPostHistory(1);
+        setCurrentPage(1);
       } else {
         toast.error("No post returned.");
       }
@@ -178,6 +239,11 @@ const SocialMediaTool = () => {
     toast.success(`${platform.charAt(0).toUpperCase() + platform.slice(1)} content copied to clipboard!`);
   };
 
+  const handleCopyHistoryPost = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast.success("Post copied to clipboard!");
+  };
+
   const handleSavePost = (platform: string) => {
     if (!generatedContent) return;
     
@@ -194,6 +260,21 @@ const SocialMediaTool = () => {
     
     setSavedPosts([...savedPosts, newPost]);
     toast.success(`Saved to your ${platform} drafts!`);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const truncateContent = (content: string, maxLength: number = 100) => {
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength) + '...';
   };
 
   return (
@@ -413,6 +494,125 @@ const SocialMediaTool = () => {
           </Tabs>
         </div>
       )}
+
+      {/* Post History Table */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">Post History</h2>
+        <Card className="p-6">
+          {isLoadingHistory ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-pulse">Loading post history...</div>
+            </div>
+          ) : postHistory.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No posts generated yet. Generate your first post above!
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Tone</TableHead>
+                    <TableHead>Platform</TableHead>
+                    <TableHead>Content</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {postHistory.map((post) => (
+                    <TableRow key={post.id}>
+                      <TableCell className="text-sm">
+                        {formatDate(post.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800 capitalize">
+                          {post.prompt_category?.replace('-', ' ') || 'N/A'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-800 capitalize">
+                          {post.tone || 'N/A'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-block px-2 py-1 text-xs font-medium rounded bg-purple-100 text-purple-800 capitalize">
+                          {post.platform || 'All'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        <div className="text-sm text-gray-700">
+                          {truncateContent(post.content || '', 80)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyHistoryPost(post.content || '')}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toast.info(post.content || 'No content')}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-6 flex justify-center">
+                  <Pagination>
+                    <PaginationContent>
+                      {currentPage > 1 && (
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setCurrentPage(currentPage - 1)}
+                            className="cursor-pointer"
+                          />
+                        </PaginationItem>
+                      )}
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      
+                      {currentPage < totalPages && (
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setCurrentPage(currentPage + 1)}
+                            className="cursor-pointer"
+                          />
+                        </PaginationItem>
+                      )}
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
+          )}
+        </Card>
+      </div>
       
       {savedPosts.length > 0 && (
         <div className="mt-8">
