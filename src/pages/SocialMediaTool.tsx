@@ -118,26 +118,32 @@ const SocialMediaTool = () => {
       console.log('Generation result:', result);
 
       if (result && result.post) {
+        // Split the post into sections for better display
+        const postLines = result.post.split('\n').filter(line => line.trim());
+        const hook = postLines[0] || result.post;
+        const body = postLines.slice(1, -1).join('\n') || result.post;
+        const cta = postLines[postLines.length - 1] || "Contact us today!";
+
         const content: GeneratedContent = {
           facebook: {
-            hook: result.post.split('\n')[0] || result.post,
-            body: result.post,
-            cta: "Contact us today to learn more!"
+            hook: hook,
+            body: body,
+            cta: cta
           },
           twitter: { 
-            hook: result.post.split('\n')[0] || result.post,
-            body: result.post,
-            cta: "DM us for more info!"
+            hook: hook,
+            body: body,
+            cta: cta
           },
           linkedin: { 
-            hook: result.post.split('\n')[0] || result.post,
-            body: result.post,
-            cta: "Connect with us to discuss your needs."
+            hook: hook,
+            body: body,
+            cta: cta
           },
           instagram: { 
-            hook: result.post.split('\n')[0] || result.post,
-            body: result.post,
-            cta: "Link in bio for more details!"
+            hook: hook,
+            body: body,
+            cta: cta
           }
         };
 
@@ -151,7 +157,7 @@ const SocialMediaTool = () => {
         console.error('No post content in result:', result);
         toast.error("No content was generated. Please try again.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating post:", error);
       toast.error(`Error generating post: ${error.message || 'Unknown error'}`);
     } finally {

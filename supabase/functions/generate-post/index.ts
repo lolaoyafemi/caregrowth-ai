@@ -14,9 +14,9 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, postType, tone, platform } = await req.json();
+    const { userId, postType, tone, platform, audience } = await req.json();
 
-    console.log('Generate post request:', { userId, postType, tone, platform });
+    console.log('Generate post request:', { userId, postType, tone, platform, audience });
 
     if (!openAIApiKey || !supabaseServiceKey || !supabaseUrl) {
       console.error('Missing environment variables');
@@ -38,7 +38,14 @@ serve(async (req) => {
 
     if (profileError || !profile) {
       console.error('Profile error:', profileError);
-      throw new Error('User profile not found. Please fill out your business details first.');
+      // Create a basic profile if none exists
+      const { error: insertError } = await supabase
+        .from('user_profiles')
+        .insert([{ user_id: userId, business_name: 'Home Care Business' }]);
+      
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+      }
     }
 
     // Get random prompt row from prompts table
@@ -46,7 +53,7 @@ serve(async (req) => {
       .from('prompts')
       .select('hook, body, cta')
       .eq('category', postType)
-      .order('RANDOM()', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
@@ -81,6 +88,7 @@ You are given:
 - A JSON array of possible hooks
 - A JSON array of possible body paragraphs
 - A JSON array of possible CTAs
+- Target audience: ${audience || "families caring for loved ones"}
 
 Randomly select ONE item from each array.  
 Assemble a full post using this format:
@@ -90,7 +98,7 @@ Body
 CTA
 
 Use the tone: ${tone} and write for the platform: ${platform}. 
-Speak directly to families caring for loved ones.
+Speak directly to ${audience || "families caring for loved ones"}.
 
 Don't label anything.  
 Don't include headings.  
@@ -105,7 +113,7 @@ Sound like a real person. Slightly bold. Clear. No fluff.
       cta: ctaArray,
       tone,
       platform,
-      audience: "families caring for loved ones"
+      audience: audience || "families caring for loved ones"
     });
 
     console.log('Calling OpenAI API...');

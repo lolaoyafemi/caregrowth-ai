@@ -13,7 +13,8 @@ export const generatePost = async (
       userId,
       postType: category,
       tone,
-      platform
+      platform,
+      audience
     });
 
     const { data, error } = await supabase.functions.invoke('generate-post', {
@@ -21,7 +22,8 @@ export const generatePost = async (
         userId,
         postType: category,
         tone,
-        platform
+        platform,
+        audience
       }
     });
 
@@ -34,6 +36,6 @@ export const generatePost = async (
     return data;
   } catch (error: any) {
     console.error('Error in generatePost:', error);
-    return { error: error.message };
+    throw error;
   }
 };
