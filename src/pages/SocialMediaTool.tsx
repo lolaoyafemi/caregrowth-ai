@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from "sonner";
@@ -97,6 +96,8 @@ const SocialMediaTool = () => {
         return;
       }
 
+      console.log('Starting post generation...');
+
       // Deduct credits before generating content (1 credit per generation)
       const creditResult = await deductCredits(
         userId, 
@@ -113,17 +114,30 @@ const SocialMediaTool = () => {
       toast.success(`1 credit deducted. Remaining credits: ${creditResult.remainingCredits}`);
 
       const result = await generatePost(userId, contentCategory, toneOfPost, platform);
+      console.log('Generation result:', result);
 
-      if (result.post) {
+      if (result && result.post) {
         const content: GeneratedContent = {
           facebook: {
-            hook: result.post.split('\n')[0],
+            hook: result.post.split('\n')[0] || result.post,
             body: result.post,
-            cta: "Let's chat if this resonates!"
+            cta: "Contact us today to learn more!"
           },
-          twitter: { hook: "", body: "", cta: "" },
-          linkedin: { hook: "", body: "", cta: "" },
-          instagram: { hook: "", body: "", cta: "" }
+          twitter: { 
+            hook: result.post.split('\n')[0] || result.post,
+            body: result.post,
+            cta: "DM us for more info!"
+          },
+          linkedin: { 
+            hook: result.post.split('\n')[0] || result.post,
+            body: result.post,
+            cta: "Connect with us to discuss your needs."
+          },
+          instagram: { 
+            hook: result.post.split('\n')[0] || result.post,
+            body: result.post,
+            cta: "Link in bio for more details!"
+          }
         };
 
         setGeneratedContent(content);
@@ -133,11 +147,12 @@ const SocialMediaTool = () => {
         fetchPostHistory(1);
         setCurrentPage(1);
       } else {
-        toast.error("No post returned.");
+        console.error('No post content in result:', result);
+        toast.error("No content was generated. Please try again.");
       }
     } catch (error) {
       console.error("Error generating post:", error);
-      toast.error("Error generating post.");
+      toast.error(`Error generating post: ${error.message || 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
     }
