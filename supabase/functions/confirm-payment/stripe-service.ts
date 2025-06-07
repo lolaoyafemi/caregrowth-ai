@@ -19,14 +19,20 @@ export class StripeService {
   }
 
   validatePayment(session: Stripe.Checkout.Session) {
-    if (session.payment_status !== 'completed') {
-      throw new Error('Payment not completed');
+    // Fix: Stripe returns 'paid' for successful payments, not 'completed'
+    if (session.payment_status !== 'paid') {
+      throw new Error(`Payment not completed. Status: ${session.payment_status}`);
     }
 
     const customerEmail = session.customer_email || session.customer_details?.email;
     if (!customerEmail) {
       throw new Error('No customer email found');
     }
+
+    logStep('Payment validation successful', { 
+      paymentStatus: session.payment_status,
+      customerEmail 
+    });
 
     return customerEmail;
   }
