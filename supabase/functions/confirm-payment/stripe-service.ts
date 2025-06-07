@@ -19,7 +19,7 @@ export class StripeService {
   }
 
   validatePayment(session: Stripe.Checkout.Session) {
-    if (session.payment_status !== 'paid') {
+    if (session.payment_status !== 'COMPLETED') {
       throw new Error('Payment not completed');
     }
 
