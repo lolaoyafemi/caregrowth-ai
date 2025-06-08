@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
     idealClient: '',
     mainOffer: '',
     bigPromise: '',
-    audienceProblems: '',
+    audienceProblem: '',
     objections: '',
     differentiator: '',
     testimonials: ''
@@ -84,7 +83,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
           idealClient: typedProfile.ideal_client || '',
           mainOffer: typedProfile.main_offer || '',
           bigPromise: typedProfile.big_promise || '',
-          audienceProblems: typedProfile.audience_problem || '',
+          audienceProblem: typedProfile.audience_problem || '',
           objections: typedProfile.objections?.join(', ') || '',
           differentiator: typedProfile.differentiator || '',
           testimonials: typedProfile.testimonial || ''
@@ -126,8 +125,8 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
         ideal_client: formData.idealClient,
         main_offer: formData.mainOffer,
         big_promise: formData.bigPromise,
-        audience_problem: formData.audienceProblems, // Fixed: using correct column name
-        pain_points: formData.audienceProblems ? [formData.audienceProblems] : [],
+        audience_problem: formData.audienceProblem,
+        pain_points: formData.audienceProblem ? [formData.audienceProblem] : [],
         objections: formData.objections ? formData.objections.split(',').map(item => item.trim()) : [],
         differentiator: formData.differentiator,
         testimonial: formData.testimonials,
@@ -270,12 +269,12 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
               <h3 className="text-lg font-semibold text-blue-600 mb-4">Section 2: Audience Pains + Beliefs</h3>
               <div className="space-y-6">
                 <div>
-                  <Label htmlFor="audienceProblems">7. What are the top 3–5 problems your audience is dealing with every day?</Label>
+                  <Label htmlFor="audienceProblem">7. What are the top 3–5 problems your audience is dealing with every day?</Label>
                   <Textarea
-                    id="audienceProblems"
+                    id="audienceProblem"
                     placeholder="Think of the stress, guilt, or confusion they feel before they reach out to you"
-                    value={formData.audienceProblems}
-                    onChange={(e) => handleInputChange('audienceProblems', e.target.value)}
+                    value={formData.audienceProblem}
+                    onChange={(e) => handleInputChange('audienceProblem', e.target.value)}
                     className="min-h-[100px]"
                   />
                 </div>
