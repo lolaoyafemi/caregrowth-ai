@@ -20,32 +20,82 @@ export const deductCredits = async (
   try {
     console.log('Deducting credits:', { userId, tool, creditsToUse, description });
 
-    const { data, error } = await supabase.rpc('deduct_credits_and_log', {
-      p_user_id: userId,
-      p_tool: tool,
-      p_credits_used: creditsToUse,
-      p_description: description
-    });
+    // Get current credits from user_profiles
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('credits')
+      .eq('user_id', userId)
+      .single();
 
-    if (error) {
-      console.error('Error deducting credits:', error);
+    if (profileError || !profile) {
+      console.error('Error fetching user profile:', profileError);
       return {
         success: false,
-        error: error.message
+        error: 'User profile not found'
       };
     }
 
-    console.log('Credit deduction result:', data);
-    
-    // Safely convert the Json response to our expected type
-if (data && typeof data === 'object' && !Array.isArray(data) && 'success' in data) {
-      return data as unknown as CreditDeductionResult;
+    const currentCredits = profile.credits || 0;
+
+    // Check if user has enough credits
+    if (currentCredits < creditsToUse) {
+      return {
+        success: false,
+        error: 'Insufficient credits',
+        previousCredits: currentCredits,
+        creditsUsed: creditsToUse
+      };
     }
+
+    const newCredits = currentCredits - creditsToUse;
+
+    // Update credits in user_profiles table
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({ 
+        credits: newCredits,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId);
+
+    if (updateError) {
+      console.error('Error updating credits:', updateError);
+      return {
+        success: false,
+        error: 'Failed to update credits'
+      };
+    }
+
+    // Log the credit usage
+    const { data: logData, error: logError } = await supabase
+      .from('credit_usage_log')
+      .insert({
+        user_id: userId,
+        tool: tool,
+        credits_used: creditsToUse,
+        description: description,
+        used_at: new Date().toISOString()
+      })
+      .select('id')
+      .single();
+
+    if (logError) {
+      console.error('Error logging credit usage:', logError);
+      // Don't fail the operation if logging fails
+    }
+
+    console.log('Credit deduction successful:', {
+      previousCredits: currentCredits,
+      creditsUsed: creditsToUse,
+      remainingCredits: newCredits
+    });
     
-    // Fallback if data structure is unexpected
     return {
-      success: false,
-      error: 'Unexpected response format from database'
+      success: true,
+      previousCredits: currentCredits,
+      creditsUsed: creditsToUse,
+      remainingCredits: newCredits,
+      logId: logData?.id
     };
   } catch (error) {
     console.error('Exception during credit deduction:', error);

@@ -29,7 +29,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user profile
+    // Get user profile to understand their business
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('*')
@@ -38,83 +38,47 @@ serve(async (req) => {
 
     if (profileError || !profile) {
       console.error('Profile error:', profileError);
-      // Create a basic profile if none exists
-      const { error: insertError } = await supabase
-        .from('user_profiles')
-        .insert([{ user_id: userId, business_name: 'Home Care Business' }]);
-      
-      if (insertError) {
-        console.error('Error creating profile:', insertError);
-      }
     }
 
-    // Get random prompt row from prompts table
-    const { data: promptRow, error: promptError } = await supabase
-      .from('prompts')
-      .select('hook, body, cta')
-      .eq('category', postType)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    // Create a comprehensive prompt for OpenAI
+    const businessContext = profile ? `
+Business Name: ${profile.business_name || 'Home Care Business'}
+Services: ${profile.services || profile.core_service || 'Home care services'}
+Location: ${profile.location || 'Local area'}
+Target Client: ${profile.ideal_client || 'Families needing care'}
+Main Offer: ${profile.main_offer || 'Professional home care'}
+Differentiator: ${profile.differentiator || 'Compassionate, professional care'}
+` : 'Home Care Business providing professional care services';
 
-    if (promptError || !promptRow) {
-      console.error('Prompt error:', promptError);
-      // Fallback content if no prompts found
-      const fallbackContent = {
-        hook: '["Are you struggling with daily care challenges?", "Feeling overwhelmed with caregiving responsibilities?", "Looking for reliable home care support?"]',
-        body: '["Our experienced team understands the unique challenges families face when caring for loved ones. We provide compassionate, professional care that gives you peace of mind.", "Every family deserves quality care. Our certified caregivers are trained to handle everything from daily assistance to specialized care needs."]',
-        cta: '["Contact us today for a free consultation!", "Let us help you find the perfect care solution.", "Call now to learn more about our services!"]'
-      };
-      promptRow = fallbackContent;
-    }
+    const systemMessage = `You are an expert social media copywriter specializing in home care services. 
+Create engaging, authentic social media content that converts prospects into customers.
 
-    let hookArray, bodyArray, ctaArray;
-    try {
-      hookArray = JSON.parse(promptRow.hook);
-      bodyArray = JSON.parse(promptRow.body);
-      ctaArray = JSON.parse(promptRow.cta);
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      // Fallback if JSON parsing fails
-      hookArray = ["Are you looking for reliable home care services?"];
-      bodyArray = ["Our team provides compassionate, professional care for your loved ones."];
-      ctaArray = ["Contact us today to learn more!"];
-    }
+Business Context:
+${businessContext}
 
-    const systemMessage = `
-You are a warm, emotionally intelligent copywriter helping a home care agency create original social media posts that feel human, not AI-written.
+Content Category: ${postType}
+Target Audience: ${audience || "families caring for loved ones"}
+Tone: ${tone}
+Platform: ${platform}
 
-You are given:
-- A JSON array of possible hooks
-- A JSON array of possible body paragraphs
-- A JSON array of possible CTAs
-- Target audience: ${audience || "families caring for loved ones"}
+Create a social media post with these components:
+1. HOOK: An attention-grabbing opening line that stops scrolling (1-2 sentences)
+2. BODY: Main content that provides value, builds trust, or educates (2-3 sentences)
+3. CTA: A clear call-to-action that drives engagement or leads (1 sentence)
 
-Randomly select ONE item from each array.  
-Assemble a full post using this format:
+Guidelines:
+- Write in ${tone} tone
+- Target ${audience || "families caring for loved ones"}
+- Focus on ${postType} content
+- Make it platform-appropriate for ${platform}
+- Sound human and authentic, not AI-generated
+- Include relevant emotions and pain points
+- End with a clear, actionable CTA
 
-Hook
-Body
-CTA
-
-Use the tone: ${tone} and write for the platform: ${platform}. 
-Speak directly to ${audience || "families caring for loved ones"}.
-
-Don't label anything.  
-Don't include headings.  
-Return just the post — no bullets, no explanation.
-
-Sound like a real person. Slightly bold. Clear. No fluff.
-    `.trim();
-
-    const userMessage = JSON.stringify({
-      hook: hookArray,
-      body: bodyArray,
-      cta: ctaArray,
-      tone,
-      platform,
-      audience: audience || "families caring for loved ones"
-    });
+Format your response as:
+HOOK: [hook content]
+BODY: [body content]  
+CTA: [cta content]`;
 
     console.log('Calling OpenAI API...');
 
@@ -128,9 +92,9 @@ Sound like a real person. Slightly bold. Clear. No fluff.
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemMessage },
-          { role: 'user', content: userMessage }
+          { role: 'user', content: `Create a ${postType} social media post for ${platform} targeting ${audience} in a ${tone} tone.` }
         ],
-        temperature: 0.8,
+        temperature: 0.7,
         max_tokens: 500
       }),
     });
@@ -142,9 +106,42 @@ Sound like a real person. Slightly bold. Clear. No fluff.
     }
 
     const data = await response.json();
-    const generatedPost = data.choices[0].message.content;
+    const generatedContent = data.choices[0].message.content;
 
-    console.log('Generated post:', generatedPost);
+    console.log('Generated content:', generatedContent);
+
+    // Parse the generated content to extract hook, body, and cta
+    let hook = '', body = '', cta = '';
+    
+    try {
+      const lines = generatedContent.split('\n').filter(line => line.trim());
+      
+      for (const line of lines) {
+        if (line.toLowerCase().startsWith('hook:')) {
+          hook = line.substring(5).trim();
+        } else if (line.toLowerCase().startsWith('body:')) {
+          body = line.substring(5).trim();
+        } else if (line.toLowerCase().startsWith('cta:')) {
+          cta = line.substring(4).trim();
+        }
+      }
+      
+      // If parsing fails, use the entire content as body
+      if (!hook && !body && !cta) {
+        const contentLines = generatedContent.split('\n').filter(line => line.trim());
+        hook = contentLines[0] || 'Are you looking for reliable home care services?';
+        body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones.';
+        cta = contentLines[contentLines.length - 1] || 'Contact us today to learn more!';
+      }
+    } catch (parseError) {
+      console.error('Error parsing generated content:', parseError);
+      // Fallback content
+      hook = 'Are you looking for reliable home care services?';
+      body = 'Our team provides compassionate, professional care for your loved ones.';
+      cta = 'Contact us today to learn more!';
+    }
+
+    const finalPost = `${hook}\n\n${body}\n\n${cta}`;
 
     // Log post to post_history
     const { error: insertError } = await supabase.from('post_history').insert([
@@ -153,7 +150,7 @@ Sound like a real person. Slightly bold. Clear. No fluff.
         prompt_category: postType,
         tone,
         platform,
-        content: generatedPost
+        content: finalPost
       }
     ]);
 
@@ -161,7 +158,12 @@ Sound like a real person. Slightly bold. Clear. No fluff.
       console.error('Error inserting to post_history:', insertError);
     }
 
-    return new Response(JSON.stringify({ post: generatedPost }), {
+    return new Response(JSON.stringify({ 
+      post: finalPost,
+      hook,
+      body,
+      cta
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

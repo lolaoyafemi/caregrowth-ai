@@ -118,33 +118,26 @@ const SocialMediaTool = () => {
       console.log('Generation result:', result);
 
       if (result && result.post) {
-        // Split the post into sections for better display
-        const postLines = result.post.split('\n').filter(line => line.trim());
-        const hook = postLines[0] || result.post;
-        const body = postLines.slice(1, -1).join('\n') || result.post;
-        const cta = postLines[postLines.length - 1] || "Contact us today!";
+        // Use the parsed components if available, otherwise split the post
+        let hook, body, cta;
+        
+        if (result.hook && result.body && result.cta) {
+          hook = result.hook;
+          body = result.body;
+          cta = result.cta;
+        } else {
+          // Fallback to splitting the post
+          const postLines = result.post.split('\n').filter(line => line.trim());
+          hook = postLines[0] || result.post;
+          body = postLines.slice(1, -1).join('\n') || result.post;
+          cta = postLines[postLines.length - 1] || "Contact us today!";
+        }
 
         const content: GeneratedContent = {
-          facebook: {
-            hook: hook,
-            body: body,
-            cta: cta
-          },
-          twitter: { 
-            hook: hook,
-            body: body,
-            cta: cta
-          },
-          linkedin: { 
-            hook: hook,
-            body: body,
-            cta: cta
-          },
-          instagram: { 
-            hook: hook,
-            body: body,
-            cta: cta
-          }
+          facebook: { hook, body, cta },
+          twitter: { hook, body, cta },
+          linkedin: { hook, body, cta },
+          instagram: { hook, body, cta }
         };
 
         setGeneratedContent(content);
