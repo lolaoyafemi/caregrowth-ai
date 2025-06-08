@@ -31,6 +31,7 @@ const SavedPostsList: React.FC = () => {
 
       if (!userId) {
         console.error("User not logged in");
+        setIsLoading(false);
         return;
       }
 
@@ -85,8 +86,6 @@ const SavedPostsList: React.FC = () => {
     });
   };
 
-  if (savedPosts.length === 0 && !isLoading) return null;
-
   return (
     <div className="mt-8">
       <h2 className="text-xl font-semibold mb-4">Saved Posts</h2>
@@ -107,6 +106,10 @@ const SavedPostsList: React.FC = () => {
         
         {isLoading ? (
           <div className="text-center py-8">Loading saved posts...</div>
+        ) : savedPosts.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No saved posts yet. Save some posts to see them here!
+          </div>
         ) : (
           <div className="space-y-4">
             {sortedPosts.map((post) => (
