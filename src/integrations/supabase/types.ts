@@ -206,6 +206,7 @@ export type Database = {
       }
       post_history: {
         Row: {
+          audience: string | null
           content: string | null
           created_at: string | null
           id: string
@@ -216,6 +217,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          audience?: string | null
           content?: string | null
           created_at?: string | null
           id?: string
@@ -226,6 +228,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          audience?: string | null
           content?: string | null
           created_at?: string | null
           id?: string
@@ -279,6 +282,42 @@ export type Database = {
           id?: string
           name?: string
           platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      saved_posts: {
+        Row: {
+          audience: string | null
+          content: string
+          created_at: string
+          id: string
+          platform: string
+          prompt_category: string | null
+          tone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audience?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          platform: string
+          prompt_category?: string | null
+          tone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audience?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          platform?: string
+          prompt_category?: string | null
+          tone?: string | null
           updated_at?: string
           user_id?: string
         }

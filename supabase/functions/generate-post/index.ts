@@ -96,8 +96,120 @@ serve(async (req) => {
       console.log('No prompts found for category:', postType);
     }
 
-    // If no valid template found, use AI generation
-    if (!useTemplate || !hook || !body || !cta) {
+    // Personalize templates with business context
+    const personalizeText = (text) => {
+      if (!profile || !text) return text;
+      
+      return text
+        .replace(/\{business_name\}/gi, profile.business_name || 'our business')
+        .replace(/\{location\}/gi, profile.location || 'your area')
+        .replace(/\{services\}/gi, profile.services || 'our services')
+        .replace(/\{core_service\}/gi, profile.core_service || 'our services')
+        .replace(/\{ideal_client\}/gi, profile.ideal_client || 'families')
+        .replace(/\{main_offer\}/gi, profile.main_offer || 'our services')
+        .replace(/\{differentiator\}/gi, profile.differentiator || 'professional care')
+        .replace(/\{big_promise\}/gi, profile.big_promise || 'exceptional care')
+        .replace(/\{pain_points\}/gi, Array.isArray(profile.pain_points) ? profile.pain_points.join(', ') : 'common challenges')
+        .replace(/\{audience_problems\}/gi, profile.audience_problems || 'caregiving challenges')
+        .replace(/\{objections\}/gi, Array.isArray(profile.objections) ? profile.objections.join(', ') : 'common concerns')
+        .replace(/\{audience\}/gi, audience || 'families')
+        .replace(/\{tone\}/gi, tone || 'professional')
+        .replace(/\{platform\}/gi, platform || 'social media');
+    };
+
+    // If template found, personalize and fine-tune with OpenAI
+    if (useTemplate && hook && body && cta) {
+      // Personalize the template
+      hook = personalizeText(hook);
+      body = personalizeText(body);
+      cta = personalizeText(cta);
+
+      console.log('Personalized templates:', { hook, body, cta });
+
+      // Fine-tune with OpenAI
+      const businessContext = profile ? `
+Business Name: ${profile.business_name || 'Home Care Business'}
+Services: ${profile.services || profile.core_service || 'Home care services'}
+Location: ${profile.location || 'Local area'}
+Target Client: ${profile.ideal_client || 'Families needing care'}
+Main Offer: ${profile.main_offer || 'Professional home care'}
+Differentiator: ${profile.differentiator || 'Compassionate, professional care'}
+` : 'Home Care Business providing professional care services';
+
+      const refinementPrompt = `You are a social media expert. Take this existing post template and refine it to be more engaging and natural while maintaining the core message and structure.
+
+Business Context:
+${businessContext}
+
+Original Post:
+Hook: ${hook}
+Body: ${body}
+CTA: ${cta}
+
+Target Audience: ${audience || "families caring for loved ones"}
+Tone: ${tone}
+Platform: ${platform}
+
+Instructions:
+- Keep the same structure (Hook, Body, CTA)
+- Make it sound more natural and engaging
+- Ensure it's appropriate for ${platform}
+- Maintain the ${tone} tone
+- Keep it authentic and not overly salesy
+- Preserve the core message and key information
+
+Format your response as:
+HOOK: [refined hook]
+BODY: [refined body]  
+CTA: [refined cta]`;
+
+      console.log('Fine-tuning with OpenAI...');
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert social media copywriter. Refine the given post to be more engaging while keeping the core message intact.'
+            },
+            {
+              role: 'user',
+              content: refinementPrompt
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 500
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const refinedContent = data.choices[0].message.content;
+        console.log('Refined content:', refinedContent);
+
+        // Parse the refined content
+        const lines = refinedContent.split('\n').filter(line => line.trim());
+        
+        for (const line of lines) {
+          const lowerLine = line.toLowerCase();
+          if (lowerLine.startsWith('hook:')) {
+            hook = line.substring(5).trim();
+          } else if (lowerLine.startsWith('body:')) {
+            body = line.substring(5).trim();
+          } else if (lowerLine.startsWith('cta:')) {
+            cta = line.substring(4).trim();
+          }
+        }
+      } else {
+        console.log('OpenAI refinement failed, using personalized template');
+      }
+    } else {
+      // Fallback to full AI generation if no template found
       console.log('Using OpenAI fallback generation');
       
       const businessContext = profile ? `
@@ -209,33 +321,6 @@ CTA: [cta content]`;
         body = 'Our team provides compassionate, professional care for your loved ones.';
         cta = 'Contact us today to learn more!';
       }
-    } else {
-      // Personalize templates with business context
-      const personalizeText = (text) => {
-        if (!profile || !text) return text;
-        
-        return text
-          .replace(/\{business_name\}/gi, profile.business_name || 'our business')
-          .replace(/\{location\}/gi, profile.location || 'your area')
-          .replace(/\{services\}/gi, profile.services || 'our services')
-          .replace(/\{core_service\}/gi, profile.core_service || 'our services')
-          .replace(/\{ideal_client\}/gi, profile.ideal_client || 'families')
-          .replace(/\{main_offer\}/gi, profile.main_offer || 'our services')
-          .replace(/\{differentiator\}/gi, profile.differentiator || 'professional care')
-          .replace(/\{big_promise\}/gi, profile.big_promise || 'exceptional care')
-          .replace(/\{pain_points\}/gi, Array.isArray(profile.pain_points) ? profile.pain_points.join(', ') : 'common challenges')
-          .replace(/\{audience_problems\}/gi, profile.audience_problems || 'caregiving challenges')
-          .replace(/\{objections\}/gi, Array.isArray(profile.objections) ? profile.objections.join(', ') : 'common concerns')
-          .replace(/\{audience\}/gi, audience || 'families')
-          .replace(/\{tone\}/gi, tone || 'professional')
-          .replace(/\{platform\}/gi, platform || 'social media');
-      };
-
-      hook = personalizeText(hook);
-      body = personalizeText(body);
-      cta = personalizeText(cta);
-
-      console.log('Personalized templates:', { hook, body, cta });
     }
 
     const finalPost = `${hook}\n\n${body}\n\n${cta}`;
@@ -263,7 +348,7 @@ CTA: [cta content]`;
       hook,
       body,
       cta,
-      source: useTemplate ? 'template' : 'ai_generated',
+      source: useTemplate ? 'template_refined' : 'ai_generated',
       template_id: selectedPrompt?.id || null,
       available_templates: prompts?.length || 0
     }), {

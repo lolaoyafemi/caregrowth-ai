@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from "sonner";
@@ -10,8 +11,8 @@ import PostHistoryTable from '@/components/social-media/PostHistoryTable';
 import SavedPostsList from '@/components/social-media/SavedPostsList';
 import { generatePost } from '@/utils/generatePost';
 import { deductCredits, handleCreditError } from '@/utils/creditUtils';
-import { GeneratedContent, PostHistoryItem, SavedPost, GeneratedSection } from '@/types/social-media';
-
+import { saveSocialPost } from '@/utils/savedPostsUtils';
+import { GeneratedContent, PostHistoryItem, GeneratedSection } from '@/types/social-media';
 import { regenerateSection } from '@/utils/regenerateSection';
 
 const SocialMediaTool = () => {
@@ -31,9 +32,6 @@ const SocialMediaTool = () => {
   
   // Regeneration states
   const [regeneratingSection, setRegeneratingSection] = useState<{platform: string, section: string} | null>(null);
-  
-  // Saved posts
-  const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
 
   // Fetch post history
   const fetchPostHistory = async (page: number = 1) => {
@@ -240,22 +238,35 @@ const SocialMediaTool = () => {
     toast.info(content);
   };
 
-  const handleSavePost = (platform: string) => {
+  const handleSavePost = async (platform: string) => {
     if (!generatedContent) return;
     
-    const content = generatedContent[platform as keyof GeneratedContent];
-    const fullText = `${content.hook}\n\n${content.body}\n\n${content.cta}`;
-    
-    const newPost = {
-      id: Date.now(),
-      platform,
-      audience,
-      content: fullText,
-      date: new Date().toISOString().split('T')[0]
-    };
-    
-    setSavedPosts([...savedPosts, newPost]);
-    toast.success(`Saved to your ${platform} drafts!`);
+    try {
+      const { data } = await supabase.auth.getUser();
+      const userId = data?.user?.id;
+
+      if (!userId) {
+        toast.error("User not logged in.");
+        return;
+      }
+
+      const content = generatedContent[platform as keyof GeneratedContent];
+      const fullText = `${content.hook}\n\n${content.body}\n\n${content.cta}`;
+      
+      await saveSocialPost(
+        userId,
+        platform,
+        audience,
+        fullText,
+        contentCategory,
+        toneOfPost
+      );
+      
+      toast.success(`Post saved successfully!`);
+    } catch (error: any) {
+      console.error('Error saving post:', error);
+      toast.error(`Failed to save post: ${error.message}`);
+    }
   };
 
   const handleContentChange = (platform: string, section: string, value: string) => {
@@ -323,7 +334,7 @@ const SocialMediaTool = () => {
         onViewPost={handleViewPost}
       />
 
-      <SavedPostsList savedPosts={savedPosts} />
+      <SavedPostsList />
 
       {showBusinessForm && (
         <BusinessDetailsForm onClose={() => setShowBusinessForm(false)} />
