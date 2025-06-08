@@ -10,7 +10,9 @@ import PostHistoryTable from '@/components/social-media/PostHistoryTable';
 import SavedPostsList from '@/components/social-media/SavedPostsList';
 import { generatePost } from '@/utils/generatePost';
 import { deductCredits, handleCreditError } from '@/utils/creditUtils';
-import { GeneratedContent, PostHistoryItem, SavedPost } from '@/types/social-media';
+import { GeneratedContent, PostHistoryItem, SavedPost, GeneratedSection } from '@/types/social-media';
+
+import { regenerateSection } from '@/utils/regenerateSection';
 
 const SocialMediaTool = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -167,6 +169,11 @@ const SocialMediaTool = () => {
       return;
     }
 
+    if (!generatedContent) {
+      toast.error("No content available to regenerate.");
+      return;
+    }
+
     setRegeneratingSection({platform, section});
 
     try {
@@ -184,32 +191,32 @@ const SocialMediaTool = () => {
         return;
       }
 
-      setTimeout(() => {
-        if (generatedContent) {
-          const updatedContent = {...generatedContent};
-          switch (section) {
-            case 'hook':
-              updatedContent[platform as keyof GeneratedContent].hook = 
-                `NEW HOOK: Are you a ${audience} tired of struggling with daily challenges? This will change everything...`;
-              break;
-            case 'body':
-              updatedContent[platform as keyof GeneratedContent].body = 
-                `NEW BODY: We developed our solution specifically for people like you. Our approach addresses the exact problems you're facing daily, with proven results for professionals in your position.\n\nIn fact, our latest case study showed an average ROI of 300% within just 90 days!`;
-              break;
-            case 'cta':
-              updatedContent[platform as keyof GeneratedContent].cta = 
-                `NEW CTA: Don't miss this opportunity to revolutionize your business. Click now to secure your spot before we reach capacity!`;
-              break;
-          }
-          setGeneratedContent(updatedContent);
-        }
+      // Get current content for the section
+      const currentContent = generatedContent[platform as keyof GeneratedContent][section as keyof GeneratedSection];
+
+      // Call the regenerate section function
+      const result = await regenerateSection(
+        userId,
+        contentCategory,
+        platform === 'all' ? 'all' : platform,
+        section,
+        currentContent
+      );
+
+      if (result && result.success && result.newContent) {
+        // Update the content with the new regenerated section
+        const updatedContent = {...generatedContent};
+        updatedContent[platform as keyof GeneratedContent][section as keyof GeneratedSection] = result.newContent;
+        setGeneratedContent(updatedContent);
         
         setRegeneratingSection(null);
         toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} regenerated! Remaining credits: ${creditResult.remainingCredits}`);
-      }, 1500);
-    } catch (error) {
+      } else {
+        throw new Error(result?.error || 'Failed to regenerate section');
+      }
+    } catch (error: any) {
       console.error("Error regenerating section:", error);
-      toast.error("Error regenerating section.");
+      toast.error(`Error regenerating ${section}: ${error.message}`);
       setRegeneratingSection(null);
     }
   };
