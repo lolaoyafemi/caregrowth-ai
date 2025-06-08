@@ -40,8 +40,51 @@ serve(async (req) => {
       console.error('Profile error:', profileError);
     }
 
-    // Create a comprehensive prompt for OpenAI
-    const businessContext = profile ? `
+    // Get prompt templates for the specified content type and platform
+    const { data: prompts, error: promptError } = await supabase
+      .from('prompts')
+      .select('*')
+      .eq('category', postType)
+      .in('platform', [platform, 'all']);
+
+    console.log('Fetched prompts:', prompts);
+
+    let selectedPrompt = null;
+    if (prompts && prompts.length > 0) {
+      // Prefer platform-specific prompts, then fall back to 'all' platform prompts
+      selectedPrompt = prompts.find(p => p.platform === platform) || prompts.find(p => p.platform === 'all') || prompts[0];
+    }
+
+    console.log('Selected prompt:', selectedPrompt);
+
+    // Parse arrays from the prompt templates (they are stored as comma-separated strings in quotes)
+    const parsePromptArray = (text: string): string[] => {
+      if (!text) return [];
+      // Split by comma and clean up quotes and whitespace
+      return text.split(',').map(item => item.trim().replace(/^["']|["']$/g, ''));
+    };
+
+    let hook = '', body = '', cta = '';
+
+    if (selectedPrompt) {
+      // Parse the prompt template arrays
+      const hookOptions = parsePromptArray(selectedPrompt.hook);
+      const bodyOptions = parsePromptArray(selectedPrompt.body);
+      const ctaOptions = parsePromptArray(selectedPrompt.cta);
+
+      // Randomly select from available options
+      hook = hookOptions[Math.floor(Math.random() * hookOptions.length)] || '';
+      body = bodyOptions[Math.floor(Math.random() * bodyOptions.length)] || '';
+      cta = ctaOptions[Math.floor(Math.random() * ctaOptions.length)] || '';
+
+      console.log('Selected templates:', { hook, body, cta });
+    }
+
+    // If no prompts found or empty templates, use fallback generation
+    if (!hook || !body || !cta) {
+      console.log('Using OpenAI fallback generation');
+
+      const businessContext = profile ? `
 Business Name: ${profile.business_name || 'Home Care Business'}
 Services: ${profile.services || profile.core_service || 'Home care services'}
 Location: ${profile.location || 'Local area'}
@@ -50,7 +93,7 @@ Main Offer: ${profile.main_offer || 'Professional home care'}
 Differentiator: ${profile.differentiator || 'Compassionate, professional care'}
 ` : 'Home Care Business providing professional care services';
 
-    const systemMessage = `You are an expert social media copywriter specializing in home care services. 
+      const systemMessage = `You are an expert social media copywriter specializing in home care services. 
 Create engaging, authentic social media content that converts prospects into customers.
 
 Business Context:
@@ -80,65 +123,80 @@ HOOK: [hook content]
 BODY: [body content]  
 CTA: [cta content]`;
 
-    console.log('Calling OpenAI API...');
+      console.log('Calling OpenAI API...');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: `Create a ${postType} social media post for ${platform} targeting ${audience} in a ${tone} tone.` }
-        ],
-        temperature: 0.7,
-        max_tokens: 500
-      }),
-    });
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemMessage },
+            { role: 'user', content: `Create a ${postType} social media post for ${platform} targeting ${audience} in a ${tone} tone.` }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
-    }
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('OpenAI API error:', errorData);
+        throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+      }
 
-    const data = await response.json();
-    const generatedContent = data.choices[0].message.content;
+      const data = await response.json();
+      const generatedContent = data.choices[0].message.content;
 
-    console.log('Generated content:', generatedContent);
+      console.log('Generated content:', generatedContent);
 
-    // Parse the generated content to extract hook, body, and cta
-    let hook = '', body = '', cta = '';
-    
-    try {
-      const lines = generatedContent.split('\n').filter(line => line.trim());
-      
-      for (const line of lines) {
-        if (line.toLowerCase().startsWith('hook:')) {
-          hook = line.substring(5).trim();
-        } else if (line.toLowerCase().startsWith('body:')) {
-          body = line.substring(5).trim();
-        } else if (line.toLowerCase().startsWith('cta:')) {
-          cta = line.substring(4).trim();
+      // Parse the generated content to extract hook, body, and cta
+      try {
+        const lines = generatedContent.split('\n').filter(line => line.trim());
+        
+        for (const line of lines) {
+          if (line.toLowerCase().startsWith('hook:')) {
+            hook = line.substring(5).trim();
+          } else if (line.toLowerCase().startsWith('body:')) {
+            body = line.substring(5).trim();
+          } else if (line.toLowerCase().startsWith('cta:')) {
+            cta = line.substring(4).trim();
+          }
         }
+        
+        // If parsing fails, use the entire content as body
+        if (!hook && !body && !cta) {
+          const contentLines = generatedContent.split('\n').filter(line => line.trim());
+          hook = contentLines[0] || 'Are you looking for reliable home care services?';
+          body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones.';
+          cta = contentLines[contentLines.length - 1] || 'Contact us today to learn more!';
+        }
+      } catch (parseError) {
+        console.error('Error parsing generated content:', parseError);
+        // Fallback content
+        hook = 'Are you looking for reliable home care services?';
+        body = 'Our team provides compassionate, professional care for your loved ones.';
+        cta = 'Contact us today to learn more!';
       }
-      
-      // If parsing fails, use the entire content as body
-      if (!hook && !body && !cta) {
-        const contentLines = generatedContent.split('\n').filter(line => line.trim());
-        hook = contentLines[0] || 'Are you looking for reliable home care services?';
-        body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones.';
-        cta = contentLines[contentLines.length - 1] || 'Contact us today to learn more!';
+    } else {
+      // If we have templates, personalize them with business context
+      if (profile) {
+        const personalizeText = (text: string): string => {
+          return text
+            .replace(/\[business_name\]/gi, profile.business_name || 'our business')
+            .replace(/\[location\]/gi, profile.location || 'your area')
+            .replace(/\[service\]/gi, profile.services || profile.core_service || 'our services')
+            .replace(/\[differentiator\]/gi, profile.differentiator || 'professional care')
+            .replace(/\[audience\]/gi, audience || 'families');
+        };
+
+        hook = personalizeText(hook);
+        body = personalizeText(body);
+        cta = personalizeText(cta);
       }
-    } catch (parseError) {
-      console.error('Error parsing generated content:', parseError);
-      // Fallback content
-      hook = 'Are you looking for reliable home care services?';
-      body = 'Our team provides compassionate, professional care for your loved ones.';
-      cta = 'Contact us today to learn more!';
     }
 
     const finalPost = `${hook}\n\n${body}\n\n${cta}`;
