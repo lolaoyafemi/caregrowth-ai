@@ -360,7 +360,7 @@ export type Database = {
       }
       user_profiles: {
         Row: {
-          audience_problems: string | null
+          audience_problem: string | null
           big_promise: string | null
           business_name: string | null
           core_service: string | null
@@ -381,7 +381,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          audience_problems?: string | null
+          audience_problem?: string | null
           big_promise?: string | null
           business_name?: string | null
           core_service?: string | null
@@ -402,7 +402,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          audience_problems?: string | null
+          audience_problem?: string | null
           big_promise?: string | null
           business_name?: string | null
           core_service?: string | null
