@@ -69,6 +69,7 @@ serve(async (req) => {
 
     const embeddingData = await embeddingResponse.json();
     const questionEmbedding = embeddingData.data[0].embedding;
+    console.log('Generated question embedding, vector length:', questionEmbedding.length);
 
     // Step 2: Get user's documents
     console.log('Fetching user documents...');
@@ -83,7 +84,7 @@ serve(async (req) => {
     }
 
     const userDocIds = userDocs?.map(doc => doc.id) || [];
-    console.log('Found user documents:', userDocIds.length);
+    console.log('Found user documents:', userDocIds.length, userDocIds);
 
     let relevantChunks: any[] = [];
     let relevantContext = '';
@@ -96,26 +97,43 @@ serve(async (req) => {
         .select('content, document_id, embedding')
         .in('document_id', userDocIds);
 
+      console.log('Raw chunks query result:', {
+        chunksFound: allChunks?.length || 0,
+        error: chunksError,
+        sampleChunk: allChunks?.[0] ? {
+          hasContent: !!allChunks[0].content,
+          hasEmbedding: !!allChunks[0].embedding,
+          contentLength: allChunks[0].content?.length || 0
+        } : null
+      });
+
       if (chunksError) {
         console.error('Error fetching document chunks:', chunksError);
       } else if (allChunks && allChunks.length > 0) {
         // Calculate similarity scores for each chunk
         const chunksWithScores = allChunks
-          .filter(chunk => chunk.embedding)
-          .map(chunk => ({
-            ...chunk,
-            similarity: cosineSimilarity(questionEmbedding, chunk.embedding)
-          }))
+          .filter(chunk => chunk.embedding && Array.isArray(chunk.embedding))
+          .map(chunk => {
+            const similarity = cosineSimilarity(questionEmbedding, chunk.embedding);
+            console.log(`Chunk similarity: ${similarity.toFixed(4)} for content: "${chunk.content.substring(0, 100)}..."`);
+            return {
+              ...chunk,
+              similarity
+            };
+          })
           .sort((a, b) => b.similarity - a.similarity)
           .slice(0, 5); // Get top 5 most relevant chunks
 
         relevantChunks = chunksWithScores;
-        relevantContext = chunksWithScores
-          .filter(chunk => chunk.similarity > 0.7) // Only use chunks with good similarity
+        
+        // Use chunks with similarity > 0.6 for better relevance
+        const highSimilarityChunks = chunksWithScores.filter(chunk => chunk.similarity > 0.6);
+        relevantContext = highSimilarityChunks
           .map(chunk => chunk.content)
           .join('\n\n');
 
-        console.log(`Found ${chunksWithScores.length} chunks, using ${chunksWithScores.filter(c => c.similarity > 0.7).length} with high similarity`);
+        console.log(`Found ${chunksWithScores.length} chunks, using ${highSimilarityChunks.length} with high similarity (>0.6)`);
+        console.log('Relevant context length:', relevantContext.length);
       }
     }
 
@@ -141,7 +159,9 @@ Always structure your responses with:
 Context from user's documents:
 ${relevantContext}
 
-Use the context information when relevant, but also draw on your expertise. If the context doesn't fully address the question, supplement with your knowledge while being clear about what comes from their documents vs. general best practices.`
+Use the context information when relevant, but also draw on your expertise. If the context doesn't fully address the question, supplement with your knowledge while being clear about what comes from their documents vs. general best practices.
+
+Answer the user's question directly and professionally. If information comes from their uploaded documents, mention that it's based on their documents.`
       : `You are CareGrowthAI, an expert assistant for digital marketing agencies and home care businesses. 
 
 Your job is to answer questions using your knowledge of:
@@ -237,7 +257,13 @@ The user hasn't uploaded relevant documents yet, so provide guidance based on in
     return new Response(JSON.stringify({ 
       answer, 
       category,
-      sources: relevantChunks.length
+      sources: relevantChunks.length,
+      debug: {
+        documentsFound: userDocIds.length,
+        chunksFound: allChunks?.length || 0,
+        relevantChunks: relevantChunks.length,
+        contextLength: relevantContext.length
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

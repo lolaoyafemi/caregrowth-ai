@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +38,8 @@ export const useGoogleDocuments = () => {
 
   const processDocument = async (documentId: string, docLink: string, docTitle?: string) => {
     try {
+      console.log('Starting document processing for:', documentId, docTitle);
+      
       const { data, error } = await supabase.functions.invoke('process-document', {
         body: {
           documentId,
@@ -52,6 +55,7 @@ export const useGoogleDocuments = () => {
       }
 
       console.log('Document processed successfully:', data);
+      toast.success(`Document processed! Created ${data.chunksCreated || 0} content chunks.`);
       return true;
     } catch (error) {
       console.error('Error invoking process-document function:', error);
@@ -80,16 +84,15 @@ export const useGoogleDocuments = () => {
       toast.success('Document added successfully!');
 
       // Process the document to create chunks and embeddings
-      toast.loading('Processing document content...', { id: 'processing' });
+      const processingToast = toast.loading('Processing document content and creating embeddings...');
       
       const processed = await processDocument(data.id, docLink, data.doc_title);
       
+      toast.dismiss(processingToast);
+      
       if (processed) {
-        toast.success('Document processed and ready for Q&A!', { id: 'processing' });
         // Refresh documents to show updated fetched status
         fetchDocuments();
-      } else {
-        toast.error('Document added but processing failed', { id: 'processing' });
       }
 
       return data;
