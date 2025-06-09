@@ -12,8 +12,24 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
+// Simple cosine similarity function
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length) return 0;
+  
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -54,50 +70,60 @@ serve(async (req) => {
     const embeddingData = await embeddingResponse.json();
     const questionEmbedding = embeddingData.data[0].embedding;
 
-    // Step 2: Search for similar document chunks
-    console.log('Searching for relevant document chunks...');
-    
-    // Get user's documents first
+    // Step 2: Get user's documents
+    console.log('Fetching user documents...');
     const { data: userDocs, error: docsError } = await supabase
       .from('google_documents')
-      .select('id')
-      .eq('user_id', userId);
+      .select('id, doc_title')
+      .eq('user_id', userId)
+      .eq('fetched', true);
 
     if (docsError) {
       console.error('Error fetching user documents:', docsError);
     }
 
     const userDocIds = userDocs?.map(doc => doc.id) || [];
+    console.log('Found user documents:', userDocIds.length);
 
-    // Search for relevant chunks using embedding similarity
-    // Note: This is a simplified version - in production you'd use pgvector extension
-    const { data: chunks, error: chunksError } = await supabase
-      .from('document_chunks')
-      .select('content, document_id')
-      .in('document_id', userDocIds)
-      .limit(5);
+    let relevantChunks: any[] = [];
+    let relevantContext = '';
 
-    if (chunksError) {
-      console.error('Error fetching document chunks:', chunksError);
+    if (userDocIds.length > 0) {
+      // Step 3: Search for relevant chunks
+      console.log('Searching for relevant document chunks...');
+      const { data: allChunks, error: chunksError } = await supabase
+        .from('document_chunks')
+        .select('content, document_id, embedding')
+        .in('document_id', userDocIds);
+
+      if (chunksError) {
+        console.error('Error fetching document chunks:', chunksError);
+      } else if (allChunks && allChunks.length > 0) {
+        // Calculate similarity scores for each chunk
+        const chunksWithScores = allChunks
+          .filter(chunk => chunk.embedding)
+          .map(chunk => ({
+            ...chunk,
+            similarity: cosineSimilarity(questionEmbedding, chunk.embedding)
+          }))
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 5); // Get top 5 most relevant chunks
+
+        relevantChunks = chunksWithScores;
+        relevantContext = chunksWithScores
+          .filter(chunk => chunk.similarity > 0.7) // Only use chunks with good similarity
+          .map(chunk => chunk.content)
+          .join('\n\n');
+
+        console.log(`Found ${chunksWithScores.length} chunks, using ${chunksWithScores.filter(c => c.similarity > 0.7).length} with high similarity`);
+      }
     }
 
-    const relevantContext = chunks?.map(chunk => chunk.content).join('\n\n') || '';
-    console.log('Found relevant context:', relevantContext.length, 'characters');
-
-    // Step 3: Generate answer using GPT with context
+    // Step 4: Generate answer using GPT with context
     console.log('Generating answer with GPT...');
-    const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are CareGrowthAI, an expert assistant for digital marketing agencies and home care businesses. 
+    
+    const systemPrompt = relevantContext 
+      ? `You are CareGrowthAI, an expert assistant for digital marketing agencies and home care businesses. 
 
 Your job is to answer questions using the provided context from the user's documents and your knowledge of:
 - Agency management and operations
@@ -115,7 +141,36 @@ Always structure your responses with:
 Context from user's documents:
 ${relevantContext}
 
-If the context doesn't contain relevant information, rely on your expertise in these areas.`
+Use the context information when relevant, but also draw on your expertise. If the context doesn't fully address the question, supplement with your knowledge while being clear about what comes from their documents vs. general best practices.`
+      : `You are CareGrowthAI, an expert assistant for digital marketing agencies and home care businesses. 
+
+Your job is to answer questions using your knowledge of:
+- Agency management and operations
+- Marketing strategies for home care
+- Hiring and team building
+- Compliance and regulations
+- Client retention and growth
+
+Always structure your responses with:
+1. A clear, actionable answer
+2. Step-by-step guidance when applicable  
+3. Specific examples or strategies
+4. Key metrics or considerations
+
+The user hasn't uploaded relevant documents yet, so provide guidance based on industry best practices and your expertise.`;
+
+    const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
           },
           {
             role: 'user',
@@ -134,7 +189,7 @@ If the context doesn't contain relevant information, rely on your expertise in t
     const gptData = await gptResponse.json();
     const answer = gptData.choices[0].message.content;
 
-    // Step 4: Categorize the response
+    // Step 5: Categorize the response
     console.log('Categorizing the response...');
     const categorizationResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -162,7 +217,7 @@ If the context doesn't contain relevant information, rely on your expertise in t
     const categorizationData = await categorizationResponse.json();
     const category = categorizationData.choices[0].message.content.trim().toLowerCase();
 
-    // Step 5: Log the Q&A interaction
+    // Step 6: Log the Q&A interaction
     const { error: logError } = await supabase
       .from('qna_logs')
       .insert({
@@ -170,7 +225,7 @@ If the context doesn't contain relevant information, rely on your expertise in t
         question: question,
         response: answer,
         category: category,
-        sources: chunks?.map(chunk => chunk.document_id) || []
+        sources: relevantChunks.map(chunk => chunk.document_id) || []
       });
 
     if (logError) {
@@ -182,7 +237,7 @@ If the context doesn't contain relevant information, rely on your expertise in t
     return new Response(JSON.stringify({ 
       answer, 
       category,
-      sources: chunks?.length || 0
+      sources: relevantChunks.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

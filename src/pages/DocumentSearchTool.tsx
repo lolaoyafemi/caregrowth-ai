@@ -305,7 +305,7 @@ ${documents.length > 0 ? 'Your documents provide detailed guidance on implementa
                 Add Document Link
               </Button>
               <p className="text-xs text-gray-500">
-                Supports Google Docs, Sheets, Slides, and Drive files
+                Documents are automatically processed for Q&A when added
               </p>
             </div>
             <div className="mt-4">
@@ -336,7 +336,18 @@ ${documents.length > 0 ? 'Your documents provide detailed guidance on implementa
                     <div className="flex items-center cursor-pointer flex-1" onClick={() => handleViewDocument(document)}>
                       {getDocumentIcon(document.doc_link)}
                       <div className="ml-3 flex-1">
-                        <p className="text-sm font-medium truncate">{document.doc_title}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{document.doc_title}</p>
+                          {document.fetched ? (
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                              Processed
+                            </span>
+                          ) : (
+                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                              Processing...
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500">Added on {new Date(document.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>

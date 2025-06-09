@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +35,31 @@ export const useGoogleDocuments = () => {
     }
   };
 
+  const processDocument = async (documentId: string, docLink: string, docTitle?: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('process-document', {
+        body: {
+          documentId,
+          docLink,
+          docTitle
+        }
+      });
+
+      if (error) {
+        console.error('Error processing document:', error);
+        toast.error('Failed to process document content');
+        return false;
+      }
+
+      console.log('Document processed successfully:', data);
+      return true;
+    } catch (error) {
+      console.error('Error invoking process-document function:', error);
+      toast.error('Failed to process document content');
+      return false;
+    }
+  };
+
   const addDocument = async (docLink: string, docTitle?: string) => {
     if (!user) return;
 
@@ -54,6 +78,20 @@ export const useGoogleDocuments = () => {
       
       setDocuments(prev => [data, ...prev]);
       toast.success('Document added successfully!');
+
+      // Process the document to create chunks and embeddings
+      toast.loading('Processing document content...', { id: 'processing' });
+      
+      const processed = await processDocument(data.id, docLink, data.doc_title);
+      
+      if (processed) {
+        toast.success('Document processed and ready for Q&A!', { id: 'processing' });
+        // Refresh documents to show updated fetched status
+        fetchDocuments();
+      } else {
+        toast.error('Document added but processing failed', { id: 'processing' });
+      }
+
       return data;
     } catch (error) {
       console.error('Error adding document:', error);
@@ -64,6 +102,17 @@ export const useGoogleDocuments = () => {
 
   const deleteDocument = async (id: string) => {
     try {
+      // First delete associated chunks
+      const { error: chunksError } = await supabase
+        .from('document_chunks')
+        .delete()
+        .eq('document_id', id);
+
+      if (chunksError) {
+        console.error('Error deleting document chunks:', chunksError);
+      }
+
+      // Then delete the document
       const { error } = await supabase
         .from('google_documents')
         .delete()
