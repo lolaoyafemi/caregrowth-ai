@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from "sonner";
 import { BookmarkIcon, CheckCircle2Icon, FileTextIcon } from 'lucide-react';
+import { useQAAssistant } from '@/hooks/useQAAssistant';
+import { useUser } from '@/contexts/UserContext';
 
 interface Message {
   id: number;
@@ -13,6 +15,7 @@ interface Message {
   content: string;
   timestamp: Date;
   category?: 'management' | 'marketing' | 'hiring' | 'compliance' | 'other';
+  sources?: number;
 }
 
 interface SavedAnswer {
@@ -25,37 +28,42 @@ interface SavedAnswer {
 
 const QAAssistantTool = () => {
   const [query, setQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [conversation, setConversation] = useState<Message[]>([
     {
       id: 1,
       role: 'assistant',
-      content: 'Hello! I\'m your CareGrowthAI assistant. How can I help you today?',
+      content: 'Hello! I\'m your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
       timestamp: new Date()
     }
   ]);
-  const [savedAnswers, setSavedAnswers] = useState<SavedAnswer[]>([
-    {
-      id: 1,
-      question: "What are the best client retention strategies?",
-      answer: "Effective client retention strategies include regular check-ins, value-added services, proactive communication, and addressing issues quickly. Set up a system to track client satisfaction and implement a tiered service model.",
-      category: "management",
-      date: "2023-05-10"
-    },
-    {
-      id: 2,
-      question: "How should we structure our social media team?",
-      answer: "For an efficient social media team, consider roles like strategist, content creator, community manager, and analyst. Structure depends on agency size, with small agencies often having hybrid roles.",
-      category: "marketing",
-      date: "2023-05-08"
-    }
-  ]);
+  const [savedAnswers, setSavedAnswers] = useState<SavedAnswer[]>([]);
+  const [qaHistory, setQAHistory] = useState<any[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { askQuestion, getQAHistory, isLoading, error } = useQAAssistant();
+  const { user } = useUser();
+
+  // Load Q&A history on component mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      const history = await getQAHistory();
+      setQAHistory(history);
+    };
+
+    if (user) {
+      loadHistory();
+    }
+  }, [user, getQAHistory]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!query.trim()) {
+      return;
+    }
+
+    if (!user) {
+      toast.error("Please log in to use the Q&A assistant");
       return;
     }
 
@@ -67,139 +75,40 @@ const QAAssistantTool = () => {
       timestamp: new Date()
     };
     
-    setConversation([...conversation, userMessage]);
+    setConversation(prev => [...prev, userMessage]);
+    const currentQuery = query;
     setQuery('');
-    setIsLoading(true);
     
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      // Randomly determine a category
-      const categories = ['management', 'marketing', 'hiring', 'compliance', 'other'] as const;
-      const category = categories[Math.floor(Math.random() * categories.length)];
-      
-      // Generate response based on category
-      let response = '';
-      
-      switch(category) {
-        case 'management':
-          response = `Based on my analysis, this is a management question.
-
-STEP-BY-STEP APPROACH:
-
-1. Start by establishing clear performance metrics for each client account
-2. Implement a tiered service level framework based on client value and needs
-3. Develop standardized processes for client onboarding, reporting, and communication
-4. Create a feedback loop system to continuously improve service delivery
-
-EXAMPLE:
-One of our agency clients increased retention by 32% by implementing a "Client Success Plan" for each account that outlined:
-- Clear deliverables and timelines
-- Regular strategic review meetings (beyond standard reporting)
-- Proactive recommendations based on data insights
-- Escalation procedures for when results don't meet expectations
-
-Would you like me to elaborate on any specific aspect of this approach?`;
-          break;
-          
-        case 'marketing':
-          response = `This is primarily a marketing question.
-
-STEP-BY-STEP APPROACH:
-
-1. Begin with a comprehensive competitive analysis of your client's market position
-2. Develop a multi-channel strategy with primary and secondary platforms based on audience data
-3. Create a content calendar with themes aligned to business objectives and seasonal factors
-4. Implement a measurement framework focusing on both leading and lagging indicators
-
-EXAMPLE:
-A recent case study from a B2B technology client showed that focusing on LinkedIn as primary and email as secondary channel increased qualified leads by 47% in 90 days when content was specifically crafted for each stage of the buyer journey.
-
-KEY METRICS TO TRACK:
-- Channel-specific engagement rates
-- Content performance by theme
-- Lead quality score
-- Attribution modeling for conversions
-
-Is there a particular aspect of this strategy you'd like to explore further?`;
-          break;
-          
-        case 'hiring':
-          response = `This falls under hiring and team building.
-
-STEP-BY-STEP APPROACH:
-
-1. Define the exact skills needed versus nice-to-have qualifications
-2. Create a structured interview process with practical assessments
-3. Develop a scoring system for each candidate to reduce bias
-4. Implement a 30-60-90 day onboarding plan
-
-EXAMPLE:
-One agency reduced their hiring mistakes by 40% by implementing a "working interview" where candidates complete a paid half-day project alongside the team. This revealed both skills and cultural fit in a real-world context.
-
-BEST PRACTICES:
-- Use behavioral interviewing techniques
-- Check references thoroughly with specific questions
-- Consider cultural contribution, not just cultural fit
-- Establish clear performance expectations before hiring
-
-Would you like more specific hiring criteria for a particular role?`;
-          break;
-          
-        case 'compliance':
-          response = `This question relates to compliance and regulatory issues.
-
-STEP-BY-STEP APPROACH:
-
-1. Conduct a thorough audit of current practices against relevant regulations
-2. Develop a compliance calendar for all recurring requirements
-3. Implement documentation standards for all client work
-4. Create a training program for team members on key regulations
-
-IMPORTANT CONSIDERATIONS:
-- GDPR requirements for data handling
-- FTC guidelines for transparency in marketing
-- Industry-specific regulations that may affect your clients
-- Contract terms and service level agreements
-
-EXAMPLE:
-A digital marketing agency avoided significant penalties by implementing a quarterly compliance review process that caught outdated consent practices on lead generation campaigns before they became an issue.
-
-Would you like me to focus on a specific aspect of compliance for digital marketing agencies?`;
-          break;
-          
-        default:
-          response = `Thank you for your question.
-
-Based on my analysis, here's what I recommend:
-
-1. Start by clearly defining your specific goals and metrics for success
-2. Research industry best practices and benchmark your current performance
-3. Develop a structured implementation plan with clear timelines
-4. Set up a measurement framework to track progress
-
-I'd be happy to provide more detailed guidance if you can share more specific information about your situation.
-
-Is there a particular aspect of this question you'd like me to explore in more depth?`;
-      }
-      
+    // Get AI response
+    const response = await askQuestion(currentQuery);
+    
+    if (response) {
       const assistantMessage: Message = {
         id: conversation.length + 2,
         role: 'assistant',
-        content: response,
+        content: response.answer,
         timestamp: new Date(),
-        category: category
+        category: response.category as any,
+        sources: response.sources
       };
       
-      setActiveCategory(category);
+      setActiveCategory(response.category);
       setConversation(prev => [...prev, assistantMessage]);
-      setIsLoading(false);
+      
+      // Refresh Q&A history
+      const updatedHistory = await getQAHistory();
+      setQAHistory(updatedHistory);
       
       // Scroll to bottom of chat
-      const chatContainer = document.getElementById('chat-container');
-      if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
-    }, 2000);
+      setTimeout(() => {
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) {
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+      }, 100);
+    } else if (error) {
+      toast.error(error);
+    }
   };
 
   const formatTime = (date: Date) => {
@@ -211,7 +120,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
       {
         id: 1,
         role: 'assistant',
-        content: 'Hello! I\'m your CareGrowthAI assistant. How can I help you today?',
+        content: 'Hello! I\'m your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
         timestamp: new Date()
       }
     ]);
@@ -266,7 +175,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
     <div className="p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">GPT-Powered Q&A Assistant</h1>
-        <p className="text-gray-600 mt-2">Get instant answers to your agency and marketing questions.</p>
+        <p className="text-gray-600 mt-2">Get instant answers to your agency and marketing questions powered by your documents and AI expertise.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -307,8 +216,15 @@ Is there a particular aspect of this question you'd like me to explore in more d
                         : 'bg-caregrowth-blue text-white'
                     }`}
                   >
-                    <div className="mb-1 text-sm flex justify-between">
-                      <div>{message.role === 'assistant' ? 'CareGrowthAI' : 'You'} • {formatTime(message.timestamp)}</div>
+                    <div className="mb-1 text-sm flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span>{message.role === 'assistant' ? 'CareGrowthAI' : 'You'} • {formatTime(message.timestamp)}</span>
+                        {message.sources && message.sources > 0 && (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            {message.sources} sources
+                          </span>
+                        )}
+                      </div>
                       {message.role === 'assistant' && message.id > 1 && (
                         <button 
                           className="text-gray-400 hover:text-caregrowth-blue transition-colors ml-4"
@@ -330,7 +246,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
                 <div className="flex justify-start">
                   <div className="max-w-[80%] rounded-lg p-4 bg-white border shadow-sm">
                     <div className="mb-1 text-sm">
-                      CareGrowthAI is typing...
+                      CareGrowthAI is thinking...
                     </div>
                     <div className="flex space-x-2">
                       <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -345,7 +261,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
             <div className="border-t p-4">
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <Input
-                  placeholder="Ask a question..."
+                  placeholder="Ask a question about agency management, marketing, hiring, or compliance..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   disabled={isLoading}
@@ -354,11 +270,14 @@ Is there a particular aspect of this question you'd like me to explore in more d
                 <Button 
                   type="submit" 
                   className="bg-caregrowth-blue"
-                  disabled={isLoading || !query.trim()}
+                  disabled={isLoading || !query.trim() || !user}
                 >
                   Send
                 </Button>
               </form>
+              {!user && (
+                <p className="text-sm text-gray-500 mt-2">Please log in to use the Q&A assistant</p>
+              )}
             </div>
           </Card>
         </div>
@@ -371,6 +290,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
                 variant="outline" 
                 className="w-full justify-start text-left h-auto py-2 px-3"
                 onClick={() => setQuery("What are the best practices for social media content strategy?")}
+                disabled={isLoading}
               >
                 What are the best practices for social media content strategy?
               </Button>
@@ -378,6 +298,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
                 variant="outline" 
                 className="w-full justify-start text-left h-auto py-2 px-3"
                 onClick={() => setQuery("How can we improve our client retention rate?")}
+                disabled={isLoading}
               >
                 How can we improve our client retention rate?
               </Button>
@@ -385,6 +306,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
                 variant="outline" 
                 className="w-full justify-start text-left h-auto py-2 px-3"
                 onClick={() => setQuery("What's the optimal posting frequency for our clients?")}
+                disabled={isLoading}
               >
                 What's the optimal posting frequency for our clients?
               </Button>
@@ -392,6 +314,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
                 variant="outline" 
                 className="w-full justify-start text-left h-auto py-2 px-3"
                 onClick={() => setQuery("How can we scale our agency operations efficiently?")}
+                disabled={isLoading}
               >
                 How can we scale our agency operations efficiently?
               </Button>
@@ -401,7 +324,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
           <Tabs defaultValue="session">
             <TabsList className="w-full">
               <TabsTrigger value="session" className="flex-1">Session Info</TabsTrigger>
-              <TabsTrigger value="saved" className="flex-1">Saved Answers</TabsTrigger>
+              <TabsTrigger value="history" className="flex-1">Q&A History</TabsTrigger>
             </TabsList>
             
             <TabsContent value="session">
@@ -442,6 +365,7 @@ Is there a particular aspect of this question you'd like me to explore in more d
                       variant="outline" 
                       className="w-full" 
                       onClick={handleClearChat}
+                      disabled={isLoading}
                     >
                       Clear Conversation
                     </Button>
@@ -450,33 +374,28 @@ Is there a particular aspect of this question you'd like me to explore in more d
               </Card>
             </TabsContent>
             
-            <TabsContent value="saved">
+            <TabsContent value="history">
               <Card className="p-6 max-h-[400px] overflow-y-auto">
-                {savedAnswers.length === 0 ? (
+                {qaHistory.length === 0 ? (
                   <div className="text-center py-6 text-gray-500">
-                    <BookmarkIcon className="h-8 w-8 mx-auto opacity-20 mb-2" />
-                    <p>No saved answers yet</p>
-                    <p className="text-xs mt-2">Click the bookmark icon on any answer to save it</p>
+                    <FileTextIcon className="h-8 w-8 mx-auto opacity-20 mb-2" />
+                    <p>No Q&A history yet</p>
+                    <p className="text-xs mt-2">Your questions and answers will appear here</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {savedAnswers.map(item => (
+                    {qaHistory.map(item => (
                       <div key={item.id} className="border rounded-md p-3 hover:bg-gray-50">
                         <div className="flex justify-between items-center mb-2">
-                          <div className={`text-xs rounded-full px-2 py-0.5 ${getCategoryColor(item.category)}`}>
-                            {getCategoryLabel(item.category)}
+                          <div className={`text-xs rounded-full px-2 py-0.5 ${getCategoryColor(item.category || 'other')}`}>
+                            {getCategoryLabel(item.category || 'other')}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {item.date}
+                            {new Date(item.created_at).toLocaleDateString()}
                           </div>
                         </div>
                         <p className="font-medium text-sm mb-1">{item.question}</p>
-                        <p className="text-xs text-gray-700 line-clamp-2">{item.answer}</p>
-                        <div className="flex justify-end mt-2">
-                          <Button variant="ghost" size="sm" className="h-8 text-xs">
-                            <FileTextIcon className="h-3 w-3 mr-1" /> View
-                          </Button>
-                        </div>
+                        <p className="text-xs text-gray-700 line-clamp-2">{item.response}</p>
                       </div>
                     ))}
                   </div>

@@ -114,6 +114,41 @@ export type Database = {
         }
         Relationships: []
       }
+      document_chunks: {
+        Row: {
+          chunk_index: number | null
+          content: string | null
+          created_at: string | null
+          document_id: string | null
+          embedding: string | null
+          id: string
+        }
+        Insert: {
+          chunk_index?: number | null
+          content?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          embedding?: string | null
+          id?: string
+        }
+        Update: {
+          chunk_index?: number | null
+          content?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          embedding?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "google_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_documents: {
         Row: {
           created_at: string
@@ -284,6 +319,36 @@ export type Database = {
           platform?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      qna_logs: {
+        Row: {
+          agency_id: string | null
+          category: string | null
+          created_at: string | null
+          id: string
+          question: string | null
+          response: string | null
+          sources: string[] | null
+        }
+        Insert: {
+          agency_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          question?: string | null
+          response?: string | null
+          sources?: string[] | null
+        }
+        Update: {
+          agency_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          question?: string | null
+          response?: string | null
+          sources?: string[] | null
         }
         Relationships: []
       }
