@@ -1,37 +1,23 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from "sonner";
-import { SearchIcon, LinkIcon, ExternalLinkIcon, Trash2Icon, LogOutIcon, UserIcon, FileTextIcon } from 'lucide-react';
+import { SearchIcon, LinkIcon, ExternalLinkIcon, Trash2Icon, LogOutIcon, UserIcon, FileTextIcon, BookOpenIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoogleDocuments } from '@/hooks/useGoogleDocuments';
-import { supabase } from '@/integrations/supabase/client';
+import { useDocumentSearch } from '@/hooks/useDocumentSearch';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
-
-interface SearchResult {
-  documentTitle: string;
-  documentUrl: string;
-  relevantContent: string;
-  pageNumber?: number;
-  confidence: number;
-}
-
-interface SearchResponse {
-  results: SearchResult[];
-  totalDocumentsSearched: number;
-}
 
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { documents, loading: docsLoading, addDocument, deleteDocument } = useGoogleDocuments();
+  const { searchDocuments, isSearching, error: searchError } = useDocumentSearch();
   
   const [query, setQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState([]);
+  const [totalDocumentsSearched, setTotalDocumentsSearched] = useState(0);
   const [followUpQuery, setFollowUpQuery] = useState('');
   const [googleUrl, setGoogleUrl] = useState('');
 
@@ -53,41 +39,17 @@ const DocumentSearchTool = () => {
       return;
     }
     
-    setSearchResults([]);
-    setSearchError(null);
-    setIsSearching(true);
+    const results = await searchDocuments(query.trim());
     
-    try {
-      const { data, error } = await supabase.functions.invoke('document-search', {
-        body: {
-          query: query.trim(),
-          userId: user.id
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      const searchResponse = data as SearchResponse;
-      setSearchResults(searchResponse.results);
+    if (results) {
+      setSearchResults(results.results);
+      setTotalDocumentsSearched(results.totalDocumentsSearched);
       
-      if (searchResponse.results.length === 0) {
+      if (results.results.length === 0) {
         toast.info("No relevant content found in your documents.");
       } else {
-        toast.success(`Found ${searchResponse.results.length} relevant results!`);
+        toast.success(`Found ${results.results.length} relevant results!`);
       }
-    } catch (error) {
-      console.error('Search error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred during search.';
-      setSearchError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsSearching(false);
     }
   };
 
@@ -97,50 +59,19 @@ const DocumentSearchTool = () => {
     }
     
     setQuery(followUpQuery);
+    const results = await searchDocuments(followUpQuery.trim());
     setFollowUpQuery('');
     
-    // Trigger search with the follow-up query
-    const tempQuery = followUpQuery;
-    setTimeout(async () => {
-      if (!tempQuery.trim()) return;
+    if (results) {
+      setSearchResults(results.results);
+      setTotalDocumentsSearched(results.totalDocumentsSearched);
       
-      setSearchResults([]);
-      setSearchError(null);
-      setIsSearching(true);
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('document-search', {
-          body: {
-            query: tempQuery.trim(),
-            userId: user.id
-          }
-        });
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        const searchResponse = data as SearchResponse;
-        setSearchResults(searchResponse.results);
-        
-        if (searchResponse.results.length === 0) {
-          toast.info("No relevant content found in your documents.");
-        } else {
-          toast.success(`Found ${searchResponse.results.length} relevant results!`);
-        }
-      } catch (error) {
-        console.error('Follow-up search error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An error occurred during search.';
-        setSearchError(errorMessage);
-        toast.error(errorMessage);
-      } finally {
-        setIsSearching(false);
+      if (results.results.length === 0) {
+        toast.info("No relevant content found in your documents.");
+      } else {
+        toast.success(`Found ${results.results.length} relevant results!`);
       }
-    }, 100);
+    }
   };
 
   const handleAddGoogleLink = async () => {
@@ -242,7 +173,15 @@ const DocumentSearchTool = () => {
           
           {(isSearching || searchResults.length > 0) && (
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Search Results</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Search Results</h2>
+                {totalDocumentsSearched > 0 && (
+                  <span className="text-sm text-gray-500">
+                    Searched {totalDocumentsSearched} document{totalDocumentsSearched !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+              
               {isSearching ? (
                 <div className="min-h-[200px] flex items-center justify-center">
                   <div className="animate-pulse space-y-4 w-full">
@@ -258,34 +197,49 @@ const DocumentSearchTool = () => {
                 <div className="space-y-4">
                   {searchResults.map((result, index) => (
                     <div key={index} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
+                      <div className="flex justify-between items-start mb-3">
                         <h3 className="font-semibold text-lg flex items-center gap-2">
                           <FileTextIcon className="h-5 w-5 text-blue-500" />
                           {result.documentTitle}
                         </h3>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           {result.pageNumber && (
-                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                              <BookOpenIcon className="h-3 w-3" />
                               Page {result.pageNumber}
-                            </span>
+                            </div>
                           )}
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                          <span className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full">
                             {Math.round(result.confidence * 100)}% match
                           </span>
                         </div>
                       </div>
-                      <p className="text-gray-700 mb-3 leading-relaxed">
-                        {result.relevantContent}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(result.documentUrl, '_blank')}
-                        className="flex items-center gap-2"
-                      >
-                        <ExternalLinkIcon className="h-4 w-4" />
-                        Open Document
-                      </Button>
+                      
+                      <div className="bg-gray-50 border-l-4 border-blue-500 p-3 mb-3 rounded-r">
+                        <p className="text-gray-700 leading-relaxed text-sm">
+                          {result.relevantContent}
+                        </p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          {result.pageNumber && (
+                            <span className="flex items-center gap-1">
+                              <BookOpenIcon className="h-3 w-3" />
+                              Found on page {result.pageNumber}
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(result.documentUrl, '_blank')}
+                          className="flex items-center gap-2"
+                        >
+                          <ExternalLinkIcon className="h-4 w-4" />
+                          Open Document
+                        </Button>
+                      </div>
                     </div>
                   ))}
                   
@@ -318,6 +272,7 @@ const DocumentSearchTool = () => {
             </Card>
           )}
         </div>
+        
         
         <div>
           <Card className="p-6 mb-6">
