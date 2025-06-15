@@ -107,33 +107,19 @@ export const useGoogleDocuments = () => {
     try {
       console.log('Starting document deletion process for:', id);
       
-      // First, explicitly delete all associated chunks
-      const { error: chunksError } = await supabase
-        .from('document_chunks')
-        .delete()
-        .eq('document_id', id);
-
-      if (chunksError) {
-        console.error('Error deleting document chunks:', chunksError);
-        toast.error('Failed to delete document chunks');
-        return;
-      }
-
-      console.log('Document chunks deleted successfully');
-
-      // Then delete the document
-      const { error: documentError } = await supabase
+      // Delete the document - chunks will be automatically deleted due to CASCADE
+      const { error } = await supabase
         .from('google_documents')
         .delete()
         .eq('id', id);
 
-      if (documentError) {
-        console.error('Error deleting document:', documentError);
+      if (error) {
+        console.error('Error deleting document:', error);
         toast.error('Failed to remove document');
         return;
       }
       
-      console.log('Document deleted successfully');
+      console.log('Document and associated chunks deleted successfully');
       setDocuments(prev => prev.filter(doc => doc.id !== id));
       toast.success('Document removed successfully');
     } catch (error) {
