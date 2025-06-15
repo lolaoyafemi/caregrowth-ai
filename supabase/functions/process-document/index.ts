@@ -12,29 +12,48 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
-// Simplified and more effective content chunking
+// Content-based chunking function
 function createChunks(content: string, docTitle: string): string[] {
   const chunks = [];
   const maxChunkSize = 1000;
   const overlapSize = 100;
   
-  // If content is very short, return as single chunk
-  if (content.length <= maxChunkSize) {
-    const enhancedContent = `Document: "${docTitle}"\n\n${content}`;
+  // Clean and prepare content
+  const cleanContent = content
+    .replace(/\s+/g, ' ')
+    .replace(/\n+/g, '\n')
+    .trim();
+  
+  if (!cleanContent || cleanContent.length < 50) {
+    console.log('Content too short or empty, skipping chunking');
+    return [];
+  }
+
+  console.log(`Creating chunks from ${cleanContent.length} characters of content`);
+  
+  // If content is short enough, return as single chunk
+  if (cleanContent.length <= maxChunkSize) {
+    const enhancedContent = `Document: "${docTitle}"\n\n${cleanContent}`;
     chunks.push(enhancedContent);
     return chunks;
   }
 
-  // Split content into sentences
-  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  // Split by paragraphs first, then sentences
+  const paragraphs = cleanContent.split(/\n\s*\n/).filter(p => p.trim().length > 20);
+  
+  if (paragraphs.length === 0) {
+    // Fall back to sentence splitting
+    const sentences = cleanContent.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    return createSentenceChunks(sentences, docTitle, maxChunkSize, overlapSize);
+  }
   
   let currentChunk = `Document: "${docTitle}"\n\n`;
   
-  for (let i = 0; i < sentences.length; i++) {
-    const sentence = sentences[i].trim() + '.';
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i].trim();
     
-    // If adding this sentence would exceed max size, save current chunk
-    if (currentChunk.length + sentence.length > maxChunkSize && currentChunk.length > 200) {
+    // If adding this paragraph would exceed max size, save current chunk
+    if (currentChunk.length + paragraph.length > maxChunkSize && currentChunk.length > 200) {
       chunks.push(currentChunk.trim());
       
       // Start new chunk with overlap from previous chunk
@@ -43,7 +62,7 @@ function createChunks(content: string, docTitle: string): string[] {
       currentChunk = `Document: "${docTitle}" (continued)\n\n${overlapWords.join(' ')} `;
     }
     
-    currentChunk += sentence + ' ';
+    currentChunk += paragraph + '\n\n';
   }
   
   // Add the last chunk if it has meaningful content
@@ -51,10 +70,38 @@ function createChunks(content: string, docTitle: string): string[] {
     chunks.push(currentChunk.trim());
   }
   
-  return chunks.length > 0 ? chunks : [`Document: "${docTitle}"\n\nThis document contains business information and best practices.`];
+  console.log(`Created ${chunks.length} chunks from paragraphs`);
+  return chunks;
 }
 
-// Enhanced content extraction from Google Docs
+function createSentenceChunks(sentences: string[], docTitle: string, maxChunkSize: number, overlapSize: number): string[] {
+  const chunks = [];
+  let currentChunk = `Document: "${docTitle}"\n\n`;
+  
+  for (let i = 0; i < sentences.length; i++) {
+    const sentence = sentences[i].trim() + '.';
+    
+    if (currentChunk.length + sentence.length > maxChunkSize && currentChunk.length > 200) {
+      chunks.push(currentChunk.trim());
+      
+      // Start new chunk with overlap
+      const words = currentChunk.split(' ');
+      const overlapWords = words.slice(-Math.min(15, Math.floor(words.length / 4)));
+      currentChunk = `Document: "${docTitle}" (continued)\n\n${overlapWords.join(' ')} `;
+    }
+    
+    currentChunk += sentence + ' ';
+  }
+  
+  if (currentChunk.trim().length > 200) {
+    chunks.push(currentChunk.trim());
+  }
+  
+  console.log(`Created ${chunks.length} chunks from sentences`);
+  return chunks;
+}
+
+// Enhanced content extraction with multiple format support
 async function extractDocumentContent(docLink: string, docTitle: string): Promise<string> {
   console.log('Extracting content from:', docTitle);
   
@@ -63,72 +110,79 @@ async function extractDocumentContent(docLink: string, docTitle: string): Promis
                     docLink.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/) ||
                     docLink.match(/\/presentation\/d\/([a-zA-Z0-9-_]+)/);
   
-  if (docIdMatch) {
-    const docId = docIdMatch[1];
-    
-    // Try different export formats based on document type
-    const exportUrls = [];
-    
-    if (docLink.includes('/document/')) {
-      exportUrls.push(`https://docs.google.com/document/d/${docId}/export?format=txt`);
-      exportUrls.push(`https://docs.google.com/document/d/${docId}/export?format=html`);
-    } else if (docLink.includes('/spreadsheets/')) {
-      exportUrls.push(`https://docs.google.com/spreadsheets/d/${docId}/export?format=csv`);
-      exportUrls.push(`https://docs.google.com/spreadsheets/d/${docId}/export?format=html`);
-    } else if (docLink.includes('/presentation/')) {
-      exportUrls.push(`https://docs.google.com/presentation/d/${docId}/export?format=txt`);
-    }
-    
-    // Try each export URL
-    for (const exportUrl of exportUrls) {
-      try {
-        console.log('Trying export URL:', exportUrl);
-        const response = await fetch(exportUrl);
+  if (!docIdMatch) {
+    console.log('Could not extract document ID from URL:', docLink);
+    return '';
+  }
+  
+  const docId = docIdMatch[1];
+  console.log('Extracted document ID:', docId);
+  
+  // Try different export formats based on document type
+  const exportUrls = [];
+  
+  if (docLink.includes('/document/')) {
+    exportUrls.push(`https://docs.google.com/document/d/${docId}/export?format=txt`);
+    exportUrls.push(`https://docs.google.com/document/d/${docId}/export?format=html`);
+  } else if (docLink.includes('/spreadsheets/')) {
+    exportUrls.push(`https://docs.google.com/spreadsheets/d/${docId}/export?format=csv`);
+    exportUrls.push(`https://docs.google.com/spreadsheets/d/${docId}/export?format=html`);
+  } else if (docLink.includes('/presentation/')) {
+    exportUrls.push(`https://docs.google.com/presentation/d/${docId}/export?format=txt`);
+    exportUrls.push(`https://docs.google.com/presentation/d/${docId}/export?format=html`);
+  }
+  
+  // Try each export URL
+  for (const exportUrl of exportUrls) {
+    try {
+      console.log('Trying export URL:', exportUrl);
+      const response = await fetch(exportUrl);
+      
+      console.log(`Response status: ${response.status}`);
+      
+      if (response.ok) {
+        let content = await response.text();
         
-        if (response.ok) {
-          let content = await response.text();
-          
-          // Clean HTML content if needed
-          if (exportUrl.includes('format=html')) {
-            content = content
-              .replace(/<script[^>]*>.*?<\/script>/gis, '')
-              .replace(/<style[^>]*>.*?<\/style>/gis, '')
-              .replace(/<[^>]+>/g, ' ')
-              .replace(/&nbsp;/g, ' ')
-              .replace(/&amp;/g, '&')
-              .replace(/&lt;/g, '<')
-              .replace(/&gt;/g, '>')
-              .replace(/\s+/g, ' ')
-              .trim();
-          }
-          
-          if (content && content.length > 50) {
-            console.log(`Successfully extracted ${content.length} characters`);
-            return content;
-          }
+        // Clean HTML content if needed
+        if (exportUrl.includes('format=html')) {
+          content = content
+            .replace(/<script[^>]*>.*?<\/script>/gis, '')
+            .replace(/<style[^>]*>.*?<\/style>/gis, '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/\s+/g, ' ')
+            .trim();
         }
-      } catch (error) {
-        console.log(`Failed to fetch from ${exportUrl}:`, error.message);
+        
+        // Clean CSV content for spreadsheets
+        if (exportUrl.includes('format=csv')) {
+          content = content
+            .split('\n')
+            .map(line => line.replace(/,/g, ' '))
+            .join('\n')
+            .replace(/\s+/g, ' ')
+            .trim();
+        }
+        
+        if (content && content.length > 50) {
+          console.log(`Successfully extracted ${content.length} characters from ${exportUrl}`);
+          return content;
+        } else {
+          console.log(`Content too short (${content.length} chars) from ${exportUrl}`);
+        }
+      } else {
+        console.log(`Failed to fetch from ${exportUrl}, status: ${response.status}`);
       }
+    } catch (error) {
+      console.log(`Error fetching from ${exportUrl}:`, error.message);
     }
   }
   
-  // Fallback content based on document title and type
-  console.log('Using fallback content for:', docTitle);
-  const isSpreadsheet = docLink.includes('/spreadsheets/');
-  const isPresentation = docLink.includes('/presentation/');
-  
-  let fallbackContent = `Business Document: "${docTitle}"\n\n`;
-  
-  if (isSpreadsheet) {
-    fallbackContent += `This spreadsheet contains important business data including metrics, client information, project details, budgets, and operational data that supports business decision-making and agency management.`;
-  } else if (isPresentation) {
-    fallbackContent += `This presentation contains strategic business information including company vision, market analysis, service offerings, team structure, and growth strategies for agency operations.`;
-  } else {
-    fallbackContent += `This document contains comprehensive business information including operational procedures, marketing strategies, team management guidelines, client relationships, and best practices for agency growth and success.`;
-  }
-  
-  return fallbackContent;
+  console.log('Failed to extract any meaningful content from document');
+  return '';
 }
 
 serve(async (req) => {
@@ -152,10 +206,42 @@ serve(async (req) => {
 
     // Extract content from the document
     const content = await extractDocumentContent(docLink, docTitle || 'Document');
+    
+    if (!content || content.length < 50) {
+      console.log('No meaningful content extracted, failing the processing');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Could not extract meaningful content from the document. Please check if the document is publicly accessible.',
+        chunksCreated: 0,
+        chunksFailed: 0,
+        totalChunks: 0,
+        documentId,
+        contentLength: content.length
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log('Extracted content length:', content.length);
 
-    // Create chunks from the content
+    // Create chunks from the actual content
     const chunks = createChunks(content, docTitle || 'Document');
+    
+    if (chunks.length === 0) {
+      console.log('No chunks created from content');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Could not create meaningful chunks from the document content.',
+        chunksCreated: 0,
+        chunksFailed: 0,
+        totalChunks: 0,
+        documentId,
+        contentLength: content.length
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log(`Created ${chunks.length} chunks`);
 
     // Clear existing chunks for this document
@@ -176,7 +262,7 @@ serve(async (req) => {
       const chunk = chunks[i];
       
       try {
-        console.log(`Creating embedding for chunk ${i + 1}/${chunks.length}`);
+        console.log(`Creating embedding for chunk ${i + 1}/${chunks.length}, length: ${chunk.length}`);
         
         // Generate embedding using OpenAI
         const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
@@ -200,6 +286,7 @@ serve(async (req) => {
 
         const embeddingData = await embeddingResponse.json();
         const embedding = embeddingData.data[0].embedding;
+        console.log(`Generated embedding for chunk ${i}, vector length: ${embedding.length}`);
 
         // Store chunk with embedding in database
         const { error: insertError } = await supabase
@@ -237,6 +324,8 @@ serve(async (req) => {
         console.log('Document marked as processed');
       }
     }
+
+    console.log('Document processing completed successfully');
 
     return new Response(JSON.stringify({ 
       success: true,

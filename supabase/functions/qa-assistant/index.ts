@@ -113,32 +113,32 @@ serve(async (req) => {
 
     let relevantChunks: any[] = [];
     let relevantContext = '';
-    let allChunks: any[] = [];
+    let chunks: any[] = [];
 
     if (userDocIds.length > 0) {
       // Step 3: Search for relevant chunks
       console.log('Searching for relevant document chunks...');
-      const { data: chunks, error: chunksError } = await supabase
+      const { data: chunksData, error: chunksError } = await supabase
         .from('document_chunks')
         .select('content, document_id, embedding')
         .in('document_id', userDocIds);
 
-      allChunks = chunks || [];
+      chunks = chunksData || [];
       console.log('Raw chunks query result:', {
-        chunksFound: allChunks.length,
+        chunksFound: chunks.length,
         error: chunksError,
-        sampleChunk: allChunks[0] ? {
-          hasContent: !!allChunks[0].content,
-          hasEmbedding: !!allChunks[0].embedding,
-          contentLength: allChunks[0].content?.length || 0
+        sampleChunk: chunks[0] ? {
+          hasContent: !!chunks[0].content,
+          hasEmbedding: !!chunks[0].embedding,
+          contentLength: chunks[0].content?.length || 0
         } : null
       });
 
       if (chunksError) {
         console.error('Error fetching document chunks:', chunksError);
-      } else if (allChunks.length > 0 && questionEmbedding) {
+      } else if (chunks.length > 0 && questionEmbedding) {
         // Calculate similarity scores for each chunk
-        const chunksWithScores = allChunks
+        const chunksWithScores = chunks
           .filter(chunk => chunk.embedding && Array.isArray(chunk.embedding))
           .map(chunk => {
             const similarity = cosineSimilarity(questionEmbedding, chunk.embedding);
@@ -161,9 +161,9 @@ serve(async (req) => {
 
         console.log(`Found ${chunksWithScores.length} chunks, using ${highSimilarityChunks.length} with high similarity (>0.6)`);
         console.log('Relevant context length:', relevantContext.length);
-      } else if (allChunks.length > 0) {
+      } else if (chunks.length > 0) {
         // Fallback: use first few chunks if no embedding available
-        relevantChunks = allChunks.slice(0, 3);
+        relevantChunks = chunks.slice(0, 3);
         relevantContext = relevantChunks.map(chunk => chunk.content).join('\n\n');
         console.log('Using fallback chunks without similarity scoring');
       }
@@ -313,7 +313,7 @@ The user hasn't uploaded relevant documents yet, so provide guidance based on in
       sources: relevantChunks.length,
       debug: {
         documentsFound: userDocIds.length,
-        chunksFound: allChunks.length,
+        chunksFound: chunks.length,
         relevantChunks: relevantChunks.length,
         contextLength: relevantContext.length
       }
