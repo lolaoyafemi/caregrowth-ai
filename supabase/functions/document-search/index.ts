@@ -87,12 +87,12 @@ async function fetchDocumentContent(url: string, title: string): Promise<Documen
   }
 }
 
-// Search within document content with improved page estimation
+// Search within document content and extract only relevant sentences
 function searchInDocument(content: string, query: string): { relevantContent: string; confidence: number; pageNumber?: number } | null {
   const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
   const contentLower = content.toLowerCase();
   
-  // Split content into words for 500-word extraction
+  // Split content into words for page estimation
   const words = content.split(/\s+/);
   
   // Split content into approximate pages (assuming 250-300 words per page for typical documents)
@@ -105,68 +105,61 @@ function searchInDocument(content: string, query: string): { relevantContent: st
   }
   
   let bestMatch = { content: '', confidence: 0, pageNumber: 1 };
+  let allMatchingSentences: string[] = [];
   
-  // Search through pages to find the best match
-  pages.forEach((page, index) => {
+  // Search through pages to find matching sentences
+  pages.forEach((page, pageIndex) => {
     const pageLower = page.toLowerCase();
-    let matchCount = 0;
+    let pageMatchCount = 0;
     
     queryWords.forEach(word => {
       if (pageLower.includes(word)) {
-        matchCount++;
+        pageMatchCount++;
       }
     });
     
-    const confidence = matchCount / queryWords.length;
-    if (confidence > bestMatch.confidence) {
-      // Find the specific sentence or paragraph with the match
+    const pageConfidence = pageMatchCount / queryWords.length;
+    
+    if (pageConfidence > 0.1) {
+      // Split page into sentences and find those containing keywords
       const sentences = page.split(/[.!?]+/).filter(s => s.trim().length > 10);
-      let bestSentence = page;
-      let maxSentenceMatches = 0;
+      const matchingSentences: string[] = [];
       
       sentences.forEach(sentence => {
         const sentenceLower = sentence.toLowerCase();
         let sentenceMatches = 0;
+        
         queryWords.forEach(word => {
           if (sentenceLower.includes(word)) {
             sentenceMatches++;
           }
         });
         
-        if (sentenceMatches > maxSentenceMatches) {
-          maxSentenceMatches = sentenceMatches;
-          bestSentence = sentence.trim();
+        if (sentenceMatches > 0) {
+          matchingSentences.push(sentence.trim());
         }
       });
       
-      // Extract 500 words around the best match
-      const sentenceWords = bestSentence.split(/\s+/);
-      const pageWords = page.split(/\s+/);
-      const sentenceStartIndex = pageWords.findIndex(word => 
-        word.toLowerCase().includes(sentenceWords[0]?.toLowerCase() || '')
-      );
-      
-      let extractStart = Math.max(0, sentenceStartIndex - 250);
-      let extractEnd = Math.min(pageWords.length, extractStart + 500);
-      
-      // Adjust start if we're near the end
-      if (extractEnd - extractStart < 500 && extractStart > 0) {
-        extractStart = Math.max(0, extractEnd - 500);
+      if (matchingSentences.length > 0) {
+        // Add page context to sentences
+        const pageMarkedSentences = matchingSentences.map(sentence => 
+          `[Page ${pageIndex + 1}] ${sentence}`
+        );
+        allMatchingSentences.push(...pageMarkedSentences);
+        
+        if (pageConfidence > bestMatch.confidence) {
+          bestMatch = {
+            content: pageMarkedSentences.join('. '),
+            confidence: pageConfidence,
+            pageNumber: pageIndex + 1
+          };
+        }
       }
-      
-      const extractedWords = pageWords.slice(extractStart, extractEnd);
-      const extractedContent = extractedWords.join(' ');
-      
-      bestMatch = {
-        content: extractedContent,
-        confidence,
-        pageNumber: index + 1
-      };
     }
   });
 
-  // If no page-based match, fall back to paragraph search with 500-word extraction
-  if (bestMatch.confidence < 0.1) {
+  // If no page-based match, fall back to paragraph search
+  if (allMatchingSentences.length === 0) {
     const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 20);
     
     paragraphs.forEach((paragraph, index) => {
@@ -180,39 +173,51 @@ function searchInDocument(content: string, query: string): { relevantContent: st
       });
       
       const confidence = matchCount / queryWords.length;
-      if (confidence > bestMatch.confidence) {
-        // Extract 500 words around this paragraph
-        const allWords = content.split(/\s+/);
-        const paragraphWords = paragraph.split(/\s+/);
-        const paragraphStartIndex = allWords.findIndex(word => 
-          word.toLowerCase().includes(paragraphWords[0]?.toLowerCase() || '')
-        );
+      if (confidence > 0.1) {
+        // Split paragraph into sentences and find matching ones
+        const sentences = paragraph.split(/[.!?]+/).filter(s => s.trim().length > 10);
+        const matchingSentences: string[] = [];
         
-        let extractStart = Math.max(0, paragraphStartIndex - 250);
-        let extractEnd = Math.min(allWords.length, extractStart + 500);
+        sentences.forEach(sentence => {
+          const sentenceLower = sentence.toLowerCase();
+          let sentenceMatches = 0;
+          
+          queryWords.forEach(word => {
+            if (sentenceLower.includes(word)) {
+              sentenceMatches++;
+            }
+          });
+          
+          if (sentenceMatches > 0) {
+            matchingSentences.push(sentence.trim());
+          }
+        });
         
-        // Adjust start if we're near the end
-        if (extractEnd - extractStart < 500 && extractStart > 0) {
-          extractStart = Math.max(0, extractEnd - 500);
+        if (matchingSentences.length > 0) {
+          // Estimate page based on paragraph position
+          const estimatedPage = Math.ceil((index + 1) / Math.ceil(paragraphs.length / pages.length)) || 1;
+          const pageMarkedSentences = matchingSentences.map(sentence => 
+            `[Page ${estimatedPage}] ${sentence}`
+          );
+          allMatchingSentences.push(...pageMarkedSentences);
+          
+          if (confidence > bestMatch.confidence) {
+            bestMatch = {
+              content: pageMarkedSentences.join('. '),
+              confidence,
+              pageNumber: estimatedPage
+            };
+          }
         }
-        
-        const extractedWords = allWords.slice(extractStart, extractEnd);
-        const extractedContent = extractedWords.join(' ');
-        
-        // Estimate page based on paragraph position
-        const estimatedPage = Math.ceil((index + 1) / Math.ceil(paragraphs.length / pages.length)) || 1;
-        bestMatch = {
-          content: extractedContent,
-          confidence,
-          pageNumber: estimatedPage
-        };
       }
     });
   }
 
-  if (bestMatch.confidence > 0.1) {
+  // Return all matching sentences combined, limited to avoid overly long results
+  if (allMatchingSentences.length > 0) {
+    const combinedContent = allMatchingSentences.slice(0, 5).join('. '); // Limit to 5 best matching sentences
     return {
-      relevantContent: bestMatch.content,
+      relevantContent: combinedContent,
       confidence: bestMatch.confidence,
       pageNumber: bestMatch.pageNumber
     };
