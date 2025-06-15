@@ -92,62 +92,37 @@ function searchInDocument(content: string, query: string): { relevantContent: st
   const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
   const contentLower = content.toLowerCase();
   
-  // Improved page estimation: split by common page breaks and logical sections
-  const pageBreakPatterns = [
-    /\n\s*\n\s*\n/g, // Multiple line breaks (common page separator)
-    /\f/g, // Form feed character (actual page break)
-    /Page \d+/gi, // Explicit page markers
-    /^\s*\d+\s*$/gm // Standalone numbers that might be page numbers
-  ];
+  // Split content into words for 500-word extraction
+  const words = content.split(/\s+/);
   
-  // Split content into logical sections that might represent pages
-  let sections = [content];
+  // Split content into approximate pages (assuming 250-300 words per page for typical documents)
+  const wordsPerPage = 250;
+  const pages = [];
   
-  // Apply page break patterns to split content
-  pageBreakPatterns.forEach(pattern => {
-    const newSections = [];
-    sections.forEach(section => {
-      const parts = section.split(pattern);
-      newSections.push(...parts.filter(part => part.trim().length > 50));
-    });
-    if (newSections.length > sections.length) {
-      sections = newSections;
-    }
-  });
-  
-  // If no clear breaks found, split by paragraphs and group them
-  if (sections.length === 1 && content.length > 1000) {
-    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 20);
-    sections = [];
-    
-    // Group paragraphs into logical pages (assuming 2-3 paragraphs per page for typical documents)
-    const paragraphsPerPage = Math.max(2, Math.ceil(paragraphs.length / 2)); // Assuming 2 pages max
-    for (let i = 0; i < paragraphs.length; i += paragraphsPerPage) {
-      const pageContent = paragraphs.slice(i, i + paragraphsPerPage).join('\n\n');
-      if (pageContent.trim().length > 50) {
-        sections.push(pageContent);
-      }
-    }
+  for (let i = 0; i < words.length; i += wordsPerPage) {
+    const pageWords = words.slice(i, i + wordsPerPage);
+    pages.push(pageWords.join(' '));
   }
   
   // Ensure we don't exceed 2 pages for any document
-  if (sections.length > 2) {
-    // Combine sections to fit into 2 pages
-    const midPoint = Math.ceil(sections.length / 2);
-    const page1 = sections.slice(0, midPoint).join('\n\n');
-    const page2 = sections.slice(midPoint).join('\n\n');
-    sections = [page1, page2];
+  if (pages.length > 2) {
+    const midPoint = Math.ceil(pages.length / 2);
+    const page1Words = words.slice(0, midPoint * wordsPerPage);
+    const page2Words = words.slice(midPoint * wordsPerPage);
+    pages[0] = page1Words.join(' ');
+    pages[1] = page2Words.join(' ');
+    pages.length = 2;
   }
   
   let bestMatch = { content: '', confidence: 0, pageNumber: 1 };
   
-  // Search through sections (pages) to find the best match
-  sections.forEach((section, index) => {
-    const sectionLower = section.toLowerCase();
+  // Search through pages to find the best match
+  pages.forEach((page, index) => {
+    const pageLower = page.toLowerCase();
     let matchCount = 0;
     
     queryWords.forEach(word => {
-      if (sectionLower.includes(word)) {
+      if (pageLower.includes(word)) {
         matchCount++;
       }
     });
@@ -155,8 +130,8 @@ function searchInDocument(content: string, query: string): { relevantContent: st
     const confidence = matchCount / queryWords.length;
     if (confidence > bestMatch.confidence) {
       // Find the specific sentence or paragraph with the match
-      const sentences = section.split(/[.!?]+/).filter(s => s.trim().length > 10);
-      let bestSentence = section;
+      const sentences = page.split(/[.!?]+/).filter(s => s.trim().length > 10);
+      let bestSentence = page;
       let maxSentenceMatches = 0;
       
       sentences.forEach(sentence => {
@@ -174,15 +149,33 @@ function searchInDocument(content: string, query: string): { relevantContent: st
         }
       });
       
+      // Extract 500 words around the best match
+      const sentenceWords = bestSentence.split(/\s+/);
+      const pageWords = page.split(/\s+/);
+      const sentenceStartIndex = pageWords.findIndex(word => 
+        word.toLowerCase().includes(sentenceWords[0]?.toLowerCase() || '')
+      );
+      
+      let extractStart = Math.max(0, sentenceStartIndex - 250);
+      let extractEnd = Math.min(pageWords.length, extractStart + 500);
+      
+      // Adjust start if we're near the end
+      if (extractEnd - extractStart < 500 && extractStart > 0) {
+        extractStart = Math.max(0, extractEnd - 500);
+      }
+      
+      const extractedWords = pageWords.slice(extractStart, extractEnd);
+      const extractedContent = extractedWords.join(' ');
+      
       bestMatch = {
-        content: bestSentence.length > 300 ? bestSentence.substring(0, 300) + '...' : bestSentence,
+        content: extractedContent,
         confidence,
         pageNumber: Math.min(index + 1, 2) // Cap at page 2
       };
     }
   });
 
-  // If no section-based match, fall back to full content search
+  // If no page-based match, fall back to paragraph search with 500-word extraction
   if (bestMatch.confidence < 0.1) {
     const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 20);
     
@@ -198,12 +191,28 @@ function searchInDocument(content: string, query: string): { relevantContent: st
       
       const confidence = matchCount / queryWords.length;
       if (confidence > bestMatch.confidence) {
+        // Extract 500 words around this paragraph
+        const allWords = content.split(/\s+/);
+        const paragraphWords = paragraph.split(/\s+/);
+        const paragraphStartIndex = allWords.findIndex(word => 
+          word.toLowerCase().includes(paragraphWords[0]?.toLowerCase() || '')
+        );
+        
+        let extractStart = Math.max(0, paragraphStartIndex - 250);
+        let extractEnd = Math.min(allWords.length, extractStart + 500);
+        
+        // Adjust start if we're near the end
+        if (extractEnd - extractStart < 500 && extractStart > 0) {
+          extractStart = Math.max(0, extractEnd - 500);
+        }
+        
+        const extractedWords = allWords.slice(extractStart, extractEnd);
+        const extractedContent = extractedWords.join(' ');
+        
         // Estimate page based on paragraph position (assuming documents are 2 pages)
         const estimatedPage = Math.min(Math.ceil((index + 1) / Math.ceil(paragraphs.length / 2)), 2);
         bestMatch = {
-          content: paragraph.trim().length > 300 
-            ? paragraph.trim().substring(0, 300) + '...'
-            : paragraph.trim(),
+          content: extractedContent,
           confidence,
           pageNumber: estimatedPage
         };
