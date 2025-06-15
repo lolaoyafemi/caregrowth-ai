@@ -5,26 +5,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from "sonner";
-import { SearchIcon, LinkIcon, ExternalLinkIcon, Trash2Icon, LogOutIcon, UserIcon } from 'lucide-react';
+import { SearchIcon, LinkIcon, ExternalLinkIcon, Trash2Icon, LogOutIcon, UserIcon, FileTextIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoogleDocuments } from '@/hooks/useGoogleDocuments';
-import { useQAAssistant } from '@/hooks/useQAAssistant';
+import { supabase } from '@/integrations/supabase/client';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
 
 interface SearchResult {
-  query: string;
-  answer: string;
-  category: string;
-  sources: number;
+  documentTitle: string;
+  documentUrl: string;
+  relevantContent: string;
+  pageNumber?: number;
+  confidence: number;
+}
+
+interface SearchResponse {
+  results: SearchResult[];
+  totalDocumentsSearched: number;
 }
 
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { documents, loading: docsLoading, addDocument, deleteDocument } = useGoogleDocuments();
-  const { askQuestion, isLoading: qaLoading, error: qaError } = useQAAssistant();
   
   const [query, setQuery] = useState('');
-  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [followUpQuery, setFollowUpQuery] = useState('');
   const [googleUrl, setGoogleUrl] = useState('');
 
@@ -46,25 +53,41 @@ const DocumentSearchTool = () => {
       return;
     }
     
-    setSearchResult(null);
+    setSearchResults([]);
+    setSearchError(null);
+    setIsSearching(true);
     
     try {
-      const result = await askQuestion(query);
+      const { data, error } = await supabase.functions.invoke('document-search', {
+        body: {
+          query: query.trim(),
+          userId: user.id
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      const searchResponse = data as SearchResponse;
+      setSearchResults(searchResponse.results);
       
-      if (result) {
-        setSearchResult({
-          query: query,
-          answer: result.answer,
-          category: result.category,
-          sources: result.sources
-        });
-        toast.success("Search completed!");
+      if (searchResponse.results.length === 0) {
+        toast.info("No relevant content found in your documents.");
       } else {
-        toast.error("Failed to get an answer. Please try again.");
+        toast.success(`Found ${searchResponse.results.length} relevant results!`);
       }
     } catch (error) {
       console.error('Search error:', error);
-      toast.error("An error occurred during search.");
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred during search.';
+      setSearchError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -73,25 +96,51 @@ const DocumentSearchTool = () => {
       return;
     }
     
-    try {
-      const result = await askQuestion(followUpQuery);
+    setQuery(followUpQuery);
+    setFollowUpQuery('');
+    
+    // Trigger search with the follow-up query
+    const tempQuery = followUpQuery;
+    setTimeout(async () => {
+      if (!tempQuery.trim()) return;
       
-      if (result) {
-        setSearchResult({
-          query: followUpQuery,
-          answer: result.answer,
-          category: result.category,
-          sources: result.sources
+      setSearchResults([]);
+      setSearchError(null);
+      setIsSearching(true);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('document-search', {
+          body: {
+            query: tempQuery.trim(),
+            userId: user.id
+          }
         });
-        setFollowUpQuery('');
-        toast.success("Follow-up completed!");
-      } else {
-        toast.error("Failed to get an answer. Please try again.");
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const searchResponse = data as SearchResponse;
+        setSearchResults(searchResponse.results);
+        
+        if (searchResponse.results.length === 0) {
+          toast.info("No relevant content found in your documents.");
+        } else {
+          toast.success(`Found ${searchResponse.results.length} relevant results!`);
+        }
+      } catch (error) {
+        console.error('Follow-up search error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An error occurred during search.';
+        setSearchError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setIsSearching(false);
       }
-    } catch (error) {
-      console.error('Follow-up error:', error);
-      toast.error("An error occurred during follow-up.");
-    }
+    }, 100);
   };
 
   const handleAddGoogleLink = async () => {
@@ -135,7 +184,7 @@ const DocumentSearchTool = () => {
   };
 
   const getDocumentIcon = (url: string) => {
-    if (url.includes('/document/')) return <LinkIcon className="h-5 w-5 text-blue-500" />;
+    if (url.includes('/document/')) return <FileTextIcon className="h-5 w-5 text-blue-500" />;
     if (url.includes('/spreadsheets/')) return <LinkIcon className="h-5 w-5 text-green-500" />;
     if (url.includes('/presentation/')) return <LinkIcon className="h-5 w-5 text-orange-500" />;
     return <LinkIcon className="h-5 w-5 text-gray-500" />;
@@ -146,7 +195,7 @@ const DocumentSearchTool = () => {
       <div className="mb-8 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Document Search & Access</h1>
-          <p className="text-gray-600 mt-2">Search your Google documents and get instant answers from your knowledge base.</p>
+          <p className="text-gray-600 mt-2">Search directly through your Google documents and find specific content with page references.</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -168,10 +217,10 @@ const DocumentSearchTool = () => {
         <div className="lg:col-span-2">
           <Card className="p-6 mb-6">
             <div className="mb-4">
-              <label className="block text-lg font-medium mb-2">What would you like to know?</label>
+              <label className="block text-lg font-medium mb-2">Search your documents</label>
               <div className="relative">
                 <Input 
-                  placeholder="Ask a question about your documents..."
+                  placeholder="Search for specific content in your documents..."
                   className="pr-12"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -180,21 +229,21 @@ const DocumentSearchTool = () => {
                 <Button 
                   className="absolute right-0 top-0 h-full bg-caregrowth-green"
                   onClick={handleSearch}
-                  disabled={qaLoading || !query.trim()}
+                  disabled={isSearching || !query.trim()}
                 >
                   <SearchIcon className="h-5 w-5" />
                 </Button>
               </div>
-              {qaError && (
-                <p className="text-red-500 text-sm mt-2">{qaError}</p>
+              {searchError && (
+                <p className="text-red-500 text-sm mt-2">{searchError}</p>
               )}
             </div>
           </Card>
           
-          {(qaLoading || searchResult) && (
+          {(isSearching || searchResults.length > 0) && (
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Search Results</h2>
-              {qaLoading ? (
+              {isSearching ? (
                 <div className="min-h-[200px] flex items-center justify-center">
                   <div className="animate-pulse space-y-4 w-full">
                     <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -205,30 +254,46 @@ const DocumentSearchTool = () => {
                     <div className="h-4 bg-gray-200 rounded w-5/6"></div>
                   </div>
                 </div>
-              ) : searchResult && (
-                <div className="prose max-w-none">
-                  <div className="p-4 bg-gray-50 rounded-lg mb-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-semibold">Answer</h3>
-                      <div className="flex gap-2">
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          {searchResult.category}
-                        </span>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                          {searchResult.sources} sources
-                        </span>
+              ) : searchResults.length > 0 ? (
+                <div className="space-y-4">
+                  {searchResults.map((result, index) => (
+                    <div key={index} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <FileTextIcon className="h-5 w-5 text-blue-500" />
+                          {result.documentTitle}
+                        </h3>
+                        <div className="flex gap-2">
+                          {result.pageNumber && (
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              Page {result.pageNumber}
+                            </span>
+                          )}
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                            {Math.round(result.confidence * 100)}% match
+                          </span>
+                        </div>
                       </div>
+                      <p className="text-gray-700 mb-3 leading-relaxed">
+                        {result.relevantContent}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(result.documentUrl, '_blank')}
+                        className="flex items-center gap-2"
+                      >
+                        <ExternalLinkIcon className="h-4 w-4" />
+                        Open Document
+                      </Button>
                     </div>
-                    <div className="whitespace-pre-line">
-                      {searchResult.answer}
-                    </div>
-                  </div>
+                  ))}
                   
                   <div className="mt-6">
-                    <h3 className="text-lg font-semibold mb-2">Ask a follow-up question</h3>
+                    <h3 className="text-lg font-semibold mb-2">Refine your search</h3>
                     <div className="flex gap-2">
                       <Textarea 
-                        placeholder="Ask a related question..."
+                        placeholder="Ask a more specific question..."
                         className="mb-0"
                         value={followUpQuery}
                         onChange={(e) => setFollowUpQuery(e.target.value)}
@@ -236,12 +301,18 @@ const DocumentSearchTool = () => {
                       <Button 
                         className="h-auto bg-caregrowth-green"
                         onClick={handleFollowUp}
-                        disabled={!followUpQuery.trim() || qaLoading}
+                        disabled={!followUpQuery.trim() || isSearching}
                       >
-                        Submit
+                        Search
                       </Button>
                     </div>
                   </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <SearchIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>No results found for your search query.</p>
+                  <p className="text-sm">Try using different keywords or make sure your documents are publicly accessible.</p>
                 </div>
               )}
             </Card>
@@ -269,7 +340,7 @@ const DocumentSearchTool = () => {
                 Add Document Link
               </Button>
               <p className="text-xs text-gray-500">
-                Documents are automatically processed for Q&A when added
+                Documents must be publicly accessible or shared with view permissions
               </p>
             </div>
             <div className="mt-4">
@@ -302,15 +373,9 @@ const DocumentSearchTool = () => {
                       <div className="ml-3 flex-1">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium truncate">{document.doc_title}</p>
-                          {document.fetched ? (
-                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                              Processed
-                            </span>
-                          ) : (
-                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                              Processing...
-                            </span>
-                          )}
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                            Active
+                          </span>
                         </div>
                         <p className="text-xs text-gray-500">Added on {new Date(document.created_at).toLocaleDateString()}</p>
                       </div>

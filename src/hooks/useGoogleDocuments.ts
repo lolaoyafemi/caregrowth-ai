@@ -9,7 +9,6 @@ export interface GoogleDoc {
   doc_link: string;
   doc_title: string | null;
   created_at: string;
-  fetched: boolean;
 }
 
 export const useGoogleDocuments = () => {
@@ -36,34 +35,6 @@ export const useGoogleDocuments = () => {
     }
   };
 
-  const processDocument = async (documentId: string, docLink: string, docTitle?: string) => {
-    try {
-      console.log('Starting document processing for:', documentId, docTitle);
-      
-      const { data, error } = await supabase.functions.invoke('process-document', {
-        body: {
-          documentId,
-          docLink,
-          docTitle
-        }
-      });
-
-      if (error) {
-        console.error('Error processing document:', error);
-        toast.error('Failed to process document content');
-        return false;
-      }
-
-      console.log('Document processed successfully:', data);
-      toast.success(`Document processed! Created ${data.chunksCreated || 0} content chunks.`);
-      return true;
-    } catch (error) {
-      console.error('Error invoking process-document function:', error);
-      toast.error('Failed to process document content');
-      return false;
-    }
-  };
-
   const addDocument = async (docLink: string, docTitle?: string) => {
     if (!user) return;
 
@@ -81,19 +52,7 @@ export const useGoogleDocuments = () => {
       if (error) throw error;
       
       setDocuments(prev => [data, ...prev]);
-      toast.success('Document added successfully!');
-
-      // Process the document to create chunks and embeddings
-      const processingToast = toast.loading('Processing document content and creating embeddings...');
-      
-      const processed = await processDocument(data.id, docLink, data.doc_title);
-      
-      toast.dismiss(processingToast);
-      
-      if (processed) {
-        // Refresh documents to show updated fetched status
-        fetchDocuments();
-      }
+      toast.success('Document added successfully! You can now search through it.');
 
       return data;
     } catch (error) {
@@ -105,9 +64,8 @@ export const useGoogleDocuments = () => {
 
   const deleteDocument = async (id: string) => {
     try {
-      console.log('Starting document deletion process for:', id);
+      console.log('Deleting document:', id);
       
-      // Delete the document - chunks will be automatically deleted due to CASCADE
       const { error } = await supabase
         .from('google_documents')
         .delete()
@@ -119,7 +77,7 @@ export const useGoogleDocuments = () => {
         return;
       }
       
-      console.log('Document and associated chunks deleted successfully');
+      console.log('Document deleted successfully');
       setDocuments(prev => prev.filter(doc => doc.id !== id));
       toast.success('Document removed successfully');
     } catch (error) {
