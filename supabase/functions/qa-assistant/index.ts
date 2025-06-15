@@ -35,14 +35,31 @@ serve(async (req) => {
   }
 
   try {
-    const { question, userId } = await req.json();
+    console.log('Starting Q&A assistant request processing...');
+    
+    const requestBody = await req.json();
+    console.log('Request body received:', requestBody);
+    
+    const { question, userId } = requestBody;
     
     if (!question || !userId) {
-      throw new Error('Question and userId are required');
+      console.error('Missing required fields:', { question: !!question, userId: !!userId });
+      return new Response(JSON.stringify({ 
+        error: 'Question and userId are required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      console.error('OpenAI API key not configured');
+      return new Response(JSON.stringify({ 
+        error: 'OpenAI API key not configured' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('Processing question:', question, 'for user:', userId);
@@ -51,25 +68,34 @@ serve(async (req) => {
 
     // Step 1: Generate embedding for the question
     console.log('Generating embedding for question...');
-    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: question,
-      }),
-    });
+    let questionEmbedding;
+    try {
+      const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'text-embedding-3-small',
+          input: question,
+        }),
+      });
 
-    if (!embeddingResponse.ok) {
-      throw new Error(`Embedding API error: ${embeddingResponse.statusText}`);
+      if (!embeddingResponse.ok) {
+        const errorText = await embeddingResponse.text();
+        console.error('Embedding API error:', embeddingResponse.status, errorText);
+        throw new Error(`Embedding API error: ${embeddingResponse.statusText}`);
+      }
+
+      const embeddingData = await embeddingResponse.json();
+      questionEmbedding = embeddingData.data[0].embedding;
+      console.log('Generated question embedding, vector length:', questionEmbedding.length);
+    } catch (error) {
+      console.error('Error generating embedding:', error);
+      // Continue without embedding-based search
+      questionEmbedding = null;
     }
-
-    const embeddingData = await embeddingResponse.json();
-    const questionEmbedding = embeddingData.data[0].embedding;
-    console.log('Generated question embedding, vector length:', questionEmbedding.length);
 
     // Step 2: Get user's documents
     console.log('Fetching user documents...');
@@ -89,7 +115,7 @@ serve(async (req) => {
     let relevantChunks: any[] = [];
     let relevantContext = '';
 
-    if (userDocIds.length > 0) {
+    if (userDocIds.length > 0 && questionEmbedding) {
       // Step 3: Search for relevant chunks
       console.log('Searching for relevant document chunks...');
       const { data: allChunks, error: chunksError } = await supabase
@@ -179,77 +205,96 @@ Always structure your responses with:
 
 The user hasn't uploaded relevant documents yet, so provide guidance based on industry best practices and your expertise.`;
 
-    const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: question
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000
-      }),
-    });
+    let answer;
+    try {
+      const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: question
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000
+        }),
+      });
 
-    if (!gptResponse.ok) {
-      throw new Error(`GPT API error: ${gptResponse.statusText}`);
+      if (!gptResponse.ok) {
+        const errorText = await gptResponse.text();
+        console.error('GPT API error:', gptResponse.status, errorText);
+        throw new Error(`GPT API error: ${gptResponse.statusText}`);
+      }
+
+      const gptData = await gptResponse.json();
+      answer = gptData.choices[0].message.content;
+    } catch (error) {
+      console.error('Error generating GPT response:', error);
+      answer = "I apologize, but I'm having trouble generating a response right now. Please try again in a moment.";
     }
-
-    const gptData = await gptResponse.json();
-    const answer = gptData.choices[0].message.content;
 
     // Step 5: Categorize the response
     console.log('Categorizing the response...');
-    const categorizationResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Based on the question and answer, categorize this into one of these categories: management, marketing, hiring, compliance, or other. Respond with just the category name in lowercase.'
-          },
-          {
-            role: 'user',
-            content: `Question: ${question}\n\nAnswer: ${answer}`
-          }
-        ],
-        temperature: 0,
-        max_tokens: 10
-      }),
-    });
-
-    const categorizationData = await categorizationResponse.json();
-    const category = categorizationData.choices[0].message.content.trim().toLowerCase();
-
-    // Step 6: Log the Q&A interaction
-    const { error: logError } = await supabase
-      .from('qna_logs')
-      .insert({
-        agency_id: userId,
-        question: question,
-        response: answer,
-        category: category,
-        sources: relevantChunks.map(chunk => chunk.document_id) || []
+    let category = 'other';
+    try {
+      const categorizationResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'Based on the question and answer, categorize this into one of these categories: management, marketing, hiring, compliance, or other. Respond with just the category name in lowercase.'
+            },
+            {
+              role: 'user',
+              content: `Question: ${question}\n\nAnswer: ${answer}`
+            }
+          ],
+          temperature: 0,
+          max_tokens: 10
+        }),
       });
 
-    if (logError) {
-      console.error('Error logging Q&A:', logError);
+      if (categorizationResponse.ok) {
+        const categorizationData = await categorizationResponse.json();
+        category = categorizationData.choices[0].message.content.trim().toLowerCase();
+      }
+    } catch (error) {
+      console.error('Error categorizing response:', error);
+    }
+
+    // Step 6: Log the Q&A interaction
+    try {
+      const { error: logError } = await supabase
+        .from('qna_logs')
+        .insert({
+          agency_id: userId,
+          question: question,
+          response: answer,
+          category: category,
+          sources: relevantChunks.map(chunk => chunk.document_id) || []
+        });
+
+      if (logError) {
+        console.error('Error logging Q&A:', logError);
+      }
+    } catch (error) {
+      console.error('Error logging Q&A interaction:', error);
     }
 
     console.log('Q&A processing completed successfully');
