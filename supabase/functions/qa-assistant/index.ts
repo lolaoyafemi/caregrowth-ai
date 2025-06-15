@@ -66,20 +66,25 @@ async function findRelevantChunks(questionEmbedding: number[] | null, chunks: an
           searchMethod: 'embedding'
         };
       })
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 8); // Get top 8 chunks for better coverage
+      .sort((a, b) => b.similarity - a.similarity);
 
     if (chunksWithScores.length > 0) {
-      // Use adaptive threshold based on top score
+      // Use a much lower threshold and adaptive approach
       const topScore = chunksWithScores[0].similarity;
-      const adaptiveThreshold = Math.max(0.3, topScore * 0.7); // At least 30% or 70% of top score
+      const minThreshold = 0.15; // Much lower base threshold
+      const adaptiveThreshold = Math.max(minThreshold, topScore * 0.5); // 50% of top score
       
-      const relevantChunks = chunksWithScores.filter(chunk => chunk.similarity > adaptiveThreshold);
-      console.log(`Found ${relevantChunks.length} chunks above adaptive threshold ${adaptiveThreshold.toFixed(3)}`);
+      let relevantChunks = chunksWithScores.filter(chunk => chunk.similarity > adaptiveThreshold);
       
-      if (relevantChunks.length > 0) {
-        return relevantChunks;
+      // If we still have no chunks, take the top 3 chunks regardless of score
+      if (relevantChunks.length === 0 && chunksWithScores.length > 0) {
+        relevantChunks = chunksWithScores.slice(0, 3);
+        console.log(`No chunks above threshold, taking top 3 chunks with scores: ${relevantChunks.map(c => c.similarity.toFixed(4)).join(', ')}`);
+      } else {
+        console.log(`Found ${relevantChunks.length} chunks above adaptive threshold ${adaptiveThreshold.toFixed(3)}`);
       }
+      
+      return relevantChunks.slice(0, 5); // Limit to top 5
     }
   }
 
@@ -88,8 +93,8 @@ async function findRelevantChunks(questionEmbedding: number[] | null, chunks: an
   const questionWords = question.toLowerCase()
     .replace(/[^\w\s]/g, ' ')
     .split(/\s+/)
-    .filter(word => word.length > 3) // Only meaningful words
-    .slice(0, 10); // Limit to prevent over-matching
+    .filter(word => word.length > 2) // Lower threshold for words
+    .slice(0, 10);
 
   console.log('Searching for keywords:', questionWords);
 
@@ -97,7 +102,7 @@ async function findRelevantChunks(questionEmbedding: number[] | null, chunks: an
     .map(chunk => {
       const content = chunk.content.toLowerCase();
       const matches = questionWords.filter(word => content.includes(word));
-      const score = matches.length / questionWords.length;
+      const score = matches.length / Math.max(questionWords.length, 1);
       
       return {
         ...chunk,
@@ -106,12 +111,22 @@ async function findRelevantChunks(questionEmbedding: number[] | null, chunks: an
         matchedWords: matches
       };
     })
-    .filter(chunk => chunk.similarity > 0.2) // At least 20% keyword match
+    .filter(chunk => chunk.similarity > 0.1) // Lower threshold for keyword matching
     .sort((a, b) => b.similarity - a.similarity)
     .slice(0, 5);
 
-  console.log(`Keyword search found ${keywordMatches.length} relevant chunks`);
-  return keywordMatches;
+  if (keywordMatches.length > 0) {
+    console.log(`Keyword search found ${keywordMatches.length} relevant chunks`);
+    return keywordMatches;
+  }
+
+  // Strategy 3: If nothing else works, return first few chunks
+  console.log('No relevant chunks found, returning first 2 chunks as fallback');
+  return chunks.slice(0, 2).map(chunk => ({
+    ...chunk,
+    similarity: 0.1,
+    searchMethod: 'fallback'
+  }));
 }
 
 // Enhanced answer generation with better context management
@@ -186,7 +201,7 @@ Note: You don't have access to the user's specific documents for this question, 
           }
         ],
         temperature: 0.7,
-        max_tokens: 1200, // Increased for more detailed responses
+        max_tokens: 1200,
         top_p: 0.9,
       }),
     });
