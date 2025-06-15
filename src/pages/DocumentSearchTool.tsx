@@ -8,6 +8,7 @@ import { SearchIcon, LinkIcon, ExternalLinkIcon, Trash2Icon, LogOutIcon, UserIco
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoogleDocuments } from '@/hooks/useGoogleDocuments';
 import { useDocumentSearch } from '@/hooks/useDocumentSearch';
+import { highlightKeywords } from '@/utils/highlightKeywords';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
 
 const DocumentSearchTool = () => {
@@ -216,9 +217,12 @@ const DocumentSearchTool = () => {
                       </div>
                       
                       <div className="bg-gray-50 border-l-4 border-blue-500 p-3 mb-3 rounded-r">
-                        <p className="text-gray-700 leading-relaxed text-sm">
-                          {result.relevantContent}
-                        </p>
+                        <div 
+                          className="text-gray-700 leading-relaxed text-sm"
+                          dangerouslySetInnerHTML={{ 
+                            __html: highlightKeywords(result.relevantContent, query) 
+                          }}
+                        />
                       </div>
                       
                       <div className="flex justify-between items-center">
