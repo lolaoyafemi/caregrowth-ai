@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -88,31 +87,67 @@ async function fetchDocumentContent(url: string, title: string): Promise<Documen
   }
 }
 
-// Search within document content and estimate page numbers
+// Search within document content with improved page estimation
 function searchInDocument(content: string, query: string): { relevantContent: string; confidence: number; pageNumber?: number } | null {
   const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
   const contentLower = content.toLowerCase();
   
-  // Split content into pages (rough estimation: ~500 characters per page)
-  const charactersPerPage = 500;
-  const pages = [];
-  for (let i = 0; i < content.length; i += charactersPerPage) {
-    pages.push({
-      content: content.substring(i, i + charactersPerPage),
-      pageNumber: Math.floor(i / charactersPerPage) + 1,
-      startIndex: i
+  // Improved page estimation: split by common page breaks and logical sections
+  const pageBreakPatterns = [
+    /\n\s*\n\s*\n/g, // Multiple line breaks (common page separator)
+    /\f/g, // Form feed character (actual page break)
+    /Page \d+/gi, // Explicit page markers
+    /^\s*\d+\s*$/gm // Standalone numbers that might be page numbers
+  ];
+  
+  // Split content into logical sections that might represent pages
+  let sections = [content];
+  
+  // Apply page break patterns to split content
+  pageBreakPatterns.forEach(pattern => {
+    const newSections = [];
+    sections.forEach(section => {
+      const parts = section.split(pattern);
+      newSections.push(...parts.filter(part => part.trim().length > 50));
     });
+    if (newSections.length > sections.length) {
+      sections = newSections;
+    }
+  });
+  
+  // If no clear breaks found, split by paragraphs and group them
+  if (sections.length === 1 && content.length > 1000) {
+    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 20);
+    sections = [];
+    
+    // Group paragraphs into logical pages (assuming 2-3 paragraphs per page for typical documents)
+    const paragraphsPerPage = Math.max(2, Math.ceil(paragraphs.length / 2)); // Assuming 2 pages max
+    for (let i = 0; i < paragraphs.length; i += paragraphsPerPage) {
+      const pageContent = paragraphs.slice(i, i + paragraphsPerPage).join('\n\n');
+      if (pageContent.trim().length > 50) {
+        sections.push(pageContent);
+      }
+    }
+  }
+  
+  // Ensure we don't exceed 2 pages for any document
+  if (sections.length > 2) {
+    // Combine sections to fit into 2 pages
+    const midPoint = Math.ceil(sections.length / 2);
+    const page1 = sections.slice(0, midPoint).join('\n\n');
+    const page2 = sections.slice(midPoint).join('\n\n');
+    sections = [page1, page2];
   }
   
   let bestMatch = { content: '', confidence: 0, pageNumber: 1 };
   
-  // Search through pages to find the best match
-  pages.forEach(page => {
-    const pageLower = page.content.toLowerCase();
+  // Search through sections (pages) to find the best match
+  sections.forEach((section, index) => {
+    const sectionLower = section.toLowerCase();
     let matchCount = 0;
     
     queryWords.forEach(word => {
-      if (pageLower.includes(word)) {
+      if (sectionLower.includes(word)) {
         matchCount++;
       }
     });
@@ -120,8 +155,8 @@ function searchInDocument(content: string, query: string): { relevantContent: st
     const confidence = matchCount / queryWords.length;
     if (confidence > bestMatch.confidence) {
       // Find the specific sentence or paragraph with the match
-      const sentences = page.content.split(/[.!?]+/).filter(s => s.trim().length > 10);
-      let bestSentence = page.content;
+      const sentences = section.split(/[.!?]+/).filter(s => s.trim().length > 10);
+      let bestSentence = section;
       let maxSentenceMatches = 0;
       
       sentences.forEach(sentence => {
@@ -142,13 +177,13 @@ function searchInDocument(content: string, query: string): { relevantContent: st
       bestMatch = {
         content: bestSentence.length > 300 ? bestSentence.substring(0, 300) + '...' : bestSentence,
         confidence,
-        pageNumber: page.pageNumber
+        pageNumber: Math.min(index + 1, 2) // Cap at page 2
       };
     }
   });
 
-  // If no page-based match, fall back to paragraph search
-  if (bestMatch.confidence < 0.2) {
+  // If no section-based match, fall back to full content search
+  if (bestMatch.confidence < 0.1) {
     const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 20);
     
     paragraphs.forEach((paragraph, index) => {
@@ -163,8 +198,8 @@ function searchInDocument(content: string, query: string): { relevantContent: st
       
       const confidence = matchCount / queryWords.length;
       if (confidence > bestMatch.confidence) {
-        // Estimate page number based on paragraph position
-        const estimatedPage = Math.ceil((index + 1) / 3);
+        // Estimate page based on paragraph position (assuming documents are 2 pages)
+        const estimatedPage = Math.min(Math.ceil((index + 1) / Math.ceil(paragraphs.length / 2)), 2);
         bestMatch = {
           content: paragraph.trim().length > 300 
             ? paragraph.trim().substring(0, 300) + '...'
