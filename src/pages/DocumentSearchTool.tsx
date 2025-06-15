@@ -8,25 +8,22 @@ import { toast } from "sonner";
 import { SearchIcon, LinkIcon, ExternalLinkIcon, Trash2Icon, LogOutIcon, UserIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoogleDocuments } from '@/hooks/useGoogleDocuments';
+import { useQAAssistant } from '@/hooks/useQAAssistant';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
 
 interface SearchResult {
   query: string;
   answer: string;
-  sources: Array<{
-    documentTitle: string;
-    url: string;
-    excerpt: string;
-    confidence: number;
-  }>;
+  category: string;
+  sources: number;
 }
 
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { documents, loading: docsLoading, addDocument, deleteDocument } = useGoogleDocuments();
+  const { askQuestion, isLoading: qaLoading, error: qaError } = useQAAssistant();
   
   const [query, setQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [followUpQuery, setFollowUpQuery] = useState('');
   const [googleUrl, setGoogleUrl] = useState('');
@@ -43,76 +40,58 @@ const DocumentSearchTool = () => {
     return <GoogleSignIn />;
   }
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!query.trim()) {
       toast.error("Please enter a search query.");
       return;
     }
     
-    setIsSearching(true);
     setSearchResult(null);
     
-    // Simulate search with real documents
-    setTimeout(() => {
-      const availableDocs = documents.slice(0, 3);
-      const sampleResult: SearchResult = {
-        query: query,
-        answer: `Based on your query "${query}", I found the following information in your linked Google documents:
-
-The process should be implemented according to the guidelines outlined in your documents. Key elements include:
-
-1. Initial assessment and planning phase
-2. Implementation with clear milestones and KPIs
-3. Regular review meetings and progress tracking
-4. Performance monitoring using established metrics
-
-${availableDocs.length > 0 ? `Your documents contain relevant information that shows this approach has been effective in similar contexts.` : 'To get more specific answers, try adding some Google documents to your knowledge base.'}`,
-        sources: availableDocs.map((doc, index) => ({
-          documentTitle: doc.doc_title || `Document ${index + 1}`,
-          url: doc.doc_link,
-          excerpt: `Information from your Google document regarding ${query}. This document contains relevant details about implementation strategies and best practices that can guide your approach.`,
-          confidence: 0.9 - (index * 0.1)
-        }))
-      };
+    try {
+      const result = await askQuestion(query);
       
-      setSearchResult(sampleResult);
-      setIsSearching(false);
-      toast.success("Search completed!");
-    }, 2000);
+      if (result) {
+        setSearchResult({
+          query: query,
+          answer: result.answer,
+          category: result.category,
+          sources: result.sources
+        });
+        toast.success("Search completed!");
+      } else {
+        toast.error("Failed to get an answer. Please try again.");
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      toast.error("An error occurred during search.");
+    }
   };
 
-  const handleFollowUp = () => {
-    if (!followUpQuery.trim() || !searchResult) {
+  const handleFollowUp = async () => {
+    if (!followUpQuery.trim()) {
       return;
     }
     
-    setIsSearching(true);
-    
-    setTimeout(() => {
-      const updatedResult: SearchResult = {
-        query: followUpQuery,
-        answer: `To expand on the previous answer about ${query}, here's more information about ${followUpQuery}:
-
-Based on your Google documents, the best practices include:
-
-1. Structured approach with dedicated resources
-2. Clear timeline with specific milestones  
-3. Stakeholder engagement and feedback loops
-4. Automated reporting and progress tracking
-
-${documents.length > 0 ? 'Your documents provide detailed guidance on implementation that typically takes 4-6 weeks for optimal results.' : 'Consider adding more Google documents for more comprehensive answers.'}`,
-        sources: documents.slice(0, 2).map((doc, index) => ({
-          documentTitle: doc.doc_title || `Document ${index + 1}`,
-          url: doc.doc_link,
-          excerpt: `Additional insights from your Google document about ${followUpQuery}. This content provides specific recommendations for successful implementation.`,
-          confidence: 0.85 - (index * 0.05)
-        }))
-      };
+    try {
+      const result = await askQuestion(followUpQuery);
       
-      setSearchResult(updatedResult);
-      setFollowUpQuery('');
-      setIsSearching(false);
-    }, 2000);
+      if (result) {
+        setSearchResult({
+          query: followUpQuery,
+          answer: result.answer,
+          category: result.category,
+          sources: result.sources
+        });
+        setFollowUpQuery('');
+        toast.success("Follow-up completed!");
+      } else {
+        toast.error("Failed to get an answer. Please try again.");
+      }
+    } catch (error) {
+      console.error('Follow-up error:', error);
+      toast.error("An error occurred during follow-up.");
+    }
   };
 
   const handleAddGoogleLink = async () => {
@@ -196,22 +175,26 @@ ${documents.length > 0 ? 'Your documents provide detailed guidance on implementa
                   className="pr-12"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 />
                 <Button 
                   className="absolute right-0 top-0 h-full bg-caregrowth-green"
                   onClick={handleSearch}
-                  disabled={isSearching || !query.trim()}
+                  disabled={qaLoading || !query.trim()}
                 >
                   <SearchIcon className="h-5 w-5" />
                 </Button>
               </div>
+              {qaError && (
+                <p className="text-red-500 text-sm mt-2">{qaError}</p>
+              )}
             </div>
           </Card>
           
-          {(isSearching || searchResult) && (
+          {(qaLoading || searchResult) && (
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Search Results</h2>
-              {isSearching ? (
+              {qaLoading ? (
                 <div className="min-h-[200px] flex items-center justify-center">
                   <div className="animate-pulse space-y-4 w-full">
                     <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -225,40 +208,21 @@ ${documents.length > 0 ? 'Your documents provide detailed guidance on implementa
               ) : searchResult && (
                 <div className="prose max-w-none">
                   <div className="p-4 bg-gray-50 rounded-lg mb-6">
-                    <h3 className="text-lg font-semibold mb-2">Answer</h3>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-semibold">Answer</h3>
+                      <div className="flex gap-2">
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {searchResult.category}
+                        </span>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                          {searchResult.sources} sources
+                        </span>
+                      </div>
+                    </div>
                     <div className="whitespace-pre-line">
                       {searchResult.answer}
                     </div>
                   </div>
-                  
-                  {searchResult.sources.length > 0 && (
-                    <>
-                      <h3 className="text-lg font-semibold mb-2">Sources</h3>
-                      <div className="space-y-4 mb-6">
-                        {searchResult.sources.map((source, index) => (
-                          <div 
-                            key={index} 
-                            className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
-                            onClick={() => window.open(source.url, '_blank')}
-                          >
-                            <div className="flex justify-between items-start mb-1">
-                              <div className="flex items-center gap-2">
-                                <LinkIcon className="h-4 w-4 text-caregrowth-blue" />
-                                <span className="font-medium">{source.documentTitle}</span>
-                                <ExternalLinkIcon className="h-3 w-3 text-gray-400" />
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                Match: {Math.round(source.confidence * 100)}%
-                              </div>
-                            </div>
-                            <p className="text-sm bg-white p-2 rounded border border-gray-100">
-                              "...{source.excerpt}..."
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
                   
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Ask a follow-up question</h3>
@@ -272,7 +236,7 @@ ${documents.length > 0 ? 'Your documents provide detailed guidance on implementa
                       <Button 
                         className="h-auto bg-caregrowth-green"
                         onClick={handleFollowUp}
-                        disabled={!followUpQuery.trim() || isSearching}
+                        disabled={!followUpQuery.trim() || qaLoading}
                       >
                         Submit
                       </Button>
