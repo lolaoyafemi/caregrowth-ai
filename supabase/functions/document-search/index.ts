@@ -104,16 +104,6 @@ function searchInDocument(content: string, query: string): { relevantContent: st
     pages.push(pageWords.join(' '));
   }
   
-  // Ensure we don't exceed 2 pages for any document
-  if (pages.length > 2) {
-    const midPoint = Math.ceil(pages.length / 2);
-    const page1Words = words.slice(0, midPoint * wordsPerPage);
-    const page2Words = words.slice(midPoint * wordsPerPage);
-    pages[0] = page1Words.join(' ');
-    pages[1] = page2Words.join(' ');
-    pages.length = 2;
-  }
-  
   let bestMatch = { content: '', confidence: 0, pageNumber: 1 };
   
   // Search through pages to find the best match
@@ -170,7 +160,7 @@ function searchInDocument(content: string, query: string): { relevantContent: st
       bestMatch = {
         content: extractedContent,
         confidence,
-        pageNumber: Math.min(index + 1, 2) // Cap at page 2
+        pageNumber: index + 1
       };
     }
   });
@@ -209,8 +199,8 @@ function searchInDocument(content: string, query: string): { relevantContent: st
         const extractedWords = allWords.slice(extractStart, extractEnd);
         const extractedContent = extractedWords.join(' ');
         
-        // Estimate page based on paragraph position (assuming documents are 2 pages)
-        const estimatedPage = Math.min(Math.ceil((index + 1) / Math.ceil(paragraphs.length / 2)), 2);
+        // Estimate page based on paragraph position
+        const estimatedPage = Math.ceil((index + 1) / Math.ceil(paragraphs.length / pages.length)) || 1;
         bestMatch = {
           content: extractedContent,
           confidence,
