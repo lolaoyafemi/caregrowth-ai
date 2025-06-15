@@ -68,7 +68,7 @@ serve(async (req) => {
 
     // Step 1: Generate embedding for the question
     console.log('Generating embedding for question...');
-    let questionEmbedding;
+    let questionEmbedding = null;
     try {
       const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
         method: 'POST',
@@ -85,16 +85,15 @@ serve(async (req) => {
       if (!embeddingResponse.ok) {
         const errorText = await embeddingResponse.text();
         console.error('Embedding API error:', embeddingResponse.status, errorText);
-        throw new Error(`Embedding API error: ${embeddingResponse.statusText}`);
+        // Continue without embedding-based search
+      } else {
+        const embeddingData = await embeddingResponse.json();
+        questionEmbedding = embeddingData.data[0].embedding;
+        console.log('Generated question embedding, vector length:', questionEmbedding.length);
       }
-
-      const embeddingData = await embeddingResponse.json();
-      questionEmbedding = embeddingData.data[0].embedding;
-      console.log('Generated question embedding, vector length:', questionEmbedding.length);
     } catch (error) {
       console.error('Error generating embedding:', error);
       // Continue without embedding-based search
-      questionEmbedding = null;
     }
 
     // Step 2: Get user's documents
@@ -114,19 +113,21 @@ serve(async (req) => {
 
     let relevantChunks: any[] = [];
     let relevantContext = '';
+    let allChunks: any[] = [];
 
-    if (userDocIds.length > 0 && questionEmbedding) {
+    if (userDocIds.length > 0) {
       // Step 3: Search for relevant chunks
       console.log('Searching for relevant document chunks...');
-      const { data: allChunks, error: chunksError } = await supabase
+      const { data: chunks, error: chunksError } = await supabase
         .from('document_chunks')
         .select('content, document_id, embedding')
         .in('document_id', userDocIds);
 
+      allChunks = chunks || [];
       console.log('Raw chunks query result:', {
-        chunksFound: allChunks?.length || 0,
+        chunksFound: allChunks.length,
         error: chunksError,
-        sampleChunk: allChunks?.[0] ? {
+        sampleChunk: allChunks[0] ? {
           hasContent: !!allChunks[0].content,
           hasEmbedding: !!allChunks[0].embedding,
           contentLength: allChunks[0].content?.length || 0
@@ -135,7 +136,7 @@ serve(async (req) => {
 
       if (chunksError) {
         console.error('Error fetching document chunks:', chunksError);
-      } else if (allChunks && allChunks.length > 0) {
+      } else if (allChunks.length > 0 && questionEmbedding) {
         // Calculate similarity scores for each chunk
         const chunksWithScores = allChunks
           .filter(chunk => chunk.embedding && Array.isArray(chunk.embedding))
@@ -160,6 +161,11 @@ serve(async (req) => {
 
         console.log(`Found ${chunksWithScores.length} chunks, using ${highSimilarityChunks.length} with high similarity (>0.6)`);
         console.log('Relevant context length:', relevantContext.length);
+      } else if (allChunks.length > 0) {
+        // Fallback: use first few chunks if no embedding available
+        relevantChunks = allChunks.slice(0, 3);
+        relevantContext = relevantChunks.map(chunk => chunk.content).join('\n\n');
+        console.log('Using fallback chunks without similarity scoring');
       }
     }
 
@@ -205,7 +211,7 @@ Always structure your responses with:
 
 The user hasn't uploaded relevant documents yet, so provide guidance based on industry best practices and your expertise.`;
 
-    let answer;
+    let answer = "I apologize, but I'm having trouble generating a response right now. Please try again in a moment.";
     try {
       const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -233,14 +239,14 @@ The user hasn't uploaded relevant documents yet, so provide guidance based on in
       if (!gptResponse.ok) {
         const errorText = await gptResponse.text();
         console.error('GPT API error:', gptResponse.status, errorText);
-        throw new Error(`GPT API error: ${gptResponse.statusText}`);
+      } else {
+        const gptData = await gptResponse.json();
+        if (gptData.choices && gptData.choices[0] && gptData.choices[0].message) {
+          answer = gptData.choices[0].message.content;
+        }
       }
-
-      const gptData = await gptResponse.json();
-      answer = gptData.choices[0].message.content;
     } catch (error) {
       console.error('Error generating GPT response:', error);
-      answer = "I apologize, but I'm having trouble generating a response right now. Please try again in a moment.";
     }
 
     // Step 5: Categorize the response
@@ -272,7 +278,9 @@ The user hasn't uploaded relevant documents yet, so provide guidance based on in
 
       if (categorizationResponse.ok) {
         const categorizationData = await categorizationResponse.json();
-        category = categorizationData.choices[0].message.content.trim().toLowerCase();
+        if (categorizationData.choices && categorizationData.choices[0] && categorizationData.choices[0].message) {
+          category = categorizationData.choices[0].message.content.trim().toLowerCase();
+        }
       }
     } catch (error) {
       console.error('Error categorizing response:', error);
@@ -305,7 +313,7 @@ The user hasn't uploaded relevant documents yet, so provide guidance based on in
       sources: relevantChunks.length,
       debug: {
         documentsFound: userDocIds.length,
-        chunksFound: allChunks?.length || 0,
+        chunksFound: allChunks.length,
         relevantChunks: relevantChunks.length,
         contextLength: relevantContext.length
       }
