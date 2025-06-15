@@ -40,9 +40,11 @@ const DocumentSearchTool = () => {
       return;
     }
     
+    console.log('Starting search with query:', query);
     const results = await searchDocuments(query.trim());
     
     if (results) {
+      console.log('Search results received:', results);
       setSearchResults(results.results);
       setTotalDocumentsSearched(results.totalDocumentsSearched);
       
@@ -220,7 +222,7 @@ const DocumentSearchTool = () => {
                         <div 
                           className="text-gray-700 leading-relaxed text-sm"
                           dangerouslySetInnerHTML={{ 
-                            __html: highlightKeywords(result.relevantContent, query) 
+                            __html: highlightKeywords(result.relevantContent || '', query) 
                           }}
                         />
                       </div>
