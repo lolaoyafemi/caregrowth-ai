@@ -12,11 +12,90 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
-// Content-based chunking function
-function createChunks(content: string, docTitle: string): string[] {
+// Intelligent content analysis and chunking using OpenAI
+async function analyzeAndChunkContent(content: string, docTitle: string): Promise<string[]> {
+  if (!openAIApiKey) {
+    console.log('No OpenAI API key, falling back to basic chunking');
+    return createBasicChunks(content, docTitle);
+  }
+
+  try {
+    console.log('Analyzing content with OpenAI for intelligent chunking...');
+    
+    const analysisPrompt = `Analyze this document and create intelligent content chunks. Each chunk should be a coherent section that covers a specific topic or concept. Make each chunk self-contained and meaningful.
+
+Document Title: "${docTitle}"
+
+Document Content:
+${content.substring(0, 8000)} ${content.length > 8000 ? '...(truncated for analysis)' : ''}
+
+Instructions:
+1. Identify the main topics and sections in this document
+2. Create 3-8 chunks based on natural content divisions
+3. Each chunk should be 200-800 words
+4. Include relevant context in each chunk
+5. Make chunks searchable and meaningful for Q&A
+
+Return ONLY a JSON array of strings, where each string is a complete chunk with this format:
+["Document: [title] - [section name]\n\n[chunk content]", "Document: [title] - [section name]\n\n[chunk content]", ...]
+
+Respond with valid JSON only.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert document analyzer. Create intelligent, coherent chunks from documents for knowledge management and Q&A systems. Always respond with valid JSON.'
+          },
+          {
+            role: 'user',
+            content: analysisPrompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 2000
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('OpenAI analysis failed:', response.status, await response.text());
+      return createBasicChunks(content, docTitle);
+    }
+
+    const analysisData = await response.json();
+    const analysisResult = analysisData.choices[0].message.content;
+    
+    try {
+      const intelligentChunks = JSON.parse(analysisResult);
+      
+      if (Array.isArray(intelligentChunks) && intelligentChunks.length > 0) {
+        console.log(`Created ${intelligentChunks.length} intelligent chunks using OpenAI`);
+        return intelligentChunks;
+      } else {
+        console.log('Invalid chunk format from OpenAI, falling back to basic chunking');
+        return createBasicChunks(content, docTitle);
+      }
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI chunking response:', parseError);
+      return createBasicChunks(content, docTitle);
+    }
+  } catch (error) {
+    console.error('Error in intelligent chunking:', error);
+    return createBasicChunks(content, docTitle);
+  }
+}
+
+// Fallback basic chunking function
+function createBasicChunks(content: string, docTitle: string): string[] {
   const chunks = [];
   const maxChunkSize = 1000;
-  const overlapSize = 100;
   
   // Clean and prepare content
   const cleanContent = content
@@ -29,7 +108,7 @@ function createChunks(content: string, docTitle: string): string[] {
     return [];
   }
 
-  console.log(`Creating chunks from ${cleanContent.length} characters of content`);
+  console.log(`Creating basic chunks from ${cleanContent.length} characters of content`);
   
   // If content is short enough, return as single chunk
   if (cleanContent.length <= maxChunkSize) {
@@ -44,7 +123,7 @@ function createChunks(content: string, docTitle: string): string[] {
   if (paragraphs.length === 0) {
     // Fall back to sentence splitting
     const sentences = cleanContent.split(/[.!?]+/).filter(s => s.trim().length > 10);
-    return createSentenceChunks(sentences, docTitle, maxChunkSize, overlapSize);
+    return createSentenceChunks(sentences, docTitle, maxChunkSize);
   }
   
   let currentChunk = `Document: "${docTitle}"\n\n`;
@@ -70,11 +149,11 @@ function createChunks(content: string, docTitle: string): string[] {
     chunks.push(currentChunk.trim());
   }
   
-  console.log(`Created ${chunks.length} chunks from paragraphs`);
+  console.log(`Created ${chunks.length} basic chunks from paragraphs`);
   return chunks;
 }
 
-function createSentenceChunks(sentences: string[], docTitle: string, maxChunkSize: number, overlapSize: number): string[] {
+function createSentenceChunks(sentences: string[], docTitle: string, maxChunkSize: number): string[] {
   const chunks = [];
   let currentChunk = `Document: "${docTitle}"\n\n`;
   
@@ -197,10 +276,6 @@ serve(async (req) => {
       throw new Error('Document ID and link are required');
     }
 
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
-
     console.log('Processing document:', documentId, docTitle);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -224,8 +299,8 @@ serve(async (req) => {
 
     console.log('Extracted content length:', content.length);
 
-    // Create chunks from the actual content
-    const chunks = createChunks(content, docTitle || 'Document');
+    // Create intelligent chunks using OpenA1 analysis
+    const chunks = await analyzeAndChunkContent(content, docTitle || 'Document');
     
     if (chunks.length === 0) {
       console.log('No chunks created from content');
@@ -242,7 +317,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Created ${chunks.length} chunks`);
+    console.log(`Created ${chunks.length} intelligent chunks`);
 
     // Clear existing chunks for this document
     const { error: deleteError } = await supabase
@@ -333,7 +408,8 @@ serve(async (req) => {
       chunksFailed: failedChunks,
       totalChunks: chunks.length,
       documentId,
-      contentLength: content.length
+      contentLength: content.length,
+      intelligentChunking: openAIApiKey ? true : false
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
