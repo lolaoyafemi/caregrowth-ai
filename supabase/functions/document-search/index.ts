@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -24,6 +25,19 @@ interface DocumentContent {
   content: string;
 }
 
+interface PageEstimate {
+  method: string;
+  estimatedPage: number;
+  confidence: number;
+}
+
+interface PageAnalysisResult {
+  estimatedPage: number;
+  confidence: 'high' | 'medium' | 'low';
+  confidenceIcon: string;
+  methods: PageEstimate[];
+}
+
 // Extract document ID from Google Docs URL
 function extractDocumentId(url: string): string | null {
   const patterns = [
@@ -38,6 +52,145 @@ function extractDocumentId(url: string): string | null {
     if (match) return match[1];
   }
   return null;
+}
+
+// Advanced page estimation with multiple methods
+function estimatePageLocation(content: string, targetParagraphIndex: number): PageAnalysisResult {
+  const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+  
+  if (targetParagraphIndex >= paragraphs.length) {
+    return {
+      estimatedPage: 1,
+      confidence: 'low',
+      confidenceIcon: '⚠️',
+      methods: []
+    };
+  }
+
+  // Method 1: Character-Based Analysis (40% weight)
+  const characterBasedEstimate = () => {
+    let charCount = 0;
+    for (let i = 0; i <= targetParagraphIndex; i++) {
+      charCount += paragraphs[i].length + 2; // +2 for paragraph breaks
+    }
+    const CHARS_PER_PAGE = 2800;
+    const estimatedPage = Math.max(1, Math.ceil(charCount / CHARS_PER_PAGE));
+    
+    return {
+      method: 'Character-Based',
+      estimatedPage,
+      confidence: 0.9 // High confidence for character counting
+    };
+  };
+
+  // Method 2: Word-Based Analysis (30% weight)
+  const wordBasedEstimate = () => {
+    let wordCount = 0;
+    for (let i = 0; i <= targetParagraphIndex; i++) {
+      const words = paragraphs[i].split(/\s+/).filter(word => word.length > 0);
+      wordCount += words.length;
+    }
+    const WORDS_PER_PAGE = 500;
+    const estimatedPage = Math.max(1, Math.ceil(wordCount / WORDS_PER_PAGE));
+    
+    return {
+      method: 'Word-Based',
+      estimatedPage,
+      confidence: 0.8
+    };
+  };
+
+  // Method 3: Line-Based Analysis (30% weight)
+  const lineBasedEstimate = () => {
+    let totalLines = 0;
+    let hasComplexContent = false;
+    
+    for (let i = 0; i <= targetParagraphIndex; i++) {
+      const paragraph = paragraphs[i];
+      const charLength = paragraph.length;
+      
+      // Smart content detection
+      if (paragraph.includes('|') && paragraph.includes('-')) {
+        // Likely table content
+        hasComplexContent = true;
+        totalLines += Math.max(2, Math.ceil(charLength / 60)); // Tables use more space
+      } else if (paragraph.toLowerCase().includes('image') || paragraph.includes('[img]')) {
+        // Image references
+        hasComplexContent = true;
+        totalLines += 3; // Images take space
+      } else if (charLength === 0) {
+        // Empty paragraph
+        totalLines += 0.5;
+      } else if (charLength < 50) {
+        // Short paragraph (likely heading)
+        totalLines += 1;
+      } else if (charLength < 100) {
+        // Medium paragraph
+        totalLines += 2;
+      } else {
+        // Long paragraph - calculate based on line wrapping
+        const CHARS_PER_LINE = 80;
+        totalLines += Math.ceil(charLength / CHARS_PER_LINE);
+      }
+    }
+    
+    const LINES_PER_PAGE = 45;
+    const estimatedPage = Math.max(1, Math.ceil(totalLines / LINES_PER_PAGE));
+    const confidence = hasComplexContent ? 0.6 : 0.8;
+    
+    return {
+      method: 'Line-Based',
+      estimatedPage,
+      confidence
+    };
+  };
+
+  // Calculate estimates using all methods
+  const charEstimate = characterBasedEstimate();
+  const wordEstimate = wordBasedEstimate();
+  const lineEstimate = lineBasedEstimate();
+
+  const methods = [charEstimate, wordEstimate, lineEstimate];
+
+  // Weighted average calculation
+  const weightedSum = (charEstimate.estimatedPage * 0.4) + 
+                     (wordEstimate.estimatedPage * 0.3) + 
+                     (lineEstimate.estimatedPage * 0.3);
+  
+  const finalEstimate = Math.max(1, Math.round(weightedSum));
+
+  // Confidence scoring based on method agreement
+  const pageNumbers = methods.map(m => m.estimatedPage);
+  const minPage = Math.min(...pageNumbers);
+  const maxPage = Math.max(...pageNumbers);
+  const variance = maxPage - minPage;
+
+  let confidence: 'high' | 'medium' | 'low';
+  let confidenceIcon: string;
+
+  if (variance <= 1) {
+    confidence = 'high';
+    confidenceIcon = '🎯';
+  } else if (variance <= 2) {
+    confidence = 'medium';
+    confidenceIcon = '📊';
+  } else {
+    confidence = 'low';
+    confidenceIcon = '⚠️';
+  }
+
+  // Adjust confidence if complex content detected
+  if (lineEstimate.confidence < 0.7) {
+    if (confidence === 'high') confidence = 'medium';
+    else if (confidence === 'medium') confidence = 'low';
+  }
+
+  return {
+    estimatedPage: finalEstimate,
+    confidence,
+    confidenceIcon,
+    methods
+  };
 }
 
 // Fetch content directly from Google Docs
@@ -87,22 +240,14 @@ async function fetchDocumentContent(url: string, title: string): Promise<Documen
   }
 }
 
-// Improved search function with better confidence calculation
+// Improved search function with advanced page estimation
 function searchInDocument(content: string, query: string): { relevantContent: string; confidence: number; pageNumber?: number } | null {
   const originalQuery = query.trim();
   const queryLower = originalQuery.toLowerCase();
   const contentLower = content.toLowerCase();
   
-  // Split content into words for page estimation
-  const words = content.split(/\s+/);
-  const wordsPerPage = 250;
-  
-  // Split content into pages
-  const pages = [];
-  for (let i = 0; i < words.length; i += wordsPerPage) {
-    const pageWords = words.slice(i, i + wordsPerPage);
-    pages.push(pageWords.join(' '));
-  }
+  // Split content into paragraphs for analysis
+  const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 10);
   
   // Check for exact phrase match first
   const hasExactMatch = contentLower.includes(queryLower);
@@ -110,33 +255,33 @@ function searchInDocument(content: string, query: string): { relevantContent: st
   // Split query into individual words for partial matching
   const queryWords = queryLower.split(/\s+/).filter(word => word.length > 2);
   
-  let bestMatch = { content: '', confidence: 0, pageNumber: 1 };
+  let bestMatch = { content: '', confidence: 0, paragraphIndex: 0 };
   let allMatchingSentences: string[] = [];
   
-  // Search through pages
-  pages.forEach((page, pageIndex) => {
-    const pageLower = page.toLowerCase();
+  // Search through paragraphs
+  paragraphs.forEach((paragraph, paragraphIndex) => {
+    const paragraphLower = paragraph.toLowerCase();
     
     // Calculate confidence based on exact phrase match and individual word matches
-    let pageConfidence = 0;
+    let paragraphConfidence = 0;
     
-    if (hasExactMatch && pageLower.includes(queryLower)) {
+    if (hasExactMatch && paragraphLower.includes(queryLower)) {
       // Give high confidence for exact phrase matches
-      pageConfidence = 1.0;
+      paragraphConfidence = 1.0;
     } else {
       // Calculate based on individual word matches
       let wordMatchCount = 0;
       queryWords.forEach(word => {
-        if (pageLower.includes(word)) {
+        if (paragraphLower.includes(word)) {
           wordMatchCount++;
         }
       });
-      pageConfidence = queryWords.length > 0 ? wordMatchCount / queryWords.length : 0;
+      paragraphConfidence = queryWords.length > 0 ? wordMatchCount / queryWords.length : 0;
     }
     
-    if (pageConfidence > 0.1) {
-      // Split page into sentences and find those containing keywords
-      const sentences = page.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    if (paragraphConfidence > 0.1) {
+      // Split paragraph into sentences and find those containing keywords
+      const sentences = paragraph.split(/[.!?]+/).filter(s => s.trim().length > 10);
       const matchingSentences: string[] = [];
       
       sentences.forEach(sentence => {
@@ -161,91 +306,34 @@ function searchInDocument(content: string, query: string): { relevantContent: st
       });
       
       if (matchingSentences.length > 0) {
+        // Use advanced page estimation
+        const pageAnalysis = estimatePageLocation(content, paragraphIndex);
+        
         const pageMarkedSentences = matchingSentences.map(sentence => 
-          `[Page ${pageIndex + 1}] ${sentence}`
+          `[Page ${pageAnalysis.estimatedPage} ${pageAnalysis.confidenceIcon}] ${sentence}`
         );
         allMatchingSentences.push(...pageMarkedSentences);
         
-        if (pageConfidence > bestMatch.confidence) {
+        if (paragraphConfidence > bestMatch.confidence) {
           bestMatch = {
             content: pageMarkedSentences.join('. '),
-            confidence: pageConfidence,
-            pageNumber: pageIndex + 1
+            confidence: paragraphConfidence,
+            paragraphIndex
           };
         }
       }
     }
   });
 
-  // Fallback to paragraph search if no page matches found
-  if (allMatchingSentences.length === 0) {
-    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 20);
-    
-    paragraphs.forEach((paragraph, index) => {
-      const paragraphLower = paragraph.toLowerCase();
-      
-      let confidence = 0;
-      if (hasExactMatch && paragraphLower.includes(queryLower)) {
-        confidence = 1.0;
-      } else {
-        let matchCount = 0;
-        queryWords.forEach(word => {
-          if (paragraphLower.includes(word)) {
-            matchCount++;
-          }
-        });
-        confidence = queryWords.length > 0 ? matchCount / queryWords.length : 0;
-      }
-      
-      if (confidence > 0.1) {
-        const sentences = paragraph.split(/[.!?]+/).filter(s => s.trim().length > 10);
-        const matchingSentences: string[] = [];
-        
-        sentences.forEach(sentence => {
-          const sentenceLower = sentence.toLowerCase();
-          
-          if (hasExactMatch && sentenceLower.includes(queryLower)) {
-            matchingSentences.push(sentence.trim());
-          } else {
-            let sentenceMatches = 0;
-            queryWords.forEach(word => {
-              if (sentenceLower.includes(word)) {
-                sentenceMatches++;
-              }
-            });
-            
-            if (sentenceMatches > 0) {
-              matchingSentences.push(sentence.trim());
-            }
-          }
-        });
-        
-        if (matchingSentences.length > 0) {
-          const estimatedPage = Math.ceil((index + 1) / Math.ceil(paragraphs.length / pages.length)) || 1;
-          const pageMarkedSentences = matchingSentences.map(sentence => 
-            `[Page ${estimatedPage}] ${sentence}`
-          );
-          allMatchingSentences.push(...pageMarkedSentences);
-          
-          if (confidence > bestMatch.confidence) {
-            bestMatch = {
-              content: pageMarkedSentences.join('. '),
-              confidence,
-              pageNumber: estimatedPage
-            };
-          }
-        }
-      }
-    });
-  }
-
-  // Return matching sentences with proper confidence
+  // Return matching sentences with proper confidence and page estimation
   if (allMatchingSentences.length > 0) {
     const combinedContent = allMatchingSentences.slice(0, 5).join('. ');
+    const pageAnalysis = estimatePageLocation(content, bestMatch.paragraphIndex);
+    
     return {
       relevantContent: combinedContent,
       confidence: bestMatch.confidence,
-      pageNumber: bestMatch.pageNumber
+      pageNumber: pageAnalysis.estimatedPage
     };
   }
 
