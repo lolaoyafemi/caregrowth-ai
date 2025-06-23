@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -142,7 +141,7 @@ async function generateContextualAnswer(question: string, relevantChunks: any[],
   }
 
   const systemPrompt = hasRelevantContext 
-    ? `You are CareGrowthAI, an expert assistant for digital marketing agencies and home care businesses.
+    ? `You are Jared, an expert assistant for digital marketing agencies and home care businesses.
 
 Your job is to answer questions using the provided context from the user's documents and your professional knowledge of:
 - Agency management and operations  
@@ -164,7 +163,7 @@ Context from user's documents:
 ${contextText}
 
 Answer the user's question thoroughly and professionally, drawing primarily from the provided context while supplementing with your expertise when helpful.`
-    : `You are CareGrowthAI, an expert assistant for digital marketing agencies and home care businesses.
+    : `You are Jared, an expert assistant for digital marketing agencies and home care businesses.
 
 Your job is to answer questions using your professional knowledge of:
 - Agency management and operations

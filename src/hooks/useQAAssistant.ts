@@ -43,7 +43,7 @@ export const useQAAssistant = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get answer';
       setError(errorMessage);
-      console.error('Q&A Assistant error:', err);
+      console.error('Ask Jared error:', err);
       return null;
     } finally {
       setIsLoading(false);
@@ -64,7 +64,7 @@ export const useQAAssistant = () => {
       if (error) throw error;
       return data || [];
     } catch (err) {
-      console.error('Error fetching Q&A history:', err);
+      console.error('Error fetching Ask Jared history:', err);
       return [];
     }
   };

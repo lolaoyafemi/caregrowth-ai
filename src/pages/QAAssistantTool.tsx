@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,7 @@ const QAAssistantTool = () => {
     {
       id: 1,
       role: 'assistant',
-      content: 'Hello! I\'m your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
+      content: 'Hello! I\'m Jared, your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
       timestamp: new Date()
     }
   ]);
@@ -43,7 +42,6 @@ const QAAssistantTool = () => {
   const { askQuestion, getQAHistory, isLoading, error } = useQAAssistant();
   const { user } = useUser();
 
-  // Load Q&A history on component mount
   useEffect(() => {
     const loadHistory = async () => {
       const history = await getQAHistory();
@@ -63,11 +61,10 @@ const QAAssistantTool = () => {
     }
 
     if (!user) {
-      toast.error("Please log in to use the Q&A assistant");
+      toast.error("Please log in to use Ask Jared");
       return;
     }
 
-    // Add user message to conversation
     const userMessage: Message = {
       id: conversation.length + 1,
       role: 'user',
@@ -79,7 +76,6 @@ const QAAssistantTool = () => {
     const currentQuery = query;
     setQuery('');
     
-    // Get AI response
     const response = await askQuestion(currentQuery);
     
     if (response) {
@@ -95,11 +91,9 @@ const QAAssistantTool = () => {
       setActiveCategory(response.category);
       setConversation(prev => [...prev, assistantMessage]);
       
-      // Refresh Q&A history
       const updatedHistory = await getQAHistory();
       setQAHistory(updatedHistory);
       
-      // Scroll to bottom of chat
       setTimeout(() => {
         const chatContainer = document.getElementById('chat-container');
         if (chatContainer) {
@@ -120,7 +114,7 @@ const QAAssistantTool = () => {
       {
         id: 1,
         role: 'assistant',
-        content: 'Hello! I\'m your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
+        content: 'Hello! I\'m Jared, your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
         timestamp: new Date()
       }
     ]);
@@ -174,7 +168,7 @@ const QAAssistantTool = () => {
   return (
     <div className="p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">GPT-Powered Q&A Assistant</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Ask Jared</h1>
         <p className="text-gray-600 mt-2">Get instant answers to your agency and marketing questions powered by your documents and AI expertise.</p>
       </div>
 
@@ -218,7 +212,7 @@ const QAAssistantTool = () => {
                   >
                     <div className="mb-1 text-sm flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <span>{message.role === 'assistant' ? 'CareGrowthAI' : 'You'} • {formatTime(message.timestamp)}</span>
+                        <span>{message.role === 'assistant' ? 'Jared' : 'You'} • {formatTime(message.timestamp)}</span>
                         {message.sources && message.sources > 0 && (
                           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                             {message.sources} sources
@@ -246,7 +240,7 @@ const QAAssistantTool = () => {
                 <div className="flex justify-start">
                   <div className="max-w-[80%] rounded-lg p-4 bg-white border shadow-sm">
                     <div className="mb-1 text-sm">
-                      CareGrowthAI is thinking...
+                      Jared is thinking...
                     </div>
                     <div className="flex space-x-2">
                       <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -261,7 +255,7 @@ const QAAssistantTool = () => {
             <div className="border-t p-4">
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <Input
-                  placeholder="Ask a question about agency management, marketing, hiring, or compliance..."
+                  placeholder="Ask Jared about agency management, marketing, hiring, or compliance..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   disabled={isLoading}
@@ -276,7 +270,7 @@ const QAAssistantTool = () => {
                 </Button>
               </form>
               {!user && (
-                <p className="text-sm text-gray-500 mt-2">Please log in to use the Q&A assistant</p>
+                <p className="text-sm text-gray-500 mt-2">Please log in to use Ask Jared</p>
               )}
             </div>
           </Card>
@@ -324,7 +318,7 @@ const QAAssistantTool = () => {
           <Tabs defaultValue="session">
             <TabsList className="w-full">
               <TabsTrigger value="session" className="flex-1">Session Info</TabsTrigger>
-              <TabsTrigger value="history" className="flex-1">Q&A History</TabsTrigger>
+              <TabsTrigger value="history" className="flex-1">Ask Jared History</TabsTrigger>
             </TabsList>
             
             <TabsContent value="session">
@@ -379,7 +373,7 @@ const QAAssistantTool = () => {
                 {qaHistory.length === 0 ? (
                   <div className="text-center py-6 text-gray-500">
                     <FileTextIcon className="h-8 w-8 mx-auto opacity-20 mb-2" />
-                    <p>No Q&A history yet</p>
+                    <p>No Ask Jared history yet</p>
                     <p className="text-xs mt-2">Your questions and answers will appear here</p>
                   </div>
                 ) : (

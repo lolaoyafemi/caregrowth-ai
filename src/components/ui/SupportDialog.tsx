@@ -24,7 +24,7 @@ const SupportDialog = ({ children }: SupportDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSend = () => {
-    const subject = `Support Request from ${fullName}`;
+    const subject = `Ask Jared Support Request from ${fullName}`;
     const body = `Name: ${fullName}\nEmail: ${email}\n\nMessage:\n${message}`;
     const mailtoLink = `mailto:admin@caregrowth.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     
@@ -44,7 +44,7 @@ const SupportDialog = ({ children }: SupportDialogProps) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Get Support</DialogTitle>
+          <DialogTitle>Ask Jared Support</DialogTitle>
           <DialogDescription>
             Need help? Fill out the form below and we'll get back to you as soon as possible.
           </DialogDescription>
