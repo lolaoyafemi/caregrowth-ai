@@ -43,14 +43,23 @@ export const deductCredits = async (
       };
     }
 
-    // Safely type the response
-    const response = data as unknown as DeductCreditsResponse;
-
-    if (!response || typeof response !== 'object' || !('success' in response)) {
-      console.error('Invalid response format from deduct_credits_fifo');
+    // Safely handle the response - check if it's an object with the expected structure
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      console.error('Invalid response format from deduct_credits_fifo:', data);
       return {
         success: false,
         error: 'Invalid response from credit deduction'
+      };
+    }
+
+    // Now we can safely cast to our expected type
+    const response = data as DeductCreditsResponse;
+
+    if (!('success' in response)) {
+      console.error('Response missing success property:', response);
+      return {
+        success: false,
+        error: 'Invalid response structure from credit deduction'
       };
     }
 
