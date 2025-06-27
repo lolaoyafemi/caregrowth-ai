@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +9,73 @@ export interface GoogleDoc {
   doc_title: string | null;
   created_at: string;
 }
+
+// Function to extract document title from Google Docs URL
+const extractDocumentTitle = async (docUrl: string): Promise<string | null> => {
+  try {
+    // Extract document ID from URL
+    const docIdMatch = docUrl.match(/\/document\/d\/([a-zA-Z0-9-_]+)/);
+    if (!docIdMatch) return null;
+    
+    const docId = docIdMatch[1];
+    
+    // Try to fetch document metadata to get the title
+    const metadataUrl = `https://docs.google.com/document/d/${docId}/edit`;
+    
+    try {
+      const response = await fetch(metadataUrl, { 
+        method: 'HEAD',
+        mode: 'no-cors'
+      });
+      
+      // Since we can't read the response due to CORS, we'll extract from URL patterns
+      // This is a fallback approach - in a real implementation, you'd need server-side processing
+      return null;
+    } catch (error) {
+      console.log('Could not fetch document metadata:', error);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error extracting document title:', error);
+    return null;
+  }
+};
+
+// Function to generate a meaningful document name from URL
+const generateDocumentName = (docUrl: string): string => {
+  try {
+    // Extract document ID for uniqueness
+    const docIdMatch = docUrl.match(/\/document\/d\/([a-zA-Z0-9-_]+)/);
+    const spreadsheetMatch = docUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    const presentationMatch = docUrl.match(/\/presentation\/d\/([a-zA-Z0-9-_]+)/);
+    
+    let docType = 'Document';
+    let docId = '';
+    
+    if (docIdMatch) {
+      docType = 'Document';
+      docId = docIdMatch[1].substring(0, 8); // First 8 chars of ID
+    } else if (spreadsheetMatch) {
+      docType = 'Spreadsheet';
+      docId = spreadsheetMatch[1].substring(0, 8);
+    } else if (presentationMatch) {
+      docType = 'Presentation';
+      docId = presentationMatch[1].substring(0, 8);
+    }
+    
+    // Create a more descriptive name with timestamp
+    const timestamp = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    
+    return `Google ${docType} - ${timestamp} (${docId})`;
+  } catch (error) {
+    console.error('Error generating document name:', error);
+    return `Google Document - ${new Date().toLocaleDateString()}`;
+  }
+};
 
 export const useGoogleDocuments = () => {
   const [documents, setDocuments] = useState<GoogleDoc[]>([]);
@@ -39,12 +105,27 @@ export const useGoogleDocuments = () => {
     if (!user) return;
 
     try {
+      // Try to extract original document title, fallback to generated name
+      let finalTitle = docTitle;
+      
+      if (!finalTitle) {
+        // First try to extract title from the document
+        const extractedTitle = await extractDocumentTitle(docLink);
+        
+        if (extractedTitle) {
+          finalTitle = extractedTitle;
+        } else {
+          // Generate a meaningful name based on URL and timestamp
+          finalTitle = generateDocumentName(docLink);
+        }
+      }
+
       const { data, error } = await supabase
         .from('google_documents')
         .insert({
           user_id: user.id,
           doc_link: docLink,
-          doc_title: docTitle || `Document ${documents.length + 1}`
+          doc_title: finalTitle
         })
         .select()
         .single();
