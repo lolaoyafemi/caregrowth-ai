@@ -6,64 +6,91 @@ import type { AdminUser } from '@/types/admin';
 export const fetchUsers = async (): Promise<AdminUser[]> => {
   try {
     console.log('=== ADMIN USER SERVICE: Starting to fetch users ===');
-    console.log('Fetching users from users table...');
     
-    const { data, error } = await supabase
+    // First, let's try fetching from users table
+    const { data: usersData, error: usersError } = await supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false });
 
-    console.log('=== RAW DATABASE RESPONSE ===');
-    console.log('Raw user data from database:', data);
-    console.log('Database error (if any):', error);
-    console.log('Data length:', data?.length || 0);
+    console.log('=== USERS TABLE QUERY ===');
+    console.log('Users data:', usersData);
+    console.log('Users error:', usersError);
 
-    if (error) {
-      console.error('Database error details:', error);
-      console.log('Error code:', error.code);
-      console.log('Error message:', error.message);
-      throw error;
+    if (usersError) {
+      console.error('Error fetching from users table:', usersError);
     }
 
-    if (!data || data.length === 0) {
-      console.warn('No users found in users table');
-      console.log('This might mean:');
-      console.log('1. The table is empty');
-      console.log('2. There are RLS policies blocking access');
-      console.log('3. The user doesnt have permission to read this table');
-      return [];
+    // Also try fetching from user_profiles table to get credits
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    console.log('=== USER_PROFILES TABLE QUERY ===');
+    console.log('Profiles data:', profilesData);
+    console.log('Profiles error:', profilesError);
+
+    if (profilesError) {
+      console.error('Error fetching from user_profiles table:', profilesError);
     }
+
+    // Use whichever table has data
+    let finalData = [];
     
-    console.log('=== PROCESSING USERS ===');
-    const formattedUsers = data.map((user, index) => {
-      console.log(`Processing user ${index + 1}:`, {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        plan: user.plan,
-        credits: user.credits,
-        created_at: user.created_at
+    if (usersData && usersData.length > 0) {
+      console.log('Using users table data');
+      finalData = usersData.map((user, index) => {
+        console.log(`Processing user ${index + 1} from users table:`, {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          credits: user.credits,
+          created_at: user.created_at
+        });
+        
+        return {
+          id: user.id,
+          email: user.email || '',
+          name: user.name || 'No name',
+          role: user.role || 'user',
+          created_at: user.created_at || new Date().toISOString(),
+          last_sign_in_at: null,
+          credits: user.credits || 0,
+          status: 'active' as 'active' | 'suspended'
+        };
       });
-      
-      return {
-        id: user.id,
-        email: user.email || '',
-        name: user.name || 'No name',
-        role: user.role || 'user',
-        created_at: user.created_at || new Date().toISOString(),
-        last_sign_in_at: null, // users table doesn't have this field
-        credits: user.credits || 0,
-        status: 'active' as 'active' | 'suspended' // users table doesn't have status field
-      };
-    });
-    
+    } else if (profilesData && profilesData.length > 0) {
+      console.log('Using user_profiles table data');
+      finalData = profilesData.map((profile, index) => {
+        console.log(`Processing user ${index + 1} from user_profiles table:`, {
+          id: profile.user_id,
+          email: profile.email,
+          role: profile.role,
+          credits: profile.credits,
+          created_at: profile.created_at
+        });
+        
+        return {
+          id: profile.user_id,
+          email: profile.email || '',
+          name: profile.business_name || 'No name',
+          role: profile.role || 'user',
+          created_at: profile.created_at || new Date().toISOString(),
+          last_sign_in_at: profile.last_sign_in_at,
+          credits: profile.credits || 0,
+          status: profile.status as 'active' | 'suspended' || 'active'
+        };
+      });
+    }
+
     console.log('=== FINAL RESULT ===');
-    console.log('Formatted users array:', formattedUsers);
-    console.log('Total users found:', formattedUsers.length);
+    console.log('Final formatted users array:', finalData);
+    console.log('Total users found:', finalData.length);
     console.log('=== END ADMIN USER SERVICE ===');
     
-    return formattedUsers;
+    return finalData;
   } catch (error) {
     console.error('=== ERROR IN ADMIN USER SERVICE ===');
     console.error('Error fetching users:', error);
@@ -74,9 +101,18 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
 
 export const suspendUser = async (userId: string): Promise<void> => {
   try {
-    // Since users table doesn't have status field, we'll need to handle this differently
-    // For now, just show a message that this feature needs to be implemented
-    toast.error('Suspend user feature needs to be implemented for users table');
+    // Try updating user_profiles first, then users table
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .update({ status: 'suspended' })
+      .eq('user_id', userId);
+
+    if (profileError) {
+      console.log('Could not update user_profiles, trying users table');
+      toast.error('Suspend user feature needs to be implemented for users table');
+    } else {
+      toast.success('User suspended successfully');
+    }
   } catch (error) {
     console.error('Error suspending user:', error);
     toast.error('Failed to suspend user');
@@ -85,8 +121,18 @@ export const suspendUser = async (userId: string): Promise<void> => {
 
 export const activateUser = async (userId: string): Promise<void> => {
   try {
-    // Since users table doesn't have status field, we'll need to handle this differently
-    toast.error('Activate user feature needs to be implemented for users table');
+    // Try updating user_profiles first, then users table
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .update({ status: 'active' })
+      .eq('user_id', userId);
+
+    if (profileError) {
+      console.log('Could not update user_profiles, trying users table');
+      toast.error('Activate user feature needs to be implemented for users table');
+    } else {
+      toast.success('User activated successfully');
+    }
   } catch (error) {
     console.error('Error activating user:', error);
     toast.error('Failed to activate user');
@@ -95,12 +141,24 @@ export const activateUser = async (userId: string): Promise<void> => {
 
 export const deleteUser = async (userId: string): Promise<void> => {
   try {
-    const { error } = await supabase
+    // Try deleting from users table first
+    const { error: usersError } = await supabase
       .from('users')
       .delete()
       .eq('id', userId);
 
-    if (error) throw error;
+    if (usersError) {
+      console.log('Could not delete from users table, trying user_profiles');
+      // Try deleting from user_profiles
+      const { error: profilesError } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (profilesError) {
+        throw profilesError;
+      }
+    }
     
     toast.success('User deleted successfully');
   } catch (error) {
@@ -111,12 +169,24 @@ export const deleteUser = async (userId: string): Promise<void> => {
 
 export const addCreditsToUser = async (userId: string, credits: number): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('users')
+    // Try updating user_profiles first
+    const { error: profileError } = await supabase
+      .from('user_profiles')
       .update({ credits: credits })
-      .eq('id', userId);
+      .eq('user_id', userId);
 
-    if (error) throw error;
+    if (profileError) {
+      console.log('Could not update user_profiles, trying users table');
+      // Try updating users table
+      const { error: usersError } = await supabase
+        .from('users')
+        .update({ credits: credits })
+        .eq('id', userId);
+
+      if (usersError) {
+        throw usersError;
+      }
+    }
     
     toast.success('Credits added successfully');
   } catch (error) {

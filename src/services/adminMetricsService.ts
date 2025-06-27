@@ -7,12 +7,30 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
   try {
     console.log('=== ADMIN METRICS SERVICE: Fetching metrics ===');
     
-    // Fetch users from users table instead of user_profiles
+    // Try fetching from both users and user_profiles tables
     const { data: usersData } = await supabase
       .from('users')
       .select('id, created_at, role, credits');
 
+    const { data: profilesData } = await supabase
+      .from('user_profiles')
+      .select('user_id, created_at, role, credits');
+
     console.log('Users data for metrics:', usersData);
+    console.log('Profiles data for metrics:', profilesData);
+
+    // Use whichever table has data
+    let userData = [];
+    if (usersData && usersData.length > 0) {
+      userData = usersData;
+    } else if (profilesData && profilesData.length > 0) {
+      userData = profilesData.map(profile => ({
+        id: profile.user_id,
+        created_at: profile.created_at,
+        role: profile.role,
+        credits: profile.credits
+      }));
+    }
 
     const { data: creditsData } = await supabase
       .from('credit_usage_log')
@@ -22,10 +40,11 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
       .from('credit_sales_log')
       .select('amount_paid, timestamp');
 
+    console.log('User data for metrics:', userData);
     console.log('Credits usage data:', creditsData);
     console.log('Sales data:', salesData);
 
-    const totalUsers = usersData?.length || 0;
+    const totalUsers = userData?.length || 0;
     const totalCreditsUsed = creditsData?.reduce((sum, log) => sum + log.credits_used, 0) || 0;
     const totalRevenue = salesData?.reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
     
@@ -35,7 +54,7 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
       new Date(sale.timestamp).getMonth() === currentMonth
     ).reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
 
-    // Calculate active users (all users are considered active since users table doesn't have status)
+    // All users are considered active since we don't have reliable status tracking
     const activeUsers = totalUsers;
 
     const metrics = {
