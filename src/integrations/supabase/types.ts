@@ -466,12 +466,15 @@ export type Database = {
           email: string | null
           id: string
           ideal_client: string | null
+          last_sign_in_at: string | null
           location: string | null
           main_offer: string | null
           objections: string[] | null
           pain_points: string[] | null
           plan_name: string | null
+          role: string | null
           services: string | null
+          status: string | null
           testimonial: string | null
           updated_at: string
           user_id: string
@@ -488,12 +491,15 @@ export type Database = {
           email?: string | null
           id?: string
           ideal_client?: string | null
+          last_sign_in_at?: string | null
           location?: string | null
           main_offer?: string | null
           objections?: string[] | null
           pain_points?: string[] | null
           plan_name?: string | null
+          role?: string | null
           services?: string | null
+          status?: string | null
           testimonial?: string | null
           updated_at?: string
           user_id: string
@@ -510,12 +516,15 @@ export type Database = {
           email?: string | null
           id?: string
           ideal_client?: string | null
+          last_sign_in_at?: string | null
           location?: string | null
           main_offer?: string | null
           objections?: string[] | null
           pain_points?: string[] | null
           plan_name?: string | null
+          role?: string | null
           services?: string | null
+          status?: string | null
           testimonial?: string | null
           updated_at?: string
           user_id?: string

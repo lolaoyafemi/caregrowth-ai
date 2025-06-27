@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -59,11 +60,11 @@ export const useAdminData = () => {
         id: user.user_id,
         email: user.email || '',
         name: user.business_name || 'No name',
-        role: 'user', // user_profiles doesn't have role, defaulting to user
+        role: user.role || 'user',
         created_at: user.created_at || new Date().toISOString(),
-        last_sign_in_at: null, // This would come from auth.users if accessible
+        last_sign_in_at: user.last_sign_in_at,
         credits: user.credits || 0,
-        status: 'active' as 'active' | 'suspended' // Defaulting to active since user_profiles doesn't have status
+        status: (user.status || 'active') as 'active' | 'suspended'
       })) || [];
       
       setUsers(formattedUsers);
@@ -120,7 +121,7 @@ export const useAdminData = () => {
     try {
       const { data: usersData } = await supabase
         .from('user_profiles')
-        .select('user_id, created_at');
+        .select('user_id, created_at, status');
 
       const { data: creditsData } = await supabase
         .from('credit_usage_log')
@@ -140,13 +141,16 @@ export const useAdminData = () => {
         new Date(sale.timestamp).getMonth() === currentMonth
       ).reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
 
+      // Calculate active users (users with status 'active')
+      const activeUsers = usersData?.filter(user => user.status === 'active').length || 0;
+
       setMetrics({
         totalUsers,
         totalAgencies: agencies.length,
         totalCreditsUsed,
         totalRevenue,
         monthlyRevenue,
-        activeUsers: Math.floor(totalUsers * 0.7) // Mock active users
+        activeUsers
       });
     } catch (error) {
       console.error('Error fetching metrics:', error);
@@ -156,10 +160,14 @@ export const useAdminData = () => {
 
   const suspendUser = async (userId: string) => {
     try {
-      // Since user_profiles doesn't have a status field, we'll need to handle this differently
-      // For now, we'll just show a message that this functionality needs to be implemented
-      console.log('Suspend user functionality needs to be implemented for user_profiles table');
-      toast.info('User suspension functionality needs to be implemented');
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ status: 'suspended' })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      
+      toast.success('User suspended successfully');
       fetchUsers();
     } catch (error) {
       console.error('Error suspending user:', error);
@@ -169,10 +177,14 @@ export const useAdminData = () => {
 
   const activateUser = async (userId: string) => {
     try {
-      // Since user_profiles doesn't have a status field, we'll need to handle this differently
-      // For now, we'll just show a message that this functionality needs to be implemented
-      console.log('Activate user functionality needs to be implemented for user_profiles table');
-      toast.info('User activation functionality needs to be implemented');
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ status: 'active' })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      
+      toast.success('User activated successfully');
       fetchUsers();
     } catch (error) {
       console.error('Error activating user:', error);
