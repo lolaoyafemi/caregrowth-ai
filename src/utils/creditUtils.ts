@@ -52,8 +52,8 @@ export const deductCredits = async (
       };
     }
 
-    // Now we can safely cast to our expected type
-    const response = data as DeductCreditsResponse;
+    // Now we can safely cast to our expected type using unknown first
+    const response = data as unknown as DeductCreditsResponse;
 
     if (!('success' in response)) {
       console.error('Response missing success property:', response);
