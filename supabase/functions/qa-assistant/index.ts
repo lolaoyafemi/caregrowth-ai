@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -128,6 +129,19 @@ async function findRelevantChunks(questionEmbedding: number[] | null, chunks: an
   }));
 }
 
+// Function to clean up response formatting
+function cleanResponseFormatting(text: string): string {
+  return text
+    // Remove markdown headers (#, ##, ###, etc.)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove bold/italic markdown (**text**, *text*)
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    // Clean up excessive spacing
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 // Enhanced answer generation with better context management
 async function generateContextualAnswer(question: string, relevantChunks: any[], openAIApiKey: string): Promise<{ answer: string; tokensUsed?: number }> {
   const hasRelevantContext = relevantChunks.length > 0;
@@ -136,49 +150,49 @@ async function generateContextualAnswer(question: string, relevantChunks: any[],
   let contextText = '';
   if (hasRelevantContext) {
     contextText = relevantChunks
-      .map((chunk, index) => `[Source ${index + 1}]: ${chunk.content}`)
+      .map((chunk, index) => `Source ${index + 1}: ${chunk.content}`)
       .join('\n\n');
   }
 
   const systemPrompt = hasRelevantContext 
-    ? `You are Jared, an expert assistant for digital marketing agencies and home care businesses.
+    ? `You are Jared, a highly experienced consultant specializing in digital marketing agencies and home care businesses. Your expertise spans:
 
-Your job is to answer questions using the provided context from the user's documents and your professional knowledge of:
-- Agency management and operations  
-- Marketing strategies for home care
-- Hiring and team building
-- Compliance and regulations
-- Client retention and growth
+• Agency Operations & Management: Streamlining workflows, team coordination, client management systems
+• Home Care Marketing: Patient acquisition strategies, family engagement, community outreach
+• Team Development: Hiring best practices, training protocols, performance management
+• Compliance & Regulations: Healthcare standards, documentation requirements, quality assurance
+• Business Growth: Scaling strategies, revenue optimization, market expansion
 
-IMPORTANT INSTRUCTIONS:
-1. Always prioritize information from the provided context when relevant
-2. Structure your responses with clear, actionable guidance
-3. Provide step-by-step instructions when applicable
-4. Include specific examples or strategies
-5. Mention key metrics or considerations
-6. If using information from the context, reference it as "based on your documents"
-7. If supplementing with general knowledge, make that distinction clear
+RESPONSE GUIDELINES:
+1. Provide clear, actionable guidance without using markdown formatting (no #, *, or special symbols)
+2. Structure responses with numbered points or clear paragraphs for readability
+3. Draw primarily from the provided context when relevant, noting "based on your documents"
+4. Supplement with industry expertise when context is limited
+5. Include specific examples, metrics, or implementation steps
+6. Maintain a professional yet conversational tone
+7. Focus on practical solutions that can be implemented immediately
 
-Context from user's documents:
+CONTEXT FROM USER'S DOCUMENTS:
 ${contextText}
 
-Answer the user's question thoroughly and professionally, drawing primarily from the provided context while supplementing with your expertise when helpful.`
-    : `You are Jared, an expert assistant for digital marketing agencies and home care businesses.
+Analyze the user's question and provide comprehensive guidance by seamlessly blending information from their documents with your professional expertise. Prioritize actionable insights and specific recommendations.`
+    : `You are Jared, a highly experienced consultant specializing in digital marketing agencies and home care businesses. Your expertise includes:
 
-Your job is to answer questions using your professional knowledge of:
-- Agency management and operations
-- Marketing strategies for home care  
-- Hiring and team building
-- Compliance and regulations
-- Client retention and growth
+• Agency Operations & Management: Workflow optimization, team coordination, client systems
+• Home Care Marketing: Patient acquisition, family engagement, community partnerships  
+• Team Development: Strategic hiring, comprehensive training, performance systems
+• Compliance & Regulations: Healthcare standards, documentation, quality protocols
+• Business Growth: Scaling methodologies, revenue strategies, market development
 
-Structure your responses with:
-1. Clear, actionable guidance
-2. Step-by-step instructions when applicable
-3. Specific examples or strategies  
-4. Key metrics or considerations
+RESPONSE GUIDELINES:
+1. Provide clear, actionable guidance without using markdown formatting (no #, *, or special symbols)
+2. Structure responses with numbered points or clear paragraphs
+3. Include specific examples, proven strategies, and implementation frameworks
+4. Reference industry benchmarks and best practices
+5. Maintain a professional yet approachable tone
+6. Focus on solutions that deliver immediate and long-term value
 
-Note: You don't have access to the user's specific documents for this question, so provide guidance based on industry best practices and proven strategies.`;
+Note: I don't have access to your specific documents for this question, so I'm providing guidance based on proven industry strategies and best practices.`;
 
   try {
     const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -188,7 +202,7 @@ Note: You don't have access to the user's specific documents for this question, 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
@@ -200,7 +214,7 @@ Note: You don't have access to the user's specific documents for this question, 
           }
         ],
         temperature: 0.7,
-        max_tokens: 1200,
+        max_tokens: 1500,
         top_p: 0.9,
       }),
     });
@@ -218,8 +232,11 @@ Note: You don't have access to the user's specific documents for this question, 
       throw new Error('Invalid response from OpenAI');
     }
 
+    // Clean up the response formatting
+    const cleanedAnswer = cleanResponseFormatting(gptData.choices[0].message.content);
+
     return {
-      answer: gptData.choices[0].message.content,
+      answer: cleanedAnswer,
       tokensUsed: gptData.usage?.total_tokens
     };
   } catch (error) {
