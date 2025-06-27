@@ -42,7 +42,8 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
         name: user.name,
         role: user.role,
         plan: user.plan,
-        credits: user.credits
+        credits: user.credits,
+        created_at: user.created_at
       });
       
       return {
