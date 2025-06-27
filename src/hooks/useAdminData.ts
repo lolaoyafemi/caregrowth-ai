@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -9,7 +8,7 @@ interface AdminUser {
   name: string;
   role: string;
   created_at: string;
-  last_sign_in_at: string;
+  last_sign_in_at: string | null;
   credits: number;
   status: 'active' | 'suspended';
 }
@@ -57,7 +56,13 @@ export const useAdminData = () => {
       if (error) throw error;
       
       const formattedUsers = data?.map(user => ({
-        ...user,
+        id: user.id,
+        email: user.email || '',
+        name: user.name || '',
+        role: user.role || 'user',
+        created_at: user.created_at || new Date().toISOString(),
+        last_sign_in_at: null, // This would come from auth.users if accessible
+        credits: user.credits || 0,
         status: user.role === 'suspended' ? 'suspended' : 'active'
       })) || [];
       
