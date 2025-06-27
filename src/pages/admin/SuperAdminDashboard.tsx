@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { Navigate } from 'react-router-dom';
@@ -16,8 +15,11 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Plus, Eye, EyeOff, Trash2, Shield } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { Plus, Eye, EyeOff, Trash2, Shield, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAdminData } from '@/hooks/useAdminData';
+import SystemMetrics from '@/components/admin/SystemMetrics';
+import RealtimeActivity from '@/components/admin/RealtimeActivity';
 
 interface OpenAIKey {
   id: string;
@@ -43,6 +45,7 @@ interface CreditPricing {
 
 const SuperAdminDashboard = () => {
   const { user, hasPermission } = useUser();
+  const { metrics, refetch: refetchAdminData } = useAdminData();
   const [openaiKeys, setOpenaiKeys] = useState<OpenAIKey[]>([]);
   const [creditInventory, setCreditInventory] = useState<CreditInventory | null>(null);
   const [creditPricing, setCreditPricing] = useState<CreditPricing | null>(null);
@@ -70,15 +73,12 @@ const SuperAdminDashboard = () => {
       await Promise.all([
         fetchOpenAIKeys(),
         fetchCreditInventory(),
-        fetchCreditPricing()
+        fetchCreditPricing(),
+        refetchAdminData()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load dashboard data",
-        variant: "destructive"
-      });
+      toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -130,11 +130,7 @@ const SuperAdminDashboard = () => {
 
   const addOpenAIKey = async () => {
     if (!newKeyName.trim() || !newSecretKey.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in both key name and secret key",
-        variant: "destructive"
-      });
+      toast.error('Please fill in both key name and secret key');
       return;
     }
 
@@ -148,19 +144,11 @@ const SuperAdminDashboard = () => {
 
     if (error) {
       console.error('Error adding OpenAI key:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add OpenAI key",
-        variant: "destructive"
-      });
+      toast.error('Failed to add OpenAI key');
       return;
     }
 
-    toast({
-      title: "Success",
-      description: "OpenAI key added successfully"
-    });
-
+    toast.success('OpenAI key added successfully');
     setNewKeyName('');
     setNewSecretKey('');
     fetchOpenAIKeys();
@@ -174,19 +162,11 @@ const SuperAdminDashboard = () => {
 
     if (error) {
       console.error('Error updating key status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update key status",
-        variant: "destructive"
-      });
+      toast.error('Failed to update key status');
       return;
     }
 
-    toast({
-      title: "Success",
-      description: `Key ${!currentStatus ? 'activated' : 'deactivated'} successfully`
-    });
-
+    toast.success(`Key ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
     fetchOpenAIKeys();
   };
 
@@ -198,19 +178,11 @@ const SuperAdminDashboard = () => {
 
     if (error) {
       console.error('Error deleting key:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete key",
-        variant: "destructive"
-      });
+      toast.error('Failed to delete key');
       return;
     }
 
-    toast({
-      title: "Success",
-      description: "Key deleted successfully"
-    });
-
+    toast.success('Key deleted successfully');
     fetchOpenAIKeys();
   };
 
@@ -227,19 +199,11 @@ const SuperAdminDashboard = () => {
 
     if (error) {
       console.error('Error updating credit inventory:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update credit inventory",
-        variant: "destructive"
-      });
+      toast.error('Failed to update credit inventory');
       return;
     }
 
-    toast({
-      title: "Success",
-      description: "Credit inventory updated successfully"
-    });
-
+    toast.success('Credit inventory updated successfully');
     fetchCreditInventory();
   };
 
@@ -256,19 +220,11 @@ const SuperAdminDashboard = () => {
 
     if (error) {
       console.error('Error updating credit pricing:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update credit pricing",
-        variant: "destructive"
-      });
+      toast.error('Failed to update credit pricing');
       return;
     }
 
-    toast({
-      title: "Success",
-      description: "Credit pricing updated successfully"
-    });
-
+    toast.success('Credit pricing updated successfully');
     fetchCreditPricing();
   };
 
@@ -299,207 +255,227 @@ const SuperAdminDashboard = () => {
     <div className="min-h-screen bg-green-50/30 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Shield className="h-8 w-8 text-green-700" />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
-            <p className="text-gray-600">Credit Management & System Administration</p>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <Shield className="h-8 w-8 text-green-700" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
+              <p className="text-gray-600">Credit Management & System Administration</p>
+            </div>
           </div>
+          <Button onClick={fetchAllData} variant="outline" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh All
+          </Button>
         </div>
 
-        {/* Section 1: OpenAI API Key Manager */}
-        <Card className="border-green-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-800">
-              🔐 OpenAI API Key Manager
-            </CardTitle>
-            <CardDescription>
-              Manage OpenAI API keys for the platform
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Add New Key Form */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-green-50 rounded-lg">
-              <div>
-                <Label htmlFor="keyName">Key Name</Label>
-                <Input
-                  id="keyName"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  placeholder="Production Key"
-                />
-              </div>
-              <div>
-                <Label htmlFor="secretKey">Secret Key</Label>
-                <Input
-                  id="secretKey"
-                  type="password"
-                  value={newSecretKey}
-                  onChange={(e) => setNewSecretKey(e.target.value)}
-                  placeholder="sk-..."
-                />
-              </div>
-              <div className="flex items-end">
-                <Button onClick={addOpenAIKey} className="w-full bg-green-600 hover:bg-green-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Key
-                </Button>
-              </div>
-            </div>
+        {/* System Metrics */}
+        <SystemMetrics metrics={metrics} />
 
-            {/* Keys Table */}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Key Name</TableHead>
-                  <TableHead>Secret Key</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {openaiKeys.map((key) => (
-                  <TableRow key={key.id}>
-                    <TableCell className="font-medium">{key.key_name}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm">
-                          {showSecrets[key.id] ? key.secret_key : maskSecretKey(key.secret_key)}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleSecretVisibility(key.id)}
-                        >
-                          {showSecrets[key.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Management Sections */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* OpenAI API Key Manager */}
+            <Card className="border-green-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                  🔐 OpenAI API Key Manager
+                </CardTitle>
+                <CardDescription>
+                  Manage OpenAI API keys for the platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Add New Key Form */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-green-50 rounded-lg">
+                  <div>
+                    <Label htmlFor="keyName">Key Name</Label>
+                    <Input
+                      id="keyName"
+                      value={newKeyName}
+                      onChange={(e) => setNewKeyName(e.target.value)}
+                      placeholder="Production Key"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="secretKey">Secret Key</Label>
+                    <Input
+                      id="secretKey"
+                      type="password"
+                      value={newSecretKey}
+                      onChange={(e) => setNewSecretKey(e.target.value)}
+                      placeholder="sk-..."
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button onClick={addOpenAIKey} className="w-full bg-green-600 hover:bg-green-700">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Key
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Keys Table */}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Key Name</TableHead>
+                      <TableHead>Secret Key</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {openaiKeys.map((key) => (
+                      <TableRow key={key.id}>
+                        <TableCell className="font-medium">{key.key_name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm">
+                              {showSecrets[key.id] ? key.secret_key : maskSecretKey(key.secret_key)}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleSecretVisibility(key.id)}
+                            >
+                              {showSecrets[key.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={key.active}
+                              onCheckedChange={() => toggleKeyStatus(key.id, key.active)}
+                            />
+                            <span className={key.active ? 'text-green-600' : 'text-gray-400'}>
+                              {key.active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{new Date(key.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteKey(key.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* Credit Inventory Summary */}
+            <Card className="border-green-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                  📦 Credit Inventory Summary
+                </CardTitle>
+                <CardDescription>
+                  Monitor and manage platform credit inventory
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {creditInventory && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h3 className="text-sm font-medium text-blue-800">Total Purchased</h3>
+                        <p className="text-2xl font-bold text-blue-900">
+                          {creditInventory.total_purchased.toLocaleString()}
+                        </p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={key.active}
-                          onCheckedChange={() => toggleKeyStatus(key.id, key.active)}
+                      <div className="bg-orange-50 p-4 rounded-lg">
+                        <h3 className="text-sm font-medium text-orange-800">Sold to Agencies</h3>
+                        <p className="text-2xl font-bold text-orange-900">
+                          {creditInventory.sold_to_agencies.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <h3 className="text-sm font-medium text-green-800">Available Balance</h3>
+                        <p className="text-2xl font-bold text-green-900">
+                          {creditInventory.available_balance.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 items-end">
+                      <div className="flex-1">
+                        <Label htmlFor="totalPurchased">Adjust Total Purchased</Label>
+                        <Input
+                          id="totalPurchased"
+                          type="number"
+                          value={totalPurchased}
+                          onChange={(e) => setTotalPurchased(parseInt(e.target.value) || 0)}
                         />
-                        <span className={key.active ? 'text-green-600' : 'text-gray-400'}>
-                          {key.active ? 'Active' : 'Inactive'}
-                        </span>
                       </div>
-                    </TableCell>
-                    <TableCell>{new Date(key.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteKey(key.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="h-4 w-4" />
+                      <Button onClick={updateCreditInventory} className="bg-green-600 hover:bg-green-700">
+                        Update Inventory
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-        {/* Section 2: Credit Inventory Summary */}
-        <Card className="border-green-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-800">
-              📦 Credit Inventory Summary
-            </CardTitle>
-            <CardDescription>
-              Monitor and manage platform credit inventory
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {creditInventory && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium text-blue-800">Total Purchased</h3>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {creditInventory.total_purchased.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="bg-orange-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium text-orange-800">Sold to Agencies</h3>
-                    <p className="text-2xl font-bold text-orange-900">
-                      {creditInventory.sold_to_agencies.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium text-green-800">Available Balance</h3>
-                    <p className="text-2xl font-bold text-green-900">
-                      {creditInventory.available_balance.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
+            {/* Credit Pricing Control */}
+            <Card className="border-green-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                  🏷️ Credit Pricing Control
+                </CardTitle>
+                <CardDescription>
+                  Set and manage credit pricing for the platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {creditPricing && (
+                  <div className="space-y-6">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h3 className="text-sm font-medium text-gray-700">Current Price Per Credit</h3>
+                      <p className="text-2xl font-bold text-gray-900">
+                        ${creditPricing.price_per_credit.toFixed(4)} USD
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Last updated: {new Date(creditPricing.last_updated).toLocaleString()}
+                      </p>
+                    </div>
 
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <Label htmlFor="totalPurchased">Adjust Total Purchased</Label>
-                    <Input
-                      id="totalPurchased"
-                      type="number"
-                      value={totalPurchased}
-                      onChange={(e) => setTotalPurchased(parseInt(e.target.value) || 0)}
-                    />
+                    <div className="flex gap-4 items-end">
+                      <div className="flex-1">
+                        <Label htmlFor="pricePerCredit">New Price Per Credit (USD)</Label>
+                        <Input
+                          id="pricePerCredit"
+                          type="number"
+                          step="0.0001"
+                          value={newPricePerCredit}
+                          onChange={(e) => setNewPricePerCredit(parseFloat(e.target.value) || 0)}
+                        />
+                      </div>
+                      <Button onClick={updateCreditPricing} className="bg-green-600 hover:bg-green-700">
+                        Update Pricing
+                      </Button>
+                    </div>
                   </div>
-                  <Button onClick={updateCreditInventory} className="bg-green-600 hover:bg-green-700">
-                    Update Inventory
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Section 3: Credit Pricing Control */}
-        <Card className="border-green-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-800">
-              🏷️ Credit Pricing Control
-            </CardTitle>
-            <CardDescription>
-              Set and manage credit pricing for the platform
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {creditPricing && (
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-700">Current Price Per Credit</h3>
-                  <p className="text-2xl font-bold text-gray-900">
-                    ${creditPricing.price_per_credit.toFixed(4)} USD
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Last updated: {new Date(creditPricing.last_updated).toLocaleString()}
-                  </p>
-                </div>
-
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <Label htmlFor="pricePerCredit">New Price Per Credit (USD)</Label>
-                    <Input
-                      id="pricePerCredit"
-                      type="number"
-                      step="0.0001"
-                      value={newPricePerCredit}
-                      onChange={(e) => setNewPricePerCredit(parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-                  <Button onClick={updateCreditPricing} className="bg-green-600 hover:bg-green-700">
-                    Update Pricing
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          {/* Right Column - Real-time Activity */}
+          <div>
+            <RealtimeActivity />
+          </div>
+        </div>
       </div>
     </div>
   );
