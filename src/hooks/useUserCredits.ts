@@ -95,9 +95,10 @@ export const useUserCredits = () => {
   useEffect(() => {
     fetchUserCredits();
 
-    // Set up real-time subscription for credit usage updates
+    // Set up comprehensive real-time subscriptions
     if (user) {
-      const channel = supabase
+      // Listen for database changes on credit-related tables
+      const creditUpdatesChannel = supabase
         .channel('credit-updates')
         .on(
           'postgres_changes',
@@ -109,7 +110,19 @@ export const useUserCredits = () => {
           },
           (payload) => {
             console.log('Credit usage update:', payload);
-            // Refetch data when new usage is logged
+            fetchUserCredits();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'credit_purchases',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Credit purchase update:', payload);
             fetchUserCredits();
           }
         )
@@ -123,14 +136,26 @@ export const useUserCredits = () => {
           },
           (payload) => {
             console.log('User profile update:', payload);
-            // Refetch data when profile is updated
             fetchUserCredits();
+          }
+        )
+        .on(
+          'broadcast',
+          { event: 'credit_deducted' },
+          (payload) => {
+            console.log('Real-time credit deduction broadcast:', payload);
+            if (payload.payload.userId === user.id) {
+              // Update credits immediately without refetching
+              setCredits(payload.payload.remainingCredits);
+              // Refetch to get the most accurate data
+              fetchUserCredits();
+            }
           }
         )
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(creditUpdatesChannel);
       };
     }
   }, [user]);

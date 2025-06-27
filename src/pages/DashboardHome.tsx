@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -10,14 +10,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Coins, HelpCircle, FileText, MessageCircle } from 'lucide-react';
+import { Coins, HelpCircle, FileText, MessageCircle, Zap } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import CreditExpirationWarning from '@/components/dashboard/CreditExpirationWarning';
+import { cn } from '@/lib/utils';
 
 const DashboardHome = () => {
   const { user } = useUser();
   const { credits, loading, refetch, usedThisMonth, getTotalCredits, getUsagePercentage } = useUserCredits();
+  const [creditUpdateAnimation, setCreditUpdateAnimation] = useState(false);
+  const [previousCredits, setPreviousCredits] = useState(credits);
+  
   const isSuperAdmin = user?.role === 'super_admin';
   const isMainAdmin = user?.role === 'admin';
 
@@ -25,6 +29,21 @@ const DashboardHome = () => {
   useEffect(() => {
     refetch();
   }, []);
+
+  // Add animation effect when credits change
+  useEffect(() => {
+    if (credits !== previousCredits && !loading) {
+      setCreditUpdateAnimation(true);
+      setPreviousCredits(credits);
+      
+      // Remove animation after 2 seconds
+      const timer = setTimeout(() => {
+        setCreditUpdateAnimation(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [credits, previousCredits, loading]);
 
   // Add debugging
   useEffect(() => {
@@ -52,12 +71,18 @@ const DashboardHome = () => {
         
         {/* Credit Balance Module - Only show for main admins */}
         {isMainAdmin && (
-          <Card className="w-64 bg-gradient-to-br from-caregrowth-lightblue to-white border-caregrowth-blue">
+          <Card className={cn(
+            "w-64 bg-gradient-to-br from-caregrowth-lightblue to-white border-caregrowth-blue transition-all duration-300",
+            creditUpdateAnimation && "ring-2 ring-blue-400 ring-opacity-50 scale-[1.02]"
+          )}>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg font-semibold flex items-center">
                   <Coins className="mr-2 h-5 w-5 text-caregrowth-blue" />
                   Credit Balance
+                  {creditUpdateAnimation && (
+                    <Zap size={16} className="ml-2 text-yellow-500 animate-pulse" />
+                  )}
                 </CardTitle>
                 <TooltipProvider>
                   <Tooltip>
@@ -74,7 +99,10 @@ const DashboardHome = () => {
             <CardContent>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-gray-600">Available Credits</span>
-                <span className="font-bold text-xl">
+                <span className={cn(
+                  "font-bold text-xl transition-all duration-300",
+                  creditUpdateAnimation && "scale-110 text-blue-600"
+                )}>
                   {loading ? '...' : credits.toLocaleString()}
                 </span>
               </div>

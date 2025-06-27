@@ -94,6 +94,20 @@ export const deductCredits = async (
       creditsUsed: creditsToUse,
       remainingCredits: response.remaining_credits
     });
+
+    // Trigger real-time update by broadcasting a custom event
+    const channel = supabase.channel('credit-updates');
+    channel.send({
+      type: 'broadcast',
+      event: 'credit_deducted',
+      payload: {
+        userId,
+        creditsUsed: creditsToUse,
+        remainingCredits: response.remaining_credits,
+        tool,
+        timestamp: new Date().toISOString()
+      }
+    });
     
     return {
       success: true,

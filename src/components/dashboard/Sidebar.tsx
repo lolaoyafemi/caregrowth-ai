@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
@@ -14,7 +14,8 @@ import {
   HelpCircle,
   Shield,
   Coins,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '../../contexts/UserContext';
@@ -36,11 +37,28 @@ interface SidebarProps {
 const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const navigate = useNavigate();
   const { credits, loading, refetch, usedThisMonth, getUsagePercentage } = useUserCredits();
+  const [creditUpdateAnimation, setCreditUpdateAnimation] = useState(false);
+  const [previousCredits, setPreviousCredits] = useState(credits);
   
   // Add effect to refetch credits when component mounts
   useEffect(() => {
     refetch();
   }, []);
+
+  // Add animation effect when credits change
+  useEffect(() => {
+    if (credits !== previousCredits && !loading) {
+      setCreditUpdateAnimation(true);
+      setPreviousCredits(credits);
+      
+      // Remove animation after 2 seconds
+      const timer = setTimeout(() => {
+        setCreditUpdateAnimation(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [credits, previousCredits, loading]);
 
   // Add debugging
   useEffect(() => {
@@ -104,8 +122,9 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
       {/* Credit Balance - Show for both super admins and main admins */}
       {(showSuperAdminItems || showAdminItems) && (
         <div className={cn(
-          "px-3 py-3 border-b",
-          collapsed ? "items-center justify-center" : ""
+          "px-3 py-3 border-b transition-all duration-300",
+          collapsed ? "items-center justify-center" : "",
+          creditUpdateAnimation && "ring-2 ring-blue-400 ring-opacity-50"
         )}>
           {!collapsed ? (
             <div className="space-y-2">
@@ -116,6 +135,9 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 )}>
                   <Coins size={14} className="mr-1" />
                   CREDIT BALANCE
+                  {creditUpdateAnimation && (
+                    <Zap size={12} className="ml-1 text-yellow-500 animate-pulse" />
+                  )}
                 </span>
                 <TooltipProvider>
                   <Tooltip>
@@ -138,7 +160,10 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">Available</span>
-                <span className="font-medium text-sm">
+                <span className={cn(
+                  "font-medium text-sm transition-all duration-300",
+                  creditUpdateAnimation && "scale-110 text-blue-600"
+                )}>
                   {loading ? '...' : creditBalance.available.toLocaleString()}
                 </span>
               </div>
@@ -146,7 +171,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                   <div 
                     className={cn(
-                      "h-full rounded-full transition-all duration-300",
+                      "h-full rounded-full transition-all duration-500",
                       isSuperAdmin ? "bg-green-600" : "bg-caregrowth-blue"
                     )}
                     style={{ width: `${creditBalance.percentUsed}%` }}
@@ -173,12 +198,23 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex flex-col items-center justify-center">
-                    <Coins size={20} className={cn(
-                      "mb-1",
-                      isSuperAdmin ? "text-green-600" : "text-caregrowth-blue"
-                    )} />
-                    <span className="text-xs font-medium">
+                  <div className={cn(
+                    "flex flex-col items-center justify-center transition-all duration-300",
+                    creditUpdateAnimation && "scale-110"
+                  )}>
+                    <div className="relative">
+                      <Coins size={20} className={cn(
+                        "mb-1",
+                        isSuperAdmin ? "text-green-600" : "text-caregrowth-blue"
+                      )} />
+                      {creditUpdateAnimation && (
+                        <Zap size={12} className="absolute -top-1 -right-1 text-yellow-500 animate-pulse" />
+                      )}
+                    </div>
+                    <span className={cn(
+                      "text-xs font-medium transition-all duration-300",
+                      creditUpdateAnimation && "text-blue-600"
+                    )}>
                       {loading ? '...' : creditBalance.available.toLocaleString()}
                     </span>
                   </div>
