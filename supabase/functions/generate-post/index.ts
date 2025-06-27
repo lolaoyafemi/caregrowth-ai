@@ -96,6 +96,21 @@ serve(async (req) => {
       console.log('No prompts found for category:', postType);
     }
 
+    // Build comprehensive business context
+    const businessContext = profile ? `
+Business Name: ${profile.business_name || 'Home Care Business'}
+Services: ${profile.services || profile.core_service || 'Home care services'}
+Location: ${profile.location || 'Local area'}
+Target Client: ${profile.ideal_client || 'Families needing care'}
+Main Offer: ${profile.main_offer || 'Professional home care'}
+Differentiator: ${profile.differentiator || 'Compassionate, professional care'}
+Big Promise: ${profile.big_promise || 'Exceptional care for your loved ones'}
+Client Pain Points: ${Array.isArray(profile.pain_points) ? profile.pain_points.join(', ') : profile.pain_points || 'Finding reliable care'}
+Audience Problems: ${profile.audience_problem || 'Caregiving challenges'}
+Objections: ${Array.isArray(profile.objections) ? profile.objections.join(', ') : profile.objections || 'Cost and trust concerns'}
+Testimonial: ${profile.testimonial || 'Trusted by families in our community'}
+` : 'Home Care Business providing professional care services';
+
     // Personalize templates with business context
     const personalizeText = (text) => {
       if (!profile || !text) return text;
@@ -110,36 +125,25 @@ serve(async (req) => {
         .replace(/\{differentiator\}/gi, profile.differentiator || 'professional care')
         .replace(/\{big_promise\}/gi, profile.big_promise || 'exceptional care')
         .replace(/\{pain_points\}/gi, Array.isArray(profile.pain_points) ? profile.pain_points.join(', ') : 'common challenges')
-        .replace(/\{audience_problems\}/gi, profile.audience_problems || 'caregiving challenges')
+        .replace(/\{audience_problem\}/gi, profile.audience_problem || 'caregiving challenges')
         .replace(/\{objections\}/gi, Array.isArray(profile.objections) ? profile.objections.join(', ') : 'common concerns')
         .replace(/\{audience\}/gi, audience || 'families')
         .replace(/\{tone\}/gi, tone || 'professional')
-        .replace(/\{platform\}/gi, platform || 'social media');
+        .replace(/\{platform\}/gi, platform || 'social media')
+        .replace(/\{testimonial\}/gi, profile.testimonial || 'trusted by our community');
     };
 
-    // If template found, personalize it directly
+    // If template found, personalize it but also enhance with AI
     if (useTemplate && hook && body && cta) {
       // Personalize the template
       hook = personalizeText(hook);
       body = personalizeText(body);
       cta = personalizeText(cta);
 
-      console.log('Personalized templates:', { hook, body, cta });
-    } else {
-      // Fallback to full AI generation if no template found
-      console.log('Using OpenAI fallback generation');
+      // Enhance with AI for better personalization and intelligence
+      console.log('Enhancing template with AI intelligence...');
       
-      const businessContext = profile ? `
-Business Name: ${profile.business_name || 'Home Care Business'}
-Services: ${profile.services || profile.core_service || 'Home care services'}
-Location: ${profile.location || 'Local area'}
-Target Client: ${profile.ideal_client || 'Families needing care'}
-Main Offer: ${profile.main_offer || 'Professional home care'}
-Differentiator: ${profile.differentiator || 'Compassionate, professional care'}
-` : 'Home Care Business providing professional care services';
-
-      const systemMessage = `You are an expert social media copywriter specializing in home care services. 
-Create engaging, authentic social media content that converts prospects into customers.
+      const enhancementPrompt = `You are an expert social media copywriter. I have a templated social media post that needs to be enhanced and personalized for a specific business.
 
 Business Context:
 ${businessContext}
@@ -149,26 +153,109 @@ Target Audience: ${audience || "families caring for loved ones"}
 Tone: ${tone}
 Platform: ${platform}
 
-Create a social media post with these components:
-1. HOOK: An attention-grabbing opening line that stops scrolling (1-2 sentences)
-2. BODY: Main content that provides value, builds trust, or educates (2-3 sentences)
-3. CTA: A clear call-to-action that drives engagement or leads (1 sentence)
+Current Template:
+HOOK: ${hook}
+BODY: ${body}
+CTA: ${cta}
 
-Guidelines:
-- Write in ${tone} tone
-- Target ${audience || "families caring for loved ones"}
-- Focus on ${postType} content
-- Make it platform-appropriate for ${platform}
-- Sound human and authentic, not AI-generated
-- Include relevant emotions and pain points
-- End with a clear, actionable CTA
+Please enhance this content by:
+1. Making it more personalized to the business details
+2. Adding emotional intelligence and human touch
+3. Making it more engaging and compelling
+4. Ensuring it sounds natural and authentic
+5. Keeping the same structure but improving the language and impact
+
+Return the enhanced version in the same format:
+HOOK: [enhanced hook]
+BODY: [enhanced body]
+CTA: [enhanced cta]`;
+
+      try {
+        const enhancementResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert social media copywriter specializing in home care services. Focus on creating authentic, engaging content that builds trust and drives action.'
+              },
+              {
+                role: 'user',
+                content: enhancementPrompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 600
+          })
+        });
+
+        if (enhancementResponse.ok) {
+          const enhancementData = await enhancementResponse.json();
+          const enhancedContent = enhancementData.choices[0].message.content;
+          
+          // Parse the enhanced content
+          const lines = enhancedContent.split('\n').filter(line => line.trim());
+          
+          for (const line of lines) {
+            const lowerLine = line.toLowerCase();
+            if (lowerLine.startsWith('hook:')) {
+              hook = line.substring(5).trim();
+            } else if (lowerLine.startsWith('body:')) {
+              body = line.substring(5).trim();
+            } else if (lowerLine.startsWith('cta:')) {
+              cta = line.substring(4).trim();
+            }
+          }
+          
+          console.log('Enhanced content:', { hook, body, cta });
+        } else {
+          console.log('Enhancement failed, using personalized template');
+        }
+      } catch (enhanceError) {
+        console.error('Error enhancing template:', enhanceError);
+        console.log('Using personalized template without AI enhancement');
+      }
+    } else {
+      // Full AI generation with enhanced business intelligence
+      console.log('Using full OpenAI generation with business intelligence');
+      
+      const systemMessage = `You are an expert social media copywriter specializing in home care services. 
+Create engaging, authentic social media content that converts prospects into customers using advanced business intelligence.
+
+Business Context:
+${businessContext}
+
+Content Category: ${postType}
+Target Audience: ${audience || "families caring for loved ones"}
+Tone: ${tone}
+Platform: ${platform}
+
+Create a highly personalized social media post with these components:
+1. HOOK: An attention-grabbing opening that speaks directly to the target audience's pain points and emotions (1-2 sentences)
+2. BODY: Value-driven content that showcases the business's unique strengths and addresses specific client needs (2-3 sentences)
+3. CTA: A compelling call-to-action that drives engagement and leads (1 sentence)
+
+Advanced Guidelines:
+- Use the business's specific differentiators and unique value proposition
+- Address the exact pain points and objections mentioned in the business profile
+- Incorporate the location and services naturally
+- Make it sound authentically human, not AI-generated
+- Use emotional intelligence to connect with the target audience
+- Include social proof elements when relevant
+- Optimize for ${platform} platform best practices
+- Write in ${tone} tone while maintaining authenticity
 
 Format your response as:
 HOOK: [hook content]
 BODY: [body content]  
 CTA: [cta content]`;
 
-      console.log('Calling OpenAI API...');
+      console.log('Calling OpenAI API with enhanced intelligence...');
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -184,11 +271,11 @@ CTA: [cta content]`;
             },
             {
               role: 'user',
-              content: `Create a ${postType} social media post for ${platform} targeting ${audience} in a ${tone} tone.`
+              content: `Create an intelligent, personalized ${postType} social media post for ${platform} targeting ${audience} in a ${tone} tone using all the business context provided.`
             }
           ],
           temperature: 0.7,
-          max_tokens: 500
+          max_tokens: 600
         })
       });
 
@@ -263,9 +350,10 @@ CTA: [cta content]`;
       hook,
       body,
       cta,
-      source: useTemplate ? 'template' : 'ai_generated',
+      source: useTemplate ? 'template_enhanced' : 'ai_generated',
       template_id: selectedPrompt?.id || null,
-      available_templates: prompts?.length || 0
+      available_templates: prompts?.length || 0,
+      business_context_used: !!profile
     }), {
       headers: {
         ...corsHeaders,

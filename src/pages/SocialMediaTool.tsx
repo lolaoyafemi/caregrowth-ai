@@ -13,6 +13,7 @@ import { deductCredits, handleCreditError } from '@/utils/creditUtils';
 import { saveSocialPost } from '@/utils/savedPostsUtils';
 import { GeneratedContent, PostHistoryItem, GeneratedSection } from '@/types/social-media';
 import { regenerateSection } from '@/utils/regenerateSection';
+import { useUserCredits } from '@/hooks/useUserCredits';
 
 const SocialMediaTool = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -22,6 +23,7 @@ const SocialMediaTool = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [businessProfile, setBusinessProfile] = useState<any>(null);
   
   // Form states
   const [audience, setAudience] = useState('');
@@ -32,7 +34,38 @@ const SocialMediaTool = () => {
   // Regeneration states
   const [regeneratingSection, setRegeneratingSection] = useState<{platform: string, section: string} | null>(null);
 
-  // Fetch post history
+  // Credit management
+  const { credits, loading: creditsLoading } = useUserCredits();
+
+  // Load business profile on component mount
+  useEffect(() => {
+    loadBusinessProfile();
+  }, []);
+
+  const loadBusinessProfile = async () => {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const userId = data?.user?.id;
+
+      if (!userId) return;
+
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading business profile:', error);
+        return;
+      }
+
+      setBusinessProfile(profile);
+    } catch (error) {
+      console.error('Error loading business profile:', error);
+    }
+  };
+
   const fetchPostHistory = async (page: number = 1) => {
     setIsLoadingHistory(true);
     try {
@@ -75,6 +108,18 @@ const SocialMediaTool = () => {
   }, [currentPage]);
 
   const handleGenerate = async () => {
+    // Check if user has credits first
+    if (credits <= 0) {
+      toast.error("You don't have enough credits to generate content. Please purchase more credits to continue.", {
+        duration: 5000,
+        action: {
+          label: "Buy Credits",
+          onClick: () => window.open('/payment', '_blank')
+        }
+      });
+      return;
+    }
+
     if (!audience) {
       toast.error("Please fill in the target audience field.");
       return;
@@ -158,6 +203,18 @@ const SocialMediaTool = () => {
   };
 
   const handleRegenerateSection = async (platform: string, section: string) => {
+    // Check if user has credits first
+    if (credits <= 0) {
+      toast.error("You don't have enough credits to regenerate content. Please purchase more credits to continue.", {
+        duration: 5000,
+        action: {
+          label: "Buy Credits",
+          onClick: () => window.open('/payment', '_blank')
+        }
+      });
+      return;
+    }
+
     const { data } = await supabase.auth.getUser();
     const userId = data?.user?.id;
 
@@ -288,6 +345,23 @@ const SocialMediaTool = () => {
             <h1 className="text-3xl font-bold text-gray-900">Social Media Content Generator</h1>
             <p className="text-gray-600 mt-2">Generate engaging social media content for multiple platforms with AI assistance.</p>
             <p className="text-sm text-gray-500 mt-1">Cost: 1 credit per generation, 1 credit per section regeneration</p>
+            {!creditsLoading && (
+              <div className="mt-2">
+                <span className={`text-sm font-medium ${credits > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  Available Credits: {credits}
+                </span>
+                {credits <= 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-2"
+                    onClick={() => window.open('/payment', '_blank')}
+                  >
+                    Buy Credits
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
           <Button
             variant="outline"
@@ -295,7 +369,7 @@ const SocialMediaTool = () => {
             className="flex items-center gap-2"
           >
             <Building2 size={16} />
-            More about my business
+            {businessProfile ? 'Update business details' : 'Add business details'}
           </Button>
         </div>
       </div>
@@ -336,7 +410,12 @@ const SocialMediaTool = () => {
       <SavedPostsList />
 
       {showBusinessForm && (
-        <BusinessDetailsForm onClose={() => setShowBusinessForm(false)} />
+        <BusinessDetailsForm 
+          onClose={() => {
+            setShowBusinessForm(false);
+            loadBusinessProfile(); // Reload profile after form closes
+          }} 
+        />
       )}
     </div>
   );
