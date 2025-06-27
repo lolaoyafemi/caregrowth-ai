@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlusCircle, Shield, RefreshCw, BarChart3, CreditCard, Activity } from 'lucide-react';
 import { useAdminData } from '@/hooks/useAdminData';
+import { useUsageAnalytics } from '@/hooks/useUsageAnalytics';
 import SystemMetrics from '@/components/admin/SystemMetrics';
 import RealtimeActivity from '@/components/admin/RealtimeActivity';
 import UsageAnalytics from '@/components/admin/UsageAnalytics';
@@ -19,6 +20,7 @@ import { toast } from 'sonner';
 const UsageMonitoringPage = () => {
   const { user, hasPermission } = useUser();
   const { agencies, metrics, loading, refetch } = useAdminData();
+  const { refetch: refetchAnalytics } = useUsageAnalytics();
   const [newAgencyName, setNewAgencyName] = useState('');
   const [newAgencyEmail, setNewAgencyEmail] = useState('');
   const [isAddingAgency, setIsAddingAgency] = useState(false);
@@ -50,6 +52,12 @@ const UsageMonitoringPage = () => {
     refetch();
   };
 
+  const handleRefresh = () => {
+    refetch();
+    refetchAnalytics();
+    toast.success('Data refreshed');
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-green-50/30">
@@ -74,7 +82,7 @@ const UsageMonitoringPage = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={refetch} variant="outline" className="gap-2">
+            <Button onClick={handleRefresh} variant="outline" className="gap-2">
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
