@@ -1,38 +1,9 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-interface AdminUser {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  created_at: string;
-  last_sign_in_at: string | null;
-  credits: number;
-  status: 'active' | 'suspended';
-}
-
-interface AdminAgency {
-  id: string;
-  name: string;
-  admin_email: string;
-  users_count: number;
-  credits_used: number;
-  last_active: string;
-  status: 'active' | 'suspended' | 'pending';
-  created_at: string;
-}
-
-interface SystemMetrics {
-  totalUsers: number;
-  totalAgencies: number;
-  totalCreditsUsed: number;
-  totalRevenue: number;
-  monthlyRevenue: number;
-  activeUsers: number;
-}
+import type { AdminUser, AdminAgency, SystemMetrics } from '@/types/admin';
+import { fetchUsers, suspendUser, activateUser, deleteUser, addCreditsToUser } from '@/services/adminUserService';
+import { fetchAgencies } from '@/services/adminAgencyService';
+import { fetchMetrics } from '@/services/adminMetricsService';
 
 export const useAdminData = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -47,190 +18,56 @@ export const useAdminData = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  const fetchUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      const formattedUsers = data?.map(user => ({
-        id: user.user_id,
-        email: user.email || '',
-        name: user.business_name || 'No name',
-        role: user.role || 'user',
-        created_at: user.created_at || new Date().toISOString(),
-        last_sign_in_at: user.last_sign_in_at,
-        credits: user.credits || 0,
-        status: (user.status || 'active') as 'active' | 'suspended'
-      })) || [];
-      
-      setUsers(formattedUsers);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
-    }
+  const loadUsers = async () => {
+    const userData = await fetchUsers();
+    setUsers(userData);
   };
 
-  const fetchAgencies = async () => {
-    try {
-      // Mock data for now - in a real app, you'd have an agencies table
-      const mockAgencies: AdminAgency[] = [
-        {
-          id: '1',
-          name: 'CareFirst Agency',
-          admin_email: 'admin@carefirst.com',
-          users_count: 5,
-          credits_used: 2500,
-          last_active: '2024-01-15',
-          status: 'active',
-          created_at: '2024-01-01'
-        },
-        {
-          id: '2',
-          name: 'Golden Years Care',
-          admin_email: 'admin@goldenyears.com',
-          users_count: 3,
-          credits_used: 1800,
-          last_active: '2024-01-14',
-          status: 'active',
-          created_at: '2024-01-02'
-        },
-        {
-          id: '3',
-          name: 'Comfort Home Services',
-          admin_email: 'admin@comfort.com',
-          users_count: 7,
-          credits_used: 3200,
-          last_active: '2024-01-13',
-          status: 'pending',
-          created_at: '2024-01-03'
-        }
-      ];
-      
-      setAgencies(mockAgencies);
-    } catch (error) {
-      console.error('Error fetching agencies:', error);
-      toast.error('Failed to load agencies');
-    }
+  const loadAgencies = async () => {
+    const agencyData = await fetchAgencies();
+    setAgencies(agencyData);
+    return agencyData;
   };
 
-  const fetchMetrics = async () => {
-    try {
-      const { data: usersData } = await supabase
-        .from('user_profiles')
-        .select('user_id, created_at, status');
-
-      const { data: creditsData } = await supabase
-        .from('credit_usage_log')
-        .select('credits_used');
-
-      const { data: salesData } = await supabase
-        .from('credit_sales_log')
-        .select('amount_paid, timestamp');
-
-      const totalUsers = usersData?.length || 0;
-      const totalCreditsUsed = creditsData?.reduce((sum, log) => sum + log.credits_used, 0) || 0;
-      const totalRevenue = salesData?.reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
-      
-      // Calculate monthly revenue
-      const currentMonth = new Date().getMonth();
-      const monthlyRevenue = salesData?.filter(sale => 
-        new Date(sale.timestamp).getMonth() === currentMonth
-      ).reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
-
-      // Calculate active users (users with status 'active')
-      const activeUsers = usersData?.filter(user => user.status === 'active').length || 0;
-
-      setMetrics({
-        totalUsers,
-        totalAgencies: agencies.length,
-        totalCreditsUsed,
-        totalRevenue,
-        monthlyRevenue,
-        activeUsers
-      });
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-      toast.error('Failed to load metrics');
-    }
+  const loadMetrics = async (agencyData: AdminAgency[]) => {
+    const metricsData = await fetchMetrics(agencyData);
+    setMetrics(metricsData);
   };
 
-  const suspendUser = async (userId: string) => {
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ status: 'suspended' })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      
-      toast.success('User suspended successfully');
-      fetchUsers();
-    } catch (error) {
-      console.error('Error suspending user:', error);
-      toast.error('Failed to suspend user');
-    }
+  const handleSuspendUser = async (userId: string) => {
+    await suspendUser(userId);
+    await loadUsers();
   };
 
-  const activateUser = async (userId: string) => {
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ status: 'active' })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      
-      toast.success('User activated successfully');
-      fetchUsers();
-    } catch (error) {
-      console.error('Error activating user:', error);
-      toast.error('Failed to activate user');
-    }
+  const handleActivateUser = async (userId: string) => {
+    await activateUser(userId);
+    await loadUsers();
   };
 
-  const deleteUser = async (userId: string) => {
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .delete()
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      
-      toast.success('User deleted successfully');
-      fetchUsers();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
-    }
+  const handleDeleteUser = async (userId: string) => {
+    await deleteUser(userId);
+    await loadUsers();
   };
 
-  const addCreditsToUser = async (userId: string, credits: number) => {
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ credits: credits })
-        .eq('user_id', userId);
+  const handleAddCreditsToUser = async (userId: string, credits: number) => {
+    await addCreditsToUser(userId, credits);
+    await loadUsers();
+  };
 
-      if (error) throw error;
-      
-      toast.success('Credits added successfully');
-      fetchUsers();
-    } catch (error) {
-      console.error('Error adding credits:', error);
-      toast.error('Failed to add credits');
-    }
+  const refetch = async () => {
+    setLoading(true);
+    await loadUsers();
+    const agencyData = await loadAgencies();
+    await loadMetrics(agencyData);
+    setLoading(false);
   };
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchUsers(), fetchAgencies()]);
-      await fetchMetrics();
+      await loadUsers();
+      const agencyData = await loadAgencies();
+      await loadMetrics(agencyData);
       setLoading(false);
     };
 
@@ -242,14 +79,10 @@ export const useAdminData = () => {
     agencies,
     metrics,
     loading,
-    suspendUser,
-    activateUser,
-    deleteUser,
-    addCreditsToUser,
-    refetch: () => {
-      fetchUsers();
-      fetchAgencies();
-      fetchMetrics();
-    }
+    suspendUser: handleSuspendUser,
+    activateUser: handleActivateUser,
+    deleteUser: handleDeleteUser,
+    addCreditsToUser: handleAddCreditsToUser,
+    refetch
   };
 };
