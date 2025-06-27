@@ -97,6 +97,8 @@ export const useUserCredits = () => {
 
     // Set up comprehensive real-time subscriptions
     if (user) {
+      console.log('Setting up real-time subscriptions for user:', user.id);
+      
       // Listen for database changes on credit-related tables
       const creditUpdatesChannel = supabase
         .channel('credit-updates')
@@ -109,7 +111,7 @@ export const useUserCredits = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log('Credit usage update:', payload);
+            console.log('Credit usage update received:', payload);
             fetchUserCredits();
           }
         )
@@ -122,7 +124,7 @@ export const useUserCredits = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log('Credit purchase update:', payload);
+            console.log('Credit purchase update received:', payload);
             fetchUserCredits();
           }
         )
@@ -135,7 +137,7 @@ export const useUserCredits = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log('User profile update:', payload);
+            console.log('User profile update received:', payload);
             fetchUserCredits();
           }
         )
@@ -143,18 +145,22 @@ export const useUserCredits = () => {
           'broadcast',
           { event: 'credit_deducted' },
           (payload) => {
-            console.log('Real-time credit deduction broadcast:', payload);
+            console.log('Real-time credit deduction broadcast received:', payload);
             if (payload.payload.userId === user.id) {
-              // Update credits immediately without refetching
+              console.log('Credit deduction for current user, updating credits');
+              // Update credits immediately
               setCredits(payload.payload.remainingCredits);
-              // Refetch to get the most accurate data
+              // Also refetch to get the most accurate data
               fetchUserCredits();
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Subscription status:', status);
+        });
 
       return () => {
+        console.log('Cleaning up real-time subscriptions');
         supabase.removeChannel(creditUpdatesChannel);
       };
     }
@@ -162,6 +168,7 @@ export const useUserCredits = () => {
 
   const refetch = () => {
     if (user) {
+      console.log('Manual refetch triggered');
       setLoading(true);
       fetchUserCredits();
     }

@@ -40,14 +40,20 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const [creditUpdateAnimation, setCreditUpdateAnimation] = useState(false);
   const [previousCredits, setPreviousCredits] = useState(credits);
   
-  // Add effect to refetch credits when component mounts
+  // Force refetch credits when component mounts and when credits change
   useEffect(() => {
     refetch();
-  }, []);
+    const interval = setInterval(() => {
+      refetch();
+    }, 2000); // Refetch every 2 seconds as backup
+    
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   // Add animation effect when credits change
   useEffect(() => {
-    if (credits !== previousCredits && !loading) {
+    if (credits !== previousCredits && previousCredits !== 0 && !loading) {
+      console.log('Credits changed in sidebar:', { previousCredits, credits });
       setCreditUpdateAnimation(true);
       setPreviousCredits(credits);
       
@@ -57,14 +63,18 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
       }, 2000);
       
       return () => clearTimeout(timer);
+    } else if (previousCredits === 0 && credits > 0) {
+      // Initial load, just set previous credits without animation
+      setPreviousCredits(credits);
     }
   }, [credits, previousCredits, loading]);
 
   // Add debugging
   useEffect(() => {
-    console.log('Sidebar - Credits:', credits);
+    console.log('Sidebar - Credits updated:', credits);
     console.log('Sidebar - Loading:', loading);
-  }, [credits, loading]);
+    console.log('Sidebar - Animation:', creditUpdateAnimation);
+  }, [credits, loading, creditUpdateAnimation]);
   
   // Determine which menu items to show based on user role
   const showSuperAdminItems = userRole === 'super_admin';
@@ -124,7 +134,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
         <div className={cn(
           "px-3 py-3 border-b transition-all duration-300",
           collapsed ? "items-center justify-center" : "",
-          creditUpdateAnimation && "ring-2 ring-blue-400 ring-opacity-50"
+          creditUpdateAnimation && "ring-2 ring-blue-400 ring-opacity-50 scale-[1.02]"
         )}>
           {!collapsed ? (
             <div className="space-y-2">
