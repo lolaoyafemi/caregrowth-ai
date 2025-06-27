@@ -41,7 +41,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { documentId, content } = await req.json();
+    const { documentId, content, skipChunking } = await req.json();
 
     if (!documentId || !content) {
       return new Response(
@@ -52,6 +52,7 @@ serve(async (req) => {
 
     console.log('Processing document:', documentId);
     console.log('Content length:', content.length);
+    console.log('Skip chunking:', skipChunking);
 
     // Extract title from document content
     const extractedTitle = extractDocumentTitle(content);
@@ -71,50 +72,54 @@ serve(async (req) => {
       }
     }
 
-    // Process the document content into chunks for search
-    const chunks = [];
-    const chunkSize = 1000;
-    const words = content.split(/\s+/);
-    
-    for (let i = 0; i < words.length; i += chunkSize) {
-      const chunk = words.slice(i, i + chunkSize).join(' ');
-      chunks.push({
-        document_id: documentId,
-        content: chunk,
-        chunk_index: Math.floor(i / chunkSize)
-      });
-    }
-
-    console.log('Created chunks:', chunks.length);
-
-    // Save chunks to database
-    if (chunks.length > 0) {
-      const { error: chunksError } = await supabaseClient
-        .from('document_chunks')
-        .insert(chunks);
-
-      if (chunksError) {
-        console.error('Error saving document chunks:', chunksError);
-        throw chunksError;
+    // Only create chunks if skipChunking is not true
+    if (!skipChunking) {
+      // Process the document content into chunks for search
+      const chunks = [];
+      const chunkSize = 1000;
+      const words = content.split(/\s+/);
+      
+      for (let i = 0; i < words.length; i += chunkSize) {
+        const chunk = words.slice(i, i + chunkSize).join(' ');
+        chunks.push({
+          document_id: documentId,
+          content: chunk,
+          chunk_index: Math.floor(i / chunkSize)
+        });
       }
-    }
 
-    // Mark document as processed
-    const { error: updateError } = await supabaseClient
-      .from('google_documents')
-      .update({ fetched: true })
-      .eq('id', documentId);
+      console.log('Created chunks:', chunks.length);
 
-    if (updateError) {
-      console.error('Error marking document as processed:', updateError);
-      throw updateError;
+      // Save chunks to database
+      if (chunks.length > 0) {
+        const { error: chunksError } = await supabaseClient
+          .from('document_chunks')
+          .insert(chunks);
+
+        if (chunksError) {
+          console.error('Error saving document chunks:', chunksError);
+          throw chunksError;
+        }
+      }
+
+      // Mark document as processed
+      const { error: updateError } = await supabaseClient
+        .from('google_documents')
+        .update({ fetched: true })
+        .eq('id', documentId);
+
+      if (updateError) {
+        console.error('Error marking document as processed:', updateError);
+        throw updateError;
+      }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        chunksCreated: chunks.length,
-        titleExtracted: extractedTitle 
+        chunksCreated: skipChunking ? 0 : undefined,
+        titleExtracted: extractedTitle,
+        skippedChunking: skipChunking 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

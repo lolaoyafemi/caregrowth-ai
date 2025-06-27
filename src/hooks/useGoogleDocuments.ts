@@ -128,13 +128,14 @@ export const useGoogleDocuments = () => {
       // Use provided title or generate a fallback name
       const finalTitle = docTitle || generateDocumentName(docLink);
 
+      // Save document to database first (without fetched=true yet)
       const { data, error } = await supabase
         .from('google_documents')
         .insert({
           user_id: user.id,
           doc_link: docLink,
           doc_title: finalTitle,
-          fetched: true
+          fetched: false
         })
         .select()
         .single();
@@ -169,14 +170,29 @@ export const useGoogleDocuments = () => {
           console.error('Error saving document chunks:', chunksError);
           throw chunksError;
         }
+        
+        console.log('Document chunks saved successfully');
       }
 
-      // Call the process-document function to extract title and handle any additional processing
+      // Update document as fetched after chunks are created
+      const { error: updateError } = await supabase
+        .from('google_documents')
+        .update({ fetched: true })
+        .eq('id', data.id);
+
+      if (updateError) {
+        console.error('Error updating fetched status:', updateError);
+      } else {
+        console.log('Document marked as fetched');
+      }
+
+      // Call the process-document function for title extraction only
       try {
         const { error: processError } = await supabase.functions.invoke('process-document', {
           body: {
             documentId: data.id,
-            content: content
+            content: content,
+            skipChunking: true // Tell the function we already created chunks
           }
         });
 
@@ -187,7 +203,8 @@ export const useGoogleDocuments = () => {
         console.error('Error calling process-document function:', processError);
       }
       
-      setDocuments(prev => [data, ...prev]);
+      // Refresh the documents list to show the updated document
+      await fetchDocuments();
       toast.success(`Document processed successfully! Created ${chunks.length} searchable chunks.`);
 
       return data;
