@@ -51,6 +51,36 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_purchases: {
+        Row: {
+          created_at: string
+          credits_granted: number
+          email: string
+          expires_at: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_granted?: number
+          email: string
+          expires_at: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_granted?: number
+          email?: string
+          expires_at?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       credit_sales_log: {
         Row: {
           amount_paid: number
@@ -431,6 +461,7 @@ export type Database = {
           core_service: string | null
           created_at: string
           credits: number | null
+          credits_expire_at: string | null
           differentiator: string | null
           email: string | null
           id: string
@@ -452,6 +483,7 @@ export type Database = {
           core_service?: string | null
           created_at?: string
           credits?: number | null
+          credits_expire_at?: string | null
           differentiator?: string | null
           email?: string | null
           id?: string
@@ -473,6 +505,7 @@ export type Database = {
           core_service?: string | null
           created_at?: string
           credits?: number | null
+          credits_expire_at?: string | null
           differentiator?: string | null
           email?: string | null
           id?: string
@@ -532,6 +565,18 @@ export type Database = {
           p_description?: string
         }
         Returns: Json
+      }
+      deduct_credits_fifo: {
+        Args: { p_user_id: string; p_credits_to_deduct: number }
+        Returns: Json
+      }
+      expire_old_credits: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_active_credits: {
+        Args: { p_user_id: string }
+        Returns: number
       }
     }
     Enums: {

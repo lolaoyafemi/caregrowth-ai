@@ -5,12 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const useUserCredits = () => {
   const [credits, setCredits] = useState<number>(0);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   const fetchUserCredits = async () => {
     if (!user) {
       setCredits(0);
+      setExpiresAt(null);
       setLoading(false);
       return;
     }
@@ -18,39 +20,51 @@ export const useUserCredits = () => {
     try {
       console.log('Fetching credits for user:', user.id);
       
-      const { data, error } = await supabase
+      // Get active credits using the new function
+      const { data: activeCredits, error: creditsError } = await supabase.rpc('get_active_credits', {
+        p_user_id: user.id
+      });
+
+      if (creditsError) {
+        console.error('Error fetching active credits:', creditsError);
+        setCredits(0);
+      } else {
+        console.log('Active credits fetched:', activeCredits || 0);
+        setCredits(activeCredits || 0);
+      }
+
+      // Get user profile for expiration date
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('credits')
+        .select('credits_expire_at')
         .eq('user_id', user.id)
         .single();
 
-      if (error) {
-        console.error('Error fetching user credits:', error);
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
         // If no profile exists, try to create one
-        if (error.code === 'PGRST116') {
+        if (profileError.code === 'PGRST116') {
           console.log('No profile found, creating one...');
           const { error: insertError } = await supabase
             .from('user_profiles')
             .insert({
               user_id: user.id,
               email: user.email,
-              credits: 0
+              credits: activeCredits || 0
             });
           
           if (insertError) {
             console.error('Error creating profile:', insertError);
           }
-          setCredits(0);
-        } else {
-          setCredits(0);
         }
+        setExpiresAt(null);
       } else {
-        console.log('Credits fetched:', data?.credits || 0);
-        setCredits(data?.credits || 0);
+        setExpiresAt(profile?.credits_expire_at || null);
       }
     } catch (error) {
       console.error('Error fetching user credits:', error);
       setCredits(0);
+      setExpiresAt(null);
     } finally {
       setLoading(false);
     }
@@ -67,5 +81,26 @@ export const useUserCredits = () => {
     }
   };
 
-  return { credits, loading, refetch };
+  const getExpirationInfo = () => {
+    if (!expiresAt) return null;
+    
+    const expDate = new Date(expiresAt);
+    const now = new Date();
+    const daysUntilExpiry = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return {
+      expiresAt: expDate,
+      daysUntilExpiry,
+      isExpiringSoon: daysUntilExpiry <= 7,
+      isExpired: daysUntilExpiry <= 0
+    };
+  };
+
+  return { 
+    credits, 
+    expiresAt,
+    loading, 
+    refetch, 
+    getExpirationInfo 
+  };
 };

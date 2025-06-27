@@ -20,49 +20,26 @@ export const deductCredits = async (
   try {
     console.log('Deducting credits:', { userId, tool, creditsToUse, description });
 
-    // Get current credits from user_profiles
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('credits')
-      .eq('user_id', userId)
-      .single();
+    // Use the new FIFO credit deduction function
+    const { data, error } = await supabase.rpc('deduct_credits_fifo', {
+      p_user_id: userId,
+      p_credits_to_deduct: creditsToUse
+    });
 
-    if (profileError || !profile) {
-      console.error('Error fetching user profile:', profileError);
+    if (error) {
+      console.error('Error deducting credits:', error);
       return {
         success: false,
-        error: 'User profile not found'
+        error: 'Failed to deduct credits'
       };
     }
 
-    const currentCredits = profile.credits || 0;
-
-    // Check if user has enough credits
-    if (currentCredits < creditsToUse) {
+    if (!data.success) {
       return {
         success: false,
-        error: 'Insufficient credits',
-        previousCredits: currentCredits,
+        error: data.error,
+        previousCredits: data.available_credits,
         creditsUsed: creditsToUse
-      };
-    }
-
-    const newCredits = currentCredits - creditsToUse;
-
-    // Update credits in user_profiles table
-    const { error: updateError } = await supabase
-      .from('user_profiles')
-      .update({ 
-        credits: newCredits,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', userId);
-
-    if (updateError) {
-      console.error('Error updating credits:', updateError);
-      return {
-        success: false,
-        error: 'Failed to update credits'
       };
     }
 
@@ -85,16 +62,14 @@ export const deductCredits = async (
     }
 
     console.log('Credit deduction successful:', {
-      previousCredits: currentCredits,
       creditsUsed: creditsToUse,
-      remainingCredits: newCredits
+      remainingCredits: data.remaining_credits
     });
     
     return {
       success: true,
-      previousCredits: currentCredits,
       creditsUsed: creditsToUse,
-      remainingCredits: newCredits,
+      remainingCredits: data.remaining_credits,
       logId: logData?.id
     };
   } catch (error) {

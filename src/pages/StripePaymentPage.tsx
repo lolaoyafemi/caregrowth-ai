@@ -4,11 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react';
+import { Check, ArrowLeft, CreditCard, Shield, Lock, Clock } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import CreditExpirationWarning from '@/components/dashboard/CreditExpirationWarning';
 
 const StripePaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
@@ -182,27 +183,45 @@ const StripePaymentPage = () => {
     setAddingCredits(credits.toString());
 
     try {
-      const { data, error } = await supabase.functions.invoke('add-credits', {
-        body: {
-          credits,
-          planName
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        }
-      });
+      // Create a credit purchase record directly for testing
+      const { data, error } = await supabase
+        .from('credit_purchases')
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          credits_granted: credits,
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+          status: 'active'
+        })
+        .select()
+        .single();
 
       if (error) {
         throw error;
       }
 
-      if (data?.success) {
+      // Update user profile credits using the new function
+      const { data: updatedCredits, error: updateError } = await supabase.rpc('get_active_credits', {
+        p_user_id: user.id
+      });
+
+      if (!updateError) {
+        await supabase
+          .from('user_profiles')
+          .upsert({
+            user_id: user.id,
+            email: user.email,
+            credits: updatedCredits,
+            credits_expire_at: data.expires_at,
+            updated_at: new Date().toISOString()
+          });
+
         toast({
           title: "Credits Added!",
-          description: `Successfully added ${credits} credits to your account. Total: ${data.total_credits}`,
+          description: `Successfully added ${credits} credits to your account. They expire in 30 days.`,
         });
       } else {
-        throw new Error(data?.error || "Failed to add credits");
+        throw new Error("Failed to update credit balance");
       }
     } catch (error) {
       console.error('Add credits error:', error);
@@ -236,6 +255,8 @@ const StripePaymentPage = () => {
             )}
           </div>
 
+          <CreditExpirationWarning />
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-6">
               <h2 className="text-2xl font-bold mb-6">Choose Your Credit Package</h2>
@@ -252,6 +273,10 @@ const StripePaymentPage = () => {
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-medium">{plan.credits} credits</span>
                       <span className="font-bold text-lg">${plan.price}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500 mb-3">
+                      <Clock className="w-4 h-4 mr-1" />
+                      Expires 30 days after purchase
                     </div>
                     <ul className="text-sm text-gray-600 space-y-1">
                       {plan.features.slice(0, 3).map((f, i) => (
@@ -283,11 +308,15 @@ const StripePaymentPage = () => {
                       className="w-full text-left justify-between border-2 border-gray-300 hover:border-caregrowth-blue transition-colors"
                     >
                       <span>Add {pkg.label}</span>
-                      {addingCredits === pkg.credits.toString() ? (
-                        <span className="text-sm">Adding...</span>
-                      ) : (
-                        <span className="text-sm text-gray-500">Free</span>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-500">30 days</span>
+                        {addingCredits === pkg.credits.toString() ? (
+                          <span className="text-sm">Adding...</span>
+                        ) : (
+                          <span className="text-sm text-gray-500">Free</span>
+                        )}
+                      </div>
                     </Button>
                   ))}
                 </div>
@@ -312,7 +341,7 @@ const StripePaymentPage = () => {
                       </div>
                       <div className="flex justify-between text-sm text-gray-600">
                         <span>{selectedPlanData.credits} credits</span>
-                        <span>One-time payment</span>
+                        <span>Expires in 30 days</span>
                       </div>
                     </>
                   )}
