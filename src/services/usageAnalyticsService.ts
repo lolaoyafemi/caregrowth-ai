@@ -32,10 +32,13 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     const { data: dailyActiveUsersData } = await supabase
       .from('credit_usage_log')
       .select('user_id')
-      .gte('used_at', startOfDay.toISOString())
-      .group('user_id');
+      .gte('used_at', startOfDay.toISOString());
     
-    const dailyActiveUsers = dailyActiveUsersData?.length || 0;
+    // Count unique users manually
+    const uniqueUsers = dailyActiveUsersData ? 
+      new Set(dailyActiveUsersData.map(log => log.user_id)).size : 0;
+    
+    const dailyActiveUsers = uniqueUsers;
     
     // Fetch credits used today
     const { data: creditsUsedTodayData } = await supabase
