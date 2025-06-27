@@ -5,23 +5,37 @@ import type { AdminUser } from '@/types/admin';
 
 export const fetchUsers = async (): Promise<AdminUser[]> => {
   try {
+    console.log('Fetching users from user_profiles table...');
+    
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    console.log('Raw user data from database:', data);
+    console.log('Database error (if any):', error);
+
+    if (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
     
-    const formattedUsers = data?.map(user => ({
-      id: user.user_id,
-      email: user.email || '',
-      name: user.business_name || 'No name',
-      role: user.role || 'user',
-      created_at: user.created_at || new Date().toISOString(),
-      last_sign_in_at: user.last_sign_in_at,
-      credits: user.credits || 0,
-      status: (user.status || 'active') as 'active' | 'suspended'
-    })) || [];
+    const formattedUsers = data?.map(user => {
+      console.log('Processing user:', user.user_id, user.email);
+      return {
+        id: user.user_id,
+        email: user.email || '',
+        name: user.business_name || 'No name',
+        role: user.role || 'user',
+        created_at: user.created_at || new Date().toISOString(),
+        last_sign_in_at: user.last_sign_in_at,
+        credits: user.credits || 0,
+        status: (user.status || 'active') as 'active' | 'suspended'
+      };
+    }) || [];
+    
+    console.log('Formatted users array:', formattedUsers);
+    console.log('Total users found:', formattedUsers.length);
     
     return formattedUsers;
   } catch (error) {
