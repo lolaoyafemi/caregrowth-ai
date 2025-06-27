@@ -12,7 +12,7 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
       .from('users')
       .select(`
         *,
-        user_profiles!user_profiles_user_id_fkey(credits, credits_expire_at)
+        user_profiles!inner(credits, credits_expire_at)
       `)
       .order('created_at', { ascending: false });
 
