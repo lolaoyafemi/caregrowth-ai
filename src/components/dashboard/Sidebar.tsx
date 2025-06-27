@@ -35,7 +35,7 @@ interface SidebarProps {
 
 const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const navigate = useNavigate();
-  const { credits, loading, refetch } = useUserCredits();
+  const { credits, loading, refetch, usedThisMonth, getUsagePercentage } = useUserCredits();
   
   // Add effect to refetch credits when component mounts
   useEffect(() => {
@@ -60,9 +60,9 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   // Credit balance details - show for both super admins and main admins
   const creditBalance = {
     available: credits,
-    usedThisMonth: 0,
-    totalAllocation: credits,
-    percentUsed: 0
+    usedThisMonth: usedThisMonth,
+    totalAllocation: credits + usedThisMonth,
+    percentUsed: getUsagePercentage()
   };
 
   const handleBuyCredits = () => {
@@ -146,7 +146,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                   <div 
                     className={cn(
-                      "h-full rounded-full",
+                      "h-full rounded-full transition-all duration-300",
                       isSuperAdmin ? "bg-green-600" : "bg-caregrowth-blue"
                     )}
                     style={{ width: `${creditBalance.percentUsed}%` }}
@@ -387,7 +387,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               )}
             >
               <MessageCircle size={20} />
-              {!collapsed && <span>Q&A Assistant</span>}
+              {!collapsed && <span>Ask Jared</span>}
             </NavLink>
           )}
         </nav>

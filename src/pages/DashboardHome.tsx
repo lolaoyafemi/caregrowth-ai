@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,11 @@ import {
 import { Coins, HelpCircle, FileText, MessageCircle } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
+import CreditExpirationWarning from '@/components/dashboard/CreditExpirationWarning';
 
 const DashboardHome = () => {
   const { user } = useUser();
-  const { credits, loading, refetch } = useUserCredits();
+  const { credits, loading, refetch, usedThisMonth, getTotalCredits, getUsagePercentage } = useUserCredits();
   const isSuperAdmin = user?.role === 'super_admin';
   const isMainAdmin = user?.role === 'admin';
 
@@ -31,13 +33,13 @@ const DashboardHome = () => {
     console.log('Dashboard - Loading:', loading);
   }, [user, credits, loading]);
   
-  // Reset usage metrics to zero for new users
+  // Reset usage metrics to zero for new users except credits
   const usageMetrics = {
     socialContent: { used: 0, total: 50, percent: 0 },
     documentSearch: { used: 0, total: 5, percent: 0 },
     qaAssistant: { used: 0, total: 100, percent: 0 },
     creditsLeft: credits,
-    monthlyUsage: 0,
+    monthlyUsage: usedThisMonth,
   };
 
   return (
@@ -78,7 +80,9 @@ const DashboardHome = () => {
               </div>
               <div className="flex justify-between items-center mb-4 text-xs text-gray-500">
                 <span>Used this month: {usageMetrics.monthlyUsage.toLocaleString()}</span>
+                <span>{getUsagePercentage()}%</span>
               </div>
+              <Progress value={getUsagePercentage()} className="h-2 mb-4" />
               <div className="flex gap-2">
                 <Link to="/stripe-payment" className="flex-1">
                   <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
@@ -98,6 +102,9 @@ const DashboardHome = () => {
           </Card>
         )}
       </div>
+
+      {/* Credit Expiration Warning */}
+      {isMainAdmin && <CreditExpirationWarning />}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
@@ -161,7 +168,7 @@ const DashboardHome = () => {
         <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
-              <CardTitle>Customer Support AI</CardTitle>
+              <CardTitle>Ask Jared</CardTitle>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -235,7 +242,7 @@ const DashboardHome = () => {
             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-caregrowth-lightblue mb-4">
               <MessageCircle className="h-6 w-6 text-caregrowth-blue" />
             </div>
-            <CardTitle>Q&A Assistant</CardTitle>
+            <CardTitle>Ask Jared</CardTitle>
             <CardDescription>Get instant, accurate answers to client and team questions</CardDescription>
           </CardHeader>
           <CardContent>

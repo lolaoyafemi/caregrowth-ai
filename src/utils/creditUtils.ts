@@ -11,6 +11,15 @@ export interface CreditDeductionResult {
   logId?: string;
 }
 
+interface DeductCreditsResponse {
+  success: boolean;
+  error?: string;
+  available_credits?: number;
+  requested_credits?: number;
+  credits_deducted?: number;
+  remaining_credits?: number;
+}
+
 export const deductCredits = async (
   userId: string, 
   tool: string, 
@@ -34,11 +43,13 @@ export const deductCredits = async (
       };
     }
 
-    if (!data.success) {
+    const response = data as DeductCreditsResponse;
+
+    if (!response.success) {
       return {
         success: false,
-        error: data.error,
-        previousCredits: data.available_credits,
+        error: response.error,
+        previousCredits: response.available_credits,
         creditsUsed: creditsToUse
       };
     }
@@ -63,13 +74,13 @@ export const deductCredits = async (
 
     console.log('Credit deduction successful:', {
       creditsUsed: creditsToUse,
-      remainingCredits: data.remaining_credits
+      remainingCredits: response.remaining_credits
     });
     
     return {
       success: true,
       creditsUsed: creditsToUse,
-      remainingCredits: data.remaining_credits,
+      remainingCredits: response.remaining_credits,
       logId: logData?.id
     };
   } catch (error) {

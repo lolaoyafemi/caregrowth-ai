@@ -7,12 +7,14 @@ export const useUserCredits = () => {
   const [credits, setCredits] = useState<number>(0);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [usedThisMonth, setUsedThisMonth] = useState<number>(0);
   const { user } = useAuth();
 
   const fetchUserCredits = async () => {
     if (!user) {
       setCredits(0);
       setExpiresAt(null);
+      setUsedThisMonth(0);
       setLoading(false);
       return;
     }
@@ -31,6 +33,25 @@ export const useUserCredits = () => {
       } else {
         console.log('Active credits fetched:', activeCredits || 0);
         setCredits(activeCredits || 0);
+      }
+
+      // Get credits used this month
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { data: usageData, error: usageError } = await supabase
+        .from('credit_usage_log')
+        .select('credits_used')
+        .eq('user_id', user.id)
+        .gte('used_at', startOfMonth.toISOString());
+
+      if (usageError) {
+        console.error('Error fetching usage data:', usageError);
+        setUsedThisMonth(0);
+      } else {
+        const totalUsed = usageData.reduce((sum, log) => sum + log.credits_used, 0);
+        setUsedThisMonth(totalUsed);
       }
 
       // Get user profile for expiration date
@@ -65,6 +86,7 @@ export const useUserCredits = () => {
       console.error('Error fetching user credits:', error);
       setCredits(0);
       setExpiresAt(null);
+      setUsedThisMonth(0);
     } finally {
       setLoading(false);
     }
@@ -72,6 +94,45 @@ export const useUserCredits = () => {
 
   useEffect(() => {
     fetchUserCredits();
+
+    // Set up real-time subscription for credit usage updates
+    if (user) {
+      const channel = supabase
+        .channel('credit-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'credit_usage_log',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Credit usage update:', payload);
+            // Refetch data when new usage is logged
+            fetchUserCredits();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'user_profiles',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('User profile update:', payload);
+            // Refetch data when profile is updated
+            fetchUserCredits();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [user]);
 
   const refetch = () => {
@@ -96,11 +157,24 @@ export const useUserCredits = () => {
     };
   };
 
+  const getTotalCredits = () => {
+    return credits + usedThisMonth;
+  };
+
+  const getUsagePercentage = () => {
+    const total = getTotalCredits();
+    if (total === 0) return 0;
+    return Math.round((usedThisMonth / total) * 100);
+  };
+
   return { 
     credits, 
     expiresAt,
     loading, 
     refetch, 
-    getExpirationInfo 
+    getExpirationInfo,
+    usedThisMonth,
+    getTotalCredits,
+    getUsagePercentage
   };
 };
