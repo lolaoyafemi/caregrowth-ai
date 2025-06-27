@@ -7,15 +7,10 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
   try {
     console.log('=== ADMIN METRICS SERVICE: Fetching metrics ===');
     
-    // Fetch users from users table with credits from user_profiles
+    // Fetch users from users table instead of user_profiles
     const { data: usersData } = await supabase
       .from('users')
-      .select(`
-        id, 
-        created_at, 
-        role,
-        user_profiles(credits)
-      `);
+      .select('id, created_at, role, credits');
 
     console.log('Users data for metrics:', usersData);
 
