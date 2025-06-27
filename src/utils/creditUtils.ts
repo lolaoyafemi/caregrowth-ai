@@ -43,7 +43,16 @@ export const deductCredits = async (
       };
     }
 
-    const response = data as DeductCreditsResponse;
+    // Safely type the response
+    const response = data as unknown as DeductCreditsResponse;
+
+    if (!response || typeof response !== 'object' || !('success' in response)) {
+      console.error('Invalid response format from deduct_credits_fifo');
+      return {
+        success: false,
+        error: 'Invalid response from credit deduction'
+      };
+    }
 
     if (!response.success) {
       return {
