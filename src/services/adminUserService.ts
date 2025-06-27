@@ -6,10 +6,10 @@ import type { AdminUser } from '@/types/admin';
 export const fetchUsers = async (): Promise<AdminUser[]> => {
   try {
     console.log('=== ADMIN USER SERVICE: Starting to fetch users ===');
-    console.log('Fetching users from user_profiles table...');
+    console.log('Fetching users from users table...');
     
     const { data, error } = await supabase
-      .from('user_profiles')
+      .from('users')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -26,7 +26,7 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
     }
 
     if (!data || data.length === 0) {
-      console.warn('No users found in user_profiles table');
+      console.warn('No users found in users table');
       console.log('This might mean:');
       console.log('1. The table is empty');
       console.log('2. There are RLS policies blocking access');
@@ -37,23 +37,23 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
     console.log('=== PROCESSING USERS ===');
     const formattedUsers = data.map((user, index) => {
       console.log(`Processing user ${index + 1}:`, {
-        user_id: user.user_id,
+        id: user.id,
         email: user.email,
-        business_name: user.business_name,
+        name: user.name,
         role: user.role,
-        status: user.status,
+        plan: user.plan,
         credits: user.credits
       });
       
       return {
-        id: user.user_id,
+        id: user.id,
         email: user.email || '',
-        name: user.business_name || 'No name',
+        name: user.name || 'No name',
         role: user.role || 'user',
         created_at: user.created_at || new Date().toISOString(),
-        last_sign_in_at: user.last_sign_in_at,
+        last_sign_in_at: null, // users table doesn't have this field
         credits: user.credits || 0,
-        status: (user.status || 'active') as 'active' | 'suspended'
+        status: 'active' as 'active' | 'suspended' // users table doesn't have status field
       };
     });
     
@@ -73,14 +73,9 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
 
 export const suspendUser = async (userId: string): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({ status: 'suspended' })
-      .eq('user_id', userId);
-
-    if (error) throw error;
-    
-    toast.success('User suspended successfully');
+    // Since users table doesn't have status field, we'll need to handle this differently
+    // For now, just show a message that this feature needs to be implemented
+    toast.error('Suspend user feature needs to be implemented for users table');
   } catch (error) {
     console.error('Error suspending user:', error);
     toast.error('Failed to suspend user');
@@ -89,14 +84,8 @@ export const suspendUser = async (userId: string): Promise<void> => {
 
 export const activateUser = async (userId: string): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({ status: 'active' })
-      .eq('user_id', userId);
-
-    if (error) throw error;
-    
-    toast.success('User activated successfully');
+    // Since users table doesn't have status field, we'll need to handle this differently
+    toast.error('Activate user feature needs to be implemented for users table');
   } catch (error) {
     console.error('Error activating user:', error);
     toast.error('Failed to activate user');
@@ -106,9 +95,9 @@ export const activateUser = async (userId: string): Promise<void> => {
 export const deleteUser = async (userId: string): Promise<void> => {
   try {
     const { error } = await supabase
-      .from('user_profiles')
+      .from('users')
       .delete()
-      .eq('user_id', userId);
+      .eq('id', userId);
 
     if (error) throw error;
     
@@ -122,9 +111,9 @@ export const deleteUser = async (userId: string): Promise<void> => {
 export const addCreditsToUser = async (userId: string, credits: number): Promise<void> => {
   try {
     const { error } = await supabase
-      .from('user_profiles')
+      .from('users')
       .update({ credits: credits })
-      .eq('user_id', userId);
+      .eq('id', userId);
 
     if (error) throw error;
     
