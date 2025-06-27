@@ -174,7 +174,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                   "font-medium text-sm transition-all duration-300",
                   creditUpdateAnimation && "scale-110 text-blue-600"
                 )}>
-                  {loading ? '...' : creditBalance.available.toLocaleString()}
+                  {credits.toLocaleString()}
                 </span>
               </div>
               <div className="space-y-1">
@@ -225,14 +225,14 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                       "text-xs font-medium transition-all duration-300",
                       creditUpdateAnimation && "text-blue-600"
                     )}>
-                      {loading ? '...' : creditBalance.available.toLocaleString()}
+                      {credits.toLocaleString()}
                     </span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   <div className="space-y-2 w-48">
                     <p className="font-medium">Credit Balance</p>
-                    <p className="text-sm">Available: {loading ? '...' : creditBalance.available.toLocaleString()}</p>
+                    <p className="text-sm">Available: {credits.toLocaleString()}</p>
                     <p className="text-sm">Used: {creditBalance.usedThisMonth.toLocaleString()}</p>
                     <Progress value={creditBalance.percentUsed} className="h-2" />
                   </div>

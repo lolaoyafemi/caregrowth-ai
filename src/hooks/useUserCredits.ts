@@ -8,6 +8,7 @@ export const useUserCredits = () => {
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [usedThisMonth, setUsedThisMonth] = useState<number>(0);
+  const [initialLoad, setInitialLoad] = useState(true);
   const { user } = useAuth();
 
   const fetchUserCredits = async () => {
@@ -16,7 +17,13 @@ export const useUserCredits = () => {
       setExpiresAt(null);
       setUsedThisMonth(0);
       setLoading(false);
+      setInitialLoad(false);
       return;
+    }
+
+    // Only show loading on initial load, not on subsequent refreshes
+    if (initialLoad) {
+      setLoading(true);
     }
 
     try {
@@ -29,7 +36,7 @@ export const useUserCredits = () => {
 
       if (creditsError) {
         console.error('Error fetching active credits:', creditsError);
-        setCredits(0);
+        if (initialLoad) setCredits(0);
       } else {
         console.log('Active credits fetched:', activeCredits || 0);
         setCredits(activeCredits || 0);
@@ -48,7 +55,7 @@ export const useUserCredits = () => {
 
       if (usageError) {
         console.error('Error fetching usage data:', usageError);
-        setUsedThisMonth(0);
+        if (initialLoad) setUsedThisMonth(0);
       } else {
         const totalUsed = usageData.reduce((sum, log) => sum + log.credits_used, 0);
         setUsedThisMonth(totalUsed);
@@ -78,17 +85,20 @@ export const useUserCredits = () => {
             console.error('Error creating profile:', insertError);
           }
         }
-        setExpiresAt(null);
+        if (initialLoad) setExpiresAt(null);
       } else {
         setExpiresAt(profile?.credits_expire_at || null);
       }
     } catch (error) {
       console.error('Error fetching user credits:', error);
-      setCredits(0);
-      setExpiresAt(null);
-      setUsedThisMonth(0);
+      if (initialLoad) {
+        setCredits(0);
+        setExpiresAt(null);
+        setUsedThisMonth(0);
+      }
     } finally {
       setLoading(false);
+      setInitialLoad(false);
     }
   };
 
@@ -169,7 +179,6 @@ export const useUserCredits = () => {
   const refetch = () => {
     if (user) {
       console.log('Manual refetch triggered');
-      setLoading(true);
       fetchUserCredits();
     }
   };
@@ -202,7 +211,7 @@ export const useUserCredits = () => {
   return { 
     credits, 
     expiresAt,
-    loading, 
+    loading: loading && initialLoad, // Only show loading on initial load
     refetch, 
     getExpirationInfo,
     usedThisMonth,

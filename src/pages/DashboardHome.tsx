@@ -102,7 +102,7 @@ const DashboardHome = () => {
                   "font-bold text-xl transition-all duration-300",
                   creditUpdateAnimation && "scale-110 text-blue-600"
                 )}>
-                  {loading ? '...' : credits.toLocaleString()}
+                  {credits.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between items-center mb-4 text-xs text-gray-500">
