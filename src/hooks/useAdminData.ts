@@ -63,7 +63,7 @@ export const useAdminData = () => {
         created_at: user.created_at || new Date().toISOString(),
         last_sign_in_at: null, // This would come from auth.users if accessible
         credits: user.credits || 0,
-        status: user.role === 'suspended' ? 'suspended' : 'active'
+        status: (user.role === 'suspended' ? 'suspended' : 'active') as 'active' | 'suspended'
       })) || [];
       
       setUsers(formattedUsers);
