@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,6 +46,46 @@ const generateDocumentName = (docUrl: string): string => {
   }
 };
 
+// Function to fetch document content from Google Docs
+const fetchDocumentContent = async (docUrl: string): Promise<string | null> => {
+  try {
+    // Convert Google Docs URL to plain text export URL
+    let exportUrl = '';
+    
+    if (docUrl.includes('/document/d/')) {
+      const docId = docUrl.match(/\/document\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+      if (docId) {
+        exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
+      }
+    } else if (docUrl.includes('/spreadsheets/d/')) {
+      const docId = docUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+      if (docId) {
+        exportUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv`;
+      }
+    } else if (docUrl.includes('/presentation/d/')) {
+      const docId = docUrl.match(/\/presentation\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+      if (docId) {
+        exportUrl = `https://docs.google.com/presentation/d/${docId}/export/txt`;
+      }
+    }
+
+    if (!exportUrl) {
+      throw new Error('Unable to create export URL');
+    }
+
+    const response = await fetch(exportUrl);
+    if (!response.ok) {
+      throw new Error('Failed to fetch document content');
+    }
+
+    const content = await response.text();
+    return content;
+  } catch (error) {
+    console.error('Error fetching document content:', error);
+    return null;
+  }
+};
+
 export const useGoogleDocuments = () => {
   const [documents, setDocuments] = useState<GoogleDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +114,17 @@ export const useGoogleDocuments = () => {
     if (!user) return;
 
     try {
+      // First, try to fetch the document content
+      console.log('Fetching document content for:', docLink);
+      const content = await fetchDocumentContent(docLink);
+      
+      if (!content) {
+        toast.error('Unable to access document content. Please ensure the document is publicly accessible.');
+        return;
+      }
+
+      console.log('Document content fetched, length:', content.length);
+
       // Use provided title or generate a fallback name
       const finalTitle = docTitle || generateDocumentName(docLink);
 
@@ -83,15 +133,62 @@ export const useGoogleDocuments = () => {
         .insert({
           user_id: user.id,
           doc_link: docLink,
-          doc_title: finalTitle
+          doc_title: finalTitle,
+          fetched: true
         })
         .select()
         .single();
 
       if (error) throw error;
       
+      console.log('Document saved to database:', data.id);
+
+      // Process the document content into chunks
+      const chunks = [];
+      const chunkSize = 1000;
+      const words = content.split(/\s+/);
+      
+      for (let i = 0; i < words.length; i += chunkSize) {
+        const chunk = words.slice(i, i + chunkSize).join(' ');
+        chunks.push({
+          document_id: data.id,
+          content: chunk,
+          chunk_index: Math.floor(i / chunkSize)
+        });
+      }
+
+      console.log('Created chunks:', chunks.length);
+
+      // Save chunks to database
+      if (chunks.length > 0) {
+        const { error: chunksError } = await supabase
+          .from('document_chunks')
+          .insert(chunks);
+
+        if (chunksError) {
+          console.error('Error saving document chunks:', chunksError);
+          throw chunksError;
+        }
+      }
+
+      // Call the process-document function to extract title and handle any additional processing
+      try {
+        const { error: processError } = await supabase.functions.invoke('process-document', {
+          body: {
+            documentId: data.id,
+            content: content
+          }
+        });
+
+        if (processError) {
+          console.error('Error in process-document function:', processError);
+        }
+      } catch (processError) {
+        console.error('Error calling process-document function:', processError);
+      }
+      
       setDocuments(prev => [data, ...prev]);
-      toast.success('Document added successfully! You can now search through it.');
+      toast.success(`Document processed successfully! Created ${chunks.length} searchable chunks.`);
 
       return data;
     } catch (error) {
