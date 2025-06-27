@@ -49,21 +49,21 @@ export const useAdminData = () => {
   const fetchUsers = async () => {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('user_profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
       const formattedUsers = data?.map(user => ({
-        id: user.id,
+        id: user.user_id,
         email: user.email || '',
-        name: user.name || '',
-        role: user.role || 'user',
+        name: user.business_name || 'No name',
+        role: 'user', // user_profiles doesn't have role, defaulting to user
         created_at: user.created_at || new Date().toISOString(),
         last_sign_in_at: null, // This would come from auth.users if accessible
         credits: user.credits || 0,
-        status: (user.role === 'suspended' ? 'suspended' : 'active') as 'active' | 'suspended'
+        status: 'active' as 'active' | 'suspended' // Defaulting to active since user_profiles doesn't have status
       })) || [];
       
       setUsers(formattedUsers);
@@ -119,8 +119,8 @@ export const useAdminData = () => {
   const fetchMetrics = async () => {
     try {
       const { data: usersData } = await supabase
-        .from('users')
-        .select('id, created_at');
+        .from('user_profiles')
+        .select('user_id, created_at');
 
       const { data: creditsData } = await supabase
         .from('credit_usage_log')
@@ -156,14 +156,10 @@ export const useAdminData = () => {
 
   const suspendUser = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ role: 'suspended' })
-        .eq('id', userId);
-
-      if (error) throw error;
-      
-      toast.success('User suspended successfully');
+      // Since user_profiles doesn't have a status field, we'll need to handle this differently
+      // For now, we'll just show a message that this functionality needs to be implemented
+      console.log('Suspend user functionality needs to be implemented for user_profiles table');
+      toast.info('User suspension functionality needs to be implemented');
       fetchUsers();
     } catch (error) {
       console.error('Error suspending user:', error);
@@ -173,14 +169,10 @@ export const useAdminData = () => {
 
   const activateUser = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ role: 'user' })
-        .eq('id', userId);
-
-      if (error) throw error;
-      
-      toast.success('User activated successfully');
+      // Since user_profiles doesn't have a status field, we'll need to handle this differently
+      // For now, we'll just show a message that this functionality needs to be implemented
+      console.log('Activate user functionality needs to be implemented for user_profiles table');
+      toast.info('User activation functionality needs to be implemented');
       fetchUsers();
     } catch (error) {
       console.error('Error activating user:', error);
@@ -191,9 +183,9 @@ export const useAdminData = () => {
   const deleteUser = async (userId: string) => {
     try {
       const { error } = await supabase
-        .from('users')
+        .from('user_profiles')
         .delete()
-        .eq('id', userId);
+        .eq('user_id', userId);
 
       if (error) throw error;
       
@@ -208,9 +200,9 @@ export const useAdminData = () => {
   const addCreditsToUser = async (userId: string, credits: number) => {
     try {
       const { error } = await supabase
-        .from('users')
+        .from('user_profiles')
         .update({ credits: credits })
-        .eq('id', userId);
+        .eq('user_id', userId);
 
       if (error) throw error;
       
