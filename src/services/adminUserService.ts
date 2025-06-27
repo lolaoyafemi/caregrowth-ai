@@ -6,11 +6,14 @@ import type { AdminUser } from '@/types/admin';
 export const fetchUsers = async (): Promise<AdminUser[]> => {
   try {
     console.log('=== ADMIN USER SERVICE: Starting to fetch users ===');
-    console.log('Fetching users from users table...');
+    console.log('Fetching users from users table with credits from user_profiles...');
     
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select(`
+        *,
+        user_profiles!inner(credits, credits_expire_at)
+      `)
       .order('created_at', { ascending: false });
 
     console.log('=== RAW DATABASE RESPONSE ===');
@@ -31,6 +34,7 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
       console.log('1. The table is empty');
       console.log('2. There are RLS policies blocking access');
       console.log('3. The user doesnt have permission to read this table');
+      console.log('4. No matching user_profiles found (inner join)');
       return [];
     }
     
@@ -42,7 +46,7 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
         name: user.name,
         role: user.role,
         plan: user.plan,
-        credits: user.credits,
+        credits: user.user_profiles?.credits || 0,
         created_at: user.created_at
       });
       
@@ -53,7 +57,7 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
         role: user.role || 'user',
         created_at: user.created_at || new Date().toISOString(),
         last_sign_in_at: null, // users table doesn't have this field
-        credits: user.credits || 0,
+        credits: user.user_profiles?.credits || 0,
         status: 'active' as 'active' | 'suspended' // users table doesn't have status field
       };
     });
@@ -111,10 +115,11 @@ export const deleteUser = async (userId: string): Promise<void> => {
 
 export const addCreditsToUser = async (userId: string, credits: number): Promise<void> => {
   try {
+    // Update credits in user_profiles table instead of users table
     const { error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .update({ credits: credits })
-      .eq('id', userId);
+      .eq('user_id', userId);
 
     if (error) throw error;
     
