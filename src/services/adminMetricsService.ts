@@ -14,7 +14,7 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
         id, 
         created_at, 
         role,
-        user_profiles(credits)
+        user_profiles!user_profiles_user_id_fkey(credits)
       `);
 
     console.log('Users data for metrics:', usersData);
