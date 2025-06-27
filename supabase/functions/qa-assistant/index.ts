@@ -59,11 +59,16 @@ serve(async (req) => {
     const answerGenerator = new AnswerGenerator(openAIApiKey);
     const databaseService = new DatabaseService();
 
-    // Step 1: Generate embedding for the question
+    // Step 1: Get recent conversation history for context
+    console.log('Fetching conversation history...');
+    const conversationHistory = await databaseService.getRecentConversationHistory(userId, 5);
+    console.log('Retrieved conversation history:', conversationHistory.length, 'messages');
+
+    // Step 2: Generate embedding for the question
     console.log('Generating embedding for question...');
     const questionEmbedding = await embeddingService.generateEmbedding(question);
 
-    // Step 2: Get user's documents and chunks
+    // Step 3: Get user's documents and chunks
     console.log('Fetching user documents and chunks...');
     const userDocs = await databaseService.getUserDocuments(userId);
     const userDocIds = userDocs.map(doc => doc.id);
@@ -87,25 +92,25 @@ serve(async (req) => {
       console.log(`Selected ${relevantChunks.length} relevant chunks from ${allChunks.length} total`);
     }
 
-    // Step 3: Generate answer using enhanced context
-    console.log('Generating enhanced answer...');
+    // Step 4: Generate answer using enhanced context with conversation history
+    console.log('Generating enhanced answer with conversation context...');
     let answer = "I apologize, but I'm having trouble generating a response right now. Please try again in a moment.";
     let tokensUsed = 0;
 
     try {
-      const result = await answerGenerator.generateContextualAnswer(question, relevantChunks);
+      const result = await answerGenerator.generateContextualAnswer(question, relevantChunks, conversationHistory);
       answer = result.answer;
       tokensUsed = result.tokensUsed || 0;
-      console.log('Successfully generated answer, tokens used:', tokensUsed);
+      console.log('Successfully generated answer with conversation context, tokens used:', tokensUsed);
     } catch (error) {
       console.error('Error generating answer:', error);
     }
 
-    // Step 4: Categorize the response
+    // Step 5: Categorize the response
     console.log('Categorizing the response...');
     const category = await answerGenerator.categorizeResponse(question, answer);
 
-    // Step 5: Log the Q&A interaction
+    // Step 6: Log the Q&A interaction
     await databaseService.logQAInteraction(
       userId, 
       question, 

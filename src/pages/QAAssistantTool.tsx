@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,6 @@ interface Message {
   content: string;
   timestamp: Date;
   category?: 'management' | 'marketing' | 'hiring' | 'compliance' | 'other';
-  sources?: number;
 }
 
 interface SavedAnswer {
@@ -28,19 +28,52 @@ interface SavedAnswer {
 const QAAssistantTool = () => {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [conversation, setConversation] = useState<Message[]>([
-    {
-      id: 1,
-      role: 'assistant',
-      content: 'Hello! I\'m Jared, your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
-      timestamp: new Date()
-    }
-  ]);
+  const [conversation, setConversation] = useState<Message[]>([]);
   const [savedAnswers, setSavedAnswers] = useState<SavedAnswer[]>([]);
   const [qaHistory, setQAHistory] = useState<any[]>([]);
 
   const { askQuestion, getQAHistory, isLoading, error } = useQAAssistant();
   const { user } = useUser();
+
+  // Load conversation from localStorage on component mount
+  useEffect(() => {
+    if (user) {
+      const savedConversation = localStorage.getItem(`qa-conversation-${user.id}`);
+      if (savedConversation) {
+        try {
+          const parsedConversation = JSON.parse(savedConversation).map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+          setConversation(parsedConversation);
+        } catch (error) {
+          console.error('Error parsing saved conversation:', error);
+          // If parsing fails, start with default message
+          setConversation([{
+            id: 1,
+            role: 'assistant',
+            content: 'Hello! I\'m Jared, your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
+            timestamp: new Date()
+          }]);
+        }
+      } else {
+        // No saved conversation, start with default message
+        setConversation([{
+          id: 1,
+          role: 'assistant',
+          content: 'Hello! I\'m Jared, your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
+          timestamp: new Date()
+        }]);
+      }
+    }
+  }, [user]);
+
+  // Save conversation to localStorage whenever it changes
+  useEffect(() => {
+    if (user && conversation.length > 0) {
+      localStorage.setItem(`qa-conversation-${user.id}`, JSON.stringify(conversation));
+    }
+  }, [conversation, user]);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -84,8 +117,7 @@ const QAAssistantTool = () => {
         role: 'assistant',
         content: response.answer,
         timestamp: new Date(),
-        category: response.category as any,
-        sources: response.sources
+        category: response.category as any
       };
       
       setActiveCategory(response.category);
@@ -110,15 +142,21 @@ const QAAssistantTool = () => {
   };
 
   const handleClearChat = () => {
-    setConversation([
-      {
-        id: 1,
-        role: 'assistant',
-        content: 'Hello! I\'m Jared, your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
-        timestamp: new Date()
-      }
-    ]);
+    const defaultMessage = {
+      id: 1,
+      role: 'assistant' as const,
+      content: 'Hello! I\'m Jared, your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
+      timestamp: new Date()
+    };
+    
+    setConversation([defaultMessage]);
     setActiveCategory(null);
+    
+    // Clear from localStorage
+    if (user) {
+      localStorage.removeItem(`qa-conversation-${user.id}`);
+    }
+    
     toast.success("Conversation cleared!");
   };
 
@@ -213,11 +251,6 @@ const QAAssistantTool = () => {
                     <div className="mb-1 text-sm flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <span>{message.role === 'assistant' ? 'Jared' : 'You'} • {formatTime(message.timestamp)}</span>
-                        {message.sources && message.sources > 0 && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            {message.sources} sources
-                          </span>
-                        )}
                       </div>
                       {message.role === 'assistant' && message.id > 1 && (
                         <button 
