@@ -161,13 +161,34 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
     }
 
     try {
+      // Get current user credits first
+      const { data: currentUser, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('credits')
+        .eq('user_id', selectedUser)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching current credits:', fetchError);
+        toast.error('Failed to fetch current user credits');
+        return;
+      }
+
+      const currentCredits = currentUser?.credits || 0;
       const finalAmount = creditType === 'remove' ? -amount : amount;
-      
+      const newCredits = currentCredits + finalAmount;
+
+      // Ensure credits don't go negative
+      if (newCredits < 0) {
+        toast.error('Cannot reduce credits below zero');
+        return;
+      }
+
       // Update user credits in user_profiles
       const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ 
-          credits: supabase.sql`credits + ${finalAmount}`,
+          credits: newCredits,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', selectedUser);
