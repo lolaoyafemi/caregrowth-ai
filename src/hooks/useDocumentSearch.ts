@@ -11,6 +11,12 @@ interface SearchResult {
   confidence: number;
 }
 
+interface SmartSearchResult {
+  answer: string;
+  sources: SearchResult[];
+  tokensUsed?: number;
+}
+
 interface SearchResponse {
   results: SearchResult[];
   totalDocumentsSearched: number;
@@ -57,8 +63,45 @@ export const useDocumentSearch = () => {
     }
   };
 
+  const smartSearchDocuments = async (query: string): Promise<SmartSearchResult | null> => {
+    if (!user) {
+      setError('User must be logged in');
+      return null;
+    }
+
+    setIsSearching(true);
+    setError(null);
+
+    try {
+      const { data, error: functionError } = await supabase.functions.invoke('smart-document-search', {
+        body: {
+          query: query.trim(),
+          userId: user.id
+        }
+      });
+
+      if (functionError) {
+        throw new Error(functionError.message);
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      return data as SmartSearchResult;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to perform smart search';
+      setError(errorMessage);
+      console.error('Smart document search error:', err);
+      return null;
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return {
     searchDocuments,
+    smartSearchDocuments,
     isSearching,
     error
   };

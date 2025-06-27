@@ -14,13 +14,15 @@ import GoogleSignIn from '@/components/auth/GoogleSignIn';
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { documents, loading: docsLoading, addDocument, deleteDocument } = useGoogleDocuments();
-  const { searchDocuments, isSearching, error: searchError } = useDocumentSearch();
+  const { searchDocuments, smartSearchDocuments, isSearching, error: searchError } = useDocumentSearch();
   
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [smartSearchResult, setSmartSearchResult] = useState(null);
   const [totalDocumentsSearched, setTotalDocumentsSearched] = useState(0);
   const [followUpQuery, setFollowUpQuery] = useState('');
   const [googleUrl, setGoogleUrl] = useState('');
+  const [searchMode, setSearchMode] = useState<'basic' | 'smart'>('smart');
 
   if (authLoading) {
     return (
@@ -40,18 +42,36 @@ const DocumentSearchTool = () => {
       return;
     }
     
-    console.log('Starting search with query:', query);
-    const results = await searchDocuments(query.trim());
+    console.log(`Starting ${searchMode} search with query:`, query);
     
-    if (results) {
-      console.log('Search results received:', results);
-      setSearchResults(results.results);
-      setTotalDocumentsSearched(results.totalDocumentsSearched);
+    if (searchMode === 'smart') {
+      const result = await smartSearchDocuments(query.trim());
       
-      if (results.results.length === 0) {
-        toast.info("No relevant content found in your documents.");
-      } else {
-        toast.success(`Found ${results.results.length} relevant results!`);
+      if (result) {
+        console.log('Smart search result received:', result);
+        setSmartSearchResult(result);
+        setSearchResults([]); // Clear basic results
+        
+        if (!result.answer || result.answer.includes("don't have access")) {
+          toast.info("No relevant content found in your documents.");
+        } else {
+          toast.success(`Generated intelligent answer from ${result.sources.length} documents!`);
+        }
+      }
+    } else {
+      const results = await searchDocuments(query.trim());
+      
+      if (results) {
+        console.log('Basic search results received:', results);
+        setSearchResults(results.results);
+        setSmartSearchResult(null); // Clear smart results
+        setTotalDocumentsSearched(results.totalDocumentsSearched);
+        
+        if (results.results.length === 0) {
+          toast.info("No relevant content found in your documents.");
+        } else {
+          toast.success(`Found ${results.results.length} relevant results!`);
+        }
       }
     }
   };
@@ -62,17 +82,35 @@ const DocumentSearchTool = () => {
     }
     
     setQuery(followUpQuery);
-    const results = await searchDocuments(followUpQuery.trim());
-    setFollowUpQuery('');
     
-    if (results) {
-      setSearchResults(results.results);
-      setTotalDocumentsSearched(results.totalDocumentsSearched);
+    if (searchMode === 'smart') {
+      const result = await smartSearchDocuments(followUpQuery.trim());
+      setFollowUpQuery('');
       
-      if (results.results.length === 0) {
-        toast.info("No relevant content found in your documents.");
-      } else {
-        toast.success(`Found ${results.results.length} relevant results!`);
+      if (result) {
+        setSmartSearchResult(result);
+        setSearchResults([]);
+        
+        if (!result.answer || result.answer.includes("don't have access")) {
+          toast.info("No relevant content found in your documents.");
+        } else {
+          toast.success(`Generated intelligent answer from ${result.sources.length} documents!`);
+        }
+      }
+    } else {
+      const results = await searchDocuments(followUpQuery.trim());
+      setFollowUpQuery('');
+      
+      if (results) {
+        setSearchResults(results.results);
+        setSmartSearchResult(null);
+        setTotalDocumentsSearched(results.totalDocumentsSearched);
+        
+        if (results.results.length === 0) {
+          toast.info("No relevant content found in your documents.");
+        } else {
+          toast.success(`Found ${results.results.length} relevant results!`);
+        }
       }
     }
   };
@@ -129,7 +167,7 @@ const DocumentSearchTool = () => {
       <div className="mb-8 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Document Search & Access</h1>
-          <p className="text-gray-600 mt-2">Search directly through your Google documents and find specific content with page references.</p>
+          <p className="text-gray-600 mt-2">Search directly through your Google documents and get intelligent answers powered by AI.</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -151,10 +189,33 @@ const DocumentSearchTool = () => {
         <div className="lg:col-span-2">
           <Card className="p-6 mb-6">
             <div className="mb-4">
-              <label className="block text-lg font-medium mb-2">Search your documents</label>
+              <div className="flex justify-between items-center mb-4">
+                <label className="block text-lg font-medium">Search your documents</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={searchMode === 'smart' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSearchMode('smart')}
+                    className="text-xs"
+                  >
+                    🧠 Smart Search
+                  </Button>
+                  <Button
+                    variant={searchMode === 'basic' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSearchMode('basic')}
+                    className="text-xs"
+                  >
+                    🔍 Basic Search
+                  </Button>
+                </div>
+              </div>
               <div className="relative">
                 <Input 
-                  placeholder="Search for specific content in your documents..."
+                  placeholder={searchMode === 'smart' ? 
+                    "Ask a question about your documents..." : 
+                    "Search for specific content in your documents..."
+                  }
                   className="pr-12"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -171,14 +232,22 @@ const DocumentSearchTool = () => {
               {searchError && (
                 <p className="text-red-500 text-sm mt-2">{searchError}</p>
               )}
+              <p className="text-xs text-gray-500 mt-2">
+                {searchMode === 'smart' ? 
+                  'Smart Search uses AI to understand your question and provide intelligent answers from your documents.' :
+                  'Basic Search finds exact matches of keywords in your documents.'
+                }
+              </p>
             </div>
           </Card>
           
-          {(isSearching || searchResults.length > 0) && (
+          {(isSearching || searchResults.length > 0 || smartSearchResult) && (
             <Card className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Search Results</h2>
-                {totalDocumentsSearched > 0 && (
+                <h2 className="text-xl font-semibold">
+                  {searchMode === 'smart' ? 'AI-Powered Answer' : 'Search Results'}
+                </h2>
+                {searchMode === 'basic' && totalDocumentsSearched > 0 && (
                   <span className="text-sm text-gray-500">
                     Searched {totalDocumentsSearched} document{totalDocumentsSearched !== 1 ? 's' : ''}
                   </span>
@@ -195,6 +264,44 @@ const DocumentSearchTool = () => {
                     <div className="h-4 bg-gray-200 rounded w-full"></div>
                     <div className="h-4 bg-gray-200 rounded w-5/6"></div>
                   </div>
+                </div>
+              ) : smartSearchResult ? (
+                <div className="space-y-6">
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r">
+                    <h3 className="font-semibold text-blue-900 mb-2">AI Answer</h3>
+                    <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {smartSearchResult.answer}
+                    </div>
+                    {smartSearchResult.tokensUsed && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        Tokens used: {smartSearchResult.tokensUsed}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {smartSearchResult.sources && smartSearchResult.sources.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold mb-3">Source Documents</h3>
+                      <div className="space-y-3">
+                        {smartSearchResult.sources.map((source, index) => (
+                          <div key={index} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-blue-600">{source.documentTitle}</h4>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(source.documentUrl, '_blank')}
+                                className="flex items-center gap-2"
+                              >
+                                <ExternalLinkIcon className="h-4 w-4" />
+                                Open
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : searchResults.length > 0 ? (
                 <div className="space-y-4">
@@ -248,31 +355,33 @@ const DocumentSearchTool = () => {
                       </div>
                     </div>
                   ))}
-                  
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold mb-2">Refine your search</h3>
-                    <div className="flex gap-2">
-                      <Textarea 
-                        placeholder="Ask a more specific question..."
-                        className="mb-0"
-                        value={followUpQuery}
-                        onChange={(e) => setFollowUpQuery(e.target.value)}
-                      />
-                      <Button 
-                        className="h-auto bg-caregrowth-green"
-                        onClick={handleFollowUp}
-                        disabled={!followUpQuery.trim() || isSearching}
-                      >
-                        Search
-                      </Button>
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <SearchIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <p>No results found for your search query.</p>
                   <p className="text-sm">Try using different keywords or make sure your documents are publicly accessible.</p>
+                </div>
+              )}
+              
+              {(searchResults.length > 0 || smartSearchResult) && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-2">Ask a follow-up question</h3>
+                  <div className="flex gap-2">
+                    <Textarea 
+                      placeholder="Ask a more specific question..."
+                      className="mb-0"
+                      value={followUpQuery}
+                      onChange={(e) => setFollowUpQuery(e.target.value)}
+                    />
+                    <Button 
+                      className="h-auto bg-caregrowth-green"
+                      onClick={handleFollowUp}
+                      disabled={!followUpQuery.trim() || isSearching}
+                    >
+                      Search
+                    </Button>
+                  </div>
                 </div>
               )}
             </Card>
