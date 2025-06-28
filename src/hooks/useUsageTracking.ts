@@ -18,10 +18,14 @@ export const useUsageTracking = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchUsageMetrics = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Fetching usage metrics for user:', user.id);
       
       // Get current month start
       const now = new Date();
@@ -36,8 +40,11 @@ export const useUsageTracking = () => {
 
       if (error) {
         console.error('Error fetching usage data:', error);
+        setLoading(false);
         return;
       }
+
+      console.log('Usage data fetched:', usageData);
 
       // Count usage by tool
       let socialMediaUsed = 0;
@@ -45,6 +52,7 @@ export const useUsageTracking = () => {
       let qaAssistantUsed = 0;
 
       usageData?.forEach(record => {
+        console.log('Processing record:', record);
         switch (record.tool) {
           case 'social-media':
           case 'generate-post':
@@ -60,6 +68,8 @@ export const useUsageTracking = () => {
             break;
         }
       });
+
+      console.log('Counted usage:', { socialMediaUsed, documentSearchUsed, qaAssistantUsed });
 
       // Calculate percentages
       const socialMediaPercent = Math.round((socialMediaUsed / 50) * 100);
@@ -109,13 +119,17 @@ export const useUsageTracking = () => {
   };
 
   useEffect(() => {
-    fetchUsageMetrics();
+    if (user?.id) {
+      fetchUsageMetrics();
+    }
   }, [user?.id]);
 
   // Refetch every 30 seconds to keep data fresh
   useEffect(() => {
-    const interval = setInterval(fetchUsageMetrics, 30000);
-    return () => clearInterval(interval);
+    if (user?.id) {
+      const interval = setInterval(fetchUsageMetrics, 30000);
+      return () => clearInterval(interval);
+    }
   }, [user?.id]);
 
   return {

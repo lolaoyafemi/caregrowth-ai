@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,7 @@ import { cn } from '@/lib/utils';
 const DashboardHome = () => {
   const { user } = useUser();
   const { credits, loading, refetch, usedThisMonth, getTotalCredits, getUsagePercentage } = useUserCredits();
-  const { metrics: usageMetrics, loading: usageLoading } = useUsageTracking();
+  const { metrics: usageMetrics, loading: usageLoading, refetch: refetchUsage } = useUsageTracking();
   const [creditUpdateAnimation, setCreditUpdateAnimation] = useState(false);
   const [previousCredits, setPreviousCredits] = useState(credits);
   
@@ -30,6 +29,7 @@ const DashboardHome = () => {
   // Add effect to refetch credits when component mounts
   useEffect(() => {
     refetch();
+    refetchUsage();
   }, []);
 
   // Add animation effect when credits change
@@ -53,7 +53,8 @@ const DashboardHome = () => {
     console.log('Dashboard - Credits:', credits);
     console.log('Dashboard - Loading:', loading);
     console.log('Dashboard - Usage Metrics:', usageMetrics);
-  }, [user, credits, loading, usageMetrics]);
+    console.log('Dashboard - Usage Loading:', usageLoading);
+  }, [user, credits, loading, usageMetrics, usageLoading]);
 
   return (
     <div className="p-6">
@@ -114,8 +115,11 @@ const DashboardHome = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={refetch}
-                  disabled={loading}
+                  onClick={() => {
+                    refetch();
+                    refetchUsage();
+                  }}
+                  disabled={loading || usageLoading}
                 >
                   Refresh
                 </Button>
