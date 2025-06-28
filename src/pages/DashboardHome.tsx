@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,12 +13,14 @@ import {
 import { Coins, HelpCircle, FileText, MessageCircle, Zap } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
+import { useUsageTracking } from '@/hooks/useUsageTracking';
 import CreditExpirationWarning from '@/components/dashboard/CreditExpirationWarning';
 import { cn } from '@/lib/utils';
 
 const DashboardHome = () => {
   const { user } = useUser();
   const { credits, loading, refetch, usedThisMonth, getTotalCredits, getUsagePercentage } = useUserCredits();
+  const { metrics: usageMetrics, loading: usageLoading } = useUsageTracking();
   const [creditUpdateAnimation, setCreditUpdateAnimation] = useState(false);
   const [previousCredits, setPreviousCredits] = useState(credits);
   
@@ -49,16 +52,8 @@ const DashboardHome = () => {
     console.log('Dashboard - User:', user);
     console.log('Dashboard - Credits:', credits);
     console.log('Dashboard - Loading:', loading);
-  }, [user, credits, loading]);
-  
-  // Reset usage metrics to zero for new users except credits
-  const usageMetrics = {
-    socialContent: { used: 0, total: 50, percent: 0 },
-    documentSearch: { used: 0, total: 5, percent: 0 },
-    qaAssistant: { used: 0, total: 100, percent: 0 },
-    creditsLeft: credits,
-    monthlyUsage: usedThisMonth,
-  };
+    console.log('Dashboard - Usage Metrics:', usageMetrics);
+  }, [user, credits, loading, usageMetrics]);
 
   return (
     <div className="p-6">
@@ -106,7 +101,7 @@ const DashboardHome = () => {
                 </span>
               </div>
               <div className="flex justify-between items-center mb-4 text-xs text-gray-500">
-                <span>Used this month: {usageMetrics.monthlyUsage.toLocaleString()}</span>
+                <span>Used this month: {usedThisMonth.toLocaleString()}</span>
                 <span>{getUsagePercentage()}%</span>
               </div>
               <Progress value={getUsagePercentage()} className="h-2 mb-4" />
@@ -152,14 +147,24 @@ const DashboardHome = () => {
             <CardDescription>Boost client engagement with AI</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{usageMetrics.socialContent.used}/{usageMetrics.socialContent.total}</div>
-            <div className="space-y-1 mt-3">
-              <div className="flex justify-between text-xs">
-                <span>Usage</span>
-                <span>{usageMetrics.socialContent.percent}%</span>
+            {usageLoading ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-20 mb-3"></div>
+                <div className="h-2 bg-gray-200 rounded mb-1"></div>
+                <div className="h-2 bg-gray-200 rounded w-16"></div>
               </div>
-              <Progress value={usageMetrics.socialContent.percent} className="h-2" />
-            </div>
+            ) : (
+              <>
+                <div className="text-3xl font-bold">{usageMetrics.socialMedia.used}/{usageMetrics.socialMedia.total}</div>
+                <div className="space-y-1 mt-3">
+                  <div className="flex justify-between text-xs">
+                    <span>Usage</span>
+                    <span>{usageMetrics.socialMedia.percent}%</span>
+                  </div>
+                  <Progress value={usageMetrics.socialMedia.percent} className="h-2" />
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -181,14 +186,24 @@ const DashboardHome = () => {
             <CardDescription>Extract insights from documents</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{usageMetrics.documentSearch.used}/{usageMetrics.documentSearch.total}</div>
-            <div className="space-y-1 mt-3">
-              <div className="flex justify-between text-xs">
-                <span>Usage</span>
-                <span>{usageMetrics.documentSearch.percent}%</span>
+            {usageLoading ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-20 mb-3"></div>
+                <div className="h-2 bg-gray-200 rounded mb-1"></div>
+                <div className="h-2 bg-gray-200 rounded w-16"></div>
               </div>
-              <Progress value={usageMetrics.documentSearch.percent} className="h-2" />
-            </div>
+            ) : (
+              <>
+                <div className="text-3xl font-bold">{usageMetrics.documentSearch.used}/{usageMetrics.documentSearch.total}</div>
+                <div className="space-y-1 mt-3">
+                  <div className="flex justify-between text-xs">
+                    <span>Usage</span>
+                    <span>{usageMetrics.documentSearch.percent}%</span>
+                  </div>
+                  <Progress value={usageMetrics.documentSearch.percent} className="h-2" />
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -210,14 +225,24 @@ const DashboardHome = () => {
             <CardDescription>Instant answers to client questions</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{usageMetrics.qaAssistant.used}/{usageMetrics.qaAssistant.total}</div>
-            <div className="space-y-1 mt-3">
-              <div className="flex justify-between text-xs">
-                <span>Usage</span>
-                <span>{usageMetrics.qaAssistant.percent}%</span>
+            {usageLoading ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-20 mb-3"></div>
+                <div className="h-2 bg-gray-200 rounded mb-1"></div>
+                <div className="h-2 bg-gray-200 rounded w-16"></div>
               </div>
-              <Progress value={usageMetrics.qaAssistant.percent} className="h-2" />
-            </div>
+            ) : (
+              <>
+                <div className="text-3xl font-bold">{usageMetrics.qaAssistant.used}/{usageMetrics.qaAssistant.total}</div>
+                <div className="space-y-1 mt-3">
+                  <div className="flex justify-between text-xs">
+                    <span>Usage</span>
+                    <span>{usageMetrics.qaAssistant.percent}%</span>
+                  </div>
+                  <Progress value={usageMetrics.qaAssistant.percent} className="h-2" />
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
