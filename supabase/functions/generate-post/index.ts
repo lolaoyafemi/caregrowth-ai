@@ -131,10 +131,10 @@ Testimonial: ${profile.testimonial || 'Trusted by families in our community'}
       body = personalizeText(body);
       cta = personalizeText(cta);
 
-      // Then enhance with OpenAI intelligence
+      // Then enhance with OpenAI intelligence for context-based content
       console.log('Enhancing prompt content with OpenAI intelligence...');
       
-      const enhancementPrompt = `You are an expert social media copywriter specializing in home care services. I have content from our database that needs to be enhanced and made more intelligent and engaging.
+      const enhancementPrompt = `You are an expert social media copywriter specializing in home care services. I have content from our database that needs to be enhanced and made more context-aware and engaging.
 
 Business Context:
 ${businessContext}
@@ -150,17 +150,24 @@ BODY: ${body}
 CTA: ${cta}
 
 Please enhance this content by:
-1. Making it more personalized and emotionally intelligent
-2. Adding compelling storytelling elements
-3. Making it more engaging and authentic
-4. Ensuring it resonates with the target audience
-5. Keeping the same structure but improving language and impact
-6. Making it sound natural and human, not AI-generated
+1. Making it highly relevant to the specific target audience: "${audience}"
+2. Matching the exact tone requested: "${tone}"
+3. Optimizing for the platform: "${platform}"
+4. Adding compelling storytelling elements that resonate with the audience
+5. Making it more engaging and authentic for the content category: "${postType}"
+6. Ensuring it addresses the specific needs and pain points of "${audience}"
+7. Making it sound natural and human, not AI-generated
+
+Focus heavily on making the content contextually relevant to:
+- Target Audience: ${audience}
+- Tone: ${tone}  
+- Content Type: ${postType}
+- Platform: ${platform}
 
 Return the enhanced version in the same format:
-HOOK: [enhanced hook]
-BODY: [enhanced body]
-CTA: [enhanced cta]`;
+HOOK: [enhanced hook tailored to ${audience} with ${tone} tone]
+BODY: [enhanced body optimized for ${postType} content and ${platform}]
+CTA: [enhanced cta that drives action from ${audience}]`;
 
       try {
         const enhancementResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -174,7 +181,7 @@ CTA: [enhanced cta]`;
             messages: [
               {
                 role: 'system',
-                content: 'You are an expert social media copywriter specializing in home care services. Focus on creating authentic, emotionally intelligent content that builds trust and drives action.'
+                content: `You are an expert social media copywriter specializing in home care services. Focus on creating highly contextual, audience-specific content that matches the exact tone and platform requirements. Make content that truly resonates with the target audience: "${audience}" using a "${tone}" tone for "${postType}" content on "${platform}".`
               },
               {
                 role: 'user',
@@ -226,12 +233,18 @@ Target Audience: ${audience || "families caring for loved ones"}
 Tone: ${tone}
 Platform: ${platform}
 
-Create a compelling social media post with these components:
-1. HOOK: An attention-grabbing opening that speaks directly to the target audience's emotions (1-2 sentences)
-2. BODY: Value-driven content that showcases the business's unique strengths and addresses client needs (2-3 sentences)
-3. CTA: A compelling call-to-action that drives engagement (1 sentence)
+Create highly contextual social media content that is specifically tailored to:
+- Target Audience: "${audience}" - speak directly to their needs, concerns, and interests
+- Tone: "${tone}" - maintain this exact tone throughout
+- Content Type: "${postType}" - ensure the content serves this specific purpose
+- Platform: "${platform}" - optimize for this platform's best practices and audience behavior
 
-Make it authentic, emotionally intelligent, and platform-optimized for ${platform}.
+Create a compelling social media post with these components:
+1. HOOK: An attention-grabbing opening that speaks directly to "${audience}" using a "${tone}" tone (1-2 sentences)
+2. BODY: Value-driven content for "${postType}" that showcases the business's unique strengths and addresses "${audience}" specific needs using a "${tone}" tone (2-3 sentences)
+3. CTA: A compelling call-to-action optimized for "${platform}" that drives "${audience}" to take action (1 sentence)
+
+Make it authentic, highly relevant to the context, and platform-optimized for ${platform}.
 
 Format your response as:
 HOOK: [hook content]
@@ -250,7 +263,7 @@ CTA: [cta content]`;
             messages: [
               {
                 role: 'system',
-                content: 'You are an expert social media copywriter specializing in home care services. Focus on creating authentic, engaging content that converts prospects into customers.'
+                content: `You are an expert social media copywriter specializing in home care services. Focus on creating highly contextual content that is specifically tailored to the target audience "${audience}" with a "${tone}" tone for "${postType}" content on "${platform}". Make every word count and ensure maximum relevance to the specified context.`
               },
               {
                 role: 'user',
