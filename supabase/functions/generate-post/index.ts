@@ -61,9 +61,9 @@ serve(async (req) => {
     }
 
     let hook = '', body = '', cta = '';
-    let useTemplate = false;
     let selectedPrompt = null;
 
+    // Always try to use a prompt from the database first
     if (prompts && prompts.length > 0) {
       // Separate prompts by platform preference
       const platformSpecificPrompts = prompts.filter(p => p.platform === platform);
@@ -78,25 +78,16 @@ serve(async (req) => {
         
         console.log('Selected prompt row:', selectedPrompt);
         
-        // Use the hook, body, and cta directly from the selected row
-        if (selectedPrompt.hook && selectedPrompt.body && selectedPrompt.cta) {
-          hook = selectedPrompt.hook;
-          body = selectedPrompt.body;
-          cta = selectedPrompt.cta;
-          useTemplate = true;
-          
-          console.log('Using template from row:', { hook, body, cta });
-        } else {
-          console.log('Selected prompt row has missing fields, falling back to AI generation');
-        }
-      } else {
-        console.log('No suitable prompts found for category and platform, falling back to AI generation');
+        // Use the hook, body, and cta from the selected prompt
+        hook = selectedPrompt.hook || '';
+        body = selectedPrompt.body || '';
+        cta = selectedPrompt.cta || '';
+        
+        console.log('Using template from row:', { hook, body, cta });
       }
-    } else {
-      console.log('No prompts found for category:', postType);
     }
 
-    // Build comprehensive business context
+    // Build comprehensive business context for personalization
     const businessContext = profile ? `
 Business Name: ${profile.business_name || 'Home Care Business'}
 Services: ${profile.services || profile.core_service || 'Home care services'}
@@ -133,17 +124,17 @@ Testimonial: ${profile.testimonial || 'Trusted by families in our community'}
         .replace(/\{testimonial\}/gi, profile.testimonial || 'trusted by our community');
     };
 
-    // If template found, personalize it but also enhance with AI
-    if (useTemplate && hook && body && cta) {
-      // Personalize the template
+    // If we have a prompt from database, personalize it and enhance with AI
+    if (selectedPrompt && hook && body && cta) {
+      // First personalize the template
       hook = personalizeText(hook);
       body = personalizeText(body);
       cta = personalizeText(cta);
 
-      // Enhance with AI for better personalization and intelligence
-      console.log('Enhancing template with AI intelligence...');
+      // Then enhance with OpenAI intelligence
+      console.log('Enhancing prompt content with OpenAI intelligence...');
       
-      const enhancementPrompt = `You are an expert social media copywriter. I have a templated social media post that needs to be enhanced and personalized for a specific business.
+      const enhancementPrompt = `You are an expert social media copywriter specializing in home care services. I have content from our database that needs to be enhanced and made more intelligent and engaging.
 
 Business Context:
 ${businessContext}
@@ -153,17 +144,18 @@ Target Audience: ${audience || "families caring for loved ones"}
 Tone: ${tone}
 Platform: ${platform}
 
-Current Template:
+Current Content:
 HOOK: ${hook}
 BODY: ${body}
 CTA: ${cta}
 
 Please enhance this content by:
-1. Making it more personalized to the business details
-2. Adding emotional intelligence and human touch
-3. Making it more engaging and compelling
-4. Ensuring it sounds natural and authentic
-5. Keeping the same structure but improving the language and impact
+1. Making it more personalized and emotionally intelligent
+2. Adding compelling storytelling elements
+3. Making it more engaging and authentic
+4. Ensuring it resonates with the target audience
+5. Keeping the same structure but improving language and impact
+6. Making it sound natural and human, not AI-generated
 
 Return the enhanced version in the same format:
 HOOK: [enhanced hook]
@@ -182,7 +174,7 @@ CTA: [enhanced cta]`;
             messages: [
               {
                 role: 'system',
-                content: 'You are an expert social media copywriter specializing in home care services. Focus on creating authentic, engaging content that builds trust and drives action.'
+                content: 'You are an expert social media copywriter specializing in home care services. Focus on creating authentic, emotionally intelligent content that builds trust and drives action.'
               },
               {
                 role: 'user',
@@ -190,7 +182,7 @@ CTA: [enhanced cta]`;
               }
             ],
             temperature: 0.7,
-            max_tokens: 600
+            max_tokens: 800
           })
         });
 
@@ -217,15 +209,14 @@ CTA: [enhanced cta]`;
           console.log('Enhancement failed, using personalized template');
         }
       } catch (enhanceError) {
-        console.error('Error enhancing template:', enhanceError);
+        console.error('Error enhancing content:', enhanceError);
         console.log('Using personalized template without AI enhancement');
       }
     } else {
-      // Full AI generation with enhanced business intelligence
-      console.log('Using full OpenAI generation with business intelligence');
+      // Fallback: Generate completely new content with AI if no prompts available
+      console.log('No prompts found, generating new content with OpenAI');
       
-      const systemMessage = `You are an expert social media copywriter specializing in home care services. 
-Create engaging, authentic social media content that converts prospects into customers using advanced business intelligence.
+      const generationPrompt = `You are an expert social media copywriter specializing in home care services. 
 
 Business Context:
 ${businessContext}
@@ -235,62 +226,53 @@ Target Audience: ${audience || "families caring for loved ones"}
 Tone: ${tone}
 Platform: ${platform}
 
-Create a highly personalized social media post with these components:
-1. HOOK: An attention-grabbing opening that speaks directly to the target audience's pain points and emotions (1-2 sentences)
-2. BODY: Value-driven content that showcases the business's unique strengths and addresses specific client needs (2-3 sentences)
-3. CTA: A compelling call-to-action that drives engagement and leads (1 sentence)
+Create a compelling social media post with these components:
+1. HOOK: An attention-grabbing opening that speaks directly to the target audience's emotions (1-2 sentences)
+2. BODY: Value-driven content that showcases the business's unique strengths and addresses client needs (2-3 sentences)
+3. CTA: A compelling call-to-action that drives engagement (1 sentence)
 
-Advanced Guidelines:
-- Use the business's specific differentiators and unique value proposition
-- Address the exact pain points and objections mentioned in the business profile
-- Incorporate the location and services naturally
-- Make it sound authentically human, not AI-generated
-- Use emotional intelligence to connect with the target audience
-- Include social proof elements when relevant
-- Optimize for ${platform} platform best practices
-- Write in ${tone} tone while maintaining authenticity
+Make it authentic, emotionally intelligent, and platform-optimized for ${platform}.
 
 Format your response as:
 HOOK: [hook content]
 BODY: [body content]  
 CTA: [cta content]`;
 
-      console.log('Calling OpenAI API with enhanced intelligence...');
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: systemMessage
-            },
-            {
-              role: 'user',
-              content: `Create an intelligent, personalized ${postType} social media post for ${platform} targeting ${audience} in a ${tone} tone using all the business context provided.`
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 600
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('OpenAI API error:', errorData);
-        throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
-      }
-
-      const data = await response.json();
-      const generatedContent = data.choices[0].message.content;
-      console.log('Generated content:', generatedContent);
-
-      // Parse the generated content to extract hook, body, and cta
       try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert social media copywriter specializing in home care services. Focus on creating authentic, engaging content that converts prospects into customers.'
+              },
+              {
+                role: 'user',
+                content: generationPrompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 600
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('OpenAI API error:', errorData);
+          throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+        }
+
+        const data = await response.json();
+        const generatedContent = data.choices[0].message.content;
+        console.log('Generated content:', generatedContent);
+
+        // Parse the generated content
         const lines = generatedContent.split('\n').filter(line => line.trim());
         
         for (const line of lines) {
@@ -304,24 +286,23 @@ CTA: [cta content]`;
           }
         }
 
-        // If parsing fails, use fallback parsing
+        // Fallback parsing if format not followed
         if (!hook && !body && !cta) {
           const contentLines = generatedContent.split('\n').filter(line => line.trim());
           if (contentLines.length >= 3) {
-            hook = contentLines[0] || 'Are you looking for reliable home care services?';
+            hook = contentLines[0] || 'Looking for reliable home care services?';
             body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones.';
             cta = contentLines[contentLines.length - 1] || 'Contact us today to learn more!';
           } else {
-            // Ultimate fallback
-            hook = 'Are you looking for reliable home care services?';
+            hook = 'Looking for reliable home care services?';
             body = 'Our team provides compassionate, professional care for your loved ones.';
             cta = 'Contact us today to learn more!';
           }
         }
-      } catch (parseError) {
-        console.error('Error parsing generated content:', parseError);
-        // Fallback content
-        hook = 'Are you looking for reliable home care services?';
+      } catch (error) {
+        console.error('Error generating content:', error);
+        // Ultimate fallback
+        hook = 'Looking for reliable home care services?';
         body = 'Our team provides compassionate, professional care for your loved ones.';
         cta = 'Contact us today to learn more!';
       }
@@ -350,7 +331,7 @@ CTA: [cta content]`;
       hook,
       body,
       cta,
-      source: useTemplate ? 'template_enhanced' : 'ai_generated',
+      source: selectedPrompt ? 'database_enhanced' : 'ai_generated',
       template_id: selectedPrompt?.id || null,
       available_templates: prompts?.length || 0,
       business_context_used: !!profile
