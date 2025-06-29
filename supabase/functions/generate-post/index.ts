@@ -321,11 +321,11 @@ CTA: [strong call-to-action with 2-3 sentences]`;
           const contentLines = generatedContent.split('\n').filter(line => line.trim());
           if (contentLines.length >= 3) {
             hook = contentLines[0] || 'Looking for reliable home care services?';
-            body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we're here to help navigate those difficult decisions with expertise and understanding.';
+            body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we are here to help navigate those difficult decisions with expertise and understanding.';
             cta = contentLines[contentLines.length - 1] || 'Contact us today to learn more about how we can support your family!';
           } else {
             hook = 'Looking for reliable home care services?';
-            body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we're here to help navigate those difficult decisions with expertise and understanding.';
+            body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we are here to help navigate those difficult decisions with expertise and understanding.';
             cta = 'Contact us today to learn more about how we can support your family!';
           }
         }
@@ -333,7 +333,7 @@ CTA: [strong call-to-action with 2-3 sentences]`;
         console.error('Error generating content:', error);
         // Ultimate fallback
         hook = 'Looking for reliable home care services?';
-        body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we're here to help navigate those difficult decisions with expertise and understanding.';
+        body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we are here to help navigate those difficult decisions with expertise and understanding.';
         cta = 'Contact us today to learn more about how we can support your family!';
       }
     }
