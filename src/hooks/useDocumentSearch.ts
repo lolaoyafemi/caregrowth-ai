@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
+import { useUserCredits } from '@/hooks/useUserCredits';
+import { validateCreditsBeforeAction } from '@/utils/creditValidation';
 
 interface SearchResult {
   documentTitle: string;
@@ -26,10 +28,16 @@ export const useDocumentSearch = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useUser();
+  const { credits } = useUserCredits();
 
   const searchDocuments = async (query: string): Promise<SearchResponse | null> => {
     if (!user) {
       setError('User must be logged in');
+      return null;
+    }
+
+    // Check credits before proceeding
+    if (!validateCreditsBeforeAction(credits, 'Document Search')) {
       return null;
     }
 
@@ -66,6 +74,11 @@ export const useDocumentSearch = () => {
   const smartSearchDocuments = async (query: string): Promise<SmartSearchResult | null> => {
     if (!user) {
       setError('User must be logged in');
+      return null;
+    }
+
+    // Check credits before proceeding
+    if (!validateCreditsBeforeAction(credits, 'Smart Document Search')) {
       return null;
     }
 

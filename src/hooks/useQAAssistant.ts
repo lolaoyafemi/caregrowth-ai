@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
+import { useUserCredits } from '@/hooks/useUserCredits';
+import { validateCreditsBeforeAction } from '@/utils/creditValidation';
 
 interface QAResponse {
   answer: string;
@@ -13,10 +15,16 @@ export const useQAAssistant = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useUser();
+  const { credits } = useUserCredits();
 
   const askQuestion = async (question: string): Promise<QAResponse | null> => {
     if (!user) {
       setError('User must be logged in');
+      return null;
+    }
+
+    // Check credits before proceeding
+    if (!validateCreditsBeforeAction(credits, 'Ask Jared')) {
       return null;
     }
 

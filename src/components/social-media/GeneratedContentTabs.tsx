@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Copy, Eye } from 'lucide-react';
 import { toast } from "sonner";
+import { useUserCredits } from '@/hooks/useUserCredits';
+import { validateCreditsBeforeAction } from '@/utils/creditValidation';
 
 interface GeneratedSection {
   hook: string;
@@ -43,6 +44,7 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState('');
   const [previewPlatform, setPreviewPlatform] = useState('');
+  const { credits } = useUserCredits();
 
   if (!generatedContent && !isGenerating) return null;
 
@@ -65,6 +67,12 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
     setPreviewContent(fullText);
     setPreviewPlatform(platform.charAt(0).toUpperCase() + platform.slice(1));
     setPreviewOpen(true);
+  };
+
+  const handleRegenerateSection = (platform: string, section: string) => {
+    if (validateCreditsBeforeAction(credits, 'Section Regeneration')) {
+      onRegenerateSection(platform, section);
+    }
   };
 
   const handleFullContentChange = (platform: string, value: string) => {
@@ -157,13 +165,18 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center mb-4">
                       <h4 className="font-medium">Regenerate Sections</h4>
+                      {credits <= 0 && (
+                        <p className="text-sm text-red-600">
+                          Credits required for regeneration
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2 mb-4">
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => onRegenerateSection(platform, 'hook')}
-                        disabled={regeneratingSection !== null}
+                        onClick={() => handleRegenerateSection(platform, 'hook')}
+                        disabled={regeneratingSection !== null || credits <= 0}
                       >
                         {regeneratingSection?.platform === platform && regeneratingSection?.section === 'hook'
                           ? "Regenerating..."
@@ -173,8 +186,8 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => onRegenerateSection(platform, 'body')}
-                        disabled={regeneratingSection !== null}
+                        onClick={() => handleRegenerateSection(platform, 'body')}
+                        disabled={regeneratingSection !== null || credits <= 0}
                       >
                         {regeneratingSection?.platform === platform && regeneratingSection?.section === 'body'
                           ? "Regenerating..."
@@ -184,8 +197,8 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => onRegenerateSection(platform, 'cta')}
-                        disabled={regeneratingSection !== null}
+                        onClick={() => handleRegenerateSection(platform, 'cta')}
+                        disabled={regeneratingSection !== null || credits <= 0}
                       >
                         {regeneratingSection?.platform === platform && regeneratingSection?.section === 'cta'
                           ? "Regenerating..."

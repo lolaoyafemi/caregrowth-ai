@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useUserCredits } from '@/hooks/useUserCredits';
+import { validateCreditsBeforeAction } from '@/utils/creditValidation';
 
 interface SocialMediaFormProps {
   audience: string;
@@ -31,6 +33,14 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
   onGenerate,
   isGenerating
 }) => {
+  const { credits } = useUserCredits();
+
+  const handleGenerate = () => {
+    if (validateCreditsBeforeAction(credits, 'Social Media Content Generator')) {
+      onGenerate();
+    }
+  };
+
   return (
     <Card className="p-6 mb-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -93,11 +103,16 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
           <div className="mt-8">
             <Button 
               className="w-full bg-caregrowth-blue text-white"
-              onClick={onGenerate}
-              disabled={isGenerating}
+              onClick={handleGenerate}
+              disabled={isGenerating || credits <= 0}
             >
               {isGenerating ? "Generating Content..." : "Generate Content"}
             </Button>
+            {credits <= 0 && (
+              <p className="text-sm text-red-600 mt-2 text-center">
+                You need credits to generate content. <a href="/stripe-payment" className="underline">Buy credits</a>
+              </p>
+            )}
           </div>
         </div>
       </div>
