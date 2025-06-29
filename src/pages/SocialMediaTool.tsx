@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ const SocialMediaTool = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [businessProfile, setBusinessProfile] = useState<any>(null);
+  const [savedPostsRefreshTrigger, setSavedPostsRefreshTrigger] = useState(0);
   
   // Form states
   const [audience, setAudience] = useState('');
@@ -318,6 +320,9 @@ const SocialMediaTool = () => {
         toneOfPost
       );
       
+      // Trigger refresh of saved posts list
+      setSavedPostsRefreshTrigger(prev => prev + 1);
+      
       toast.success(`Post saved successfully!`);
     } catch (error: any) {
       console.error('Error saving post:', error);
@@ -407,7 +412,7 @@ const SocialMediaTool = () => {
         onViewPost={handleViewPost}
       />
 
-      <SavedPostsList />
+      <SavedPostsList refreshTrigger={savedPostsRefreshTrigger} />
 
       {showBusinessForm && (
         <BusinessDetailsForm 
