@@ -95,8 +95,8 @@ Testimonial: ${profile.testimonial || 'Trusted by families in our community'}
         
         console.log('Selected prompt row:', selectedPrompt);
         
-        // Use AI to intelligently rephrase the database prompts
-        const rephrasePrompt = `You are an expert social media copywriter. I have a template from our content library that needs to be intelligently rephrased and adapted.
+        // Use AI to intelligently rephrase and expand the database prompts for longer, more contextual content
+        const rephrasePrompt = `You are an expert social media copywriter specializing in creating compelling, longer-form social media content. I have a template from our content library that needs to be intelligently rephrased, expanded, and made more contextual.
 
 Business Context:
 ${businessContext}
@@ -111,27 +111,46 @@ Target Audience: ${targetAudience}
 Tone: ${tone}
 Platform: ${platform}
 
-Please intelligently rephrase and adapt this template by:
+Please intelligently rephrase and significantly expand this template by:
 
-1. REPHRASING THE HOOK: Keep the core message and structure but use different words, phrases, and expressions while maintaining the same emotional impact and relevance to "${targetAudience}"
+1. EXPANDING THE HOOK (2-3 sentences): 
+   - Rephrase using different words while keeping the core emotional impact
+   - Add a compelling follow-up sentence that draws readers deeper
+   - Make it highly relevant to "${targetAudience}" with specific details
+   - Create immediate emotional connection and curiosity
 
-2. ADAPTING THE BODY: Rephrase the content using fresh language while keeping the same key points, structure, and value proposition. Make it feel natural and conversational in a "${tone}" tone.
+2. ENRICHING THE BODY (4-6 substantial paragraphs, 400-500 words):
+   - Rephrase all content using fresh language and sentence structures
+   - Add specific, realistic scenarios and examples that "${targetAudience}" can relate to
+   - Include detailed storytelling elements that paint vivid pictures
+   - Weave in emotional moments and concrete benefits
+   - Add context about common challenges and real-world situations
+   - Include subtle social proof and credibility indicators
+   - Make it conversational and engaging with a "${tone}" tone
+   - Ensure each paragraph builds on the previous one logically
 
-3. REFRESHING THE CTA: Rephrase the call-to-action using different wording while maintaining the same intent and urgency.
+3. STRENGTHENING THE CTA (2-3 sentences):
+   - Rephrase using different compelling language
+   - Add urgency and emotional motivation
+   - Include a secondary benefit or reassurance
+   - Make it feel natural and non-pushy
 
-IMPORTANT RULES:
-- Keep the same overall structure and key messaging points
-- Use different vocabulary, sentence structures, and expressions
-- Maintain the "${tone}" tone throughout
-- Keep placeholders like {business_name}, {ideal_client}, etc. intact for personalization
-- Ensure it feels fresh and natural, not like a direct copy
-- Make it specifically relevant to "${targetAudience}"
-- Optimize for ${platform} engagement
+CRITICAL REQUIREMENTS:
+- Create 400-500 word posts with rich, contextual storytelling
+- Use different vocabulary, sentence structures, and expressions throughout
+- Add specific scenarios, examples, and emotional moments
+- Maintain the "${tone}" tone while being conversational and engaging
+- Keep placeholders like {business_name}, {ideal_client}, etc. intact
+- Make it feel completely fresh and natural, not like a template
+- Ensure high relevance to "${targetAudience}" with specific details
+- Optimize for ${platform} engagement with platform-appropriate language
+- Include realistic situations and relatable moments
+- Add depth through storytelling, examples, and emotional connection
 
-Return the rephrased version in this exact format:
-HOOK: [rephrased hook]
-BODY: [rephrased body with same structure but different wording]
-CTA: [rephrased call-to-action]`;
+Return the expanded version in this exact format:
+HOOK: [expanded hook with 2-3 sentences]
+BODY: [expanded body with 4-6 paragraphs, 400-500 words total]
+CTA: [strengthened call-to-action with 2-3 sentences]`;
 
         try {
           const rephraseResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -145,7 +164,7 @@ CTA: [rephrased call-to-action]`;
               messages: [
                 {
                   role: 'system',
-                  content: `You are an expert social media copywriter specializing in rephrasing content templates while maintaining their effectiveness. Focus on creating fresh, engaging content that resonates with "${targetAudience}" using a "${tone}" tone.`
+                  content: `You are an expert social media copywriter specializing in creating longer, more contextual content that resonates deeply with "${targetAudience}" using a "${tone}" tone. Focus on rich storytelling, specific examples, and emotional connection while maintaining authenticity and engagement.`
                 },
                 {
                   role: 'user',
@@ -153,7 +172,7 @@ CTA: [rephrased call-to-action]`;
                 }
               ],
               temperature: 0.8,
-              max_tokens: 1000,
+              max_tokens: 1500,
               top_p: 1,
               frequency_penalty: 0.3,
               presence_penalty: 0.3
@@ -199,11 +218,11 @@ CTA: [rephrased call-to-action]`;
       }
     }
 
-    // If no prompts found, generate completely new content with AI
+    // If no prompts found, generate completely new longer content with AI
     if (!hook && !body && !cta) {
-      console.log('No prompts found, generating new content with OpenAI');
+      console.log('No prompts found, generating new longer content with OpenAI');
       
-      const generationPrompt = `You are an expert social media copywriter specializing in home care services. 
+      const generationPrompt = `You are an expert social media copywriter specializing in home care services. Create longer, more contextual social media content.
 
 Business Context:
 ${businessContext}
@@ -213,29 +232,41 @@ Target Audience: ${targetAudience}
 Tone: ${tone}
 Platform: ${platform}
 
-Create a compelling social media post (300-400 words) that is specifically tailored to:
+Create a comprehensive social media post (500-600 words) that is specifically tailored to:
 - Target Audience: "${targetAudience}" - speak directly to their needs, concerns, and interests
 - Tone: "${tone}" - maintain this exact tone throughout
 - Content Type: "${postType}" - ensure the content serves this specific purpose
 - Platform: "${platform}" - optimize for this platform's best practices and audience behavior
 
 Structure the post with:
-1. HOOK: An attention-grabbing opening that immediately resonates with "${targetAudience}" - use a story, question, or insight that stops them scrolling (1-2 sentences)
-2. BODY: Value-rich content that:
-   - Tells a relatable story or shares valuable insights
-   - Addresses specific challenges "${targetAudience}" faces
-   - Demonstrates expertise through detailed examples
-   - Shows concrete benefits and outcomes
-   - Uses "${tone}" tone while being conversational and engaging
-   - Is 3-4 substantial paragraphs (200-300 words)
-3. CTA: A compelling call-to-action that drives "${targetAudience}" to take meaningful action (1-2 sentences)
 
-Make it authentic, highly relevant, and platform-optimized for ${platform}. Focus on storytelling, emotional connection, and providing real value.
+1. HOOK (2-3 compelling sentences): 
+   - Create an attention-grabbing opening that immediately resonates with "${targetAudience}"
+   - Use a story, question, or insight that stops them scrolling
+   - Build curiosity and emotional connection from the first sentence
+
+2. BODY (4-6 substantial paragraphs, 400-450 words):
+   - Tell a relatable story or share valuable insights with specific details
+   - Address concrete challenges "${targetAudience}" faces with real examples
+   - Demonstrate expertise through detailed scenarios and outcomes
+   - Show concrete benefits and transformation stories
+   - Include emotional moments and authentic experiences
+   - Add context about common situations and realistic solutions
+   - Use "${tone}" tone while being conversational and engaging
+   - Weave in credibility indicators and social proof naturally
+   - Create vivid mental pictures with descriptive language
+
+3. CTA (2-3 sentences):
+   - Compelling call-to-action that drives "${targetAudience}" to meaningful action
+   - Include emotional motivation and clear next steps
+   - Add reassurance or secondary benefit to reduce hesitation
+
+Make it authentic, highly relevant, contextual, and platform-optimized for ${platform}. Focus on deep storytelling, emotional connection, and providing substantial value through detailed examples and scenarios.
 
 Format your response as:
-HOOK: [compelling hook content]
-BODY: [detailed, valuable body content in 3-4 paragraphs]
-CTA: [strong call-to-action]`;
+HOOK: [compelling hook content with 2-3 sentences]
+BODY: [detailed, valuable body content in 4-6 paragraphs]
+CTA: [strong call-to-action with 2-3 sentences]`;
 
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -249,7 +280,7 @@ CTA: [strong call-to-action]`;
             messages: [
               {
                 role: 'system',
-                content: `You are an expert social media copywriter specializing in home care services. Create compelling content that truly resonates with the target audience "${targetAudience}" with a "${tone}" tone for "${postType}" content on "${platform}". Focus on storytelling, emotional connection, and providing substantial value.`
+                content: `You are an expert social media copywriter specializing in home care services. Create compelling, longer-form content that truly resonates with the target audience "${targetAudience}" with a "${tone}" tone for "${postType}" content on "${platform}". Focus on detailed storytelling, emotional connection, and providing substantial value through specific examples and scenarios.`
               },
               {
                 role: 'user',
@@ -257,7 +288,7 @@ CTA: [strong call-to-action]`;
               }
             ],
             temperature: 0.7,
-            max_tokens: 1200
+            max_tokens: 1800
           })
         });
 
@@ -290,20 +321,20 @@ CTA: [strong call-to-action]`;
           const contentLines = generatedContent.split('\n').filter(line => line.trim());
           if (contentLines.length >= 3) {
             hook = contentLines[0] || 'Looking for reliable home care services?';
-            body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence.';
-            cta = contentLines[contentLines.length - 1] || 'Contact us today to learn more!';
+            body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we're here to help navigate those difficult decisions with expertise and understanding.';
+            cta = contentLines[contentLines.length - 1] || 'Contact us today to learn more about how we can support your family!';
           } else {
             hook = 'Looking for reliable home care services?';
-            body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence.';
-            cta = 'Contact us today to learn more!';
+            body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we're here to help navigate those difficult decisions with expertise and understanding.';
+            cta = 'Contact us today to learn more about how we can support your family!';
           }
         }
       } catch (error) {
         console.error('Error generating content:', error);
         // Ultimate fallback
         hook = 'Looking for reliable home care services?';
-        body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence.';
-        cta = 'Contact us today to learn more!';
+        body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we're here to help navigate those difficult decisions with expertise and understanding.';
+        cta = 'Contact us today to learn more about how we can support your family!';
       }
     }
 
