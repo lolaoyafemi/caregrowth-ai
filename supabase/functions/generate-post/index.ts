@@ -88,11 +88,14 @@ serve(async (req) => {
     }
 
     // Build comprehensive business context for personalization
+    // Prioritize user-entered audience over profile ideal_client
+    const targetAudience = audience || (profile?.ideal_client || 'families needing care');
+    
     const businessContext = profile ? `
 Business Name: ${profile.business_name || 'Home Care Business'}
 Services: ${profile.services || profile.core_service || 'Home care services'}
 Location: ${profile.location || 'Local area'}
-Target Client: ${profile.ideal_client || 'Families needing care'}
+Target Client: ${targetAudience}
 Main Offer: ${profile.main_offer || 'Professional home care'}
 Differentiator: ${profile.differentiator || 'Compassionate, professional care'}
 Big Promise: ${profile.big_promise || 'Exceptional care for your loved ones'}
@@ -111,14 +114,14 @@ Testimonial: ${profile.testimonial || 'Trusted by families in our community'}
         .replace(/\{location\}/gi, profile.location || 'your area')
         .replace(/\{services\}/gi, profile.services || 'our services')
         .replace(/\{core_service\}/gi, profile.core_service || 'our services')
-        .replace(/\{ideal_client\}/gi, profile.ideal_client || 'families')
+        .replace(/\{ideal_client\}/gi, targetAudience)
         .replace(/\{main_offer\}/gi, profile.main_offer || 'our services')
         .replace(/\{differentiator\}/gi, profile.differentiator || 'professional care')
         .replace(/\{big_promise\}/gi, profile.big_promise || 'exceptional care')
         .replace(/\{pain_points\}/gi, Array.isArray(profile.pain_points) ? profile.pain_points.join(', ') : 'common challenges')
         .replace(/\{audience_problem\}/gi, profile.audience_problem || 'caregiving challenges')
         .replace(/\{objections\}/gi, Array.isArray(profile.objections) ? profile.objections.join(', ') : 'common concerns')
-        .replace(/\{audience\}/gi, audience || 'families')
+        .replace(/\{audience\}/gi, targetAudience)
         .replace(/\{tone\}/gi, tone || 'professional')
         .replace(/\{platform\}/gi, platform || 'social media')
         .replace(/\{testimonial\}/gi, profile.testimonial || 'trusted by our community');
@@ -140,7 +143,7 @@ Business Context:
 ${businessContext}
 
 Content Category: ${postType}
-Target Audience: ${audience || "families caring for loved ones"}
+Target Audience: ${targetAudience}
 Tone: ${tone}
 Platform: ${platform}
 
@@ -151,9 +154,9 @@ CTA: ${cta}
 
 Please transform this into a compelling long-form social media post by:
 
-1. EXPANDING THE HOOK: Make it more attention-grabbing and emotionally compelling for "${audience}" - include a story element, question, or surprising statistic that hooks readers immediately
+1. EXPANDING THE HOOK: Make it more attention-grabbing and emotionally compelling for "${targetAudience}" - include a story element, question, or surprising statistic that hooks readers immediately
 2. DEVELOPING THE BODY: Expand this into 3-4 substantial paragraphs (200-300 words total) that:
-   - Tell a relatable story or share valuable insights specific to "${audience}"
+   - Tell a relatable story or share valuable insights specific to "${targetAudience}"
    - Address their specific pain points and challenges
    - Showcase expertise and build trust through detailed examples
    - Include specific benefits and outcomes they care about
@@ -162,14 +165,14 @@ Please transform this into a compelling long-form social media post by:
 
 Create a cohesive, engaging long-form post optimized for ${platform} that:
 - Feels authentic and human, not AI-generated
-- Speaks directly to "${audience}" using their language and concerns
+- Speaks directly to "${targetAudience}" using their language and concerns
 - Maintains the "${tone}" tone throughout
 - Provides real value and builds trust
 - Encourages meaningful engagement
 - Is 300-400 words total for maximum engagement
 
 Return the enhanced long-form version in the same format:
-HOOK: [expanded, compelling hook for ${audience}]
+HOOK: [expanded, compelling hook for ${targetAudience}]
 BODY: [detailed 3-4 paragraph body with stories, insights, and value]
 CTA: [stronger, more specific call-to-action]`;
 
@@ -185,7 +188,7 @@ CTA: [stronger, more specific call-to-action]`;
             messages: [
               {
                 role: 'system',
-                content: `You are an expert social media copywriter specializing in home care services. Create compelling long-form content that truly resonates with the target audience: "${audience}" using a "${tone}" tone for "${postType}" content on "${platform}". Focus on storytelling, value delivery, and emotional connection.`
+                content: `You are an expert social media copywriter specializing in home care services. Create compelling long-form content that truly resonates with the target audience: "${targetAudience}" using a "${tone}" tone for "${postType}" content on "${platform}". Focus on storytelling, value delivery, and emotional connection.`
               },
               {
                 role: 'user',
@@ -233,26 +236,26 @@ Business Context:
 ${businessContext}
 
 Content Category: ${postType}
-Target Audience: ${audience || "families caring for loved ones"}
+Target Audience: ${targetAudience}
 Tone: ${tone}
 Platform: ${platform}
 
 Create a compelling long-form social media post (300-400 words) that is specifically tailored to:
-- Target Audience: "${audience}" - speak directly to their needs, concerns, and interests
+- Target Audience: "${targetAudience}" - speak directly to their needs, concerns, and interests
 - Tone: "${tone}" - maintain this exact tone throughout
 - Content Type: "${postType}" - ensure the content serves this specific purpose
 - Platform: "${platform}" - optimize for this platform's best practices and audience behavior
 
 Structure the post with:
-1. HOOK: An attention-grabbing opening that immediately resonates with "${audience}" - use a story, question, or insight that stops them scrolling (1-2 sentences)
+1. HOOK: An attention-grabbing opening that immediately resonates with "${targetAudience}" - use a story, question, or insight that stops them scrolling (1-2 sentences)
 2. BODY: Value-rich content that:
    - Tells a relatable story or shares valuable insights
-   - Addresses specific challenges "${audience}" faces
+   - Addresses specific challenges "${targetAudience}" faces
    - Demonstrates expertise through detailed examples
    - Shows concrete benefits and outcomes
    - Uses "${tone}" tone while being conversational and engaging
    - Is 3-4 substantial paragraphs (200-300 words)
-3. CTA: A compelling call-to-action that drives "${audience}" to take meaningful action (1-2 sentences)
+3. CTA: A compelling call-to-action that drives "${targetAudience}" to take meaningful action (1-2 sentences)
 
 Make it authentic, highly relevant, and platform-optimized for ${platform}. Focus on storytelling, emotional connection, and providing real value.
 
@@ -273,7 +276,7 @@ CTA: [strong call-to-action]`;
             messages: [
               {
                 role: 'system',
-                content: `You are an expert social media copywriter specializing in home care services. Create compelling long-form content that truly resonates with the target audience "${audience}" with a "${tone}" tone for "${postType}" content on "${platform}". Focus on storytelling, emotional connection, and providing substantial value in 300-400 words.`
+                content: `You are an expert social media copywriter specializing in home care services. Create compelling long-form content that truly resonates with the target audience "${targetAudience}" with a "${tone}" tone for "${postType}" content on "${platform}". Focus on storytelling, emotional connection, and providing substantial value in 300-400 words.`
               },
               {
                 role: 'user',
@@ -341,7 +344,7 @@ CTA: [strong call-to-action]`;
         prompt_category: postType,
         tone,
         platform,
-        audience,
+        audience: targetAudience,
         content: finalPost
       }]);
 
