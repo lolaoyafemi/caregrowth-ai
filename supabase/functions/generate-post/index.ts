@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
@@ -149,7 +150,7 @@ STORYTELLING REQUIREMENTS:
 - Address common objections naturally within the story
 - Create multiple emotional connection points throughout
 - Keep placeholders like {business_name}, {ideal_client}, etc. intact
-- Ensure high relevance to "${targetAudiente}" with authentic scenarios
+- Ensure high relevance to "${targetAudience}" with authentic scenarios
 
 Return the enhanced storytelling version in this exact format:
 HOOK: [compelling narrative hook with 3-4 sentences]
