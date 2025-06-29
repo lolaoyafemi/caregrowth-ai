@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
-import { validateCreditsBeforeAction } from '@/utils/creditValidation';
 import { toast } from 'sonner';
 
 interface QAResponse {
@@ -25,7 +24,14 @@ export const useQAAssistant = () => {
     }
 
     // Check credits before proceeding (1 credit per question)
-    if (!validateCreditsBeforeAction(credits, 'Ask Jared')) {
+    if (credits < 1) {
+      toast.error("You need at least 1 credit to use Ask Jared. Please purchase more credits to continue.", {
+        duration: 5000,
+        action: {
+          label: "Buy Credits",
+          onClick: () => window.open('/stripe-payment', '_blank')
+        }
+      });
       return null;
     }
 
@@ -33,7 +39,23 @@ export const useQAAssistant = () => {
     setError(null);
 
     try {
-      // Deduct credits from user_profiles table
+      // First, make the API call to avoid deducting credits if the request fails
+      const { data, error: functionError } = await supabase.functions.invoke('qa-assistant', {
+        body: {
+          question: question.trim(),
+          userId: user.id
+        }
+      });
+
+      if (functionError) {
+        throw new Error(functionError.message);
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Only deduct credits after successful API call
       const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ 
@@ -45,7 +67,7 @@ export const useQAAssistant = () => {
       if (updateError) {
         console.error('Error updating credits:', updateError);
         toast.error('Failed to deduct credits');
-        return null;
+        throw new Error('Failed to deduct credits');
       }
 
       // Log the credit usage
@@ -61,22 +83,6 @@ export const useQAAssistant = () => {
 
       if (logError) {
         console.error('Error logging credit usage:', logError);
-      }
-
-      // Make the API call to Ask Jared
-      const { data, error: functionError } = await supabase.functions.invoke('qa-assistant', {
-        body: {
-          question: question.trim(),
-          userId: user.id
-        }
-      });
-
-      if (functionError) {
-        throw new Error(functionError.message);
-      }
-
-      if (data.error) {
-        throw new Error(data.error);
       }
 
       // Refresh credits to reflect the deduction

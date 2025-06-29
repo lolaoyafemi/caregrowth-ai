@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
-import { validateCreditsBeforeAction } from '@/utils/creditValidation';
 import { toast } from 'sonner';
 
 interface SearchResult {
@@ -31,41 +30,6 @@ export const useDocumentSearch = () => {
   const { user } = useUser();
   const { credits, refetch } = useUserCredits();
 
-  const deductCreditsAndLog = async (creditsToDeduct: number, tool: string, description: string) => {
-    // Deduct credits from user_profiles table
-    const { error: updateError } = await supabase
-      .from('user_profiles')
-      .update({ 
-        credits: credits - creditsToDeduct,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id);
-
-    if (updateError) {
-      console.error('Error updating credits:', updateError);
-      toast.error('Failed to deduct credits');
-      throw new Error('Failed to deduct credits');
-    }
-
-    // Log the credit usage
-    const { error: logError } = await supabase
-      .from('credit_usage_log')
-      .insert({
-        user_id: user.id,
-        tool: tool,
-        credits_used: creditsToDeduct,
-        description: description,
-        used_at: new Date().toISOString()
-      });
-
-    if (logError) {
-      console.error('Error logging credit usage:', logError);
-    }
-
-    // Refresh credits to reflect the deduction
-    refetch();
-  };
-
   const searchDocuments = async (query: string): Promise<SearchResponse | null> => {
     if (!user) {
       setError('User must be logged in');
@@ -73,7 +37,14 @@ export const useDocumentSearch = () => {
     }
 
     // Check credits before proceeding (1 credit per search)
-    if (!validateCreditsBeforeAction(credits, 'Document Search')) {
+    if (credits < 1) {
+      toast.error("You need at least 1 credit to use Document Search. Please purchase more credits to continue.", {
+        duration: 5000,
+        action: {
+          label: "Buy Credits",
+          onClick: () => window.open('/stripe-payment', '_blank')
+        }
+      });
       return null;
     }
 
@@ -81,9 +52,7 @@ export const useDocumentSearch = () => {
     setError(null);
 
     try {
-      // Deduct credits before making the API call
-      await deductCreditsAndLog(1, 'document_search', `Document search: ${query.substring(0, 50)}...`);
-
+      // First, make the API call to avoid deducting credits if the search fails
       const { data, error: functionError } = await supabase.functions.invoke('document-search', {
         body: {
           query: query.trim(),
@@ -99,6 +68,39 @@ export const useDocumentSearch = () => {
         throw new Error(data.error);
       }
 
+      // Only deduct credits after successful search
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          credits: credits - 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Error updating credits:', updateError);
+        toast.error('Failed to deduct credits');
+        throw new Error('Failed to deduct credits');
+      }
+
+      // Log the credit usage
+      const { error: logError } = await supabase
+        .from('credit_usage_log')
+        .insert({
+          user_id: user.id,
+          tool: 'document_search',
+          credits_used: 1,
+          description: `Document search: ${query.substring(0, 50)}...`,
+          used_at: new Date().toISOString()
+        });
+
+      if (logError) {
+        console.error('Error logging credit usage:', logError);
+      }
+
+      // Refresh credits to reflect the deduction
+      refetch();
+      
       toast.success(`1 credit deducted. Remaining credits: ${credits - 1}`);
       return data as SearchResponse;
     } catch (err) {
@@ -123,7 +125,7 @@ export const useDocumentSearch = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('/payment', '_blank')
+          onClick: () => window.open('/stripe-payment', '_blank')
         }
       });
       return null;
@@ -133,9 +135,7 @@ export const useDocumentSearch = () => {
     setError(null);
 
     try {
-      // Deduct credits before making the API call
-      await deductCreditsAndLog(2, 'smart_document_search', `Smart document search: ${query.substring(0, 50)}...`);
-
+      // First, make the API call to avoid deducting credits if the search fails
       const { data, error: functionError } = await supabase.functions.invoke('smart-document-search', {
         body: {
           query: query.trim(),
@@ -151,6 +151,39 @@ export const useDocumentSearch = () => {
         throw new Error(data.error);
       }
 
+      // Only deduct credits after successful search
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          credits: credits - 2,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Error updating credits:', updateError);
+        toast.error('Failed to deduct credits');
+        throw new Error('Failed to deduct credits');
+      }
+
+      // Log the credit usage
+      const { error: logError } = await supabase
+        .from('credit_usage_log')
+        .insert({
+          user_id: user.id,
+          tool: 'smart_document_search',
+          credits_used: 2,
+          description: `Smart document search: ${query.substring(0, 50)}...`,
+          used_at: new Date().toISOString()
+        });
+
+      if (logError) {
+        console.error('Error logging credit usage:', logError);
+      }
+
+      // Refresh credits to reflect the deduction
+      refetch();
+      
       toast.success(`2 credits deducted. Remaining credits: ${credits - 2}`);
       return data as SmartSearchResult;
     } catch (err) {
