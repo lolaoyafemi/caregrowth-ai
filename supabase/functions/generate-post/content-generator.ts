@@ -48,11 +48,11 @@ export const generateContentFromPrompts = async (
   const generalPrompts = prompts.filter(p => p.platform === 'all');
 
   const toneMap = {
-  "Professional": "Clear, polished, confident, respectful",
-  "Conversational": "Warm, friendly, approachable, informal",
-  "Enthusiastic": "Positive, energetic, uplifting",
-  "Authoritative": "Strong, confident, assured, expert",
-  "Humorous": "Light, witty, playful"
+    "Professional": "Clear, polished, confident, respectful",
+    "Conversational": "Warm, friendly, approachable, informal",
+    "Enthusiastic": "Positive, energetic, uplifting",
+    "Authoritative": "Strong, confident, assured, expert",
+    "Humorous": "Light, witty, playful"
   };
   
   // Choose from platform-specific first, then general
@@ -62,102 +62,75 @@ export const generateContentFromPrompts = async (
     return null;
   }
 
-  // Assume you get tone from the frontend client input
-  const tone = reqBody.tone; // e.g., "Conversational"
-  
   // Lookup tone description
-  const toneDescription = toneMap[clientTone] || "Clear and natural tone";
+  const toneDescription = toneMap[tone] || "Clear and natural tone";
 
   // Randomly select one row from available prompts
   const selectedPrompt = availablePrompts[Math.floor(Math.random() * availablePrompts.length)];
   
   console.log('Selected prompt row:', selectedPrompt);
 
-  // Build dynamic prompt
-  const prompt = `
-You are a creative and compassionate social media strategist writing for ${business_name}, a ${core_service} provider in ${location}. Your job is to create a ${content_category} post designed for ${ideal_client} that builds ${main_goal_of_category}.
+  // Build dynamic prompt for rephrasing
+  const rephrasePrompt = `You are an expert social media storyteller specializing in creating emotionally compelling, longer-form content that deeply resonates with specific audiences. I have a content template that needs to be transformed into a rich, storytelling masterpiece.
 
-The tone for this post is: ${clientTone}.
-Examples of this tone: ${toneDescription}.
-Write in a way that fits this tone naturally — the reader should *feel* it in the style, word choice, and flow.
+Business Context:
+${businessContext}
 
-Key context to guide your writing (do not mention these directly as filler — use them to shape your ideas and message):  
-- The audience’s daily struggles: ${pain_points}
-- Common hesitations or objections: ${objections}
-- What makes ${business_name} different: ${differentiator}
-- The big promise: ${big_promise}
+Original Template:
+HOOK: ${selectedPrompt.hook}
+BODY: ${selectedPrompt.body}
+CTA: ${selectedPrompt.cta}
 
-Instructions:
-✅ Write a post that feels complete, conversational, and human — not like a template.
-✅ Let the post flow naturally (no forced structure like Hook → Body → CTA unless it fits the tone).
-✅ Mention ${main_offer} only if it feels natural in the message.
-✅ End with a gentle, tone-matching invitation (not pushy or robotic).
-✅ Aim for a substantial post that gives value and builds connection — about 150-250 words (or what feels right).
+Content Category: ${postType}
+Target Audience: ${audience}
+Tone: ${tone}
+Platform: ${platform}
 
-Main goal of this post: Build trust and show ${business_name} as an authority in ${core_service} without sounding salesy.
-`;
-  
-  // Use AI to intelligently rephrase and expand the database prompts for longer, more contextual content
-//   const rephrasePrompt = `You are an expert social media storyteller specializing in creating emotionally compelling, longer-form content that deeply resonates with specific audiences. I have a content template that needs to be transformed into a rich, storytelling masterpiece.
+Transform this template into a captivating story by:
 
-// Business Context:
-// ${businessContext}
+1. CREATING A COMPELLING NARRATIVE HOOK (3-4 sentences):
+   - Start with a specific, relatable scenario that "${audience}" immediately recognizes
+   - Use vivid imagery and emotional language that creates an instant connection
+   - Include concrete details that paint a clear picture in the reader's mind
+   - Ask a thought-provoking question or share a surprising insight
 
-// Original Template:
-// HOOK: ${selectedPrompt.hook}
-// BODY: ${selectedPrompt.body}
-// CTA: ${selectedPrompt.cta}
+2. DEVELOPING A RICH STORYTELLING BODY (500-600 words across 6-8 paragraphs):
+   - Tell a complete story with a clear beginning, middle, and emotional resolution
+   - Include specific, realistic scenarios with names, ages, and detailed situations
+   - Paint vivid pictures of before/after transformations
+   - Share authentic moments of struggle, breakthrough, and relief
+   - Use sensory details (what people see, hear, feel) to make scenes come alive
+   - Include specific dialogue or quotes that sound genuine and relatable
+   - Address real fears, hopes, and desires of "${audience}"
+   - Weave in social proof through storytelling rather than direct testimonials
+   - Show the human side of care through specific examples and moments
+   - Create emotional peaks and valleys that keep readers engaged
+   - Use transition phrases that guide readers smoothly through the narrative
 
-// Content Category: ${postType}
-// Target Audience: ${audience}
-// Tone: ${tone}
-// Platform: ${platform}
+3. CRAFTING AN INSPIRING CALL-TO-ACTION (3-4 sentences):
+   - Connect directly to the emotional journey you've just shared
+   - Offer hope and a clear next step that feels natural and non-pressured
+   - Include reassurance and remove barriers to taking action
+   - End with warmth and invitation rather than hard selling
 
-// Transform this template into a captivating story by:
+STORYTELLING REQUIREMENTS:
+- Create a cohesive narrative arc that feels like a complete story
+- Use specific examples: "Sarah, a 62-year-old daughter caring for her father with Alzheimer's..."
+- Include emotional moments: describe feelings, concerns, relief, joy
+- Paint scenes with sensory details: "the quiet morning routine," "gentle hands," "peaceful smile"
+- Show real-life situations and transformations
+- Use conversational, warm language with a "${tone}" tone
+- Make it feel personal and intimate while being professional
+- Include realistic timeframes and specific outcomes
+- Address common objections naturally within the story
+- Create multiple emotional connection points throughout
+- Keep placeholders like {business_name}, {ideal_client}, etc. intact
+- Ensure high relevance to "${audience}" with authentic scenarios
 
-// 1. CREATING A COMPELLING NARRATIVE HOOK (3-4 sentences):
-//    - Start with a specific, relatable scenario that "${audience}" immediately recognizes
-//    - Use vivid imagery and emotional language that creates an instant connection
-//    - Include concrete details that paint a clear picture in the reader's mind
-//    - Ask a thought-provoking question or share a surprising insight
-
-// 2. DEVELOPING A RICH STORYTELLING BODY (500-600 words across 6-8 paragraphs):
-//    - Tell a complete story with a clear beginning, middle, and emotional resolution
-//    - Include specific, realistic scenarios with names, ages, and detailed situations
-//    - Paint vivid pictures of before/after transformations
-//    - Share authentic moments of struggle, breakthrough, and relief
-//    - Use sensory details (what people see, hear, feel) to make scenes come alive
-//    - Include specific dialogue or quotes that sound genuine and relatable
-//    - Address real fears, hopes, and desires of "${audience}"
-//    - Weave in social proof through storytelling rather than direct testimonials
-//    - Show the human side of care through specific examples and moments
-//    - Create emotional peaks and valleys that keep readers engaged
-//    - Use transition phrases that guide readers smoothly through the narrative
-
-// 3. CRAFTING AN INSPIRING CALL-TO-ACTION (3-4 sentences):
-//    - Connect directly to the emotional journey you've just shared
-//    - Offer hope and a clear next step that feels natural and non-pressured
-//    - Include reassurance and remove barriers to taking action
-//    - End with warmth and invitation rather than hard selling
-
-// STORYTELLING REQUIREMENTS:
-// - Create a cohesive narrative arc that feels like a complete story
-// - Use specific examples: "Sarah, a 62-year-old daughter caring for her father with Alzheimer's..."
-// - Include emotional moments: describe feelings, concerns, relief, joy
-// - Paint scenes with sensory details: "the quiet morning routine," "gentle hands," "peaceful smile"
-// - Show real-life situations and transformations
-// - Use conversational, warm language with a "${tone}" tone
-// - Make it feel personal and intimate while being professional
-// - Include realistic timeframes and specific outcomes
-// - Address common objections naturally within the story
-// - Create multiple emotional connection points throughout
-// - Keep placeholders like {business_name}, {ideal_client}, etc. intact
-// - Ensure high relevance to "${audience}" with authentic scenarios
-
-// Return the enhanced storytelling version in this exact format:
-// HOOK: [compelling narrative hook with 3-4 sentences]
-// BODY: [rich storytelling body with 500-600 words across 6-8 paragraphs]
-// CTA: [inspiring call-to-action with 3-4 sentences]`;
+Return the enhanced storytelling version in this exact format:
+HOOK: [compelling narrative hook with 3-4 sentences]
+BODY: [rich storytelling body with 500-600 words across 6-8 paragraphs]
+CTA: [inspiring call-to-action with 3-4 sentences]`;
 
   try {
     const rephraseResponse = await fetch('https://api.openai.com/v1/chat/completions', {
