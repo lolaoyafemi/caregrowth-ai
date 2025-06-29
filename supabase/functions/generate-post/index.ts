@@ -124,17 +124,17 @@ Testimonial: ${profile.testimonial || 'Trusted by families in our community'}
         .replace(/\{testimonial\}/gi, profile.testimonial || 'trusted by our community');
     };
 
-    // If we have a prompt from database, personalize it and enhance with AI
+    // If we have a prompt from database, personalize it and enhance with AI for long-form content
     if (selectedPrompt && hook && body && cta) {
       // First personalize the template
       hook = personalizeText(hook);
       body = personalizeText(body);
       cta = personalizeText(cta);
 
-      // Then enhance with OpenAI intelligence for context-based content
-      console.log('Enhancing prompt content with OpenAI intelligence...');
+      // Then enhance with OpenAI intelligence for longer, more detailed content
+      console.log('Enhancing prompt content with OpenAI for long-form posts...');
       
-      const enhancementPrompt = `You are an expert social media copywriter specializing in home care services. I have content from our database that needs to be enhanced and made more context-aware and engaging.
+      const enhancementPrompt = `You are an expert social media copywriter specializing in home care services. I have content from our database that needs to be enhanced into a compelling, long-form social media post.
 
 Business Context:
 ${businessContext}
@@ -144,30 +144,34 @@ Target Audience: ${audience || "families caring for loved ones"}
 Tone: ${tone}
 Platform: ${platform}
 
-Current Content:
+Current Content Structure:
 HOOK: ${hook}
 BODY: ${body}
 CTA: ${cta}
 
-Please enhance this content by:
-1. Making it highly relevant to the specific target audience: "${audience}"
-2. Matching the exact tone requested: "${tone}"
-3. Optimizing for the platform: "${platform}"
-4. Adding compelling storytelling elements that resonate with the audience
-5. Making it more engaging and authentic for the content category: "${postType}"
-6. Ensuring it addresses the specific needs and pain points of "${audience}"
-7. Making it sound natural and human, not AI-generated
+Please transform this into a compelling long-form social media post by:
 
-Focus heavily on making the content contextually relevant to:
-- Target Audience: ${audience}
-- Tone: ${tone}  
-- Content Type: ${postType}
-- Platform: ${platform}
+1. EXPANDING THE HOOK: Make it more attention-grabbing and emotionally compelling for "${audience}" - include a story element, question, or surprising statistic that hooks readers immediately
+2. DEVELOPING THE BODY: Expand this into 3-4 substantial paragraphs (200-300 words total) that:
+   - Tell a relatable story or share valuable insights specific to "${audience}"
+   - Address their specific pain points and challenges
+   - Showcase expertise and build trust through detailed examples
+   - Include specific benefits and outcomes they care about
+   - Use the "${tone}" tone throughout while being conversational and engaging
+3. STRENGTHENING THE CTA: Make it more compelling and specific to the audience's needs
 
-Return the enhanced version in the same format:
-HOOK: [enhanced hook tailored to ${audience} with ${tone} tone]
-BODY: [enhanced body optimized for ${postType} content and ${platform}]
-CTA: [enhanced cta that drives action from ${audience}]`;
+Create a cohesive, engaging long-form post optimized for ${platform} that:
+- Feels authentic and human, not AI-generated
+- Speaks directly to "${audience}" using their language and concerns
+- Maintains the "${tone}" tone throughout
+- Provides real value and builds trust
+- Encourages meaningful engagement
+- Is 300-400 words total for maximum engagement
+
+Return the enhanced long-form version in the same format:
+HOOK: [expanded, compelling hook for ${audience}]
+BODY: [detailed 3-4 paragraph body with stories, insights, and value]
+CTA: [stronger, more specific call-to-action]`;
 
       try {
         const enhancementResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -181,7 +185,7 @@ CTA: [enhanced cta that drives action from ${audience}]`;
             messages: [
               {
                 role: 'system',
-                content: `You are an expert social media copywriter specializing in home care services. Focus on creating highly contextual, audience-specific content that matches the exact tone and platform requirements. Make content that truly resonates with the target audience: "${audience}" using a "${tone}" tone for "${postType}" content on "${platform}".`
+                content: `You are an expert social media copywriter specializing in home care services. Create compelling long-form content that truly resonates with the target audience: "${audience}" using a "${tone}" tone for "${postType}" content on "${platform}". Focus on storytelling, value delivery, and emotional connection.`
               },
               {
                 role: 'user',
@@ -189,7 +193,7 @@ CTA: [enhanced cta that drives action from ${audience}]`;
               }
             ],
             temperature: 0.7,
-            max_tokens: 800
+            max_tokens: 1200
           })
         });
 
@@ -211,7 +215,7 @@ CTA: [enhanced cta that drives action from ${audience}]`;
             }
           }
           
-          console.log('Enhanced content:', { hook, body, cta });
+          console.log('Enhanced long-form content:', { hook, body, cta });
         } else {
           console.log('Enhancement failed, using personalized template');
         }
@@ -220,8 +224,8 @@ CTA: [enhanced cta that drives action from ${audience}]`;
         console.log('Using personalized template without AI enhancement');
       }
     } else {
-      // Fallback: Generate completely new content with AI if no prompts available
-      console.log('No prompts found, generating new content with OpenAI');
+      // Fallback: Generate completely new long-form content with AI if no prompts available
+      console.log('No prompts found, generating new long-form content with OpenAI');
       
       const generationPrompt = `You are an expert social media copywriter specializing in home care services. 
 
@@ -233,23 +237,29 @@ Target Audience: ${audience || "families caring for loved ones"}
 Tone: ${tone}
 Platform: ${platform}
 
-Create highly contextual social media content that is specifically tailored to:
+Create a compelling long-form social media post (300-400 words) that is specifically tailored to:
 - Target Audience: "${audience}" - speak directly to their needs, concerns, and interests
 - Tone: "${tone}" - maintain this exact tone throughout
 - Content Type: "${postType}" - ensure the content serves this specific purpose
 - Platform: "${platform}" - optimize for this platform's best practices and audience behavior
 
-Create a compelling social media post with these components:
-1. HOOK: An attention-grabbing opening that speaks directly to "${audience}" using a "${tone}" tone (1-2 sentences)
-2. BODY: Value-driven content for "${postType}" that showcases the business's unique strengths and addresses "${audience}" specific needs using a "${tone}" tone (2-3 sentences)
-3. CTA: A compelling call-to-action optimized for "${platform}" that drives "${audience}" to take action (1 sentence)
+Structure the post with:
+1. HOOK: An attention-grabbing opening that immediately resonates with "${audience}" - use a story, question, or insight that stops them scrolling (1-2 sentences)
+2. BODY: Value-rich content that:
+   - Tells a relatable story or shares valuable insights
+   - Addresses specific challenges "${audience}" faces
+   - Demonstrates expertise through detailed examples
+   - Shows concrete benefits and outcomes
+   - Uses "${tone}" tone while being conversational and engaging
+   - Is 3-4 substantial paragraphs (200-300 words)
+3. CTA: A compelling call-to-action that drives "${audience}" to take meaningful action (1-2 sentences)
 
-Make it authentic, highly relevant to the context, and platform-optimized for ${platform}.
+Make it authentic, highly relevant, and platform-optimized for ${platform}. Focus on storytelling, emotional connection, and providing real value.
 
 Format your response as:
-HOOK: [hook content]
-BODY: [body content]  
-CTA: [cta content]`;
+HOOK: [compelling hook content]
+BODY: [detailed, valuable body content in 3-4 paragraphs]
+CTA: [strong call-to-action]`;
 
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -263,7 +273,7 @@ CTA: [cta content]`;
             messages: [
               {
                 role: 'system',
-                content: `You are an expert social media copywriter specializing in home care services. Focus on creating highly contextual content that is specifically tailored to the target audience "${audience}" with a "${tone}" tone for "${postType}" content on "${platform}". Make every word count and ensure maximum relevance to the specified context.`
+                content: `You are an expert social media copywriter specializing in home care services. Create compelling long-form content that truly resonates with the target audience "${audience}" with a "${tone}" tone for "${postType}" content on "${platform}". Focus on storytelling, emotional connection, and providing substantial value in 300-400 words.`
               },
               {
                 role: 'user',
@@ -271,7 +281,7 @@ CTA: [cta content]`;
               }
             ],
             temperature: 0.7,
-            max_tokens: 600
+            max_tokens: 1200
           })
         });
 
@@ -283,7 +293,7 @@ CTA: [cta content]`;
 
         const data = await response.json();
         const generatedContent = data.choices[0].message.content;
-        console.log('Generated content:', generatedContent);
+        console.log('Generated long-form content:', generatedContent);
 
         // Parse the generated content
         const lines = generatedContent.split('\n').filter(line => line.trim());
@@ -304,11 +314,11 @@ CTA: [cta content]`;
           const contentLines = generatedContent.split('\n').filter(line => line.trim());
           if (contentLines.length >= 3) {
             hook = contentLines[0] || 'Looking for reliable home care services?';
-            body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones.';
+            body = contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence.';
             cta = contentLines[contentLines.length - 1] || 'Contact us today to learn more!';
           } else {
             hook = 'Looking for reliable home care services?';
-            body = 'Our team provides compassionate, professional care for your loved ones.';
+            body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence.';
             cta = 'Contact us today to learn more!';
           }
         }
@@ -316,7 +326,7 @@ CTA: [cta content]`;
         console.error('Error generating content:', error);
         // Ultimate fallback
         hook = 'Looking for reliable home care services?';
-        body = 'Our team provides compassionate, professional care for your loved ones.';
+        body = 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence.';
         cta = 'Contact us today to learn more!';
       }
     }
@@ -347,7 +357,8 @@ CTA: [cta content]`;
       source: selectedPrompt ? 'database_enhanced' : 'ai_generated',
       template_id: selectedPrompt?.id || null,
       available_templates: prompts?.length || 0,
-      business_context_used: !!profile
+      business_context_used: !!profile,
+      content_length: finalPost.length
     }), {
       headers: {
         ...corsHeaders,
