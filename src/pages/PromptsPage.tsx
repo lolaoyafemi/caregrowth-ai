@@ -34,9 +34,7 @@ const PromptsPage = () => {
     name: '',
     platform: '',
     category: '',
-    hook: '',
-    body: '',
-    cta: ''
+    template: '' // Single template field instead of hook, body, cta
   });
 
   // Check if user is super admin
@@ -87,9 +85,7 @@ const PromptsPage = () => {
       name: '',
       platform: '',
       category: '',
-      hook: '',
-      body: '',
-      cta: ''
+      template: ''
     });
     setIsCreateMode(false);
     setEditingPrompt(null);
@@ -101,7 +97,7 @@ const PromptsPage = () => {
       return;
     }
 
-    if (!formData.name || !formData.platform || !formData.category || !formData.hook || !formData.body || !formData.cta) {
+    if (!formData.name || !formData.platform || !formData.category || !formData.template) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -113,14 +109,23 @@ const PromptsPage = () => {
         return;
       }
 
+      // For now, we'll store the entire template in the hook field
+      // This maintains backward compatibility with existing system
+      const promptData = {
+        name: formData.name,
+        platform: formData.platform,
+        category: formData.category,
+        hook: formData.template,
+        body: '', // Keep empty for backward compatibility
+        cta: '', // Keep empty for backward compatibility
+        updated_at: new Date().toISOString()
+      };
+
       if (editingPrompt) {
         // Update existing prompt
         const { error } = await supabase
           .from('prompts')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString()
-          })
+          .update(promptData)
           .eq('id', editingPrompt.id);
 
         if (error) throw error;
@@ -130,7 +135,7 @@ const PromptsPage = () => {
         const { error } = await supabase
           .from('prompts')
           .insert([{
-            ...formData,
+            ...promptData,
             user_id: data.user.id
           }]);
 
@@ -152,13 +157,16 @@ const PromptsPage = () => {
       return;
     }
 
+    // Combine hook, body, and cta into a single template for editing
+    const combinedTemplate = [prompt.hook, prompt.body, prompt.cta]
+      .filter(part => part && part.trim())
+      .join('\n\n');
+
     setFormData({
       name: prompt.name,
       platform: prompt.platform,
       category: prompt.category,
-      hook: prompt.hook,
-      body: prompt.body,
-      cta: prompt.cta
+      template: combinedTemplate
     });
     setEditingPrompt(prompt);
     setIsCreateMode(true);
@@ -274,36 +282,17 @@ const PromptsPage = () => {
             
             <div>
               <div className="mb-4">
-                <Label htmlFor="hook">Hook Template</Label>
+                <Label htmlFor="template">Complete Template</Label>
                 <Textarea
-                  id="hook"
-                  placeholder="Enter the hook template..."
-                  value={formData.hook}
-                  onChange={(e) => setFormData({...formData, hook: e.target.value})}
-                  className="min-h-[80px]"
+                  id="template"
+                  placeholder="Enter your complete template here..."
+                  value={formData.template}
+                  onChange={(e) => setFormData({...formData, template: e.target.value})}
+                  className="min-h-[200px]"
                 />
-              </div>
-              
-              <div className="mb-4">
-                <Label htmlFor="body">Body Template</Label>
-                <Textarea
-                  id="body"
-                  placeholder="Enter the body template..."
-                  value={formData.body}
-                  onChange={(e) => setFormData({...formData, body: e.target.value})}
-                  className="min-h-[100px]"
-                />
-              </div>
-              
-              <div className="mb-4">
-                <Label htmlFor="cta">Call to Action Template</Label>
-                <Textarea
-                  id="cta"
-                  placeholder="Enter the CTA template..."
-                  value={formData.cta}
-                  onChange={(e) => setFormData({...formData, cta: e.target.value})}
-                  className="min-h-[80px]"
-                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Enter your complete template content. You can include hooks, body text, and call-to-actions all in one field.
+                </p>
               </div>
             </div>
           </div>
@@ -373,16 +362,13 @@ const PromptsPage = () => {
               
               <div className="space-y-3">
                 <div>
-                  <h4 className="font-medium text-sm text-gray-700 mb-1">Hook:</h4>
-                  <p className="text-sm text-gray-600">{prompt.hook}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-gray-700 mb-1">Body:</h4>
-                  <p className="text-sm text-gray-600">{prompt.body}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-gray-700 mb-1">Call to Action:</h4>
-                  <p className="text-sm text-gray-600">{prompt.cta}</p>
+                  <h4 className="font-medium text-sm text-gray-700 mb-1">Template Content:</h4>
+                  <div className="text-sm text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                    {/* Show combined content or individual parts */}
+                    {prompt.hook && prompt.body && prompt.cta ? 
+                      `${prompt.hook}\n\n${prompt.body}\n\n${prompt.cta}` : 
+                      prompt.hook || 'No template content'}
+                  </div>
                 </div>
               </div>
               
