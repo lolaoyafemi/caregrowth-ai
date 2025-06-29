@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
@@ -96,7 +95,7 @@ Testimonial: ${profile.testimonial || 'Trusted by families in our community'}
         console.log('Selected prompt row:', selectedPrompt);
         
         // Use AI to intelligently rephrase and expand the database prompts for longer, more contextual content
-        const rephrasePrompt = `You are an expert social media copywriter specializing in creating compelling, longer-form social media content. I have a template from our content library that needs to be intelligently rephrased, expanded, and made more contextual.
+        const rephrasePrompt = `You are an expert social media storyteller specializing in creating emotionally compelling, longer-form content that deeply resonates with specific audiences. I have a content template that needs to be transformed into a rich, storytelling masterpiece.
 
 Business Context:
 ${businessContext}
@@ -111,46 +110,51 @@ Target Audience: ${targetAudience}
 Tone: ${tone}
 Platform: ${platform}
 
-Please intelligently rephrase and significantly expand this template by:
+Transform this template into a captivating story by:
 
-1. EXPANDING THE HOOK (2-3 sentences): 
-   - Rephrase using different words while keeping the core emotional impact
-   - Add a compelling follow-up sentence that draws readers deeper
-   - Make it highly relevant to "${targetAudience}" with specific details
-   - Create immediate emotional connection and curiosity
+1. CREATING A COMPELLING NARRATIVE HOOK (3-4 sentences):
+   - Start with a specific, relatable scenario that "${targetAudience}" immediately recognizes
+   - Use vivid imagery and emotional language that creates an instant connection
+   - Include concrete details that paint a clear picture in the reader's mind
+   - Ask a thought-provoking question or share a surprising insight
 
-2. ENRICHING THE BODY (4-6 substantial paragraphs, 400-500 words):
-   - Rephrase all content using fresh language and sentence structures
-   - Add specific, realistic scenarios and examples that "${targetAudience}" can relate to
-   - Include detailed storytelling elements that paint vivid pictures
-   - Weave in emotional moments and concrete benefits
-   - Add context about common challenges and real-world situations
-   - Include subtle social proof and credibility indicators
-   - Make it conversational and engaging with a "${tone}" tone
-   - Ensure each paragraph builds on the previous one logically
+2. DEVELOPING A RICH STORYTELLING BODY (500-600 words across 6-8 paragraphs):
+   - Tell a complete story with a clear beginning, middle, and emotional resolution
+   - Include specific, realistic scenarios with names, ages, and detailed situations
+   - Paint vivid pictures of before/after transformations
+   - Share authentic moments of struggle, breakthrough, and relief
+   - Use sensory details (what people see, hear, feel) to make scenes come alive
+   - Include specific dialogue or quotes that sound genuine and relatable
+   - Address real fears, hopes, and desires of "${targetAudience}"
+   - Weave in social proof through storytelling rather than direct testimonials
+   - Show the human side of care through specific examples and moments
+   - Create emotional peaks and valleys that keep readers engaged
+   - Use transition phrases that guide readers smoothly through the narrative
 
-3. STRENGTHENING THE CTA (2-3 sentences):
-   - Rephrase using different compelling language
-   - Add urgency and emotional motivation
-   - Include a secondary benefit or reassurance
-   - Make it feel natural and non-pushy
+3. CRAFTING AN INSPIRING CALL-TO-ACTION (3-4 sentences):
+   - Connect directly to the emotional journey you've just shared
+   - Offer hope and a clear next step that feels natural and non-pressured
+   - Include reassurance and remove barriers to taking action
+   - End with warmth and invitation rather than hard selling
 
-CRITICAL REQUIREMENTS:
-- Create 400-500 word posts with rich, contextual storytelling
-- Use different vocabulary, sentence structures, and expressions throughout
-- Add specific scenarios, examples, and emotional moments
-- Maintain the "${tone}" tone while being conversational and engaging
+STORYTELLING REQUIREMENTS:
+- Create a cohesive narrative arc that feels like a complete story
+- Use specific examples: "Sarah, a 62-year-old daughter caring for her father with Alzheimer's..."
+- Include emotional moments: describe feelings, concerns, relief, joy
+- Paint scenes with sensory details: "the quiet morning routine," "gentle hands," "peaceful smile"
+- Show real-life situations and transformations
+- Use conversational, warm language with a "${tone}" tone
+- Make it feel personal and intimate while being professional
+- Include realistic timeframes and specific outcomes
+- Address common objections naturally within the story
+- Create multiple emotional connection points throughout
 - Keep placeholders like {business_name}, {ideal_client}, etc. intact
-- Make it feel completely fresh and natural, not like a template
-- Ensure high relevance to "${targetAudience}" with specific details
-- Optimize for ${platform} engagement with platform-appropriate language
-- Include realistic situations and relatable moments
-- Add depth through storytelling, examples, and emotional connection
+- Ensure high relevance to "${targetAudiente}" with authentic scenarios
 
-Return the expanded version in this exact format:
-HOOK: [expanded hook with 2-3 sentences]
-BODY: [expanded body with 4-6 paragraphs, 400-500 words total]
-CTA: [strengthened call-to-action with 2-3 sentences]`;
+Return the enhanced storytelling version in this exact format:
+HOOK: [compelling narrative hook with 3-4 sentences]
+BODY: [rich storytelling body with 500-600 words across 6-8 paragraphs]
+CTA: [inspiring call-to-action with 3-4 sentences]`;
 
         try {
           const rephraseResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -164,7 +168,7 @@ CTA: [strengthened call-to-action with 2-3 sentences]`;
               messages: [
                 {
                   role: 'system',
-                  content: `You are an expert social media copywriter specializing in creating longer, more contextual content that resonates deeply with "${targetAudience}" using a "${tone}" tone. Focus on rich storytelling, specific examples, and emotional connection while maintaining authenticity and engagement.`
+                  content: `You are a master storyteller specializing in creating emotionally compelling social media content for "${targetAudience}". You excel at transforming basic templates into rich, engaging narratives that create deep emotional connections and inspire action through authentic storytelling.`
                 },
                 {
                   role: 'user',
@@ -172,7 +176,7 @@ CTA: [strengthened call-to-action with 2-3 sentences]`;
                 }
               ],
               temperature: 0.8,
-              max_tokens: 1500,
+              max_tokens: 2000,
               top_p: 1,
               frequency_penalty: 0.3,
               presence_penalty: 0.3
@@ -218,11 +222,11 @@ CTA: [strengthened call-to-action with 2-3 sentences]`;
       }
     }
 
-    // If no prompts found, generate completely new longer content with AI
+    // If no prompts found, generate completely new storytelling content with AI
     if (!hook && !body && !cta) {
-      console.log('No prompts found, generating new longer content with OpenAI');
+      console.log('No prompts found, generating new storytelling content with OpenAI');
       
-      const generationPrompt = `You are an expert social media copywriter specializing in home care services. Create longer, more contextual social media content.
+      const generationPrompt = `You are a master storyteller and social media expert specializing in home care services. Create compelling, story-driven social media content that deeply connects with the target audience.
 
 Business Context:
 ${businessContext}
@@ -232,41 +236,57 @@ Target Audience: ${targetAudience}
 Tone: ${tone}
 Platform: ${platform}
 
-Create a comprehensive social media post (500-600 words) that is specifically tailored to:
-- Target Audience: "${targetAudience}" - speak directly to their needs, concerns, and interests
-- Tone: "${tone}" - maintain this exact tone throughout
-- Content Type: "${postType}" - ensure the content serves this specific purpose
-- Platform: "${platform}" - optimize for this platform's best practices and audience behavior
+Create a comprehensive, story-driven social media post (550-650 words) that:
 
-Structure the post with:
+STORYTELLING APPROACH:
+- Tell a complete, engaging story with characters, conflict, and resolution
+- Use specific, realistic scenarios with detailed context
+- Include authentic dialogue and genuine emotional moments
+- Paint vivid scenes that readers can visualize clearly
+- Address real challenges "${targetAudience}" faces through narrative
+- Show transformation and hope through storytelling
+- Create multiple emotional connection points throughout
 
-1. HOOK (2-3 compelling sentences): 
-   - Create an attention-grabbing opening that immediately resonates with "${targetAudience}"
-   - Use a story, question, or insight that stops them scrolling
-   - Build curiosity and emotional connection from the first sentence
+NARRATIVE STRUCTURE:
 
-2. BODY (4-6 substantial paragraphs, 400-450 words):
-   - Tell a relatable story or share valuable insights with specific details
-   - Address concrete challenges "${targetAudience}" faces with real examples
-   - Demonstrate expertise through detailed scenarios and outcomes
-   - Show concrete benefits and transformation stories
-   - Include emotional moments and authentic experiences
-   - Add context about common situations and realistic solutions
-   - Use "${tone}" tone while being conversational and engaging
-   - Weave in credibility indicators and social proof naturally
-   - Create vivid mental pictures with descriptive language
+1. COMPELLING STORY HOOK (3-4 sentences):
+   - Open with a specific, relatable scenario
+   - Use vivid, sensory language that immediately engages
+   - Create instant emotional connection with "${targetAudience}"
+   - Include a compelling question or surprising insight
 
-3. CTA (2-3 sentences):
-   - Compelling call-to-action that drives "${targetAudience}" to meaningful action
-   - Include emotional motivation and clear next steps
-   - Add reassurance or secondary benefit to reduce hesitation
+2. RICH STORYTELLING BODY (500-550 words across 6-8 paragraphs):
+   - Develop a complete narrative arc with clear progression
+   - Include specific characters with names, ages, and backgrounds
+   - Show real struggles, emotions, and breakthrough moments
+   - Use dialogue and quoted thoughts to add authenticity
+   - Paint detailed scenes with sensory descriptions
+   - Address common fears and hopes through the story
+   - Demonstrate expertise through narrative examples
+   - Show before/after transformations with specific details
+   - Include realistic timeframes and outcomes
+   - Weave in social proof naturally through storytelling
+   - Use smooth transitions between scenes and ideas
 
-Make it authentic, highly relevant, contextual, and platform-optimized for ${platform}. Focus on deep storytelling, emotional connection, and providing substantial value through detailed examples and scenarios.
+3. INSPIRING CALL-TO-ACTION (3-4 sentences):
+   - Connect emotionally to the story just shared
+   - Offer clear, achievable next steps
+   - Remove barriers and provide reassurance
+   - End with warmth and genuine invitation
+
+CONTENT REQUIREMENTS:
+- Create authentic, relatable scenarios for "${targetAudience}"
+- Use "${tone}" tone while maintaining warmth and professionalism
+- Include specific, realistic examples and outcomes
+- Address emotional needs and practical concerns
+- Optimize for ${platform} engagement with platform-appropriate language
+- Show genuine care and understanding throughout
+- Use storytelling to educate and inspire rather than just sell
 
 Format your response as:
-HOOK: [compelling hook content with 2-3 sentences]
-BODY: [detailed, valuable body content in 4-6 paragraphs]
-CTA: [strong call-to-action with 2-3 sentences]`;
+HOOK: [compelling story hook with 3-4 sentences]
+BODY: [rich storytelling content with 500-550 words across 6-8 paragraphs]
+CTA: [inspiring call-to-action with 3-4 sentences]`;
 
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -280,15 +300,15 @@ CTA: [strong call-to-action with 2-3 sentences]`;
             messages: [
               {
                 role: 'system',
-                content: `You are an expert social media copywriter specializing in home care services. Create compelling, longer-form content that truly resonates with the target audience "${targetAudience}" with a "${tone}" tone for "${postType}" content on "${platform}". Focus on detailed storytelling, emotional connection, and providing substantial value through specific examples and scenarios.`
+                content: `You are a master storyteller specializing in emotionally compelling home care content. Create rich, engaging narratives that deeply resonate with "${targetAudience}" using authentic storytelling, specific examples, and genuine emotional connection.`
               },
               {
                 role: 'user',
                 content: generationPrompt
               }
             ],
-            temperature: 0.7,
-            max_tokens: 1800
+            temperature: 0.8,
+            max_tokens: 2200
           })
         });
 
