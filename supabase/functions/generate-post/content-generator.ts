@@ -70,170 +70,106 @@ export const generateContentFromPrompts = async (
   
   console.log('Selected prompt row:', selectedPrompt);
 
-  // Build dynamic prompt for rephrasing
-  const rephrasePrompt = `You are a creative and compassionate social media strategist. Your job is to create a ${postType} post designed for ${audience}.
+  // For prompts that are actually prompt templates (like the one causing issues), 
+  // we need to generate content differently
+  if (selectedPrompt.hook && selectedPrompt.hook.includes('You are a compassionate')) {
+    // This is a meta-prompt, not actual content - generate new content
+    const generationPrompt = `You are a compassionate social media content creator for a home care business called Dam Dam. Create engaging social media content for families caring for ${audience}.
 
-Business Context:
-${businessContext}
+Business Context: ${businessContext}
 
-Original Template:
-HOOK: ${selectedPrompt.hook}
-BODY: ${selectedPrompt.body}
-CTA: ${selectedPrompt.cta}
+Create a ${postType} post with a ${tone} tone for ${platform}.
 
-Content Category: ${postType}
-Target Audience: ${audience}
-Tone: ${tone}
-Platform: ${platform}
+The post should:
+- Be authentic and relatable for families caring for ${audience}
+- Show understanding of their daily challenges
+- Offer hope and support without being salesy
+- Be written in a ${tone} tone
 
-The tone for this post is: ${tone}.
-Examples of this tone: ${toneDescription}.
-Write in a way that fits this tone naturally — the reader should *feel* it in the style, word choice, and flow.
+Please provide your response in this exact format:
+HOOK: [2-3 engaging sentences that grab attention]
+BODY: [4-6 paragraphs of valuable content]
+CTA: [2-3 sentences with a gentle call to action]`;
 
-Instructions:
-✅ Write a post that feels complete, conversational, and human — not like a template.
-✅ Let the post flow naturally (no forced structure like Hook → Body → CTA unless it fits the tone).
-✅ End with a gentle, tone-matching invitation (not pushy or robotic).
-✅ Aim for a substantial post that gives value and builds connection — about 150-250 words (or what feels right).
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a professional social media content creator specializing in home care services. Create compassionate, engaging content that resonates with families.`
+            },
+            {
+              role: 'user',
+              content: generationPrompt
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 1500
+        })
+      });
 
-Main goal of this post: Build trust and show authority without sounding salesy.
-
-Return the enhanced version in this exact format:
-HOOK: [compelling hook with 2-3 sentences]
-BODY: [main content with 4-6 paragraphs]
-CTA: [inspiring call-to-action with 2-3 sentences]`;
-
-  try {
-    const rephraseResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a master storyteller specializing in creating emotionally compelling social media content for "${audience}". You excel at transforming basic templates into rich, engaging narratives that create deep emotional connections and inspire action through authentic storytelling.`
-          },
-          {
-            role: 'user',
-            content: rephrasePrompt
-          }
-        ],
-        temperature: 0.8,
-        max_tokens: 2000,
-        top_p: 1,
-        frequency_penalty: 0.3,
-        presence_penalty: 0.3
-      })
-    });
-
-    if (rephraseResponse.ok) {
-      const rephraseData = await rephraseResponse.json();
-      const rephrasedContent = rephraseData.choices[0].message.content;
-      
-      console.log('Rephrased content:', rephrasedContent);
-      
-      const parsed = parseGeneratedContent(rephrasedContent);
-      
-      if (parsed.hook || parsed.body || parsed.cta) {
-        return {
-          ...parsed,
-          source: 'database_rephrased',
-          template_id: selectedPrompt?.id
-        };
+      if (response.ok) {
+        const data = await response.json();
+        const generatedContent = data.choices[0].message.content;
+        
+        console.log('AI Generated content:', generatedContent);
+        
+        const parsed = parseGeneratedContent(generatedContent);
+        
+        if (parsed.hook || parsed.body || parsed.cta) {
+          return {
+            ...parsed,
+            source: 'ai_generated',
+            template_id: selectedPrompt?.id
+          };
+        }
       }
+    } catch (error) {
+      console.error('Error generating content with AI:', error);
     }
-
-    console.log('Rephrasing failed, using original template');
-    return {
-      hook: selectedPrompt.hook || '',
-      body: selectedPrompt.body || '',
-      cta: selectedPrompt.cta || '',
-      source: 'database_original',
-      template_id: selectedPrompt?.id
-    };
-  } catch (rephraseError) {
-    console.error('Error rephrasing content:', rephraseError);
-    console.log('Using original template as fallback');
-    return {
-      hook: selectedPrompt.hook || '',
-      body: selectedPrompt.body || '',
-      cta: selectedPrompt.cta || '',
-      source: 'database_original',
-      template_id: selectedPrompt?.id
-    };
   }
+
+  // For regular prompts with actual content, use them directly
+  return {
+    hook: selectedPrompt.hook || '',
+    body: selectedPrompt.body || '',
+    cta: selectedPrompt.cta || '',
+    source: 'database_original',
+    template_id: selectedPrompt?.id
+  };
 };
 
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
 
-  console.log('No prompts found, generating new storytelling content with OpenAI');
+  console.log('Generating new content with OpenAI for:', { postType, audience, tone, platform });
   
-  const generationPrompt = `You are a master storyteller and social media expert specializing in home care services. Create compelling, story-driven social media content that deeply connects with the target audience.
+  const generationPrompt = `Create engaging social media content for a home care business serving families with ${audience}.
 
-Business Context:
-${businessContext}
+Business Context: ${businessContext}
 
-Content Category: ${postType}
-Target Audience: ${audience}
-Tone: ${tone}
-Platform: ${platform}
+Content Requirements:
+- Type: ${postType}
+- Tone: ${tone}
+- Platform: ${platform}
+- Audience: Families caring for ${audience}
 
-Create a comprehensive, story-driven social media post (550-650 words) that:
+Create a complete social media post that:
+1. Opens with an engaging hook that resonates with the target audience
+2. Provides valuable, helpful content in the body
+3. Ends with a gentle, non-pushy call to action
 
-STORYTELLING APPROACH:
-- Tell a complete, engaging story with characters, conflict, and resolution
-- Use specific, realistic scenarios with detailed context
-- Include authentic dialogue and genuine emotional moments
-- Paint vivid scenes that readers can visualize clearly
-- Address real challenges "${audience}" faces through narrative
-- Show transformation and hope through storytelling
-- Create multiple emotional connection points throughout
-
-NARRATIVE STRUCTURE:
-
-1. COMPELLING STORY HOOK (3-4 sentences):
-   - Open with a specific, relatable scenario
-   - Use vivid, sensory language that immediately engages
-   - Create instant emotional connection with "${audience}"
-   - Include a compelling question or surprising insight
-
-2. RICH STORYTELLING BODY (500-550 words across 6-8 paragraphs):
-   - Develop a complete narrative arc with clear progression
-   - Include specific characters with names, ages, and backgrounds
-   - Show real struggles, emotions, and breakthrough moments
-   - Use dialogue and quoted thoughts to add authenticity
-   - Paint detailed scenes with sensory descriptions
-   - Address common fears and hopes through the story
-   - Demonstrate expertise through narrative examples
-   - Show before/after transformations with specific details
-   - Include realistic timeframes and outcomes
-   - Weave in social proof naturally through storytelling
-   - Use smooth transitions between scenes and ideas
-
-3. INSPIRING CALL-TO-ACTION (3-4 sentences):
-   - Connect emotionally to the story just shared
-   - Offer clear, achievable next steps
-   - Remove barriers and provide reassurance
-   - End with warmth and genuine invitation
-
-CONTENT REQUIREMENTS:
-- Create authentic, relatable scenarios for "${audience}"
-- Use "${tone}" tone while maintaining warmth and professionalism
-- Include specific, realistic examples and outcomes
-- Address emotional needs and practical concerns
-- Optimize for ${platform} engagement with platform-appropriate language
-- Show genuine care and understanding throughout
-- Use storytelling to educate and inspire rather than just sell
-
-Format your response as:
-HOOK: [compelling story hook with 3-4 sentences]
-BODY: [rich storytelling content with 500-550 words across 6-8 paragraphs]
-CTA: [inspiring call-to-action with 3-4 sentences]`;
+Format your response exactly as:
+HOOK: [your hook content]
+BODY: [your body content]
+CTA: [your call to action]`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -247,7 +183,7 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
         messages: [
           {
             role: 'system',
-            content: `You are a master storyteller specializing in emotionally compelling home care content. Create rich, engaging narratives that deeply resonate with "${audience}" using authentic storytelling, specific examples, and genuine emotional connection.`
+            content: `You are a professional social media content creator specializing in home care services. Create compassionate, engaging content that resonates with families caring for their loved ones.`
           },
           {
             role: 'user',
@@ -255,7 +191,7 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
           }
         ],
         temperature: 0.8,
-        max_tokens: 2200
+        max_tokens: 1500
       })
     });
 
@@ -276,16 +212,9 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
       const contentLines = generatedContent.split('\n').filter(line => line.trim());
       if (contentLines.length >= 3) {
         return {
-          hook: contentLines[0] || 'Looking for reliable home care services?',
-          body: contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we are here to help navigate those difficult decisions with expertise and understanding.',
-          cta: contentLines[contentLines.length - 1] || 'Contact us today to learn more about how we can support your family!',
-          source: 'ai_generated'
-        };
-      } else {
-        return {
-          hook: 'Looking for reliable home care services?',
-          body: 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we are here to help navigate those difficult decisions with expertise and understanding.',
-          cta: 'Contact us today to learn more about how we can support your family!',
+          hook: contentLines[0] || 'Caring for your loved ones is a journey.',
+          body: contentLines.slice(1, -1).join('\n') || 'We understand the challenges families face and are here to provide compassionate, professional care.',
+          cta: contentLines[contentLines.length - 1] || 'Contact us today to learn how we can support your family.',
           source: 'ai_generated'
         };
       }
@@ -299,9 +228,9 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
     console.error('Error generating content:', error);
     // Ultimate fallback
     return {
-      hook: 'Looking for reliable home care services?',
-      body: 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we are here to help navigate those difficult decisions with expertise and understanding.',
-      cta: 'Contact us today to learn more about how we can support your family!',
+      hook: 'Caring for your loved ones is a journey.',
+      body: 'We understand the challenges families face when caring for their loved ones. Our team provides compassionate, professional care tailored to your specific needs.',
+      cta: 'Contact us today to learn how we can support your family.',
       source: 'ai_generated'
     };
   }
@@ -311,16 +240,30 @@ export const parseGeneratedContent = (content: string): { hook: string; body: st
   let hook = '', body = '', cta = '';
   
   // Parse the content and remove formatting labels
-  const lines = content.split('\n').filter(line => line.trim());
+  const lines = content.split('\n');
+  let currentSection = '';
   
   for (const line of lines) {
-    const lowerLine = line.toLowerCase();
-    if (lowerLine.startsWith('hook:')) {
-      hook = line.replace(/^hook:\s*/i, '').trim();
-    } else if (lowerLine.startsWith('body:')) {
-      body = line.replace(/^body:\s*/i, '').trim();
-    } else if (lowerLine.startsWith('cta:')) {
-      cta = line.replace(/^cta:\s*/i, '').trim();
+    const trimmedLine = line.trim();
+    
+    if (trimmedLine.toLowerCase().startsWith('hook:')) {
+      currentSection = 'hook';
+      hook = trimmedLine.replace(/^hook:\s*/i, '').trim();
+    } else if (trimmedLine.toLowerCase().startsWith('body:')) {
+      currentSection = 'body';
+      body = trimmedLine.replace(/^body:\s*/i, '').trim();
+    } else if (trimmedLine.toLowerCase().startsWith('cta:')) {
+      currentSection = 'cta';
+      cta = trimmedLine.replace(/^cta:\s*/i, '').trim();
+    } else if (trimmedLine && currentSection) {
+      // Continue adding to current section
+      if (currentSection === 'hook') {
+        hook += (hook ? ' ' : '') + trimmedLine;
+      } else if (currentSection === 'body') {
+        body += (body ? '\n' : '') + trimmedLine;
+      } else if (currentSection === 'cta') {
+        cta += (cta ? ' ' : '') + trimmedLine;
+      }
     }
   }
   
