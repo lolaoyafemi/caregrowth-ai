@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { BookmarkIcon, CheckCircle2Icon, FileTextIcon } from 'lucide-react';
 import { useQAAssistant } from '@/hooks/useQAAssistant';
 import { useUser } from '@/contexts/UserContext';
+import { useUserCredits } from '@/hooks/useUserCredits';
 
 interface Message {
   id: number;
@@ -33,6 +34,7 @@ const QAAssistantTool = () => {
 
   const { askQuestion, getQAHistory, isLoading, error } = useQAAssistant();
   const { user } = useUser();
+  const { credits, loading: creditsLoading } = useUserCredits();
 
   // Save conversation to localStorage whenever it changes
   const saveConversationToStorage = (conversationData: Message[]) => {
@@ -240,8 +242,30 @@ const QAAssistantTool = () => {
   return (
     <div className="p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Ask Jared</h1>
-        <p className="text-gray-600 mt-2">Get instant answers to your agency and marketing questions powered by your documents and AI expertise.</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Ask Jared</h1>
+            <p className="text-gray-600 mt-2">Get instant answers to your agency and marketing questions powered by your documents and AI expertise.</p>
+            <p className="text-sm text-gray-500 mt-1">Cost: 1 credit per question</p>
+            {!creditsLoading && (
+              <div className="mt-2">
+                <span className={`text-sm font-medium ${credits > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  Available Credits: {credits}
+                </span>
+                {credits <= 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-2"
+                    onClick={() => window.open('/payment', '_blank')}
+                  >
+                    Buy Credits
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

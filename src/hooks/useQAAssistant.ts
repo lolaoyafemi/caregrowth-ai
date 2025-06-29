@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
-import { validateCreditsBeforeAction } from '@/utils/creditValidation';
+import { deductCredits, handleCreditError } from '@/utils/creditUtils';
+import { toast } from 'sonner';
 
 interface QAResponse {
   answer: string;
@@ -24,7 +25,14 @@ export const useQAAssistant = () => {
     }
 
     // Check credits before proceeding
-    if (!validateCreditsBeforeAction(credits, 'Ask Jared')) {
+    if (credits <= 0) {
+      toast.error("You don't have enough credits to use Ask Jared. Please purchase more credits to continue.", {
+        duration: 5000,
+        action: {
+          label: "Buy Credits",
+          onClick: () => window.open('/payment', '_blank')
+        }
+      });
       return null;
     }
 
@@ -32,6 +40,19 @@ export const useQAAssistant = () => {
     setError(null);
 
     try {
+      // Deduct credits before making the API call (1 credit per question)
+      const creditResult = await deductCredits(
+        user.id, 
+        'ask_jared', 
+        1, 
+        `Ask Jared question: ${question.substring(0, 50)}...`
+      );
+
+      if (!creditResult.success) {
+        handleCreditError(creditResult);
+        return null;
+      }
+
       const { data, error: functionError } = await supabase.functions.invoke('qa-assistant', {
         body: {
           question: question.trim(),
@@ -47,6 +68,7 @@ export const useQAAssistant = () => {
         throw new Error(data.error);
       }
 
+      toast.success(`1 credit deducted. Remaining credits: ${creditResult.remainingCredits}`);
       return data as QAResponse;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get answer';
