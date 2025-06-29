@@ -1,4 +1,5 @@
 
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
@@ -190,17 +191,17 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
             
             console.log('Rephrased content:', rephrasedContent);
             
-            // Parse the rephrased content
+            // Parse the rephrased content and remove formatting labels
             const lines = rephrasedContent.split('\n').filter(line => line.trim());
             
             for (const line of lines) {
               const lowerLine = line.toLowerCase();
-              if (lowerLine.startsWith('hook:')) {
-                hook = line.substring(5).trim();
-              } else if (lowerLine.startsWith('body:')) {
-                body = line.substring(5).trim();
-              } else if (lowerLine.startsWith('cta:')) {
-                cta = line.substring(4).trim();
+              if (lowerLine.startsWith('hook:') || lowerLine.startsWith('**hook:**')) {
+                hook = line.replace(/^\*?\*?hook:\*?\*?\s*/i, '').trim();
+              } else if (lowerLine.startsWith('body:') || lowerLine.startsWith('**body:**')) {
+                body = line.replace(/^\*?\*?body:\*?\*?\s*/i, '').trim();
+              } else if (lowerLine.startsWith('cta:') || lowerLine.startsWith('**cta:**')) {
+                cta = line.replace(/^\*?\*?cta:\*?\*?\s*/i, '').trim();
               }
             }
             
@@ -323,17 +324,17 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
         const generatedContent = data.choices[0].message.content;
         console.log('Generated content:', generatedContent);
 
-        // Parse the generated content
+        // Parse the generated content and remove formatting labels
         const lines = generatedContent.split('\n').filter(line => line.trim());
         
         for (const line of lines) {
           const lowerLine = line.toLowerCase();
-          if (lowerLine.startsWith('hook:')) {
-            hook = line.substring(5).trim();
-          } else if (lowerLine.startsWith('body:')) {
-            body = line.substring(5).trim();
-          } else if (lowerLine.startsWith('cta:')) {
-            cta = line.substring(4).trim();
+          if (lowerLine.startsWith('hook:') || lowerLine.startsWith('**hook:**')) {
+            hook = line.replace(/^\*?\*?hook:\*?\*?\s*/i, '').trim();
+          } else if (lowerLine.startsWith('body:') || lowerLine.startsWith('**body:**')) {
+            body = line.replace(/^\*?\*?body:\*?\*?\s*/i, '').trim();
+          } else if (lowerLine.startsWith('cta:') || lowerLine.startsWith('**cta:**')) {
+            cta = line.replace(/^\*?\*?cta:\*?\*?\s*/i, '').trim();
           }
         }
 
@@ -434,3 +435,4 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
     });
   }
 });
+
