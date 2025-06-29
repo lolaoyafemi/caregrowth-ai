@@ -195,8 +195,11 @@ CTA: [stronger, more specific call-to-action]`;
                 content: enhancementPrompt
               }
             ],
-            temperature: 0.7,
-            max_tokens: 1200
+            temperature: 0.9,
+            max_tokens: 1200,
+            top_p: 1,
+            frequency_penalty: 0.2,
+            presence_penalty: 0.2
           })
         });
 
