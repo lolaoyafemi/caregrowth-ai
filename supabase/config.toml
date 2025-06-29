@@ -46,6 +46,14 @@ enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 
+# Enable Google OAuth provider
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+# Request additional scopes for Google Drive access
+redirect_uri = "https://ljtikbkilyeyuexzhaqd.supabase.co/auth/v1/callback"
+
 # Use pre-defined map of claims
 [auth.jwt]
 [auth.jwt.claims]

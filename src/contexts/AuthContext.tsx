@@ -174,6 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
         data: {
           full_name: fullName,
         }
@@ -193,7 +194,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         redirectTo: `${window.location.origin}/dashboard`
       }
     });
-    if (error) throw error;
+    if (error) {
+      console.error('Google sign in error:', error);
+      throw error;
+    }
   };
 
   const signOut = async () => {
