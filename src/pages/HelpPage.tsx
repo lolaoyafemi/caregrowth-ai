@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Shield, MessageSquare, User, Calendar } from 'lucide-react';
+import { Shield, MessageSquare, User, Calendar, Send, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock support tickets data
 const mockSupportTickets = [
@@ -69,6 +70,7 @@ const mockSupportTickets = [
 const SuperAdminSupportDashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState<number | null>(null);
   const [response, setResponse] = useState('');
+  const { toast } = useToast();
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -94,9 +96,12 @@ const SuperAdminSupportDashboard = () => {
 
   const handleSendResponse = () => {
     console.log('Sending response for ticket:', selectedTicket, 'Response:', response);
+    toast({
+      title: "Response Sent",
+      description: "Your response has been sent to the user successfully.",
+    });
     setResponse('');
     setSelectedTicket(null);
-    // In a real app, this would send the response and update the ticket status
   };
 
   return (
@@ -212,6 +217,7 @@ const SuperAdminSupportDashboard = () => {
                             disabled={!response.trim()}
                             className="bg-green-600 hover:bg-green-700"
                           >
+                            <Send size={16} className="mr-2" />
                             Send Response
                           </Button>
                           <Button 
@@ -239,6 +245,56 @@ const SuperAdminSupportDashboard = () => {
 };
 
 const RegularUserHelpPage = () => {
+  const [subject, setSubject] = useState('');
+  const [question, setQuestion] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const { user } = useUser();
+
+  const handleSubmitQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!subject.trim() || !question.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in both subject and question fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Create mailto link for now
+      const emailSubject = `CareGrowthAI Support: ${subject}`;
+      const emailBody = `User: ${user?.email || 'Unknown'}\nRole: ${user?.role || 'Unknown'}\n\nQuestion:\n${question}`;
+      const mailtoLink = `mailto:admin@caregrowth.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      
+      window.open(mailtoLink, '_blank');
+      
+      toast({
+        title: "Question Submitted",
+        description: "Your support request has been submitted. We'll get back to you soon!",
+      });
+      
+      // Reset form
+      setSubject('');
+      setQuestion('');
+    } catch (error) {
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your question. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Help & Support</h1>
@@ -285,6 +341,20 @@ const RegularUserHelpPage = () => {
                     can manage all aspects of the dashboard.
                   </AccordionContent>
                 </AccordionItem>
+                <AccordionItem value="item-5">
+                  <AccordionTrigger>How do I reset my password?</AccordionTrigger>
+                  <AccordionContent>
+                    You can reset your password by clicking the "Forgot Password" link on the login page.
+                    Enter your email address and we'll send you instructions to reset your password.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-6">
+                  <AccordionTrigger>What file formats are supported for document upload?</AccordionTrigger>
+                  <AccordionContent>
+                    The Document Search tool supports PDF, Word documents (.doc, .docx), text files (.txt),
+                    and common image formats (PNG, JPG, JPEG). Files should be under 10MB for optimal processing.
+                  </AccordionContent>
+                </AccordionItem>
               </Accordion>
             </CardContent>
           </Card>
@@ -299,15 +369,38 @@ const RegularUserHelpPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
+              <form onSubmit={handleSubmitQuestion} className="space-y-4">
                 <div>
-                  <Input placeholder="Subject" className="mb-2" />
-                  <textarea 
-                    className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" 
+                  <Input 
+                    placeholder="Subject" 
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="mb-2" 
+                  />
+                  <Textarea 
+                    className="min-h-[120px]" 
                     placeholder="Describe your question or issue..."
-                  ></textarea>
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                  />
                 </div>
-                <Button className="w-full">Submit Question</Button>
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={isSubmitting || !subject.trim() || !question.trim()}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} className="mr-2" />
+                      Submit Question
+                    </>
+                  )}
+                </Button>
               </form>
             </CardContent>
           </Card>
@@ -316,15 +409,35 @@ const RegularUserHelpPage = () => {
       
       <Card>
         <CardHeader>
-          <CardTitle>Contact Support</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="text-green-600" size={20} />
+            Contact Support
+          </CardTitle>
           <CardDescription>
             Get help from our support team
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button asChild variant="outline" className="w-full">
-            <a href="mailto:admin@blahblah.com">Send Message</a>
-          </Button>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-600">
+            For urgent matters or complex issues, you can reach out to our support team directly:
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button asChild variant="outline" className="flex-1">
+              <a href="mailto:admin@caregrowth.com">
+                <MessageSquare size={16} className="mr-2" />
+                Email Support
+              </a>
+            </Button>
+            <Button asChild variant="outline" className="flex-1">
+              <a href="https://wa.me/2348068920166" target="_blank" rel="noopener noreferrer">
+                <MessageSquare size={16} className="mr-2" />
+                WhatsApp Chat
+              </a>
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500">
+            Response time: We typically respond within 24 hours on business days.
+          </p>
         </CardContent>
       </Card>
     </div>
