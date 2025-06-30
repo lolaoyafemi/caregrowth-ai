@@ -47,6 +47,7 @@ function App() {
                 <Route path="qa-assistant" element={<QAAssistantTool />} />
                 <Route path="prompts" element={<PromptsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="help" element={<HelpPage />} />
                 
                 {/* Super Admin route */}
                 <Route path="super-admin" element={<SuperAdminDashboard />} />
