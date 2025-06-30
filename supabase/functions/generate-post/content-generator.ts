@@ -25,6 +25,8 @@ export const generateContentFromPrompts = async (
 ): Promise<GeneratedContent | null> => {
   const { userId, postType, tone, platform, audience, businessContext, openAIApiKey } = params;
 
+  console.log('Fetching prompts for:', { postType, platform });
+
   // Get prompt templates for the specified content category and platform
   const { data: prompts, error: promptError } = await supabase
     .from('prompts')
@@ -32,7 +34,7 @@ export const generateContentFromPrompts = async (
     .eq('category', postType)
     .in('platform', [platform, 'all']);
 
-  console.log('Fetched prompts:', prompts);
+  console.log('Fetched prompts:', prompts?.length || 0, 'prompts found');
 
   if (promptError) {
     console.error('Prompt fetch error:', promptError);
@@ -40,12 +42,72 @@ export const generateContentFromPrompts = async (
   }
 
   if (!prompts || prompts.length === 0) {
+    console.log('No prompts found for category:', postType, 'platform:', platform);
     return null;
   }
 
   // Separate prompts by platform preference
   const platformSpecificPrompts = prompts.filter(p => p.platform === platform);
   const generalPrompts = prompts.filter(p => p.platform === 'all');
+
+  // Choose from platform-specific first, then general
+  const availablePrompts = platformSpecificPrompts.length > 0 ? platformSpecificPrompts : generalPrompts;
+  
+  if (availablePrompts.length === 0) {
+    console.log('No available prompts after filtering');
+    return null;
+  }
+
+  // Randomly select one prompt from available prompts
+  const selectedPrompt = availablePrompts[Math.floor(Math.random() * availablePrompts.length)];
+  
+  console.log('Selected prompt:', selectedPrompt.id, selectedPrompt.name);
+
+  // Use the actual prompt content directly and personalize it
+  let hook = selectedPrompt.hook || '';
+  let body = selectedPrompt.body || '';
+  let cta = selectedPrompt.cta || '';
+
+  // If any section is empty, skip this prompt
+  if (!hook.trim() || !body.trim() || !cta.trim()) {
+    console.log('Prompt has empty sections, skipping');
+    return null;
+  }
+
+  // Personalize the content with business context using AI
+  const personalizedContent = await personalizeWithAI({
+    hook,
+    body,
+    cta,
+    businessContext,
+    audience,
+    tone,
+    platform,
+    openAIApiKey
+  });
+
+  if (personalizedContent) {
+    return {
+      ...personalizedContent,
+      source: 'database_prompt',
+      template_id: selectedPrompt.id
+    };
+  }
+
+  return null;
+};
+
+const personalizeWithAI = async (params: {
+  hook: string;
+  body: string;
+  cta: string;
+  businessContext: string;
+  audience: string;
+  tone: string;
+  platform: string;
+  openAIApiKey: string;
+}): Promise<{ hook: string; body: string; cta: string } | null> => {
+  const { hook, body, cta, businessContext, audience, tone, platform, openAIApiKey } = params;
 
   const toneMap = {
     "professional": "Clear, polished, confident, respectful",
@@ -54,54 +116,37 @@ export const generateContentFromPrompts = async (
     "authoritative": "Strong, confident, assured, expert",
     "humorous": "Light, witty, playful"
   };
-  
-  // Choose from platform-specific first, then general
-  const availablePrompts = platformSpecificPrompts.length > 0 ? platformSpecificPrompts : generalPrompts;
-  
-  if (availablePrompts.length === 0) {
-    return null;
-  }
 
-  // Lookup tone description
   const toneDescription = toneMap[tone.toLowerCase()] || "Clear and natural tone";
 
-  // Randomly select one row from available prompts
-  const selectedPrompt = availablePrompts[Math.floor(Math.random() * availablePrompts.length)];
-  
-  console.log('Selected prompt row:', selectedPrompt);
-
-  // Get the template content - it's stored in the hook field
-  const templateContent = selectedPrompt.hook || selectedPrompt.body || selectedPrompt.cta || '';
-
-  // Build dynamic prompt for generating actual content from the template
-  const generationPrompt = `You are a creative social media content writer. Your task is to create an engaging ${postType} post for ${platform}.
+  const personalizationPrompt = `You are a content personalization expert. Your task is to take a social media post template and personalize it using business information.
 
 Business Context:
 ${businessContext}
 
-Template to use as inspiration:
-${templateContent}
+Template to personalize:
+HOOK: ${hook}
+BODY: ${body}
+CTA: ${cta}
 
 Requirements:
-- Content Category: ${postType}
 - Target Audience: ${audience}
 - Tone: ${tone} (${toneDescription})
 - Platform: ${platform}
 
 Instructions:
-✅ Create original, engaging content inspired by the template
-✅ Write naturally in the specified ${tone} tone
-✅ Make it specific to the target audience: ${audience}
-✅ Include relevant business context naturally
-✅ Create a complete post with hook, body, and call-to-action
-✅ Make it feel authentic and human, not templated
-
-DO NOT return the template itself. Generate NEW content inspired by it.
+✅ Keep the same structure and format as the template
+✅ Replace placeholder text with specific business information
+✅ Make it feel personal and authentic to this specific business
+✅ Use the ${tone} tone throughout
+✅ Keep it appropriate for ${platform}
+✅ Make it speak directly to ${audience}
+✅ Don't add extra sections - only personalize what's there
 
 Return your response in this exact format:
-HOOK: [engaging opening that captures attention - 1-2 sentences]
-BODY: [main content with value and personality - 3-5 sentences]
-CTA: [compelling call-to-action - 1-2 sentences]`;
+HOOK: [personalized hook]
+BODY: [personalized body]
+CTA: [personalized call-to-action]`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -115,53 +160,31 @@ CTA: [compelling call-to-action - 1-2 sentences]`;
         messages: [
           {
             role: 'system',
-            content: `You are an expert social media content creator specializing in ${postType} content for ${audience}. You create original, engaging posts that build authentic connections and drive engagement.`
+            content: 'You are a social media content personalization expert. You take templates and personalize them with business-specific information while maintaining the original structure and intent.'
           },
           {
             role: 'user',
-            content: generationPrompt
+            content: personalizationPrompt
           }
         ],
-        temperature: 0.8,
-        max_tokens: 1500,
-        top_p: 1,
-        frequency_penalty: 0.3,
-        presence_penalty: 0.3
+        temperature: 0.7,
+        max_tokens: 1000
       })
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      const generatedContent = data.choices[0].message.content;
-      
-      console.log('Generated content from template:', generatedContent);
-      
-      const parsed = parseGeneratedContent(generatedContent);
-      
-      // Ensure we have actual content, not template instructions
-      if (parsed.hook && parsed.body && parsed.cta) {
-        // Check if the content looks like instructions or templates
-        const combinedContent = `${parsed.hook} ${parsed.body} ${parsed.cta}`.toLowerCase();
-        const templateIndicators = ['[', ']', '{', '}', 'template', 'instruction', 'format', 'example'];
-        
-        const hasTemplateIndicators = templateIndicators.some(indicator => 
-          combinedContent.includes(indicator)
-        );
-        
-        if (!hasTemplateIndicators) {
-          return {
-            ...parsed,
-            source: 'database_generated',
-            template_id: selectedPrompt?.id
-          };
-        }
-      }
+    if (!response.ok) {
+      console.error('OpenAI API error:', response.status);
+      return null;
     }
 
-    console.log('Template generation failed, falling back to AI generation');
-    return null;
+    const data = await response.json();
+    const personalizedContent = data.choices[0].message.content;
+    
+    console.log('Personalized content:', personalizedContent);
+    
+    return parseGeneratedContent(personalizedContent);
   } catch (error) {
-    console.error('Error generating content from template:', error);
+    console.error('Error personalizing content:', error);
     return null;
   }
 };
@@ -169,7 +192,7 @@ CTA: [compelling call-to-action - 1-2 sentences]`;
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
 
-  console.log('Generating fresh content with OpenAI');
+  console.log('Generating fresh AI content as fallback');
   
   const toneMap = {
     "professional": "Clear, polished, confident, respectful",

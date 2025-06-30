@@ -41,15 +41,17 @@ serve(async (req) => {
 
     // Get user profile to understand their business
     const profile = await getUserProfile(supabase, userId);
+    console.log('User profile loaded:', !!profile);
 
     // Build comprehensive business context for personalization
     const targetAudience = audience || (profile?.ideal_client || 'families needing care');
     const businessContext = buildBusinessContext(profile, audience);
+    console.log('Business context built for:', profile?.business_name || 'Unknown business');
 
     let hook = '', body = '', cta = '';
     let selectedPrompt = null;
 
-    // Always try to use a prompt from the database first, but rephrase it intelligently
+    // First, try to use a prompt from the database
     const contentFromPrompts = await generateContentFromPrompts(supabase, {
       userId,
       postType,
@@ -61,12 +63,14 @@ serve(async (req) => {
     });
 
     if (contentFromPrompts) {
+      console.log('Successfully generated content from database prompt');
       hook = contentFromPrompts.hook;
       body = contentFromPrompts.body;
       cta = contentFromPrompts.cta;
       selectedPrompt = { id: contentFromPrompts.template_id };
     } else {
-      // If no prompts found, generate completely new storytelling content with AI
+      console.log('No suitable prompts found, generating with AI');
+      // If no prompts found, generate completely new content with AI
       const generatedContent = await generateContentWithAI({
         userId,
         postType,
@@ -82,10 +86,12 @@ serve(async (req) => {
       cta = generatedContent.cta;
     }
 
-    // Personalize all content sections
-    hook = personalizeContent(hook, profile, targetAudience, tone, platform);
-    body = personalizeContent(body, profile, targetAudience, tone, platform);
-    cta = personalizeContent(cta, profile, targetAudience, tone, platform);
+    // Apply additional personalization if we have business profile
+    if (profile) {
+      hook = personalizeContent(hook, profile, targetAudience, tone, platform);
+      body = personalizeContent(body, profile, targetAudience, tone, platform);
+      cta = personalizeContent(cta, profile, targetAudience, tone, platform);
+    }
 
     const finalPost = `${hook}\n\n${body}\n\n${cta}`;
 
@@ -97,9 +103,8 @@ serve(async (req) => {
       hook,
       body,
       cta,
-      source: selectedPrompt ? 'database_rephrased' : 'ai_generated',
+      source: selectedPrompt ? 'database_prompt' : 'ai_generated',
       template_id: selectedPrompt?.id || null,
-      available_templates: 0, // We don't need this count anymore
       business_context_used: !!profile,
       content_length: finalPost.length
     }), {
