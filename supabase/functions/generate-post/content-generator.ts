@@ -63,14 +63,16 @@ export const generateContentFromPrompts = async (
   
   console.log('Selected prompt:', selectedPrompt.id, selectedPrompt.name);
 
-  // Use the actual prompt content directly and personalize it
+  // Use the actual prompt content directly
   let hook = selectedPrompt.hook || '';
   let body = selectedPrompt.body || '';
   let cta = selectedPrompt.cta || '';
 
-  // If any section is empty, skip this prompt
-  if (!hook.trim() || !body.trim() || !cta.trim()) {
-    console.log('Prompt has empty sections, skipping');
+  console.log('Original prompt content:', { hook: hook.substring(0, 50), body: body.substring(0, 50), cta: cta.substring(0, 50) });
+
+  // If ALL sections are empty, skip this prompt - but allow some sections to be empty
+  if (!hook.trim() && !body.trim() && !cta.trim()) {
+    console.log('All prompt sections are empty, skipping');
     return null;
   }
 
@@ -87,6 +89,7 @@ export const generateContentFromPrompts = async (
   });
 
   if (personalizedContent) {
+    console.log('Successfully personalized content from database prompt');
     return {
       ...personalizedContent,
       source: 'database_prompt',
@@ -94,6 +97,7 @@ export const generateContentFromPrompts = async (
     };
   }
 
+  console.log('Failed to personalize content, will try next approach');
   return null;
 };
 
@@ -135,13 +139,15 @@ Requirements:
 - Platform: ${platform}
 
 Instructions:
-✅ Keep the same structure and format as the template
-✅ Replace placeholder text with specific business information
-✅ Make it feel personal and authentic to this specific business
+✅ Use the template content as your foundation - don't completely rewrite it
+✅ Replace generic placeholders with specific business information from the context
+✅ Maintain the original style and intent of each section
+✅ If a section is empty or very short, enhance it with relevant business details
+✅ Make it feel authentic to this specific business
 ✅ Use the ${tone} tone throughout
 ✅ Keep it appropriate for ${platform}
 ✅ Make it speak directly to ${audience}
-✅ Don't add extra sections - only personalize what's there
+✅ Incorporate business name, location, services, and unique value propositions naturally
 
 Return your response in this exact format:
 HOOK: [personalized hook]
@@ -180,7 +186,7 @@ CTA: [personalized call-to-action]`;
     const data = await response.json();
     const personalizedContent = data.choices[0].message.content;
     
-    console.log('Personalized content:', personalizedContent);
+    console.log('Personalized content received:', personalizedContent.substring(0, 200));
     
     return parseGeneratedContent(personalizedContent);
   } catch (error) {

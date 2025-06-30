@@ -50,8 +50,10 @@ serve(async (req) => {
 
     let hook = '', body = '', cta = '';
     let selectedPrompt = null;
+    let contentSource = '';
 
-    // First, try to use a prompt from the database
+    // PRIORITY 1: Try to use a prompt from the database
+    console.log('Attempting to generate content from database prompts...');
     const contentFromPrompts = await generateContentFromPrompts(supabase, {
       userId,
       postType,
@@ -63,14 +65,15 @@ serve(async (req) => {
     });
 
     if (contentFromPrompts) {
-      console.log('Successfully generated content from database prompt');
+      console.log('✅ Successfully generated content from database prompt');
       hook = contentFromPrompts.hook;
       body = contentFromPrompts.body;
       cta = contentFromPrompts.cta;
       selectedPrompt = { id: contentFromPrompts.template_id };
+      contentSource = 'database_prompt';
     } else {
-      console.log('No suitable prompts found, generating with AI');
-      // If no prompts found, generate completely new content with AI
+      console.log('❌ Database prompt generation failed, falling back to AI generation');
+      // FALLBACK: Generate completely new content with AI
       const generatedContent = await generateContentWithAI({
         userId,
         postType,
@@ -84,10 +87,12 @@ serve(async (req) => {
       hook = generatedContent.hook;
       body = generatedContent.body;
       cta = generatedContent.cta;
+      contentSource = 'ai_generated';
     }
 
     // Apply additional personalization if we have business profile
     if (profile) {
+      console.log('Applying additional business personalization...');
       hook = personalizeContent(hook, profile, targetAudience, tone, platform);
       body = personalizeContent(body, profile, targetAudience, tone, platform);
       cta = personalizeContent(cta, profile, targetAudience, tone, platform);
@@ -98,12 +103,19 @@ serve(async (req) => {
     // Log post to post_history
     await logPostToHistory(supabase, userId, postType, tone, platform, targetAudience, finalPost);
 
+    console.log('Final post generated successfully:', {
+      source: contentSource,
+      template_id: selectedPrompt?.id || null,
+      content_length: finalPost.length,
+      business_context_used: !!profile
+    });
+
     return new Response(JSON.stringify({
       post: finalPost,
       hook,
       body,
       cta,
-      source: selectedPrompt ? 'database_prompt' : 'ai_generated',
+      source: contentSource,
       template_id: selectedPrompt?.id || null,
       business_context_used: !!profile,
       content_length: finalPost.length
