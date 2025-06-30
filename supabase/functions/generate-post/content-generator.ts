@@ -35,6 +35,7 @@ export const generateContentFromPrompts = async (
     .in('platform', [platform, 'all']);
 
   console.log('Fetched prompts:', prompts?.length || 0, 'prompts found');
+  console.log('First prompt structure:', prompts?.[0] ? Object.keys(prompts[0]) : 'No prompts');
 
   if (promptError) {
     console.error('Prompt fetch error:', promptError);
@@ -62,17 +63,32 @@ export const generateContentFromPrompts = async (
   const selectedPrompt = availablePrompts[Math.floor(Math.random() * availablePrompts.length)];
   
   console.log('Selected prompt:', selectedPrompt.id, selectedPrompt.name);
+  console.log('Selected prompt keys:', Object.keys(selectedPrompt));
 
-  // Use the single prompt field (correct field name)
-  let promptContent = selectedPrompt.prompt || selectedPrompt.hook || ''; // try prompt first, fallback to hook for compatibility
-
-  console.log('Original prompt content:', promptContent.substring(0, 100));
-
-  // Skip if prompt is completely empty
-  if (!promptContent.trim()) {
-    console.log('Prompt content is empty, skipping');
+  // Get the prompt content - try different possible field names
+  let promptContent = '';
+  if (selectedPrompt.prompt) {
+    promptContent = selectedPrompt.prompt;
+    console.log('Using prompt field:', promptContent.substring(0, 100));
+  } else if (selectedPrompt.hook) {
+    promptContent = selectedPrompt.hook;
+    console.log('Using hook field (fallback):', promptContent.substring(0, 100));
+  } else if (selectedPrompt.body) {
+    promptContent = selectedPrompt.body;
+    console.log('Using body field (fallback):', promptContent.substring(0, 100));
+  } else {
+    console.log('No prompt content found in any field');
+    console.log('Available fields:', Object.keys(selectedPrompt));
     return null;
   }
+
+  // Skip if prompt is completely empty
+  if (!promptContent || !promptContent.trim()) {
+    console.log('Prompt content is empty after all attempts, skipping');
+    return null;
+  }
+
+  console.log('Final prompt content length:', promptContent.length);
 
   // Personalize the content with business context using AI
   const personalizedContent = await personalizeWithAI({
