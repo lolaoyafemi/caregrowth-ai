@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
 export interface ContentGenerationParams {
@@ -62,8 +63,8 @@ export const generateContentFromPrompts = async (
   
   console.log('Selected prompt:', selectedPrompt.id, selectedPrompt.name);
 
-  // Use the single prompt field (new structure)
-  let promptContent = selectedPrompt.hook || ''; // hook field contains the full prompt now
+  // Use the single prompt field (correct field name)
+  let promptContent = selectedPrompt.prompt || selectedPrompt.hook || ''; // try prompt first, fallback to hook for compatibility
 
   console.log('Original prompt content:', promptContent.substring(0, 100));
 
