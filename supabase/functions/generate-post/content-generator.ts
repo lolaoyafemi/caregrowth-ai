@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
 export interface ContentGenerationParams {
@@ -63,24 +62,20 @@ export const generateContentFromPrompts = async (
   
   console.log('Selected prompt:', selectedPrompt.id, selectedPrompt.name);
 
-  // Use the actual prompt content directly
-  let hook = selectedPrompt.hook || '';
-  let body = selectedPrompt.body || '';
-  let cta = selectedPrompt.cta || '';
+  // Use the single prompt field (new structure)
+  let promptContent = selectedPrompt.hook || ''; // hook field contains the full prompt now
 
-  console.log('Original prompt content:', { hook: hook.substring(0, 50), body: body.substring(0, 50), cta: cta.substring(0, 50) });
+  console.log('Original prompt content:', promptContent.substring(0, 100));
 
-  // If ALL sections are empty, skip this prompt - but allow some sections to be empty
-  if (!hook.trim() && !body.trim() && !cta.trim()) {
-    console.log('All prompt sections are empty, skipping');
+  // Skip if prompt is completely empty
+  if (!promptContent.trim()) {
+    console.log('Prompt content is empty, skipping');
     return null;
   }
 
   // Personalize the content with business context using AI
   const personalizedContent = await personalizeWithAI({
-    hook,
-    body,
-    cta,
+    promptContent,
     businessContext,
     audience,
     tone,
@@ -102,16 +97,14 @@ export const generateContentFromPrompts = async (
 };
 
 const personalizeWithAI = async (params: {
-  hook: string;
-  body: string;
-  cta: string;
+  promptContent: string;
   businessContext: string;
   audience: string;
   tone: string;
   platform: string;
   openAIApiKey: string;
 }): Promise<{ hook: string; body: string; cta: string } | null> => {
-  const { hook, body, cta, businessContext, audience, tone, platform, openAIApiKey } = params;
+  const { promptContent, businessContext, audience, tone, platform, openAIApiKey } = params;
 
   const toneMap = {
     "professional": "Clear, polished, confident, respectful",
@@ -129,9 +122,7 @@ Business Context:
 ${businessContext}
 
 Template to personalize:
-HOOK: ${hook}
-BODY: ${body}
-CTA: ${cta}
+${promptContent}
 
 Requirements:
 - Target Audience: ${audience}
@@ -141,18 +132,19 @@ Requirements:
 Instructions:
 ✅ Use the template content as your foundation - don't completely rewrite it
 ✅ Replace generic placeholders with specific business information from the context
-✅ Maintain the original style and intent of each section
-✅ If a section is empty or very short, enhance it with relevant business details
+✅ Maintain the original style and intent of the template
 ✅ Make it feel authentic to this specific business
 ✅ Use the ${tone} tone throughout
 ✅ Keep it appropriate for ${platform}
 ✅ Make it speak directly to ${audience}
 ✅ Incorporate business name, location, services, and unique value propositions naturally
 
+The template might be a complete post or just a section. Personalize it and then structure your response as a complete social media post with these sections:
+
 Return your response in this exact format:
-HOOK: [personalized hook]
-BODY: [personalized body]
-CTA: [personalized call-to-action]`;
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -166,7 +158,7 @@ CTA: [personalized call-to-action]`;
         messages: [
           {
             role: 'system',
-            content: 'You are a social media content personalization expert. You take templates and personalize them with business-specific information while maintaining the original structure and intent.'
+            content: 'You are a social media content personalization expert. You take templates and personalize them with business-specific information while structuring them into complete social media posts.'
           },
           {
             role: 'user',
