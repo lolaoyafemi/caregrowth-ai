@@ -70,170 +70,38 @@ export const generateContentFromPrompts = async (
   
   console.log('Selected prompt row:', selectedPrompt);
 
-  // Build dynamic prompt for rephrasing
-  const rephrasePrompt = `You are a creative and compassionate social media strategist. Your job is to create a ${postType} post designed for ${audience}.
+  // Get the template content - it's stored in the hook field
+  const templateContent = selectedPrompt.hook || selectedPrompt.body || selectedPrompt.cta || '';
+
+  // Build dynamic prompt for generating actual content from the template
+  const generationPrompt = `You are a creative social media content writer. Your task is to create an engaging ${postType} post for ${platform}.
 
 Business Context:
 ${businessContext}
 
-Original Template:
-HOOK: ${selectedPrompt.hook}
-BODY: ${selectedPrompt.body}
-CTA: ${selectedPrompt.cta}
+Template to use as inspiration:
+${templateContent}
 
-Content Category: ${postType}
-Target Audience: ${audience}
-Tone: ${tone}
-Platform: ${platform}
-
-The tone for this post is: ${tone}.
-Examples of this tone: ${toneDescription}.
-Write in a way that fits this tone naturally — the reader should *feel* it in the style, word choice, and flow.
+Requirements:
+- Content Category: ${postType}
+- Target Audience: ${audience}
+- Tone: ${tone} (${toneDescription})
+- Platform: ${platform}
 
 Instructions:
-✅ Write a post that feels complete, conversational, and human — not like a template.
-✅ Let the post flow naturally (no forced structure like Hook → Body → CTA unless it fits the tone).
-✅ End with a gentle, tone-matching invitation (not pushy or robotic).
-✅ Aim for a substantial post that gives value and builds connection — about 150-250 words (or what feels right).
+✅ Create original, engaging content inspired by the template
+✅ Write naturally in the specified ${tone} tone
+✅ Make it specific to the target audience: ${audience}
+✅ Include relevant business context naturally
+✅ Create a complete post with hook, body, and call-to-action
+✅ Make it feel authentic and human, not templated
 
-Main goal of this post: Build trust and show authority without sounding salesy.
+DO NOT return the template itself. Generate NEW content inspired by it.
 
-Return the enhanced version in this exact format:
-HOOK: [compelling hook with 2-3 sentences]
-BODY: [main content with 4-6 paragraphs]
-CTA: [inspiring call-to-action with 2-3 sentences]`;
-
-  try {
-    const rephraseResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a master storyteller specializing in creating emotionally compelling social media content for "${audience}". You excel at transforming basic templates into rich, engaging narratives that create deep emotional connections and inspire action through authentic storytelling.`
-          },
-          {
-            role: 'user',
-            content: rephrasePrompt
-          }
-        ],
-        temperature: 0.8,
-        max_tokens: 2000,
-        top_p: 1,
-        frequency_penalty: 0.3,
-        presence_penalty: 0.3
-      })
-    });
-
-    if (rephraseResponse.ok) {
-      const rephraseData = await rephraseResponse.json();
-      const rephrasedContent = rephraseData.choices[0].message.content;
-      
-      console.log('Rephrased content:', rephrasedContent);
-      
-      const parsed = parseGeneratedContent(rephrasedContent);
-      
-      if (parsed.hook || parsed.body || parsed.cta) {
-        return {
-          ...parsed,
-          source: 'database_rephrased',
-          template_id: selectedPrompt?.id
-        };
-      }
-    }
-
-    console.log('Rephrasing failed, using original template');
-    return {
-      hook: selectedPrompt.hook || '',
-      body: selectedPrompt.body || '',
-      cta: selectedPrompt.cta || '',
-      source: 'database_original',
-      template_id: selectedPrompt?.id
-    };
-  } catch (rephraseError) {
-    console.error('Error rephrasing content:', rephraseError);
-    console.log('Using original template as fallback');
-    return {
-      hook: selectedPrompt.hook || '',
-      body: selectedPrompt.body || '',
-      cta: selectedPrompt.cta || '',
-      source: 'database_original',
-      template_id: selectedPrompt?.id
-    };
-  }
-};
-
-export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
-  const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
-
-  console.log('No prompts found, generating new storytelling content with OpenAI');
-  
-  const generationPrompt = `You are a master storyteller and social media expert specializing in home care services. Create compelling, story-driven social media content that deeply connects with the target audience.
-
-Business Context:
-${businessContext}
-
-Content Category: ${postType}
-Target Audience: ${audience}
-Tone: ${tone}
-Platform: ${platform}
-
-Create a comprehensive, story-driven social media post (550-650 words) that:
-
-STORYTELLING APPROACH:
-- Tell a complete, engaging story with characters, conflict, and resolution
-- Use specific, realistic scenarios with detailed context
-- Include authentic dialogue and genuine emotional moments
-- Paint vivid scenes that readers can visualize clearly
-- Address real challenges "${audience}" faces through narrative
-- Show transformation and hope through storytelling
-- Create multiple emotional connection points throughout
-
-NARRATIVE STRUCTURE:
-
-1. COMPELLING STORY HOOK (3-4 sentences):
-   - Open with a specific, relatable scenario
-   - Use vivid, sensory language that immediately engages
-   - Create instant emotional connection with "${audience}"
-   - Include a compelling question or surprising insight
-
-2. RICH STORYTELLING BODY (500-550 words across 6-8 paragraphs):
-   - Develop a complete narrative arc with clear progression
-   - Include specific characters with names, ages, and backgrounds
-   - Show real struggles, emotions, and breakthrough moments
-   - Use dialogue and quoted thoughts to add authenticity
-   - Paint detailed scenes with sensory descriptions
-   - Address common fears and hopes through the story
-   - Demonstrate expertise through narrative examples
-   - Show before/after transformations with specific details
-   - Include realistic timeframes and outcomes
-   - Weave in social proof naturally through storytelling
-   - Use smooth transitions between scenes and ideas
-
-3. INSPIRING CALL-TO-ACTION (3-4 sentences):
-   - Connect emotionally to the story just shared
-   - Offer clear, achievable next steps
-   - Remove barriers and provide reassurance
-   - End with warmth and genuine invitation
-
-CONTENT REQUIREMENTS:
-- Create authentic, relatable scenarios for "${audience}"
-- Use "${tone}" tone while maintaining warmth and professionalism
-- Include specific, realistic examples and outcomes
-- Address emotional needs and practical concerns
-- Optimize for ${platform} engagement with platform-appropriate language
-- Show genuine care and understanding throughout
-- Use storytelling to educate and inspire rather than just sell
-
-Format your response as:
-HOOK: [compelling story hook with 3-4 sentences]
-BODY: [rich storytelling content with 500-550 words across 6-8 paragraphs]
-CTA: [inspiring call-to-action with 3-4 sentences]`;
+Return your response in this exact format:
+HOOK: [engaging opening that captures attention - 1-2 sentences]
+BODY: [main content with value and personality - 3-5 sentences]
+CTA: [compelling call-to-action - 1-2 sentences]`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -247,7 +115,7 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
         messages: [
           {
             role: 'system',
-            content: `You are a master storyteller specializing in emotionally compelling home care content. Create rich, engaging narratives that deeply resonate with "${audience}" using authentic storytelling, specific examples, and genuine emotional connection.`
+            content: `You are an expert social media content creator specializing in ${postType} content for ${audience}. You create original, engaging posts that build authentic connections and drive engagement.`
           },
           {
             role: 'user',
@@ -255,7 +123,109 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
           }
         ],
         temperature: 0.8,
-        max_tokens: 2200
+        max_tokens: 1500,
+        top_p: 1,
+        frequency_penalty: 0.3,
+        presence_penalty: 0.3
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const generatedContent = data.choices[0].message.content;
+      
+      console.log('Generated content from template:', generatedContent);
+      
+      const parsed = parseGeneratedContent(generatedContent);
+      
+      // Ensure we have actual content, not template instructions
+      if (parsed.hook && parsed.body && parsed.cta) {
+        // Check if the content looks like instructions or templates
+        const combinedContent = `${parsed.hook} ${parsed.body} ${parsed.cta}`.toLowerCase();
+        const templateIndicators = ['[', ']', '{', '}', 'template', 'instruction', 'format', 'example'];
+        
+        const hasTemplateIndicators = templateIndicators.some(indicator => 
+          combinedContent.includes(indicator)
+        );
+        
+        if (!hasTemplateIndicators) {
+          return {
+            ...parsed,
+            source: 'database_generated',
+            template_id: selectedPrompt?.id
+          };
+        }
+      }
+    }
+
+    console.log('Template generation failed, falling back to AI generation');
+    return null;
+  } catch (error) {
+    console.error('Error generating content from template:', error);
+    return null;
+  }
+};
+
+export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
+  const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
+
+  console.log('Generating fresh content with OpenAI');
+  
+  const toneMap = {
+    "professional": "Clear, polished, confident, respectful",
+    "conversational": "Warm, friendly, approachable, informal",
+    "enthusiastic": "Positive, energetic, uplifting",
+    "authoritative": "Strong, confident, assured, expert",
+    "humorous": "Light, witty, playful"
+  };
+
+  const toneDescription = toneMap[tone.toLowerCase()] || "Clear and natural tone";
+  
+  const generationPrompt = `Create engaging ${postType} social media content for ${platform}.
+
+Business Context:
+${businessContext}
+
+Requirements:
+- Content Category: ${postType}
+- Target Audience: ${audience}
+- Tone: ${tone} (${toneDescription})
+- Platform: ${platform}
+
+Create original, valuable content that:
+✅ Speaks directly to ${audience}
+✅ Uses ${tone} tone naturally
+✅ Provides genuine value or insight
+✅ Builds trust and engagement
+✅ Includes a clear call-to-action
+✅ Feels authentic and human
+
+Return your response in this exact format:
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert social media content creator specializing in ${postType} content. You create original, engaging posts that resonate with ${audience} and drive meaningful engagement.`
+          },
+          {
+            role: 'user',
+            content: generationPrompt
+          }
+        ],
+        temperature: 0.8,
+        max_tokens: 1500
       })
     });
 
@@ -267,41 +237,32 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
 
     const data = await response.json();
     const generatedContent = data.choices[0].message.content;
-    console.log('Generated content:', generatedContent);
+    console.log('Fresh generated content:', generatedContent);
 
     const parsed = parseGeneratedContent(generatedContent);
     
-    // Fallback parsing if format not followed
-    if (!parsed.hook && !parsed.body && !parsed.cta) {
-      const contentLines = generatedContent.split('\n').filter(line => line.trim());
-      if (contentLines.length >= 3) {
-        return {
-          hook: contentLines[0] || 'Looking for reliable home care services?',
-          body: contentLines.slice(1, -1).join('\n') || 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we are here to help navigate those difficult decisions with expertise and understanding.',
-          cta: contentLines[contentLines.length - 1] || 'Contact us today to learn more about how we can support your family!',
-          source: 'ai_generated'
-        };
-      } else {
-        return {
-          hook: 'Looking for reliable home care services?',
-          body: 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we are here to help navigate those difficult decisions with expertise and understanding.',
-          cta: 'Contact us today to learn more about how we can support your family!',
-          source: 'ai_generated'
-        };
-      }
+    // Ensure we have proper content
+    if (parsed.hook && parsed.body && parsed.cta) {
+      return {
+        ...parsed,
+        source: 'ai_generated'
+      };
     }
     
+    // Fallback with simple content
     return {
-      ...parsed,
+      hook: `Looking for quality ${postType.replace('-', ' ')} solutions?`,
+      body: `Our team specializes in helping ${audience} achieve their goals with professional, reliable service. We understand the unique challenges you face and have the expertise to provide effective solutions.`,
+      cta: 'Contact us today to learn how we can help!',
       source: 'ai_generated'
     };
   } catch (error) {
     console.error('Error generating content:', error);
     // Ultimate fallback
     return {
-      hook: 'Looking for reliable home care services?',
-      body: 'Our team provides compassionate, professional care for your loved ones with years of experience and a commitment to excellence. We understand the challenges families face when seeking quality care, and we are here to help navigate those difficult decisions with expertise and understanding.',
-      cta: 'Contact us today to learn more about how we can support your family!',
+      hook: `Professional ${postType.replace('-', ' ')} services for ${audience}`,
+      body: 'Our experienced team provides high-quality solutions tailored to your specific needs. We combine expertise with personalized service to deliver results that matter.',
+      cta: 'Get in touch to discover how we can support your success!',
       source: 'ai_generated'
     };
   }
@@ -310,19 +271,40 @@ CTA: [inspiring call-to-action with 3-4 sentences]`;
 export const parseGeneratedContent = (content: string): { hook: string; body: string; cta: string } => {
   let hook = '', body = '', cta = '';
   
-  // Parse the content and remove formatting labels
-  const lines = content.split('\n').filter(line => line.trim());
+  // Split content by lines and clean up
+  const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+  
+  let currentSection = '';
+  let hookLines = [];
+  let bodyLines = [];
+  let ctaLines = [];
   
   for (const line of lines) {
     const lowerLine = line.toLowerCase();
+    
     if (lowerLine.startsWith('hook:')) {
-      hook = line.replace(/^hook:\s*/i, '').trim();
+      currentSection = 'hook';
+      const hookContent = line.replace(/^hook:\s*/i, '').trim();
+      if (hookContent) hookLines.push(hookContent);
     } else if (lowerLine.startsWith('body:')) {
-      body = line.replace(/^body:\s*/i, '').trim();
+      currentSection = 'body';
+      const bodyContent = line.replace(/^body:\s*/i, '').trim();
+      if (bodyContent) bodyLines.push(bodyContent);
     } else if (lowerLine.startsWith('cta:')) {
-      cta = line.replace(/^cta:\s*/i, '').trim();
+      currentSection = 'cta';
+      const ctaContent = line.replace(/^cta:\s*/i, '').trim();
+      if (ctaContent) ctaLines.push(ctaContent);
+    } else if (line && currentSection) {
+      // Add content to current section
+      if (currentSection === 'hook') hookLines.push(line);
+      else if (currentSection === 'body') bodyLines.push(line);
+      else if (currentSection === 'cta') ctaLines.push(line);
     }
   }
+  
+  hook = hookLines.join(' ').trim();
+  body = bodyLines.join(' ').trim();
+  cta = ctaLines.join(' ').trim();
   
   return { hook, body, cta };
 };
