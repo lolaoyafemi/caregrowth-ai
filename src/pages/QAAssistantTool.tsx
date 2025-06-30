@@ -8,6 +8,8 @@ import { BookmarkIcon, CheckCircle2Icon, FileTextIcon } from 'lucide-react';
 import { useQAAssistant } from '@/hooks/useQAAssistant';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
+import { useFeelingStuckPopup } from '@/hooks/useFeelingStuckPopup';
+import FeelingStuckPopup from '@/components/ui/FeelingStuckPopup';
 
 interface Message {
   id: number;
@@ -35,6 +37,12 @@ const QAAssistantTool = () => {
   const { askQuestion, getQAHistory, isLoading, error } = useQAAssistant();
   const { user } = useUser();
   const { credits, loading: creditsLoading } = useUserCredits();
+  
+  // Add the feeling stuck popup hook
+  const { showPopup, closePopup } = useFeelingStuckPopup({
+    delayMs: 180000, // 3 minutes
+    enabled: !!user // Only show when user is logged in
+  });
 
   // Save conversation to localStorage whenever it changes
   const saveConversationToStorage = (conversationData: Message[]) => {
@@ -237,6 +245,12 @@ const QAAssistantTool = () => {
     };
     
     return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800";
+  };
+
+  const handleContactSue = () => {
+    // Placeholder for now - you can decide later where to direct users
+    toast.success("We'll add Sue's contact details here soon!");
+    closePopup();
   };
 
   return (
@@ -490,6 +504,14 @@ const QAAssistantTool = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Feeling Stuck Popup */}
+      {showPopup && (
+        <FeelingStuckPopup 
+          onClose={closePopup}
+          onContactSue={handleContactSue}
+        />
+      )}
     </div>
   );
 };
