@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
 export interface ContentGenerationParams {
@@ -444,17 +445,21 @@ export const parseGeneratedContent = (content: string): { hook: string; body: st
   for (const line of lines) {
     const lowerLine = line.toLowerCase();
     
-    if (lowerLine.startsWith('hook:')) {
+    // Handle both formats: "HOOK:" and "**HOOK:**"
+    if (lowerLine.startsWith('hook:') || lowerLine.startsWith('**hook:**')) {
       currentSection = 'hook';
-      const hookContent = line.replace(/^hook:\s*/i, '').trim();
+      // Remove both "HOOK:" and "**HOOK:**" prefixes
+      const hookContent = line.replace(/^\*{0,2}hook:\*{0,2}\s*/i, '').trim();
       if (hookContent) hookLines.push(hookContent);
-    } else if (lowerLine.startsWith('body:')) {
+    } else if (lowerLine.startsWith('body:') || lowerLine.startsWith('**body:**')) {
       currentSection = 'body';
-      const bodyContent = line.replace(/^body:\s*/i, '').trim();
+      // Remove both "BODY:" and "**BODY:**" prefixes
+      const bodyContent = line.replace(/^\*{0,2}body:\*{0,2}\s*/i, '').trim();
       if (bodyContent) bodyLines.push(bodyContent);
-    } else if (lowerLine.startsWith('cta:')) {
+    } else if (lowerLine.startsWith('cta:') || lowerLine.startsWith('**cta:**')) {
       currentSection = 'cta';
-      const ctaContent = line.replace(/^cta:\s*/i, '').trim();
+      // Remove both "CTA:" and "**CTA:**" prefixes
+      const ctaContent = line.replace(/^\*{0,2}cta:\*{0,2}\s*/i, '').trim();
       if (ctaContent) ctaLines.push(ctaContent);
     } else if (line && currentSection) {
       // Add content to current section
