@@ -3,7 +3,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
-import { generateContentFromPrompts, generateContentWithAI } from './content-generator.ts';
+import { generateContentWithAI } from './content-generator.ts';
 import { buildBusinessContext, personalizeContent } from './business-context.ts';
 import { getUserProfile, logPostToHistory } from './database-service.ts';
 
@@ -49,9 +49,10 @@ serve(async (req) => {
     console.log('Business context built for:', profile?.business_name || 'Unknown business');
 
     let hook = '', body = '', cta = '';
-    let selectedPrompt = null;
     let contentSource = '';
 
+    // COMMENTED OUT - Database prompt generation
+    /*
     // PRIORITY 1: Try to use a prompt from the database
     console.log('Attempting to generate content from database prompts...');
     const contentFromPrompts = await generateContentFromPrompts(supabase, {
@@ -73,22 +74,26 @@ serve(async (req) => {
       contentSource = 'database_prompt';
     } else {
       console.log('❌ Database prompt generation failed, falling back to AI generation');
-      // FALLBACK: Generate completely new content with AI
-      const generatedContent = await generateContentWithAI({
-        userId,
-        postType,
-        tone,
-        platform,
-        audience: targetAudience,
-        businessContext,
-        openAIApiKey
-      });
+    */
+      
+    // Generate content using coded prompts with AI
+    console.log('🤖 Generating content using coded prompts with AI');
+    const generatedContent = await generateContentWithAI({
+      userId,
+      postType,
+      tone,
+      platform,
+      audience: targetAudience,
+      businessContext,
+      openAIApiKey
+    });
 
-      hook = generatedContent.hook;
-      body = generatedContent.body;
-      cta = generatedContent.cta;
-      contentSource = 'ai_generated';
-    }
+    hook = generatedContent.hook;
+    body = generatedContent.body;
+    cta = generatedContent.cta;
+    contentSource = 'coded_prompt_ai';
+    
+    // } // End of commented database logic
 
     // Apply additional personalization if we have business profile
     if (profile) {
@@ -105,7 +110,6 @@ serve(async (req) => {
 
     console.log('Final post generated successfully:', {
       source: contentSource,
-      template_id: selectedPrompt?.id || null,
       content_length: finalPost.length,
       business_context_used: !!profile
     });
@@ -116,7 +120,6 @@ serve(async (req) => {
       body,
       cta,
       source: contentSource,
-      template_id: selectedPrompt?.id || null,
       business_context_used: !!profile,
       content_length: finalPost.length
     }), {

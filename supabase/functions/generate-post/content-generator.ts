@@ -19,6 +19,8 @@ export interface GeneratedContent {
   template_id?: string;
 }
 
+// COMMENTED OUT - Database prompt generation
+/*
 export const generateContentFromPrompts = async (
   supabase: any,
   params: ContentGenerationParams
@@ -203,11 +205,12 @@ CTA: [clear call-to-action - 1-2 sentences]`;
     return null;
   }
 };
+*/
 
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
 
-  console.log('Generating fresh AI content as fallback');
+  console.log('Generating AI content with coded prompts');
   
   const toneMap = {
     "professional": "Clear, polished, confident, respectful",
@@ -218,31 +221,113 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   };
 
   const toneDescription = toneMap[tone.toLowerCase()] || "Clear and natural tone";
-  
-  const generationPrompt = `Create engaging ${postType} social media content for ${platform}.
+
+  // Content category specific prompts written in code
+  const contentPrompts = {
+    "trust-authority": {
+      systemPrompt: "You are a social media expert specializing in trust-building and authority content. Create posts that establish credibility, showcase expertise, and build confidence in the business.",
+      userPrompt: `Create a ${postType} social media post that builds trust and demonstrates authority.
 
 Business Context:
 ${businessContext}
 
 Requirements:
-- Content Category: ${postType}
 - Target Audience: ${audience}
 - Tone: ${tone} (${toneDescription})
 - Platform: ${platform}
 
-Create original, valuable content that:
-✅ Speaks directly to ${audience}
-✅ Uses ${tone} tone naturally
-✅ Provides genuine value or insight
-✅ Builds trust and engagement
-✅ Includes a clear call-to-action
-✅ Feels authentic and human
+Focus on:
+✅ Establishing credibility and expertise
+✅ Sharing industry insights or behind-the-scenes content
+✅ Highlighting credentials, experience, or success stories
+✅ Building confidence in your services
+✅ Using social proof or testimonials if relevant
+✅ Speaking directly to ${audience} with ${tone} tone
 
 Return your response in this exact format:
-HOOK: [compelling opening - 1-2 sentences]
-BODY: [valuable main content - 3-5 sentences]
-CTA: [clear call-to-action - 1-2 sentences]`;
+HOOK: [compelling opening that builds trust - 1-2 sentences]
+BODY: [content that demonstrates authority and expertise - 3-5 sentences]
+CTA: [confidence-building call-to-action - 1-2 sentences]`
+    },
+    "heartfelt-relatable": {
+      systemPrompt: "You are a social media expert specializing in heartfelt, relatable content. Create posts that connect emotionally with audiences and feel authentic and personal.",
+      userPrompt: `Create a ${postType} social media post that is heartfelt and relatable.
 
+Business Context:
+${businessContext}
+
+Requirements:
+- Target Audience: ${audience}
+- Tone: ${tone} (${toneDescription})
+- Platform: ${platform}
+
+Focus on:
+✅ Creating emotional connection with the audience
+✅ Sharing personal stories or experiences
+✅ Being vulnerable and authentic
+✅ Addressing common challenges or pain points
+✅ Making the audience feel understood and seen
+✅ Using ${tone} tone that resonates with ${audience}
+
+Return your response in this exact format:
+HOOK: [emotionally engaging opening - 1-2 sentences]
+BODY: [heartfelt, relatable content - 3-5 sentences]
+CTA: [warm, inviting call-to-action - 1-2 sentences]`
+    },
+    "educational-helpful": {
+      systemPrompt: "You are a social media expert specializing in educational and helpful content. Create posts that provide genuine value, tips, and insights to help your audience succeed.",
+      userPrompt: `Create a ${postType} social media post that educates and helps the audience.
+
+Business Context:
+${businessContext}
+
+Requirements:
+- Target Audience: ${audience}
+- Tone: ${tone} (${toneDescription})
+- Platform: ${platform}
+
+Focus on:
+✅ Providing actionable tips or insights
+✅ Sharing valuable knowledge or best practices
+✅ Solving common problems or challenges
+✅ Teaching something new and useful
+✅ Making complex topics easy to understand
+✅ Speaking to ${audience} with ${tone} tone
+
+Return your response in this exact format:
+HOOK: [attention-grabbing educational hook - 1-2 sentences]
+BODY: [helpful, informative content with actionable advice - 3-5 sentences]
+CTA: [encouraging call-to-action that invites engagement - 1-2 sentences]`
+    },
+    "results-offers": {
+      systemPrompt: "You are a social media expert specializing in results-driven and promotional content. Create posts that highlight outcomes, showcase offers, and drive conversions.",
+      userPrompt: `Create a ${postType} social media post that showcases results and presents offers.
+
+Business Context:
+${businessContext}
+
+Requirements:
+- Target Audience: ${audience}
+- Tone: ${tone} (${toneDescription})
+- Platform: ${platform}
+
+Focus on:
+✅ Highlighting specific results or outcomes
+✅ Showcasing transformations or success stories
+✅ Presenting compelling offers or promotions
+✅ Creating urgency or scarcity when appropriate
+✅ Demonstrating clear value proposition
+✅ Speaking to ${audience} with ${tone} tone
+
+Return your response in this exact format:
+HOOK: [results-focused hook that grabs attention - 1-2 sentences]
+BODY: [content highlighting outcomes and presenting offer - 3-5 sentences]
+CTA: [strong, action-oriented call-to-action - 1-2 sentences]`
+    }
+  };
+
+  const selectedPrompt = contentPrompts[postType] || contentPrompts["educational-helpful"];
+  
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -255,11 +340,11 @@ CTA: [clear call-to-action - 1-2 sentences]`;
         messages: [
           {
             role: 'system',
-            content: `You are an expert social media content creator specializing in ${postType} content. You create original, engaging posts that resonate with ${audience} and drive meaningful engagement.`
+            content: selectedPrompt.systemPrompt
           },
           {
             role: 'user',
-            content: generationPrompt
+            content: selectedPrompt.userPrompt
           }
         ],
         temperature: 0.8,
@@ -275,7 +360,7 @@ CTA: [clear call-to-action - 1-2 sentences]`;
 
     const data = await response.json();
     const generatedContent = data.choices[0].message.content;
-    console.log('Fresh generated content:', generatedContent);
+    console.log('Generated content with coded prompts:', generatedContent);
 
     const parsed = parseGeneratedContent(generatedContent);
     
@@ -283,7 +368,7 @@ CTA: [clear call-to-action - 1-2 sentences]`;
     if (parsed.hook && parsed.body && parsed.cta) {
       return {
         ...parsed,
-        source: 'ai_generated'
+        source: 'coded_prompt_ai'
       };
     }
     
@@ -292,7 +377,7 @@ CTA: [clear call-to-action - 1-2 sentences]`;
       hook: `Looking for quality ${postType.replace('-', ' ')} solutions?`,
       body: `Our team specializes in helping ${audience} achieve their goals with professional, reliable service. We understand the unique challenges you face and have the expertise to provide effective solutions.`,
       cta: 'Contact us today to learn how we can help!',
-      source: 'ai_generated'
+      source: 'coded_prompt_ai'
     };
   } catch (error) {
     console.error('Error generating content:', error);
@@ -301,7 +386,7 @@ CTA: [clear call-to-action - 1-2 sentences]`;
       hook: `Professional ${postType.replace('-', ' ')} services for ${audience}`,
       body: 'Our experienced team provides high-quality solutions tailored to your specific needs. We combine expertise with personalized service to deliver results that matter.',
       cta: 'Get in touch to discover how we can support your success!',
-      source: 'ai_generated'
+      source: 'coded_prompt_ai'
     };
   }
 };
