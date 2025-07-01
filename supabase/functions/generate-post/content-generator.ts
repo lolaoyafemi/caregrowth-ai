@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
 export interface ContentGenerationParams {
@@ -222,11 +221,19 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
 
   const toneDescription = toneMap[tone.toLowerCase()] || "Clear and natural tone";
 
+  // Add randomization to prompts to ensure variety
+  const currentTime = new Date().toISOString();
+  const randomSeed = Math.random().toString(36).substring(7);
+
   // Enhanced content category specific prompts with more engaging, human-like approach
   const contentPrompts = {
     "trust-authority": {
-      systemPrompt: "You are a social media expert who creates authentic, engaging content that builds trust and authority. Your posts feel human, personal, and relatable while establishing credibility. Avoid corporate speak and robotic language. Use storytelling, personal anecdotes, and genuine insights.",
-      userPrompt: `Create an engaging ${postType} social media post that builds trust and demonstrates authority in a human, relatable way.
+      systemPrompt: "You are a social media expert who creates authentic, engaging content that builds trust and authority. Your posts feel human, personal, and relatable while establishing credibility. Avoid corporate speak and robotic language. Use storytelling, personal anecdotes, and genuine insights. Create unique, varied content each time - never repeat the same stories or examples.",
+      userPrompt: `Create a UNIQUE and engaging ${postType} social media post that builds trust and demonstrates authority in a human, relatable way.
+
+IMPORTANT: Generate completely fresh, original content. Do not use any previously generated examples or templates.
+
+Current context: ${currentTime} - Seed: ${randomSeed}
 
 Business Context:
 ${businessContext}
@@ -235,18 +242,19 @@ Requirements:
 - Target Audience: ${audience}
 - Tone: ${tone} (${toneDescription})
 - Platform: ${platform}
-- Make it 150-250 words total
-- Use storytelling elements and personal insights
-- Include specific details that make it feel authentic
+- Make it 150-300 words total
+- Use fresh storytelling elements and personal insights
+- Include specific, unique details that make it feel authentic
 - Avoid generic business language
 - Make it feel like a real person is sharing valuable insights
+- Create completely original content, not recycled examples
 
 Focus on:
-✅ Sharing a personal story or behind-the-scenes moment
-✅ Demonstrating expertise through specific examples or case studies
+✅ Sharing a NEW personal story or behind-the-scenes moment (not previously used)
+✅ Demonstrating expertise through specific, fresh examples or case studies
 ✅ Using conversational language that builds connection
-✅ Including relatable challenges or "aha moments"
-✅ Showing vulnerability or lessons learned
+✅ Including relatable challenges or "aha moments" that haven't been used before
+✅ Showing vulnerability or lessons learned in unique ways
 ✅ Using emojis strategically (but not excessively) if appropriate for the platform
 ✅ Creating content that people would actually want to read and engage with
 
@@ -256,8 +264,12 @@ BODY: [engaging story or insight that demonstrates authority while being relatab
 CTA: [natural, non-pushy invitation to connect or engage - 1-2 sentences]`
     },
     "heartfelt-relatable": {
-      systemPrompt: "You are a social media expert who creates deeply human, emotionally resonant content. Your posts make people feel seen, understood, and connected. Use personal stories, vulnerable moments, and genuine emotions to create authentic connections.",
-      userPrompt: `Create a heartfelt, relatable ${postType} social media post that creates genuine emotional connection.
+      systemPrompt: "You are a social media expert who creates deeply human, emotionally resonant content. Your posts make people feel seen, understood, and connected. Use personal stories, vulnerable moments, and genuine emotions to create authentic connections. Always generate unique, original content - never repeat stories or examples.",
+      userPrompt: `Create a UNIQUE, heartfelt, relatable ${postType} social media post that creates genuine emotional connection.
+
+IMPORTANT: Generate completely fresh, original content. Avoid any previously used stories or examples.
+
+Current context: ${currentTime} - Seed: ${randomSeed}
 
 Business Context:
 ${businessContext}
@@ -266,21 +278,21 @@ Requirements:
 - Target Audience: ${audience}
 - Tone: ${tone} (${toneDescription})
 - Platform: ${platform}
-- Make it 150-250 words total
-- Share a personal story or vulnerable moment
-- Include specific, relatable details
+- Make it 150-300 words total
+- Share a NEW personal story or vulnerable moment
+- Include specific, unique relatable details
 - Show genuine emotion and empathy
 - Make it feel like a real conversation
 
 Focus on:
-✅ Opening with a relatable struggle or moment of vulnerability
-✅ Sharing specific details that make the story vivid and real
-✅ Acknowledging common challenges your audience faces
-✅ Using "I" statements and personal experiences
+✅ Opening with a fresh, relatable struggle or moment of vulnerability
+✅ Sharing specific details that make the story vivid and real (not used before)
+✅ Acknowledging common challenges your audience faces in new ways
+✅ Using "I" statements and personal experiences that are unique
 ✅ Including emotional language that resonates
-✅ Showing growth, learning, or transformation
+✅ Showing growth, learning, or transformation through original examples
 ✅ Making the audience feel understood and less alone
-✅ Ending with hope, encouragement, or community
+✅ Ending with hope, encouragement, or community building
 
 Return your response in this exact format:
 HOOK: [emotionally engaging opening that makes people stop scrolling - 1-2 sentences]
@@ -288,8 +300,12 @@ BODY: [heartfelt story or insight with specific details and genuine emotion - 4-
 CTA: [warm, inclusive invitation that builds community - 1-2 sentences]`
     },
     "educational-helpful": {
-      systemPrompt: "You are a social media expert who creates valuable, educational content that genuinely helps people. Your posts teach something useful while being engaging and easy to understand. You break down complex topics into digestible, actionable insights.",
-      userPrompt: `Create an educational, helpful ${postType} social media post that provides genuine value to your audience.
+      systemPrompt: "You are a social media expert who creates valuable, educational content that genuinely helps people. Your posts teach something useful while being engaging and easy to understand. You break down complex topics into digestible, actionable insights. Generate unique content every time - never repeat tips or examples.",
+      userPrompt: `Create a UNIQUE educational, helpful ${postType} social media post that provides genuine value to your audience.
+
+IMPORTANT: Generate completely original content with fresh tips and examples.
+
+Current context: ${currentTime} - Seed: ${randomSeed}
 
 Business Context:
 ${businessContext}
@@ -298,18 +314,18 @@ Requirements:
 - Target Audience: ${audience}
 - Tone: ${tone} (${toneDescription})
 - Platform: ${platform}
-- Make it 150-250 words total
-- Provide actionable, specific advice
+- Make it 150-300 words total
+- Provide actionable, specific advice that hasn't been shared before
 - Use clear, simple language
-- Include examples or step-by-step guidance
+- Include NEW examples or step-by-step guidance
 - Make complex topics easy to understand
 
 Focus on:
-✅ Starting with a common problem or question your audience has
-✅ Providing specific, actionable steps or solutions
+✅ Starting with a fresh problem or question your audience has
+✅ Providing specific, actionable steps or solutions (not previously used)
 ✅ Using numbered lists, bullet points, or clear structure
-✅ Including real examples or case studies
-✅ Explaining the "why" behind your advice
+✅ Including NEW real examples or case studies
+✅ Explaining the "why" behind your advice in original ways
 ✅ Making it immediately useful and implementable
 ✅ Avoiding jargon and keeping it accessible
 ✅ Ending with encouragement to take action
@@ -320,8 +336,12 @@ BODY: [valuable, actionable advice with specific steps or examples - 4-6 sentenc
 CTA: [encouraging invitation to implement the advice or ask questions - 1-2 sentences]`
     },
     "results-offers": {
-      systemPrompt: "You are a social media expert who creates compelling content that showcases results and presents offers in an authentic, non-salesy way. Your posts highlight real outcomes and genuine value while maintaining trust and credibility.",
-      userPrompt: `Create a results-focused ${postType} social media post that showcases outcomes and presents offers authentically.
+      systemPrompt: "You are a social media expert who creates compelling content that showcases results and presents offers in an authentic, non-salesy way. Your posts highlight real outcomes and genuine value while maintaining trust and credibility. Always generate unique success stories and examples.",
+      userPrompt: `Create a UNIQUE results-focused ${postType} social media post that showcases outcomes and presents offers authentically.
+
+IMPORTANT: Generate completely original success stories and examples.
+
+Current context: ${currentTime} - Seed: ${randomSeed}
 
 Business Context:
 ${businessContext}
@@ -330,18 +350,18 @@ Requirements:
 - Target Audience: ${audience}
 - Tone: ${tone} (${toneDescription})
 - Platform: ${platform}
-- Make it 150-250 words total
-- Highlight specific, measurable results
+- Make it 150-300 words total
+- Highlight specific, measurable results (create new examples)
 - Present offers naturally within valuable content
 - Avoid pushy sales language
-- Build credibility through social proof
+- Build credibility through fresh social proof
 
 Focus on:
-✅ Opening with a specific, impressive result or transformation
-✅ Sharing the story behind the success
+✅ Opening with a specific, impressive result or transformation (not used before)
+✅ Sharing the story behind the success with unique details
 ✅ Including concrete numbers, percentages, or specific outcomes
-✅ Mentioning client testimonials or case studies naturally
-✅ Explaining your process or methodology briefly
+✅ Mentioning client testimonials or case studies naturally (create new ones)
+✅ Explaining your process or methodology briefly in original ways
 ✅ Presenting your offer as a natural solution
 ✅ Creating urgency through value, not pressure
 ✅ Building trust through transparency and specificity
@@ -374,10 +394,11 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
             content: selectedPrompt.userPrompt
           }
         ],
-        temperature: 0.9, // Increased for more creativity and variation
-        max_tokens: 2000, // Increased for longer content
-        presence_penalty: 0.1, // Slight penalty to avoid repetition
-        frequency_penalty: 0.1 // Slight penalty for more diverse language
+        temperature: 1.0, // Maximum creativity for unique content
+        max_tokens: 2000,
+        presence_penalty: 0.6, // Strong penalty to avoid repetition
+        frequency_penalty: 0.8, // Strong penalty for more diverse language
+        top_p: 0.9 // Add randomness to selection
       })
     });
 
@@ -389,11 +410,11 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
 
     const data = await response.json();
     const generatedContent = data.choices[0].message.content;
-    console.log('Generated content with enhanced prompts:', generatedContent);
+    console.log('Generated fresh content:', generatedContent);
 
     const parsed = parseGeneratedContent(generatedContent);
     
-    // Ensure we have proper content with enhanced fallback
+    // Ensure we have proper content
     if (parsed.hook && parsed.body && parsed.cta) {
       return {
         ...parsed,
@@ -401,59 +422,12 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
       };
     }
     
-    // Enhanced fallback with more engaging content
-    const fallbackContent = generateEnhancedFallback(postType, audience, tone, businessContext);
-    return {
-      ...fallbackContent,
-      source: 'coded_prompt_ai'
-    };
+    // If parsing fails, throw error to force retry instead of using fallback
+    throw new Error('Failed to parse generated content properly');
   } catch (error) {
     console.error('Error generating content:', error);
-    // Enhanced fallback for errors
-    const fallbackContent = generateEnhancedFallback(postType, audience, tone, businessContext);
-    return {
-      ...fallbackContent,
-      source: 'coded_prompt_ai'
-    };
+    throw error; // Let the calling function handle the error instead of using hardcoded fallback
   }
-};
-
-const generateEnhancedFallback = (postType: string, audience: string, tone: string, businessContext: string) => {
-  const toneAdjustments = {
-    "professional": {
-      hook: `Here's something that might surprise you about working with ${audience}...`,
-      body: `Over the years, I've learned that success isn't just about having the right strategy—it's about understanding the unique challenges each client faces. Every business is different, and that's exactly why our approach is tailored to your specific needs. We don't believe in one-size-fits-all solutions because your business deserves better than that.`,
-      cta: `Ready to see what a personalized approach can do for your business? Let's chat about your specific goals.`
-    },
-    "conversational": {
-      hook: `Can I be honest with you for a second? Working with ${audience} has taught me so much...`,
-      body: `Every single client teaches me something new, and that's honestly one of my favorite parts of this job. The challenges you're facing? I've probably seen them before, but your story is uniquely yours. That's why I never approach two clients the same way. Your business has its own personality, its own goals, and its own obstacles to overcome.`,
-      cta: `I'd love to hear your story and see how we can tackle your challenges together. What's been your biggest frustration lately?`
-    },
-    "enthusiastic": {
-      hook: `I get SO excited when I see ${audience} finally break through their biggest challenges! 🎉`,
-      body: `There's nothing quite like that moment when everything clicks and you realize you've been overthinking something that has a surprisingly simple solution. I've seen it happen countless times, and it never gets old! The key is having someone who understands your industry and can spot opportunities you might be missing. That's where the magic happens!`,
-      cta: `Want to experience that breakthrough moment for yourself? Let's dive into what's been holding you back! 💪`
-    },
-    "authoritative": {
-      hook: `After working with hundreds of ${audience}, I can tell you exactly what separates the successful ones from the rest.`,
-      body: `The difference isn't luck, resources, or even timing. It's having a clear strategy and the expertise to execute it properly. Most businesses struggle because they're trying to figure everything out on their own, when what they really need is someone who's been there before and knows exactly which steps to take in the right order.`,
-      cta: `Stop guessing and start succeeding. Let's discuss your situation and create a clear path forward.`
-    },
-    "humorous": {
-      hook: `Raise your hand if you've ever felt personally victimized by your own business challenges! 🙋‍♀️`,
-      body: `Okay, maybe that's a bit dramatic, but seriously—running a business can feel like you're constantly putting out fires while juggling flaming torches. The good news? You don't have to do it alone! I've helped tons of ${audience} turn their chaos into success stories, and spoiler alert: it's way more fun when you have the right support team.`,
-      cta: `Ready to turn your business stress into business success? Let's chat and see how we can make your life easier! 😊`
-    }
-  };
-
-  const selectedTone = toneAdjustments[tone.toLowerCase()] || toneAdjustments["conversational"];
-  
-  return {
-    hook: selectedTone.hook,
-    body: selectedTone.body,
-    cta: selectedTone.cta
-  };
 };
 
 export const parseGeneratedContent = (content: string): { hook: string; body: string; cta: string } => {
