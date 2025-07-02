@@ -1,4 +1,5 @@
 
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
 export interface ContentGenerationParams {
@@ -210,7 +211,7 @@ CTA: [clear call-to-action - 1-2 sentences]`;
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
 
-  console.log('Generating AI content with coded prompts');
+  console.log('Generating AI content with updated prompts');
   
   const toneMap = {
     "professional": "Clear, polished, confident, respectful, yet personable",
@@ -222,150 +223,133 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
 
   const toneDescription = toneMap[tone.toLowerCase()] || "Clear and natural tone";
 
-  // Add randomization to prompts to ensure variety
+  // Add randomization to ensure variety
   const currentTime = new Date().toISOString();
   const randomSeed = Math.random().toString(36).substring(7);
+
+  // Parse business context to extract key information
+  const businessInfo = parseBusinessContext(businessContext);
 
   // Enhanced content category specific prompts with more engaging, human-like approach
   const contentPrompts = {
     "trust-authority": {
-      systemPrompt: "You are a social media expert who creates authentic, engaging content that builds trust and authority. Your posts feel human, personal, and relatable while establishing credibility. Avoid corporate speak and robotic language. Use storytelling, personal anecdotes, and genuine insights. Create unique, varied content each time - never repeat the same stories or examples.",
-      userPrompt: `Create a UNIQUE and engaging ${postType} social media post that builds trust and demonstrates authority in a human, relatable way.
+      systemPrompt: "You are a thoughtful and creative social media strategist. Create authentic, engaging content that builds trust and demonstrates authority through genuine stories and insights. Each post should feel unique and human, avoiding generic business language.",
+      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
 
-IMPORTANT: Generate completely fresh, original content. Do not use any previously generated examples or templates.
+IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
 
 Current context: ${currentTime} - Seed: ${randomSeed}
 
-Business Context:
-${businessContext}
+The tone for this post is: ${tone}.
+Examples of this tone: ${toneDescription}.
+Let this tone shape the style, word choice, and flow naturally.
 
-Requirements:
-- Target Audience: ${audience}
-- Tone: ${tone} (${toneDescription})
-- Platform: ${platform}
-- Make it 150-300 words total
-- Use fresh storytelling elements and personal insights
-- Include specific, unique details that make it feel authentic
-- Avoid generic business language
-- Make it feel like a real person is sharing valuable insights
-- Create completely original content, not recycled examples
+Use these points as invisible guidance — do not copy them into the post directly:
+- The daily pressures their audience faces: ${businessInfo.pain_points}
+- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
+- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
+- The promise they stand by: ${businessInfo.big_promise}
 
-Focus on:
-✅ Sharing a NEW personal story or behind-the-scenes moment (not previously used)
-✅ Demonstrating expertise through specific, fresh examples or case studies
-✅ Using conversational language that builds connection
-✅ Including relatable challenges or "aha moments" that haven't been used before
-✅ Showing vulnerability or lessons learned in unique ways
-✅ Using emojis strategically (but not excessively) if appropriate for the platform
-✅ Creating content that people would actually want to read and engage with
+✅ Write a post that feels confident, genuine, and human — aim for about 200-250 words to provide depth and authority.
+✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
+✅ Focus on sharing expertise and building trust — no generic filler or robotic language.
+✅ Use varied, creative openings that avoid overused phrases like "Have you ever" or "Raise your hand if"
+✅ End with a soft, tone-appropriate invitation that encourages engagement.
+
+Main goal of this post: Build trust and establish authority while connecting authentically with families.
 
 Return your response in this exact format:
-HOOK: [compelling opening that draws readers in with curiosity or emotion - 1-2 sentences]
-BODY: [engaging story or insight that demonstrates authority while being relatable - 4-6 sentences with specific details]
-CTA: [natural, non-pushy invitation to connect or engage - 1-2 sentences]`
+HOOK: [compelling opening that draws readers in - 1-2 sentences]
+BODY: [authoritative content that demonstrates expertise - 4-6 sentences with specific details]
+CTA: [natural invitation to connect or engage - 1-2 sentences]`
     },
     "heartfelt-relatable": {
-      systemPrompt: "You are a social media expert who creates deeply human, emotionally resonant content. Your posts make people feel seen, understood, and connected. Use personal stories, vulnerable moments, and genuine emotions to create authentic connections. Always generate unique, original content - never repeat stories or examples.",
-      userPrompt: `Create a UNIQUE, heartfelt, relatable ${postType} social media post that creates genuine emotional connection.
+      systemPrompt: "You are a thoughtful and creative social media strategist who creates deeply human, emotionally resonant content. Your posts make people feel seen, understood, and connected through authentic stories and genuine emotions.",
+      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
 
-IMPORTANT: Generate completely fresh, original content. Avoid any previously used stories or examples.
+IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
 
 Current context: ${currentTime} - Seed: ${randomSeed}
 
-Business Context:
-${businessContext}
+The tone for this post is: ${tone}.
+Examples of this tone: ${toneDescription}.
+Let this tone shape the style, word choice, and flow naturally.
 
-Requirements:
-- Target Audience: ${audience}
-- Tone: ${tone} (${toneDescription})
-- Platform: ${platform}
-- Make it 150-300 words total
-- Share a NEW personal story or vulnerable moment
-- Include specific, unique relatable details
-- Show genuine emotion and empathy
-- Make it feel like a real conversation
+Use these points as invisible guidance — do not copy them into the post directly:
+- The daily pressures their audience faces: ${businessInfo.pain_points}
+- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
+- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
+- The promise they stand by: ${businessInfo.big_promise}
 
-Focus on:
-✅ Opening with a fresh, relatable struggle or moment of vulnerability
-✅ Sharing specific details that make the story vivid and real (not used before)
-✅ Acknowledging common challenges your audience faces in new ways
-✅ Using "I" statements and personal experiences that are unique
-✅ Including emotional language that resonates
-✅ Showing growth, learning, or transformation through original examples
-✅ Making the audience feel understood and less alone
-✅ Ending with hope, encouragement, or community building
+✅ Write a post that feels warm, genuine, and human — aim for about 200-250 words to create meaningful connection.
+✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
+✅ Focus on shared experiences and emotional connection — no generic filler or robotic language.
+✅ Use varied, creative openings that feel fresh and authentic
+✅ End with a soft, tone-appropriate invitation that builds community.
+
+Main goal of this post: Create genuine emotional connection and make families feel understood and less alone.
 
 Return your response in this exact format:
 HOOK: [emotionally engaging opening that makes people stop scrolling - 1-2 sentences]
-BODY: [heartfelt story or insight with specific details and genuine emotion - 4-6 sentences]
+BODY: [heartfelt content with specific details and genuine emotion - 4-6 sentences]
 CTA: [warm, inclusive invitation that builds community - 1-2 sentences]`
     },
     "educational-helpful": {
-      systemPrompt: "You are a social media expert who creates valuable, educational content that genuinely helps people. Your posts teach something useful while being engaging and easy to understand. You break down complex topics into digestible, actionable insights. Generate unique content every time - never repeat tips or examples.",
-      userPrompt: `Create a UNIQUE educational, helpful ${postType} social media post that provides genuine value to your audience.
+      systemPrompt: "You are a thoughtful and creative social media strategist who creates valuable, educational content that genuinely helps people. Your posts teach something useful while being engaging and easy to understand.",
+      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create an Educational & Helpful post that provides genuine value to ${businessInfo.ideal_client}.
 
-IMPORTANT: Generate completely original content with fresh tips and examples.
+IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
 
 Current context: ${currentTime} - Seed: ${randomSeed}
 
-Business Context:
-${businessContext}
+The tone for this post is: ${tone}.
+Examples of this tone: ${toneDescription}.
+Let this tone shape the style, word choice, and flow naturally.
 
-Requirements:
-- Target Audience: ${audience}
-- Tone: ${tone} (${toneDescription})
-- Platform: ${platform}
-- Make it 150-300 words total
-- Provide actionable, specific advice that hasn't been shared before
-- Use clear, simple language
-- Include NEW examples or step-by-step guidance
-- Make complex topics easy to understand
+Use these points as invisible guidance — do not copy them into the post directly:
+- The daily pressures their audience faces: ${businessInfo.pain_points}
+- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
+- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
+- The promise they stand by: ${businessInfo.big_promise}
 
-Focus on:
-✅ Starting with a fresh problem or question your audience has
-✅ Providing specific, actionable steps or solutions (not previously used)
-✅ Using numbered lists, bullet points, or clear structure
-✅ Including NEW real examples or case studies
-✅ Explaining the "why" behind your advice in original ways
-✅ Making it immediately useful and implementable
-✅ Avoiding jargon and keeping it accessible
-✅ Ending with encouragement to take action
+✅ Write a post that feels helpful, genuine, and human — aim for about 200-250 words to provide valuable insights.
+✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
+✅ Focus on providing actionable advice and useful information — no generic filler or robotic language.
+✅ Use varied, creative openings that immediately signal value
+✅ End with a soft, tone-appropriate invitation to implement the advice or ask questions.
+
+Main goal of this post: Provide genuine value and establish ${businessInfo.business_name} as a helpful resource for families.
 
 Return your response in this exact format:
-HOOK: [attention-grabbing statement about a common problem or opportunity - 1-2 sentences]
-BODY: [valuable, actionable advice with specific steps or examples - 4-6 sentences]
-CTA: [encouraging invitation to implement the advice or ask questions - 1-2 sentences]`
+HOOK: [attention-grabbing statement about valuable information - 1-2 sentences]
+BODY: [valuable, actionable advice with specific examples - 4-6 sentences]
+CTA: [encouraging invitation to implement or ask questions - 1-2 sentences]`
     },
     "results-offers": {
-      systemPrompt: "You are a social media expert who creates compelling content that showcases results and presents offers in an authentic, non-salesy way. Your posts highlight real outcomes and genuine value while maintaining trust and credibility. Always generate unique success stories and examples.",
-      userPrompt: `Create a UNIQUE results-focused ${postType} social media post that showcases outcomes and presents offers authentically.
+      systemPrompt: "You are a thoughtful and creative social media strategist who showcases real results and presents offers authentically. Your posts highlight genuine outcomes while maintaining trust and credibility.",
+      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Results & Offers post that highlights meaningful outcomes and encourages ${businessInfo.ideal_client} to explore working with ${businessInfo.business_name}, while positioning the agency as a dependable, trustworthy partner.
 
-IMPORTANT: Generate completely original success stories and examples.
+IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
 
 Current context: ${currentTime} - Seed: ${randomSeed}
 
-Business Context:
-${businessContext}
+The tone for this post is: ${tone}.
+Examples of this tone: ${toneDescription}.
+Let this tone shape the style, word choice, and flow naturally.
 
-Requirements:
-- Target Audience: ${audience}
-- Tone: ${tone} (${toneDescription})
-- Platform: ${platform}
-- Make it 150-300 words total
-- Highlight specific, measurable results (create new examples)
-- Present offers naturally within valuable content
-- Avoid pushy sales language
-- Build credibility through fresh social proof
+Use these points as invisible guidance — do not copy them into the post directly:
+- The daily pressures their audience faces: ${businessInfo.pain_points}  
+- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
+- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
+- The promise they stand by: ${businessInfo.big_promise}
 
-Focus on:
-✅ Opening with a specific, impressive result or transformation (not used before)
-✅ Sharing the story behind the success with unique details
-✅ Including concrete numbers, percentages, or specific outcomes
-✅ Mentioning client testimonials or case studies naturally (create new ones)
-✅ Explaining your process or methodology briefly in original ways
-✅ Presenting your offer as a natural solution
-✅ Creating urgency through value, not pressure
-✅ Building trust through transparency and specificity
+✅ Write a post that feels confident, genuine, and human — aim for about 200-250 words so it provides space for showcasing results and inviting next steps.
+✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
+✅ Focus on demonstrating real outcomes and consistent care — no generic filler or overhyped claims.
+✅ Use varied, creative openings that showcase success without being pushy
+✅ End with a soft, tone-appropriate invitation (e.g., "Curious if we're the right fit? Let's find out — no pressure." or "Reach out — let's explore what's possible.")
+
+Main goal of this post: Build confidence in ${businessInfo.business_name} by showing meaningful results and inviting families to consider working with them.
 
 Return your response in this exact format:
 HOOK: [compelling result or transformation that grabs attention - 1-2 sentences]
@@ -395,11 +379,11 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
             content: selectedPrompt.userPrompt
           }
         ],
-        temperature: 1.0, // Maximum creativity for unique content
-        max_tokens: 2000,
-        presence_penalty: 0.6, // Strong penalty to avoid repetition
-        frequency_penalty: 0.8, // Strong penalty for more diverse language
-        top_p: 0.9 // Add randomness to selection
+        temperature: 0.8,
+        max_tokens: 600,
+        presence_penalty: 0.3,
+        frequency_penalty: 0.2,
+        top_p: 1
       })
     });
 
@@ -419,7 +403,7 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
     if (parsed.hook && parsed.body && parsed.cta) {
       return {
         ...parsed,
-        source: 'coded_prompt_ai'
+        source: 'enhanced_prompt_ai'
       };
     }
     
@@ -429,6 +413,51 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
     console.error('Error generating content:', error);
     throw error; // Let the calling function handle the error instead of using hardcoded fallback
   }
+};
+
+// Helper function to parse business context into structured data
+const parseBusinessContext = (businessContext: string) => {
+  const info = {
+    business_name: 'our business',
+    core_service: 'our services', 
+    location: 'your area',
+    ideal_client: 'families needing care',
+    pain_points: 'common challenges',
+    objections: 'common concerns',
+    differentiator: 'professional care',
+    big_promise: 'exceptional care'
+  };
+
+  // Extract information from business context if available
+  const lines = businessContext.split('\n');
+  lines.forEach(line => {
+    if (line.includes('Business Name:')) {
+      info.business_name = line.split('Business Name:')[1]?.trim() || info.business_name;
+    }
+    if (line.includes('Services:')) {
+      info.core_service = line.split('Services:')[1]?.trim() || info.core_service;
+    }
+    if (line.includes('Location:')) {
+      info.location = line.split('Location:')[1]?.trim() || info.location;
+    }
+    if (line.includes('Target Client:')) {
+      info.ideal_client = line.split('Target Client:')[1]?.trim() || info.ideal_client;
+    }
+    if (line.includes('Client Pain Points:')) {
+      info.pain_points = line.split('Client Pain Points:')[1]?.trim() || info.pain_points;
+    }
+    if (line.includes('Objections:')) {
+      info.objections = line.split('Objections:')[1]?.trim() || info.objections;
+    }
+    if (line.includes('Differentiator:')) {
+      info.differentiator = line.split('Differentiator:')[1]?.trim() || info.differentiator;
+    }
+    if (line.includes('Big Promise:')) {
+      info.big_promise = line.split('Big Promise:')[1]?.trim() || info.big_promise;
+    }
+  });
+
+  return info;
 };
 
 export const parseGeneratedContent = (content: string): { hook: string; body: string; cta: string } => {
@@ -475,3 +504,4 @@ export const parseGeneratedContent = (content: string): { hook: string; body: st
   
   return { hook, body, cta };
 };
+
