@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { TrendingUp, Activity, CreditCard, Users } from 'lucide-react';
+import { TrendingUp, Activity, CreditCard, Users, DollarSign } from 'lucide-react';
 import { useUsageAnalytics } from '@/hooks/useUsageAnalytics';
 
 interface UsageAnalyticsProps {
@@ -36,11 +36,20 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
     );
   }
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount / 100); // Convert from cents to dollars
+  };
+
   const currentStats = [
     {
       title: 'Daily Active Users',
       value: analyticsData.dailyActiveUsers.toString(),
-      change: '+12%', // You could calculate this from trend data
+      change: '+12%',
       trend: 'up',
       icon: Users,
       color: 'text-blue-600'
@@ -63,10 +72,10 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
     },
     {
       title: 'Revenue Today',
-      value: `$${analyticsData.revenueToday.toLocaleString()}`,
+      value: formatCurrency(analyticsData.revenueToday),
       change: '+15%',
       trend: 'up',
-      icon: TrendingUp,
+      icon: DollarSign,
       color: 'text-emerald-600'
     }
   ];
@@ -123,26 +132,50 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
         <Card className="border-green-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-blue-600" />
-              Tool Usage Distribution
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+              Revenue Trend
             </CardTitle>
-            <CardDescription>Credits used by each tool</CardDescription>
+            <CardDescription>Daily revenue over the past week</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analyticsData.toolUsage}>
+                <LineChart data={analyticsData.usageTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="tool" />
+                  <XAxis dataKey="date" />
                   <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="usage" fill="#3b82f6" />
-                </BarChart>
+                  <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Revenue']} />
+                  <Line type="monotone" dataKey="revenue" stroke="#059669" strokeWidth={2} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Tool Usage Distribution */}
+      <Card className="border-green-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-blue-600" />
+            Tool Usage Distribution
+          </CardTitle>
+          <CardDescription>Credits used by each tool</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analyticsData.toolUsage}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="tool" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="usage" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Detailed Usage Table */}
       <Card className="border-green-200">

@@ -40,19 +40,40 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
       .from('credit_sales_log')
       .select('amount_paid, timestamp');
 
+    // Also fetch from payments table for additional revenue data
+    const { data: paymentsData } = await supabase
+      .from('payments')
+      .select('amount, created_at, status')
+      .eq('status', 'completed');
+
     console.log('User data for metrics:', userData);
     console.log('Credits usage data:', creditsData);
     console.log('Sales data:', salesData);
+    console.log('Payments data:', paymentsData);
 
     const totalUsers = userData?.length || 0;
     const totalCreditsUsed = creditsData?.reduce((sum, log) => sum + log.credits_used, 0) || 0;
-    const totalRevenue = salesData?.reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
+    
+    // Calculate total revenue from both sales log and payments
+    const salesRevenue = salesData?.reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
+    const paymentsRevenue = paymentsData?.reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
+    const totalRevenue = (salesRevenue + paymentsRevenue) / 100; // Convert from cents to dollars
     
     // Calculate monthly revenue
     const currentMonth = new Date().getMonth();
-    const monthlyRevenue = salesData?.filter(sale => 
-      new Date(sale.timestamp).getMonth() === currentMonth
-    ).reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
+    const currentYear = new Date().getFullYear();
+    
+    const monthlySalesRevenue = salesData?.filter(sale => {
+      const saleDate = new Date(sale.timestamp);
+      return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
+    }).reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
+    
+    const monthlyPaymentsRevenue = paymentsData?.filter(payment => {
+      const paymentDate = new Date(payment.created_at);
+      return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+    }).reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
+    
+    const monthlyRevenue = (monthlySalesRevenue + monthlyPaymentsRevenue) / 100; // Convert from cents to dollars
 
     // All users are considered active since we don't have reliable status tracking
     const activeUsers = totalUsers;
