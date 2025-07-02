@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { validateCreditsBeforeAction } from '@/utils/creditValidation';
+import { toast } from "sonner";
 
 interface SocialMediaFormProps {
   audience: string;
@@ -19,6 +20,8 @@ interface SocialMediaFormProps {
   setPlatform: (value: string) => void;
   onGenerate: () => void;
   isGenerating: boolean;
+  businessProfile: any;
+  onShowBusinessForm: () => void;
 }
 
 const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
@@ -31,14 +34,49 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
   platform,
   setPlatform,
   onGenerate,
-  isGenerating
+  isGenerating,
+  businessProfile,
+  onShowBusinessForm
 }) => {
   const { credits } = useUserCredits();
 
+  const isBusinessProfileComplete = () => {
+    if (!businessProfile) return false;
+    
+    // Check required fields from business details form
+    const requiredFields = [
+      'business_name',
+      'location', 
+      'core_service'
+    ];
+    
+    return requiredFields.every(field => 
+      businessProfile[field] && businessProfile[field].trim() !== ''
+    );
+  };
+
   const handleGenerate = () => {
+    if (!isBusinessProfileComplete()) {
+      toast.error("Please complete your business details first to generate content.", {
+        duration: 5000,
+        action: {
+          label: "Add Details",
+          onClick: onShowBusinessForm
+        }
+      });
+      return;
+    }
+
     if (validateCreditsBeforeAction(credits, 'Social Media Content Generator')) {
       onGenerate();
     }
+  };
+
+  const isButtonDisabled = isGenerating || credits <= 0 || !isBusinessProfileComplete();
+  const getButtonText = () => {
+    if (isGenerating) return "Generating Content...";
+    if (!isBusinessProfileComplete()) return "Complete Business Details First";
+    return "Generate Content";
   };
 
   return (
@@ -104,10 +142,21 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
             <Button 
               className="w-full bg-caregrowth-blue text-white"
               onClick={handleGenerate}
-              disabled={isGenerating || credits <= 0}
+              disabled={isButtonDisabled}
             >
-              {isGenerating ? "Generating Content..." : "Generate Content"}
+              {getButtonText()}
             </Button>
+            {!isBusinessProfileComplete() && (
+              <p className="text-sm text-orange-600 mt-2 text-center">
+                Complete your business details to unlock content generation. 
+                <button 
+                  onClick={onShowBusinessForm}
+                  className="underline ml-1 text-orange-700 hover:text-orange-800"
+                >
+                  Add details now
+                </button>
+              </p>
+            )}
             {credits <= 0 && (
               <p className="text-sm text-red-600 mt-2 text-center">
                 You need credits to generate content. <a href="/stripe-payment" className="underline">Buy credits</a>

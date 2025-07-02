@@ -390,6 +390,8 @@ const SocialMediaTool = () => {
         setPlatform={setPlatform}
         onGenerate={handleGenerate}
         isGenerating={isGenerating}
+        businessProfile={businessProfile}
+        onShowBusinessForm={() => setShowBusinessForm(true)}
       />
 
       <GeneratedContentTabs
