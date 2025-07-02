@@ -60,19 +60,19 @@ const QASidebar: React.FC<QASidebarProps> = ({
   ];
 
   return (
-    <div>
-      <Card className="p-6 mb-6">
+    <div className="h-full overflow-y-auto">
+      <Card className="p-4 mb-6">
         <h2 className="text-lg font-semibold mb-4">Suggested Questions</h2>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {suggestedQuestions.map((question, index) => (
             <Button 
               key={index}
               variant="outline" 
-              className="w-full justify-start text-left h-auto py-2 px-3"
+              className="w-full justify-start text-left h-auto py-3 px-3 whitespace-normal leading-relaxed text-sm"
               onClick={() => onSuggestedQuestionClick(question)}
               disabled={isLoading}
             >
-              {question}
+              <span className="block">{question}</span>
             </Button>
           ))}
         </div>
