@@ -1,249 +1,21 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CreditCard, Plus, Minus, Gift, AlertCircle, RefreshCw } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-interface CreditManagementProps {
-  onUpdateCredits: (userId: string, credits: number) => void;
-}
-
-interface Transaction {
-  id: string;
-  user_email: string;
-  type: 'purchase' | 'usage' | 'gift';
-  amount: number;
-  timestamp: string;
-  status: string;
-}
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  credits: number;
-}
+import { CreditCard, RefreshCw } from 'lucide-react';
+import { useCreditTransactions } from '@/hooks/useCreditTransactions';
+import { useCreditUsers } from '@/hooks/useCreditUsers';
+import CreditUpdateDialog from './CreditUpdateDialog';
+import TransactionTable from './TransactionTable';
+import type { CreditManagementProps } from '@/types/credit';
 
 const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
-  const [selectedUser, setSelectedUser] = useState('');
-  const [creditAmount, setCreditAmount] = useState('');
-  const [creditType, setCreditType] = useState<'add' | 'remove' | 'gift'>('add');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { transactions, loadTransactions } = useCreditTransactions();
+  const { users, loading, loadUsers } = useCreditUsers();
 
-  useEffect(() => {
-    loadTransactions();
+  const handleRefresh = () => {
     loadUsers();
-  }, []);
-
-  const loadTransactions = async () => {
-    try {
-      console.log('Loading credit transactions...');
-      
-      // Fetch recent credit purchases
-      const { data: purchases, error: purchaseError } = await supabase
-        .from('credit_sales_log')
-        .select('*')
-        .order('timestamp', { ascending: false })
-        .limit(10);
-
-      if (purchaseError) {
-        console.error('Error fetching purchases:', purchaseError);
-      }
-
-      // Fetch recent credit usage
-      const { data: usage, error: usageError } = await supabase
-        .from('credit_usage_log')
-        .select('*')
-        .order('used_at', { ascending: false })
-        .limit(10);
-
-      if (usageError) {
-        console.error('Error fetching usage:', usageError);
-      }
-
-      const allTransactions: Transaction[] = [];
-
-      // Add purchases
-      purchases?.forEach(purchase => {
-        allTransactions.push({
-          id: purchase.id,
-          user_email: purchase.email,
-          type: 'purchase',
-          amount: purchase.credits_purchased,
-          timestamp: purchase.timestamp,
-          status: 'completed'
-        });
-      });
-
-      // Add usage
-      usage?.forEach(usageItem => {
-        allTransactions.push({
-          id: usageItem.id,
-          user_email: usageItem.email || 'Unknown',
-          type: 'usage',
-          amount: -usageItem.credits_used,
-          timestamp: usageItem.used_at,
-          status: 'completed'
-        });
-      });
-
-      // Sort by timestamp
-      const sortedTransactions = allTransactions
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        .slice(0, 15);
-
-      setTransactions(sortedTransactions);
-      console.log('Loaded transactions:', sortedTransactions.length);
-    } catch (error) {
-      console.error('Error loading transactions:', error);
-      toast.error('Failed to load transaction data');
-    }
-  };
-
-  const loadUsers = async () => {
-    try {
-      console.log('Loading users for credit management...');
-      setLoading(true);
-      
-      // Fetch users with their synchronized credits from user_profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('user_id, email, business_name, credits')
-        .not('email', 'is', null)
-        .order('created_at', { ascending: false });
-
-      console.log('User profiles query result:', { profiles, profilesError });
-
-      if (profilesError) {
-        console.error('Error fetching user profiles:', profilesError);
-        toast.error('Failed to load users');
-        return;
-      }
-
-      if (profiles && profiles.length > 0) {
-        const userList = profiles.map(profile => ({
-          id: profile.user_id,
-          email: profile.email || 'No email',
-          name: profile.business_name || 'No name',
-          credits: profile.credits || 0
-        }));
-        
-        setUsers(userList);
-        console.log('Loaded users:', userList.length);
-      } else {
-        console.log('No users found in user_profiles');
-        toast.error('No users found in the system');
-      }
-    } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Failed to load users');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreditUpdate = async () => {
-    if (!selectedUser || !creditAmount) {
-      toast.error('Please select a user and enter credit amount');
-      return;
-    }
-
-    const amount = parseInt(creditAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid credit amount');
-      return;
-    }
-
-    try {
-      console.log('Updating credits for user:', selectedUser, 'Amount:', amount, 'Type:', creditType);
-
-      // Find the selected user to get their current credits
-      const selectedUserData = users.find(u => u.id === selectedUser);
-      if (!selectedUserData) {
-        toast.error('Selected user not found');
-        return;
-      }
-
-      const currentCredits = selectedUserData.credits;
-      const finalAmount = creditType === 'remove' ? -amount : amount;
-      const newCredits = Math.max(0, currentCredits + finalAmount);
-
-      console.log('Credit calculation:', { currentCredits, finalAmount, newCredits });
-
-      // Update user_profiles (which will trigger the sync to users table)
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ 
-          credits: newCredits,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', selectedUser);
-
-      if (updateError) {
-        console.error('Error updating credits:', updateError);
-        toast.error('Failed to update credits: ' + updateError.message);
-        return;
-      }
-
-      // Log the credit change
-      if (creditType === 'gift' || creditType === 'add') {
-        const { error: logError } = await supabase
-          .from('credit_sales_log')
-          .insert({
-            user_id: selectedUser,
-            email: selectedUserData.email,
-            credits_purchased: amount,
-            amount_paid: creditType === 'gift' ? 0 : amount * 0.01,
-            plan_name: creditType === 'gift' ? 'Admin Gift' : 'Admin Addition'
-          });
-
-        if (logError) {
-          console.error('Error logging credit addition:', logError);
-        }
-      }
-
-      onUpdateCredits(selectedUser, finalAmount);
-      
-      // Reset form
-      setSelectedUser('');
-      setCreditAmount('');
-      setIsDialogOpen(false);
-      
-      // Reload data
-      await loadUsers();
-      await loadTransactions();
-      
-      toast.success(`Credits ${creditType === 'remove' ? 'removed' : 'added'} successfully`);
-    } catch (error) {
-      console.error('Error updating credits:', error);
-      toast.error('Failed to update credits: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    }
-  };
-
-  const getTransactionIcon = (type: string) => {
-    switch (type) {
-      case 'purchase':
-        return <CreditCard className="h-4 w-4 text-green-600" />;
-      case 'usage':
-        return <Minus className="h-4 w-4 text-red-600" />;
-      case 'gift':
-        return <Gift className="h-4 w-4 text-blue-600" />;
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
+    loadTransactions();
   };
 
   if (loading) {
@@ -282,7 +54,7 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
             </div>
             <div className="flex gap-2">
               <Button 
-                onClick={() => { loadUsers(); loadTransactions(); }} 
+                onClick={handleRefresh}
                 variant="outline" 
                 size="sm"
                 className="gap-2"
@@ -290,67 +62,12 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
                 <RefreshCw className="h-4 w-4" />
                 Refresh
               </Button>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Manage Credits
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Manage User Credits</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="user-select">Select User ({users.length} available)</Label>
-                      <Select value={selectedUser} onValueChange={setSelectedUser}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a user" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users.map(user => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.name} ({user.email}) - {user.credits} credits
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="credit-type">Action Type</Label>
-                      <Select value={creditType} onValueChange={(value: 'add' | 'remove' | 'gift') => setCreditType(value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="add">Add Credits</SelectItem>
-                          <SelectItem value="remove">Remove Credits</SelectItem>
-                          <SelectItem value="gift">Gift Credits</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="credit-amount">Credit Amount</Label>
-                      <Input
-                        id="credit-amount"
-                        type="number"
-                        value={creditAmount}
-                        onChange={(e) => setCreditAmount(e.target.value)}
-                        placeholder="Enter amount"
-                        min="1"
-                      />
-                    </div>
-                    <Button 
-                      onClick={handleCreditUpdate} 
-                      className="w-full" 
-                      disabled={!selectedUser || !creditAmount}
-                    >
-                      Update Credits
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <CreditUpdateDialog
+                users={users}
+                onCreditUpdate={onUpdateCredits}
+                onUsersReload={loadUsers}
+                onTransactionsReload={loadTransactions}
+              />
             </div>
           </div>
         </CardContent>
@@ -363,49 +80,7 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
           <CardDescription>Latest credit activities across the platform</CardDescription>
         </CardHeader>
         <CardContent>
-          {transactions.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getTransactionIcon(transaction.type)}
-                        <span className="capitalize">{transaction.type}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{transaction.user_email}</TableCell>
-                    <TableCell>
-                      <span className={transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}>
-                        {transaction.amount > 0 ? '+' : ''}{transaction.amount}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-600">
-                      {formatTimestamp(transaction.timestamp)}
-                    </TableCell>
-                    <TableCell>
-                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                        {transaction.status}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              No transaction data available
-            </div>
-          )}
+          <TransactionTable transactions={transactions} />
         </CardContent>
       </Card>
     </div>
