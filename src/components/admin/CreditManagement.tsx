@@ -50,18 +50,26 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
       console.log('Loading credit transactions...');
       
       // Fetch recent credit purchases
-      const { data: purchases } = await supabase
+      const { data: purchases, error: purchaseError } = await supabase
         .from('credit_sales_log')
         .select('*')
         .order('timestamp', { ascending: false })
         .limit(10);
 
+      if (purchaseError) {
+        console.error('Error fetching purchases:', purchaseError);
+      }
+
       // Fetch recent credit usage
-      const { data: usage } = await supabase
+      const { data: usage, error: usageError } = await supabase
         .from('credit_usage_log')
         .select('*')
         .order('used_at', { ascending: false })
         .limit(10);
+
+      if (usageError) {
+        console.error('Error fetching usage:', usageError);
+      }
 
       const allTransactions: Transaction[] = [];
 
@@ -105,8 +113,11 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
   const loadUsers = async () => {
     try {
       console.log('Loading users for credit management...');
+      setLoading(true);
       
-      // First try user_profiles table
+      const userList: User[] = [];
+
+      // Try user_profiles table first
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select('user_id, email, business_name, credits')
@@ -116,37 +127,52 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
       console.log('User profiles query result:', { profiles, profilesError });
 
       if (profiles && profiles.length > 0) {
-        const userList = profiles.map(profile => ({
-          id: profile.user_id,
-          email: profile.email || 'No email',
-          name: profile.business_name || 'No name',
-          credits: profile.credits || 0
-        }));
-        setUsers(userList);
-        console.log('Loaded users from profiles:', userList.length);
-      } else {
-        // Fallback to users table
-        const { data: usersData, error: usersError } = await supabase
-          .from('users')
-          .select('id, email, name, credits')
-          .not('email', 'is', null)
-          .order('created_at', { ascending: false });
+        profiles.forEach(profile => {
+          userList.push({
+            id: profile.user_id,
+            email: profile.email || 'No email',
+            name: profile.business_name || 'No name',
+            credits: profile.credits || 0
+          });
+        });
+        console.log('Found users in profiles table:', userList.length);
+      }
 
-        console.log('Users table query result:', { usersData, usersError });
+      // Also try users table to get additional users
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, email, name, credits')
+        .not('email', 'is', null)
+        .order('created_at', { ascending: false });
 
-        if (usersData && usersData.length > 0) {
-          const userList = usersData.map(user => ({
-            id: user.id,
-            email: user.email || 'No email',
-            name: user.name || 'No name',
-            credits: user.credits || 0
-          }));
-          setUsers(userList);
-          console.log('Loaded users from users table:', userList.length);
-        } else {
-          console.warn('No users found in either table');
-          toast.error('No users found in the system');
-        }
+      console.log('Users table query result:', { usersData, usersError });
+
+      if (usersData && usersData.length > 0) {
+        usersData.forEach(user => {
+          // Only add if not already in the list from profiles
+          const existingUser = userList.find(u => u.id === user.id);
+          if (!existingUser) {
+            userList.push({
+              id: user.id,
+              email: user.email || 'No email',
+              name: user.name || 'No name',
+              credits: user.credits || 0
+            });
+          }
+        });
+        console.log('Total users after combining both tables:', userList.length);
+      }
+
+      // Remove duplicates based on email
+      const uniqueUsers = userList.filter((user, index, self) => 
+        index === self.findIndex(u => u.email === user.email)
+      );
+
+      setUsers(uniqueUsers);
+      console.log('Final unique users list:', uniqueUsers.length);
+      
+      if (uniqueUsers.length === 0) {
+        toast.error('No users found in the system');
       }
     } catch (error) {
       console.error('Error loading users:', error);
@@ -171,46 +197,20 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
     try {
       console.log('Updating credits for user:', selectedUser, 'Amount:', amount, 'Type:', creditType);
 
-      // First try to get current credits from user_profiles
-      let { data: currentProfile, error: fetchProfileError } = await supabase
-        .from('user_profiles')
-        .select('credits, email')
-        .eq('user_id', selectedUser)
-        .single();
-
-      console.log('Current profile data:', { currentProfile, fetchProfileError });
-
-      let currentCredits = 0;
-      let userEmail = '';
-
-      if (currentProfile) {
-        currentCredits = currentProfile.credits || 0;
-        userEmail = currentProfile.email || '';
-      } else {
-        // Fallback to users table
-        const { data: currentUser, error: fetchUserError } = await supabase
-          .from('users')
-          .select('credits, email')
-          .eq('id', selectedUser)
-          .single();
-
-        console.log('Current user data:', { currentUser, fetchUserError });
-
-        if (currentUser) {
-          currentCredits = currentUser.credits || 0;
-          userEmail = currentUser.email || '';
-        } else {
-          toast.error('User not found');
-          return;
-        }
+      // Find the selected user to get their current credits
+      const selectedUserData = users.find(u => u.id === selectedUser);
+      if (!selectedUserData) {
+        toast.error('Selected user not found');
+        return;
       }
 
+      const currentCredits = selectedUserData.credits;
       const finalAmount = creditType === 'remove' ? -amount : amount;
-      const newCredits = Math.max(0, currentCredits + finalAmount); // Ensure credits don't go negative
+      const newCredits = Math.max(0, currentCredits + finalAmount);
 
       console.log('Credit calculation:', { currentCredits, finalAmount, newCredits });
 
-      // Update credits in user_profiles first
+      // Try updating user_profiles first
       const { error: updateProfileError } = await supabase
         .from('user_profiles')
         .update({ 
@@ -218,6 +218,8 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
           updated_at: new Date().toISOString()
         })
         .eq('user_id', selectedUser);
+
+      let updateSuccess = !updateProfileError;
 
       if (updateProfileError) {
         console.log('Profile update failed, trying users table:', updateProfileError);
@@ -230,42 +232,46 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
 
         if (updateUserError) {
           console.error('Both profile and user update failed:', updateUserError);
-          toast.error('Failed to update credits');
+          toast.error('Failed to update credits: ' + (updateUserError.message || 'Unknown error'));
           return;
         }
+        updateSuccess = true;
       }
 
-      // Log the credit change
-      if (creditType === 'gift' || creditType === 'add') {
-        const { error: logError } = await supabase
-          .from('credit_sales_log')
-          .insert({
-            user_id: selectedUser,
-            email: userEmail,
-            credits_purchased: amount,
-            amount_paid: creditType === 'gift' ? 0 : amount * 0.01, // Assuming 1 cent per credit
-            plan_name: creditType === 'gift' ? 'Admin Gift' : 'Admin Addition'
-          });
+      if (updateSuccess) {
+        // Log the credit change
+        if (creditType === 'gift' || creditType === 'add') {
+          const { error: logError } = await supabase
+            .from('credit_sales_log')
+            .insert({
+              user_id: selectedUser,
+              email: selectedUserData.email,
+              credits_purchased: amount,
+              amount_paid: creditType === 'gift' ? 0 : amount * 0.01,
+              plan_name: creditType === 'gift' ? 'Admin Gift' : 'Admin Addition'
+            });
 
-        if (logError) {
-          console.error('Error logging credit addition:', logError);
+          if (logError) {
+            console.error('Error logging credit addition:', logError);
+          }
         }
-      }
 
-      onUpdateCredits(selectedUser, finalAmount);
-      
-      setSelectedUser('');
-      setCreditAmount('');
-      setIsDialogOpen(false);
-      
-      // Reload data
-      await loadTransactions();
-      await loadUsers();
-      
-      toast.success(`Credits ${creditType === 'remove' ? 'removed' : 'added'} successfully`);
+        onUpdateCredits(selectedUser, finalAmount);
+        
+        // Reset form
+        setSelectedUser('');
+        setCreditAmount('');
+        setIsDialogOpen(false);
+        
+        // Reload data
+        await loadUsers();
+        await loadTransactions();
+        
+        toast.success(`Credits ${creditType === 'remove' ? 'removed' : 'added'} successfully`);
+      }
     } catch (error) {
       console.error('Error updating credits:', error);
-      toast.error('Failed to update credits');
+      toast.error('Failed to update credits: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -381,7 +387,11 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
                         min="1"
                       />
                     </div>
-                    <Button onClick={handleCreditUpdate} className="w-full" disabled={!selectedUser || !creditAmount}>
+                    <Button 
+                      onClick={handleCreditUpdate} 
+                      className="w-full" 
+                      disabled={!selectedUser || !creditAmount}
+                    >
                       Update Credits
                     </Button>
                   </div>
