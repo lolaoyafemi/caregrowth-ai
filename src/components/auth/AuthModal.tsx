@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 const AuthModal: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true); // Start with login
+  const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,13 +24,11 @@ const AuthModal: React.FC = () => {
   
   const { signInWithEmail, signUpWithEmail } = useAuth();
 
-  // Real-time email validation
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // Real-time password strength checker
   const checkPasswordStrength = (password: string) => {
     if (!password) return { score: 0, text: '', color: '' };
     
@@ -57,7 +55,6 @@ const AuthModal: React.FC = () => {
     const value = e.target.value;
     setEmail(value);
     
-    // Clear email error when user starts typing
     if (fieldErrors.email) {
       setFieldErrors(prev => ({ ...prev, email: '' }));
     }
@@ -67,12 +64,10 @@ const AuthModal: React.FC = () => {
     const value = e.target.value;
     setPassword(value);
     
-    // Clear password error when user starts typing
     if (fieldErrors.password) {
       setFieldErrors(prev => ({ ...prev, password: '' }));
     }
 
-    // Update password strength for signup
     if (!isLogin) {
       setPasswordStrength(checkPasswordStrength(value));
     }
@@ -82,7 +77,6 @@ const AuthModal: React.FC = () => {
     const value = e.target.value;
     setName(value);
     
-    // Clear name error when user starts typing
     if (fieldErrors.name) {
       setFieldErrors(prev => ({ ...prev, name: '' }));
     }
@@ -137,7 +131,6 @@ const AuthModal: React.FC = () => {
     } catch (error: any) {
       console.error('Auth error:', error);
       
-      // Handle specific error messages
       let errorMessage = "An error occurred during authentication";
       if (error.message?.includes('Invalid login credentials')) {
         errorMessage = "Invalid email or password. Please try again.";
@@ -176,143 +169,133 @@ const AuthModal: React.FC = () => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-caregrowth-blue to-blue-700 p-6 text-white text-center">
-            <h2 className="text-xl font-bold mb-2">Login Form</h2>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-blue-100">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-8 text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">
+              {isLogin ? 'Welcome Back' : 'Create Account'}
+            </h2>
+            <p className="text-blue-100 text-sm">
+              {isLogin ? 'Sign in to your account' : 'Join us today'}
+            </p>
           </div>
 
-          {/* Tab-style toggle */}
-          <div className="flex bg-gray-50 border-b">
-            <button
-              type="button"
-              onClick={switchMode}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                isLogin 
-                  ? 'bg-caregrowth-blue text-white' 
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-              disabled={loading}
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={switchMode}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                !isLogin 
-                  ? 'bg-caregrowth-blue text-white' 
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-              disabled={loading}
-            >
-              Signup
-            </button>
-          </div>
+          <div className="px-8 py-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-gray-700 font-medium">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={handleNameChange}
+                      className={`pl-10 border-2 h-12 ${fieldErrors.name ? 'border-red-500' : 'border-gray-200 focus:border-blue-500'} rounded-lg`}
+                      placeholder="Enter your full name"
+                      disabled={loading}
+                    />
+                  </div>
+                  {fieldErrors.name && (
+                    <p className="text-sm text-red-500 mt-1">{fieldErrors.name}</p>
+                  )}
+                </div>
+              )}
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {!isLogin && (
               <div className="space-y-2">
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={handleNameChange}
-                  className={`${fieldErrors.name ? 'border-red-500' : ''}`}
-                  placeholder="Full Name"
-                  disabled={loading}
-                />
-                {fieldErrors.name && (
-                  <p className="text-xs text-red-500">{fieldErrors.name}</p>
+                <Label htmlFor="email" className="text-gray-700 font-medium">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={handleEmailChange}
+                    className={`pl-10 border-2 h-12 ${fieldErrors.email ? 'border-red-500' : 'border-gray-200 focus:border-blue-500'} rounded-lg`}
+                    placeholder="Enter your email"
+                    disabled={loading}
+                  />
+                </div>
+                {fieldErrors.email && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.email}</p>
                 )}
               </div>
-            )}
 
-            <div className="space-y-2">
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={handleEmailChange}
-                className={`${fieldErrors.email ? 'border-red-500' : ''}`}
-                placeholder="Email Address"
-                disabled={loading}
-              />
-              {fieldErrors.email && (
-                <p className="text-xs text-red-500">{fieldErrors.email}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={handlePasswordChange}
-                  className={`pr-10 ${fieldErrors.password ? 'border-red-500' : ''}`}
-                  placeholder="Password"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  disabled={loading}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              {fieldErrors.password && (
-                <p className="text-xs text-red-500">{fieldErrors.password}</p>
-              )}
-              {!isLogin && password && passwordStrength.text && (
-                <p className={`text-xs ${passwordStrength.color}`}>
-                  Password strength: {passwordStrength.text}
-                </p>
-              )}
-            </div>
-
-            {isLogin && (
-              <div className="text-left">
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  className="text-xs text-caregrowth-blue hover:underline"
-                  disabled={loading}
-                >
-                  Forgot password?
-                </button>
-              </div>
-            )}
-
-            <Button 
-              type="submit" 
-              className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white font-medium"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  {isLogin ? 'Signing In...' : 'Creating Account...'}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={handlePasswordChange}
+                    className={`pl-10 pr-10 border-2 h-12 ${fieldErrors.password ? 'border-red-500' : 'border-gray-200 focus:border-blue-500'} rounded-lg`}
+                    placeholder="Enter your password"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
-              ) : (
-                isLogin ? 'Login' : 'Create Account'
-              )}
-            </Button>
+                {fieldErrors.password && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.password}</p>
+                )}
+                {!isLogin && password && passwordStrength.text && (
+                  <p className={`text-sm mt-1 ${passwordStrength.color}`}>
+                    Password strength: {passwordStrength.text}
+                  </p>
+                )}
+              </div>
 
-            <div className="text-center text-xs text-gray-600">
-              {isLogin ? "Not a member?" : "Already have an account?"}{' '}
-              <button
-                type="button"
-                onClick={switchMode}
-                className="text-caregrowth-blue hover:underline font-medium"
+              {isLogin && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                    disabled={loading}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg"
                 disabled={loading}
               >
-                {isLogin ? 'Signup now' : 'Login'}
-              </button>
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    {isLogin ? 'Signing In...' : 'Creating Account...'}
+                  </div>
+                ) : (
+                  isLogin ? 'Sign In' : 'Create Account'
+                )}
+              </Button>
+            </form>
+
+            <div className="mt-8 text-center">
+              <p className="text-gray-600 text-sm">
+                {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
+                <button
+                  type="button"
+                  onClick={switchMode}
+                  className="text-blue-600 hover:text-blue-800 font-semibold hover:underline"
+                  disabled={loading}
+                >
+                  {isLogin ? 'Sign up' : 'Sign in'}
+                </button>
+              </p>
             </div>
-          </form>
+          </div>
         </div>
       </div>
 
