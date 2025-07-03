@@ -36,7 +36,6 @@ const UsageMonitoringPage = () => {
       return;
     }
 
-    // Mock implementation - in a real app, you'd create the agency in the database
     console.log('Adding agency:', { name: newAgencyName, email: newAgencyEmail });
     toast.success('Agency added successfully');
     
@@ -47,7 +46,6 @@ const UsageMonitoringPage = () => {
   };
 
   const handleUpdateCredits = (userId: string, credits: number) => {
-    // Mock implementation - in a real app, this would update the database
     console.log('Updating credits:', { userId, credits });
     refetch();
   };

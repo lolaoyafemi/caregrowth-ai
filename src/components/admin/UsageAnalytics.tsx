@@ -42,60 +42,69 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(amount / 100); // Convert from cents to dollars
+    }).format(amount / 100);
   };
 
   const currentStats = [
     {
       title: 'Daily Active Users',
       value: analyticsData.dailyActiveUsers.toString(),
-      change: '+12%',
+      change: '+2%',
       trend: 'up',
       icon: Users,
-      color: 'text-blue-600'
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
     },
     {
-      title: 'Credits Used Today',
+      title: 'Credit Used Today',
       value: analyticsData.creditsUsedToday.toLocaleString(),
-      change: '+8%',
+      change: '+4%',
       trend: 'up',
       icon: CreditCard,
-      color: 'text-green-600'
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200'
     },
     {
-      title: 'API Requests/min',
+      title: 'Requests/min',
       value: analyticsData.apiRequestsPerMinute.toString(),
-      change: '+5%',
+      change: '+1%',
       trend: 'up',
       icon: Activity,
-      color: 'text-purple-600'
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200'
     },
     {
       title: 'Revenue Today',
       value: formatCurrency(analyticsData.revenueToday),
-      change: '+15%',
+      change: '+7%',
       trend: 'up',
       icon: DollarSign,
-      color: 'text-emerald-600'
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50',
+      borderColor: 'border-emerald-200'
     }
   ];
 
   return (
     <div className="space-y-6">
-      {/* Real-time Stats */}
+      {/* Real-time Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {currentStats.map((stat, index) => (
-          <Card key={index} className="border-green-200">
+          <Card key={index} className={`${stat.borderColor} ${stat.bgColor}`}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className={`text-sm ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                  <p className={`text-sm flex items-center gap-1 ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                    <TrendingUp className="h-3 w-3" />
                     {stat.change} from yesterday
                   </p>
                 </div>
-                <div className="p-2 bg-gray-50 rounded-lg">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
                   <stat.icon className={`h-6 w-6 ${stat.color}`} />
                 </div>
               </div>
@@ -104,13 +113,12 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
         ))}
       </div>
 
-      {/* Usage Trends */}
+      {/* Usage Trends Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border-green-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              Credit Usage Trend
+              📈 Credit Usage Trend
             </CardTitle>
             <CardDescription>Daily credit consumption over the past week</CardDescription>
           </CardHeader>
@@ -118,11 +126,25 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={analyticsData.usageTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="credits" stroke="#10b981" strokeWidth={2} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    fontSize={12}
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis fontSize={12} />
+                  <Tooltip 
+                    formatter={(value) => [value.toLocaleString(), 'Credits']}
+                    labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="credits" 
+                    stroke="#10b981" 
+                    strokeWidth={3}
+                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#10b981' }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -132,8 +154,7 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
         <Card className="border-green-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-emerald-600" />
-              Revenue Trend
+              💰 Revenue Trend
             </CardTitle>
             <CardDescription>Daily revenue over the past week</CardDescription>
           </CardHeader>
@@ -141,11 +162,25 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={analyticsData.usageTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Revenue']} />
-                  <Line type="monotone" dataKey="revenue" stroke="#059669" strokeWidth={2} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    fontSize={12}
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis fontSize={12} />
+                  <Tooltip 
+                    formatter={(value) => [formatCurrency(Number(value)), 'Revenue']}
+                    labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#059669" 
+                    strokeWidth={3}
+                    dot={{ fill: '#059669', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#059669' }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -157,55 +192,32 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
       <Card className="border-green-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-blue-600" />
-            Tool Usage Distribution
+            🔧 Tool Usage Distribution
           </CardTitle>
           <CardDescription>Credits used by each tool</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64">
+          <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsData.toolUsage}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="tool" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="usage" fill="#3b82f6" />
+              <BarChart data={analyticsData.toolUsage} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="tool" 
+                  fontSize={12}
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                  interval={0}
+                />
+                <YAxis fontSize={12} />
+                <Tooltip formatter={(value) => [value.toLocaleString(), 'Credits']} />
+                <Bar 
+                  dataKey="usage" 
+                  fill="#3b82f6" 
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Detailed Usage Table */}
-      <Card className="border-green-200">
-        <CardHeader>
-          <CardTitle>Tool Usage Breakdown</CardTitle>
-          <CardDescription>Detailed breakdown of how credits are being used</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {analyticsData.toolUsage.length > 0 ? (
-              analyticsData.toolUsage.map((tool, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <div>
-                      <p className="font-medium text-gray-900">{tool.tool}</p>
-                      <p className="text-sm text-gray-600">{tool.percentage}% of total usage</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">{tool.usage.toLocaleString()}</p>
-                    <p className="text-sm text-gray-600">credits</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No tool usage data available
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

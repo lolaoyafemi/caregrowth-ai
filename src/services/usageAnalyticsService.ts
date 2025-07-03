@@ -34,7 +34,6 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
       .select('user_id')
       .gte('used_at', startOfDay.toISOString());
     
-    // Count unique users manually
     const uniqueUsers = dailyActiveUsersData ? 
       new Set(dailyActiveUsersData.map(log => log.user_id)).size : 0;
     
@@ -48,13 +47,13 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     
     const creditsUsedToday = creditsUsedTodayData?.reduce((sum, log) => sum + log.credits_used, 0) || 0;
     
-    // Fetch revenue today
+    // Fetch revenue today (convert from cents)
     const { data: revenueTodayData } = await supabase
       .from('credit_sales_log')
       .select('amount_paid')
       .gte('timestamp', startOfDay.toISOString());
     
-    const revenueToday = revenueTodayData?.reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
+    const revenueToday = revenueTodayData?.reduce((sum, sale) => sum + (Number(sale.amount_paid) * 100), 0) || 0;
     
     // Fetch usage trend for last 7 days
     const { data: usageTrendData } = await supabase
@@ -65,14 +64,24 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     
     // Group usage trend by day
     const usageTrendMap = new Map();
+    const last7DaysArray = [];
+    
+    // Initialize last 7 days with zero values
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateKey = date.toISOString().split('T')[0];
+      last7DaysArray.push(dateKey);
+      usageTrendMap.set(dateKey, { credits: 0, users: new Set(), revenue: 0 });
+    }
+    
+    // Fill in actual data
     usageTrendData?.forEach(log => {
       const date = new Date(log.used_at).toISOString().split('T')[0];
-      if (!usageTrendMap.has(date)) {
-        usageTrendMap.set(date, { credits: 0, users: new Set(), revenue: 0 });
+      if (usageTrendMap.has(date)) {
+        const dayData = usageTrendMap.get(date);
+        dayData.credits += log.credits_used;
+        dayData.users.add(log.user_id);
       }
-      const dayData = usageTrendMap.get(date);
-      dayData.credits += log.credits_used;
-      dayData.users.add(log.user_id);
     });
     
     // Fetch revenue data for trend
@@ -84,18 +93,18 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     revenueTrendData?.forEach(sale => {
       const date = new Date(sale.timestamp).toISOString().split('T')[0];
       if (usageTrendMap.has(date)) {
-        usageTrendMap.get(date).revenue += Number(sale.amount_paid);
+        usageTrendMap.get(date).revenue += Number(sale.amount_paid) * 100; // Convert to cents
       }
     });
     
-    const usageTrend = Array.from(usageTrendMap.entries()).map(([date, data]) => ({
+    const usageTrend = last7DaysArray.map(date => ({
       date,
-      credits: data.credits,
-      users: data.users.size,
-      revenue: data.revenue
-    })).slice(-7); // Last 7 days
+      credits: usageTrendMap.get(date).credits,
+      users: usageTrendMap.get(date).users.size,
+      revenue: usageTrendMap.get(date).revenue
+    }));
     
-    // Fetch tool usage distribution
+    // Fetch tool usage distribution with proper mapping
     const { data: toolUsageData } = await supabase
       .from('credit_usage_log')
       .select('tool, credits_used');
@@ -103,9 +112,19 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     const toolUsageMap = new Map();
     let totalCreditsUsed = 0;
     
+    // Map tool names to display names
+    const toolDisplayNames: { [key: string]: string } = {
+      'social-media': 'Social Media',
+      'generate-post': 'Social Media',
+      'regenerate-section': 'Social Media',
+      'document-search': 'Smart Document Search',
+      'smart-document-search': 'Smart Document Search',
+      'qa-assistant': 'Ask Jared'
+    };
+    
     toolUsageData?.forEach(log => {
-      const tool = log.tool || 'Unknown';
-      toolUsageMap.set(tool, (toolUsageMap.get(tool) || 0) + log.credits_used);
+      const displayName = toolDisplayNames[log.tool] || log.tool || 'Unknown';
+      toolUsageMap.set(displayName, (toolUsageMap.get(displayName) || 0) + log.credits_used);
       totalCreditsUsed += log.credits_used;
     });
     
@@ -116,7 +135,7 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     })).sort((a, b) => b.usage - a.usage);
     
     // Calculate API requests per minute (estimate based on credit usage)
-    const apiRequestsPerMinute = Math.round(creditsUsedToday / (24 * 60) * 10); // Rough estimate
+    const apiRequestsPerMinute = Math.round(creditsUsedToday / (24 * 60) * 2);
     
     const analyticsData = {
       dailyActiveUsers,
