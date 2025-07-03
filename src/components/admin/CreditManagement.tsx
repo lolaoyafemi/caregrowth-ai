@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -115,9 +114,7 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
       console.log('Loading users for credit management...');
       setLoading(true);
       
-      const userList: User[] = [];
-
-      // Try user_profiles table first
+      // Fetch users with their synchronized credits from user_profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select('user_id, email, business_name, credits')
@@ -126,52 +123,24 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
 
       console.log('User profiles query result:', { profiles, profilesError });
 
+      if (profilesError) {
+        console.error('Error fetching user profiles:', profilesError);
+        toast.error('Failed to load users');
+        return;
+      }
+
       if (profiles && profiles.length > 0) {
-        profiles.forEach(profile => {
-          userList.push({
-            id: profile.user_id,
-            email: profile.email || 'No email',
-            name: profile.business_name || 'No name',
-            credits: profile.credits || 0
-          });
-        });
-        console.log('Found users in profiles table:', userList.length);
-      }
-
-      // Also try users table to get additional users
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id, email, name, credits')
-        .not('email', 'is', null)
-        .order('created_at', { ascending: false });
-
-      console.log('Users table query result:', { usersData, usersError });
-
-      if (usersData && usersData.length > 0) {
-        usersData.forEach(user => {
-          // Only add if not already in the list from profiles
-          const existingUser = userList.find(u => u.id === user.id);
-          if (!existingUser) {
-            userList.push({
-              id: user.id,
-              email: user.email || 'No email',
-              name: user.name || 'No name',
-              credits: user.credits || 0
-            });
-          }
-        });
-        console.log('Total users after combining both tables:', userList.length);
-      }
-
-      // Remove duplicates based on email
-      const uniqueUsers = userList.filter((user, index, self) => 
-        index === self.findIndex(u => u.email === user.email)
-      );
-
-      setUsers(uniqueUsers);
-      console.log('Final unique users list:', uniqueUsers.length);
-      
-      if (uniqueUsers.length === 0) {
+        const userList = profiles.map(profile => ({
+          id: profile.user_id,
+          email: profile.email || 'No email',
+          name: profile.business_name || 'No name',
+          credits: profile.credits || 0
+        }));
+        
+        setUsers(userList);
+        console.log('Loaded users:', userList.length);
+      } else {
+        console.log('No users found in user_profiles');
         toast.error('No users found in the system');
       }
     } catch (error) {
@@ -210,8 +179,8 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
 
       console.log('Credit calculation:', { currentCredits, finalAmount, newCredits });
 
-      // Try updating user_profiles first
-      const { error: updateProfileError } = await supabase
+      // Update user_profiles (which will trigger the sync to users table)
+      const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ 
           credits: newCredits,
@@ -219,56 +188,41 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
         })
         .eq('user_id', selectedUser);
 
-      let updateSuccess = !updateProfileError;
-
-      if (updateProfileError) {
-        console.log('Profile update failed, trying users table:', updateProfileError);
-        
-        // Fallback to users table
-        const { error: updateUserError } = await supabase
-          .from('users')
-          .update({ credits: newCredits })
-          .eq('id', selectedUser);
-
-        if (updateUserError) {
-          console.error('Both profile and user update failed:', updateUserError);
-          toast.error('Failed to update credits: ' + (updateUserError.message || 'Unknown error'));
-          return;
-        }
-        updateSuccess = true;
+      if (updateError) {
+        console.error('Error updating credits:', updateError);
+        toast.error('Failed to update credits: ' + updateError.message);
+        return;
       }
 
-      if (updateSuccess) {
-        // Log the credit change
-        if (creditType === 'gift' || creditType === 'add') {
-          const { error: logError } = await supabase
-            .from('credit_sales_log')
-            .insert({
-              user_id: selectedUser,
-              email: selectedUserData.email,
-              credits_purchased: amount,
-              amount_paid: creditType === 'gift' ? 0 : amount * 0.01,
-              plan_name: creditType === 'gift' ? 'Admin Gift' : 'Admin Addition'
-            });
+      // Log the credit change
+      if (creditType === 'gift' || creditType === 'add') {
+        const { error: logError } = await supabase
+          .from('credit_sales_log')
+          .insert({
+            user_id: selectedUser,
+            email: selectedUserData.email,
+            credits_purchased: amount,
+            amount_paid: creditType === 'gift' ? 0 : amount * 0.01,
+            plan_name: creditType === 'gift' ? 'Admin Gift' : 'Admin Addition'
+          });
 
-          if (logError) {
-            console.error('Error logging credit addition:', logError);
-          }
+        if (logError) {
+          console.error('Error logging credit addition:', logError);
         }
-
-        onUpdateCredits(selectedUser, finalAmount);
-        
-        // Reset form
-        setSelectedUser('');
-        setCreditAmount('');
-        setIsDialogOpen(false);
-        
-        // Reload data
-        await loadUsers();
-        await loadTransactions();
-        
-        toast.success(`Credits ${creditType === 'remove' ? 'removed' : 'added'} successfully`);
       }
+
+      onUpdateCredits(selectedUser, finalAmount);
+      
+      // Reset form
+      setSelectedUser('');
+      setCreditAmount('');
+      setIsDialogOpen(false);
+      
+      // Reload data
+      await loadUsers();
+      await loadTransactions();
+      
+      toast.success(`Credits ${creditType === 'remove' ? 'removed' : 'added'} successfully`);
     } catch (error) {
       console.error('Error updating credits:', error);
       toast.error('Failed to update credits: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -324,7 +278,7 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
         <CardContent>
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-600">
-              Total users: {users.length} | Use the controls below to manage user credits
+              Total users: {users.length} | Credits are now synchronized between tables
             </div>
             <div className="flex gap-2">
               <Button 
