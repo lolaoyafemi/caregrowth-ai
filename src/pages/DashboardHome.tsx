@@ -56,6 +56,11 @@ const DashboardHome = () => {
     console.log('Dashboard - Usage Loading:', usageLoading);
   }, [user, credits, loading, usageMetrics, usageLoading]);
 
+  // Calculate remaining percentage (inverted logic)
+  const getRemainingPercentage = () => {
+    return 100 - getUsagePercentage();
+  };
+
   return (
     <div className="p-6">
       <div className="mb-8 flex justify-between items-start">
@@ -105,7 +110,7 @@ const DashboardHome = () => {
                 <span>Used this month: {usedThisMonth.toLocaleString()}</span>
                 <span>{getUsagePercentage()}%</span>
               </div>
-              <Progress value={getUsagePercentage()} className="h-2 mb-4" />
+              <Progress value={getRemainingPercentage()} className="h-2 mb-4" />
               <div className="flex gap-2">
                 <Link to="/stripe-payment" className="flex-1">
                   <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">

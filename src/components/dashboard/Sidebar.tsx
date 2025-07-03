@@ -90,7 +90,9 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
     available: credits,
     usedThisMonth: usedThisMonth,
     totalAllocation: credits + usedThisMonth,
-    percentUsed: getUsagePercentage()
+    percentUsed: getUsagePercentage(),
+    // Calculate remaining percentage (inverted logic)
+    percentRemaining: 100 - getUsagePercentage()
   };
 
   const handleBuyCredits = () => {
@@ -184,7 +186,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                       "h-full rounded-full transition-all duration-500",
                       isSuperAdmin ? "bg-green-600" : "bg-caregrowth-blue"
                     )}
-                    style={{ width: `${creditBalance.percentUsed}%` }}
+                    style={{ width: `${creditBalance.percentRemaining}%` }}
                   ></div>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
@@ -234,7 +236,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                     <p className="font-medium">Credit Balance</p>
                     <p className="text-sm">Available: {credits.toLocaleString()}</p>
                     <p className="text-sm">Used: {creditBalance.usedThisMonth.toLocaleString()}</p>
-                    <Progress value={creditBalance.percentUsed} className="h-2" />
+                    <Progress value={creditBalance.percentRemaining} className="h-2" />
                   </div>
                 </TooltipContent>
               </Tooltip>
