@@ -102,7 +102,7 @@ const DashboardHome = () => {
                 <span className="text-sm text-gray-600">Available Credits</span>
                 <span className={cn(
                   "font-bold text-xl transition-all duration-300",
-                  creditUpdateAnimation && "scale-110 text-blue-600"
+                  creditUpdateAnimation && "scale-110 text-gray-600"
                 )}>
                   {credits.toLocaleString()}
                 </span>
