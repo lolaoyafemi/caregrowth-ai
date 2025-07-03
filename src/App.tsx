@@ -38,7 +38,7 @@ const AppLoadingScreen = () => (
 const AppContent = () => {
   const { loading } = useAuth();
 
-  // Show loading screen during initial auth check
+  // Show loading screen during initial auth check - this prevents any routing until auth is determined
   if (loading) {
     return <AppLoadingScreen />;
   }

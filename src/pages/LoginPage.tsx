@@ -7,12 +7,12 @@ import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage = () => {
   const { isAuthenticated } = useUser();
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
 
-  // Show loading state while auth is initializing
+  // Show loading state while auth is initializing - this prevents the flash
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-caregrowth-blue mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -22,7 +22,8 @@ const LoginPage = () => {
   }
 
   // Redirect to dashboard if already authenticated
-  if (isAuthenticated) {
+  // Use both isAuthenticated and user to ensure proper state
+  if (isAuthenticated && user) {
     return <Navigate to="/dashboard" replace />;
   }
 
