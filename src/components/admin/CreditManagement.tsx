@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CreditCard, Plus, Minus, Gift, AlertCircle } from 'lucide-react';
+import { CreditCard, Plus, Minus, Gift, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -27,6 +27,7 @@ interface Transaction {
 interface User {
   id: string;
   email: string;
+  name: string;
   credits: number;
 }
 
@@ -105,39 +106,46 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
     try {
       console.log('Loading users for credit management...');
       
-      // Try user_profiles first
-      const { data: profiles } = await supabase
+      // First try user_profiles table
+      const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
-        .select('user_id, email, credits')
+        .select('user_id, email, business_name, credits')
         .not('email', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('created_at', { ascending: false });
+
+      console.log('User profiles query result:', { profiles, profilesError });
 
       if (profiles && profiles.length > 0) {
         const userList = profiles.map(profile => ({
           id: profile.user_id,
           email: profile.email || 'No email',
+          name: profile.business_name || 'No name',
           credits: profile.credits || 0
         }));
         setUsers(userList);
         console.log('Loaded users from profiles:', userList.length);
       } else {
         // Fallback to users table
-        const { data: usersData } = await supabase
+        const { data: usersData, error: usersError } = await supabase
           .from('users')
-          .select('id, email, credits')
+          .select('id, email, name, credits')
           .not('email', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(50);
+          .order('created_at', { ascending: false });
 
-        if (usersData) {
+        console.log('Users table query result:', { usersData, usersError });
+
+        if (usersData && usersData.length > 0) {
           const userList = usersData.map(user => ({
             id: user.id,
             email: user.email || 'No email',
+            name: user.name || 'No name',
             credits: user.credits || 0
           }));
           setUsers(userList);
           console.log('Loaded users from users table:', userList.length);
+        } else {
+          console.warn('No users found in either table');
+          toast.error('No users found in the system');
         }
       }
     } catch (error) {
@@ -161,31 +169,49 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
     }
 
     try {
-      // Get current user credits first
-      const { data: currentUser, error: fetchError } = await supabase
+      console.log('Updating credits for user:', selectedUser, 'Amount:', amount, 'Type:', creditType);
+
+      // First try to get current credits from user_profiles
+      let { data: currentProfile, error: fetchProfileError } = await supabase
         .from('user_profiles')
-        .select('credits')
+        .select('credits, email')
         .eq('user_id', selectedUser)
         .single();
 
-      if (fetchError) {
-        console.error('Error fetching current credits:', fetchError);
-        toast.error('Failed to fetch current user credits');
-        return;
+      console.log('Current profile data:', { currentProfile, fetchProfileError });
+
+      let currentCredits = 0;
+      let userEmail = '';
+
+      if (currentProfile) {
+        currentCredits = currentProfile.credits || 0;
+        userEmail = currentProfile.email || '';
+      } else {
+        // Fallback to users table
+        const { data: currentUser, error: fetchUserError } = await supabase
+          .from('users')
+          .select('credits, email')
+          .eq('id', selectedUser)
+          .single();
+
+        console.log('Current user data:', { currentUser, fetchUserError });
+
+        if (currentUser) {
+          currentCredits = currentUser.credits || 0;
+          userEmail = currentUser.email || '';
+        } else {
+          toast.error('User not found');
+          return;
+        }
       }
 
-      const currentCredits = currentUser?.credits || 0;
       const finalAmount = creditType === 'remove' ? -amount : amount;
-      const newCredits = currentCredits + finalAmount;
+      const newCredits = Math.max(0, currentCredits + finalAmount); // Ensure credits don't go negative
 
-      // Ensure credits don't go negative
-      if (newCredits < 0) {
-        toast.error('Cannot reduce credits below zero');
-        return;
-      }
+      console.log('Credit calculation:', { currentCredits, finalAmount, newCredits });
 
-      // Update user credits in user_profiles
-      const { error: updateError } = await supabase
+      // Update credits in user_profiles first
+      const { error: updateProfileError } = await supabase
         .from('user_profiles')
         .update({ 
           credits: newCredits,
@@ -193,26 +219,36 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
         })
         .eq('user_id', selectedUser);
 
-      if (updateError) {
-        console.error('Error updating credits:', updateError);
-        toast.error('Failed to update credits');
-        return;
+      if (updateProfileError) {
+        console.log('Profile update failed, trying users table:', updateProfileError);
+        
+        // Fallback to users table
+        const { error: updateUserError } = await supabase
+          .from('users')
+          .update({ credits: newCredits })
+          .eq('id', selectedUser);
+
+        if (updateUserError) {
+          console.error('Both profile and user update failed:', updateUserError);
+          toast.error('Failed to update credits');
+          return;
+        }
       }
 
       // Log the credit change
-      if (creditType === 'gift') {
+      if (creditType === 'gift' || creditType === 'add') {
         const { error: logError } = await supabase
           .from('credit_sales_log')
           .insert({
             user_id: selectedUser,
-            email: users.find(u => u.id === selectedUser)?.email || '',
+            email: userEmail,
             credits_purchased: amount,
-            amount_paid: 0,
-            plan_name: 'Admin Gift'
+            amount_paid: creditType === 'gift' ? 0 : amount * 0.01, // Assuming 1 cent per credit
+            plan_name: creditType === 'gift' ? 'Admin Gift' : 'Admin Addition'
           });
 
         if (logError) {
-          console.error('Error logging gift:', logError);
+          console.error('Error logging credit addition:', logError);
         }
       }
 
@@ -223,8 +259,8 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
       setIsDialogOpen(false);
       
       // Reload data
-      loadTransactions();
-      loadUsers();
+      await loadTransactions();
+      await loadUsers();
       
       toast.success(`Credits ${creditType === 'remove' ? 'removed' : 'added'} successfully`);
     } catch (error) {
@@ -282,64 +318,76 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
         <CardContent>
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-600">
-              Use the controls below to manage user credits across the platform
+              Total users: {users.length} | Use the controls below to manage user credits
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Manage Credits
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Manage User Credits</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="user-select">Select User</Label>
-                    <Select value={selectedUser} onValueChange={setSelectedUser}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a user" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users.map(user => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.email} ({user.credits} credits)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="credit-type">Action Type</Label>
-                    <Select value={creditType} onValueChange={(value: 'add' | 'remove' | 'gift') => setCreditType(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="add">Add Credits</SelectItem>
-                        <SelectItem value="remove">Remove Credits</SelectItem>
-                        <SelectItem value="gift">Gift Credits</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="credit-amount">Credit Amount</Label>
-                    <Input
-                      id="credit-amount"
-                      type="number"
-                      value={creditAmount}
-                      onChange={(e) => setCreditAmount(e.target.value)}
-                      placeholder="Enter amount"
-                    />
-                  </div>
-                  <Button onClick={handleCreditUpdate} className="w-full">
-                    Update Credits
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => { loadUsers(); loadTransactions(); }} 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-green-600 hover:bg-green-700">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Manage Credits
                   </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Manage User Credits</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="user-select">Select User ({users.length} available)</Label>
+                      <Select value={selectedUser} onValueChange={setSelectedUser}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a user" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map(user => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.name} ({user.email}) - {user.credits} credits
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="credit-type">Action Type</Label>
+                      <Select value={creditType} onValueChange={(value: 'add' | 'remove' | 'gift') => setCreditType(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="add">Add Credits</SelectItem>
+                          <SelectItem value="remove">Remove Credits</SelectItem>
+                          <SelectItem value="gift">Gift Credits</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="credit-amount">Credit Amount</Label>
+                      <Input
+                        id="credit-amount"
+                        type="number"
+                        value={creditAmount}
+                        onChange={(e) => setCreditAmount(e.target.value)}
+                        placeholder="Enter amount"
+                        min="1"
+                      />
+                    </div>
+                    <Button onClick={handleCreditUpdate} className="w-full" disabled={!selectedUser || !creditAmount}>
+                      Update Credits
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardContent>
       </Card>
