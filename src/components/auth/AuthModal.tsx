@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -190,30 +189,30 @@ const AuthModal: React.FC = () => {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          <form onSubmit={handleSubmit} className="p-10 space-y-8">
             {!isLogin && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label htmlFor="name" className="block text-sm font-medium text-gray-700">
                   Full Name *
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <Input
                     id="name"
                     value={name}
                     onChange={handleNameChange}
-                    className={`pl-10 ${fieldErrors.name ? 'border-red-500 focus:border-red-500' : 'focus:border-caregrowth-blue'}`}
+                    className={`pl-12 pr-4 py-3 ${fieldErrors.name ? 'border-red-500 focus:border-red-500' : 'focus:border-caregrowth-blue'}`}
                     placeholder="Enter your full name"
                     disabled={loading}
                     aria-invalid={!!fieldErrors.name}
                     aria-describedby={fieldErrors.name ? "name-error" : undefined}
                   />
                   {fieldErrors.name && (
-                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500" size={18} />
+                    <AlertCircle className="absolute right-4 top-1/2 transform -translate-y-1/2 text-red-500" size={18} />
                   )}
                 </div>
                 {fieldErrors.name && (
-                  <p id="name-error" className="text-sm text-red-500 flex items-center mt-2">
+                  <p id="name-error" className="text-sm text-red-500 flex items-center mt-3 ml-1">
                     <AlertCircle size={14} className="mr-1" />
                     {fieldErrors.name}
                   </p>
@@ -221,50 +220,50 @@ const AuthModal: React.FC = () => {
               </div>
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email Address *
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={handleEmailChange}
-                  className={`pl-10 ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : 'focus:border-caregrowth-blue'}`}
+                  className={`pl-12 pr-4 py-3 ${fieldErrors.email ? 'border-red-500 focus:border-red-500' : 'focus:border-caregrowth-blue'}`}
                   placeholder="Enter your email address"
                   disabled={loading}
                   aria-invalid={!!fieldErrors.email}
                   aria-describedby={fieldErrors.email ? "email-error" : undefined}
                 />
                 {email && !fieldErrors.email && validateEmail(email) && (
-                  <CheckCircle2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500" size={18} />
+                  <CheckCircle2 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-green-500" size={18} />
                 )}
                 {fieldErrors.email && (
-                  <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500" size={18} />
+                  <AlertCircle className="absolute right-4 top-1/2 transform -translate-y-1/2 text-red-500" size={18} />
                 )}
               </div>
               {fieldErrors.email && (
-                <p id="email-error" className="text-sm text-red-500 flex items-center mt-2">
+                <p id="email-error" className="text-sm text-red-500 flex items-center mt-3 ml-1">
                   <AlertCircle size={14} className="mr-1" />
                   {fieldErrors.email}
                 </p>
               )}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password *
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={handlePasswordChange}
-                  className={`pl-10 pr-10 ${fieldErrors.password ? 'border-red-500 focus:border-red-500' : 'focus:border-caregrowth-blue'}`}
+                  className={`pl-12 pr-12 py-3 ${fieldErrors.password ? 'border-red-500 focus:border-red-500' : 'focus:border-caregrowth-blue'}`}
                   placeholder={isLogin ? "Enter your password" : "Create a secure password"}
                   disabled={loading}
                   aria-invalid={!!fieldErrors.password}
@@ -273,7 +272,7 @@ const AuthModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={togglePasswordVisibility}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   disabled={loading}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -281,18 +280,18 @@ const AuthModal: React.FC = () => {
                 </button>
               </div>
               {fieldErrors.password && (
-                <p id="password-error" className="text-sm text-red-500 flex items-center mt-2">
+                <p id="password-error" className="text-sm text-red-500 flex items-center mt-3 ml-1">
                   <AlertCircle size={14} className="mr-1" />
                   {fieldErrors.password}
                 </p>
               )}
               {!isLogin && password && passwordStrength.text && (
-                <p id="password-strength" className={`text-sm ${passwordStrength.color} mt-2`}>
+                <p id="password-strength" className={`text-sm ${passwordStrength.color} mt-3 ml-1`}>
                   Password strength: {passwordStrength.text}
                 </p>
               )}
               {!isLogin && (
-                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                <p className="text-xs text-gray-500 mt-3 ml-1 leading-relaxed">
                   Use 8+ characters with a mix of letters, numbers & symbols
                 </p>
               )}
