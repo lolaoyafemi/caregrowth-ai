@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -156,24 +157,9 @@ const DashboardHome = () => {
             <CardDescription>Boost client engagement with AI</CardDescription>
           </CardHeader>
           <CardContent>
-            {usageLoading ? (
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-200 rounded w-20 mb-3"></div>
-                <div className="h-2 bg-gray-200 rounded mb-1"></div>
-                <div className="h-2 bg-gray-200 rounded w-16"></div>
-              </div>
-            ) : (
-              <>
-                <div className="text-3xl font-bold">{usageMetrics.socialMedia.used}/{usageMetrics.socialMedia.total}</div>
-                <div className="space-y-1 mt-3">
-                  <div className="flex justify-between text-xs">
-                    <span>Usage</span>
-                    <span>{usageMetrics.socialMedia.percent}%</span>
-                  </div>
-                  <Progress value={usageMetrics.socialMedia.percent} className="h-2" />
-                </div>
-              </>
-            )}
+            <p className="text-sm text-gray-600 mb-4">
+              Create engaging posts, captions, and content tailored to your audience and brand voice.
+            </p>
           </CardContent>
         </Card>
 
@@ -195,24 +181,9 @@ const DashboardHome = () => {
             <CardDescription>Extract insights from documents</CardDescription>
           </CardHeader>
           <CardContent>
-            {usageLoading ? (
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-200 rounded w-20 mb-3"></div>
-                <div className="h-2 bg-gray-200 rounded mb-1"></div>
-                <div className="h-2 bg-gray-200 rounded w-16"></div>
-              </div>
-            ) : (
-              <>
-                <div className="text-3xl font-bold">{usageMetrics.documentSearch.used}/{usageMetrics.documentSearch.total}</div>
-                <div className="space-y-1 mt-3">
-                  <div className="flex justify-between text-xs">
-                    <span>Usage</span>
-                    <span>{usageMetrics.documentSearch.percent}%</span>
-                  </div>
-                  <Progress value={usageMetrics.documentSearch.percent} className="h-2" />
-                </div>
-              </>
-            )}
+            <p className="text-sm text-gray-600 mb-4">
+              Upload and analyze documents to extract key insights, data, and actionable information.
+            </p>
           </CardContent>
         </Card>
 
@@ -234,24 +205,9 @@ const DashboardHome = () => {
             <CardDescription>Instant answers to client questions</CardDescription>
           </CardHeader>
           <CardContent>
-            {usageLoading ? (
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-200 rounded w-20 mb-3"></div>
-                <div className="h-2 bg-gray-200 rounded mb-1"></div>
-                <div className="h-2 bg-gray-200 rounded w-16"></div>
-              </div>
-            ) : (
-              <>
-                <div className="text-3xl font-bold">{usageMetrics.qaAssistant.used}/{usageMetrics.qaAssistant.total}</div>
-                <div className="space-y-1 mt-3">
-                  <div className="flex justify-between text-xs">
-                    <span>Usage</span>
-                    <span>{usageMetrics.qaAssistant.percent}%</span>
-                  </div>
-                  <Progress value={usageMetrics.qaAssistant.percent} className="h-2" />
-                </div>
-              </>
-            )}
+            <p className="text-sm text-gray-600 mb-4">
+              Get instant, accurate answers to business questions using your knowledge base and AI assistance.
+            </p>
           </CardContent>
         </Card>
       </div>
