@@ -40,7 +40,7 @@ export const useCreditUsers = () => {
         console.log('Loaded users:', userList.length);
       } else {
         console.log('No users found in user_profiles');
-        toast.error('No users found in the system');
+        setUsers([]);
       }
     } catch (error) {
       console.error('Error loading users:', error);

@@ -13,9 +13,10 @@ const CreditManagement = ({ onUpdateCredits }: CreditManagementProps) => {
   const { transactions, loadTransactions } = useCreditTransactions();
   const { users, loading, loadUsers } = useCreditUsers();
 
-  const handleRefresh = () => {
-    loadUsers();
-    loadTransactions();
+  const handleRefresh = async () => {
+    console.log('Refreshing credit management data...');
+    await loadUsers();
+    await loadTransactions();
   };
 
   if (loading) {

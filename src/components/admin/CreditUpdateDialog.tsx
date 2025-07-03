@@ -27,6 +27,7 @@ const CreditUpdateDialog = ({
   const [creditAmount, setCreditAmount] = useState('');
   const [creditType, setCreditType] = useState<CreditType>('add');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCreditUpdate = async () => {
     if (!selectedUser || !creditAmount) {
@@ -39,6 +40,8 @@ const CreditUpdateDialog = ({
       toast.error('Please enter a valid credit amount');
       return;
     }
+
+    setIsLoading(true);
 
     try {
       console.log('Updating credits for user:', selectedUser, 'Amount:', amount, 'Type:', creditType);
@@ -103,6 +106,8 @@ const CreditUpdateDialog = ({
     } catch (error) {
       console.error('Error updating credits:', error);
       toast.error('Failed to update credits: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -161,9 +166,9 @@ const CreditUpdateDialog = ({
           <Button 
             onClick={handleCreditUpdate} 
             className="w-full" 
-            disabled={!selectedUser || !creditAmount}
+            disabled={!selectedUser || !creditAmount || isLoading}
           >
-            Update Credits
+            {isLoading ? 'Updating...' : 'Update Credits'}
           </Button>
         </div>
       </DialogContent>
