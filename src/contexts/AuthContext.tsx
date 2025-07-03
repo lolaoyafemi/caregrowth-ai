@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const { setUser: setUserContext } = useUser();
 
   const fetchUserFromPublicTable = async (userId: string, userEmail: string) => {
@@ -93,6 +93,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
+    // Check for existing session first (synchronously if possible)
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing auth...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          if (mounted) {
+            setLoading(false);
+            setInitializing(false);
+          }
+          return;
+        }
+
+        console.log('Initial session check:', session?.user?.email);
+        
+        if (!mounted) return;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user && session.user.email) {
+          setTimeout(() => {
+            if (mounted) {
+              fetchUserFromPublicTable(session.user.id, session.user.email!);
+            }
+          }, 100);
+        } else {
+          setUserContext(null);
+        }
+        
+        setLoading(false);
+        setInitializing(false);
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setLoading(false);
+          setInitializing(false);
+        }
+      }
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -112,49 +155,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setUserContext(null);
         }
-        setLoading(false);
+        
+        // Only set loading to false after initial setup is complete
+        if (initializing) {
+          setLoading(false);
+          setInitializing(false);
+        }
       }
     );
 
-    // Check for existing session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          setLoading(false);
-          return;
-        }
-
-        console.log('Initial session check:', session?.user?.email);
-        
-        if (!mounted) return;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user && session.user.email) {
-          setTimeout(() => {
-            if (mounted) {
-              fetchUserFromPublicTable(session.user.id, session.user.email!);
-            }
-          }, 100);
-        }
-        setLoading(false);
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        setLoading(false);
-      }
-    };
-
+    // Initialize auth
     initializeAuth();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [setUserContext]);
+  }, [setUserContext, initializing]);
 
   const signInWithEmail = async (email: string, password: string) => {
     console.log('Attempting sign in with:', email);
