@@ -179,20 +179,20 @@ const AuthModal: React.FC = () => {
     <>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-          <div className="bg-gradient-to-r from-caregrowth-blue to-blue-700 p-6 text-white">
-            <h2 className="text-2xl font-bold">
+          <div className="bg-gradient-to-r from-caregrowth-blue to-blue-700 p-8 text-white">
+            <h2 className="text-2xl font-bold mb-3">
               {isLogin ? 'Welcome Back' : 'Create Your Account'}
             </h2>
-            <p className="mt-2 text-blue-100">
+            <p className="text-blue-100 leading-relaxed">
               {isLogin
                 ? 'Sign in to access your CareGrowthAI dashboard'
                 : 'Get started with CareGrowthAI and supercharge your agency'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <form onSubmit={handleSubmit} className="p-8 space-y-6">
             {!isLogin && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label htmlFor="name" className="block text-sm font-medium text-gray-700">
                   Full Name *
                 </Label>
@@ -213,7 +213,7 @@ const AuthModal: React.FC = () => {
                   )}
                 </div>
                 {fieldErrors.name && (
-                  <p id="name-error" className="text-sm text-red-500 flex items-center mt-1">
+                  <p id="name-error" className="text-sm text-red-500 flex items-center mt-2">
                     <AlertCircle size={14} className="mr-1" />
                     {fieldErrors.name}
                   </p>
@@ -221,7 +221,7 @@ const AuthModal: React.FC = () => {
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email Address *
               </Label>
@@ -246,14 +246,14 @@ const AuthModal: React.FC = () => {
                 )}
               </div>
               {fieldErrors.email && (
-                <p id="email-error" className="text-sm text-red-500 flex items-center mt-1">
+                <p id="email-error" className="text-sm text-red-500 flex items-center mt-2">
                   <AlertCircle size={14} className="mr-1" />
                   {fieldErrors.email}
                 </p>
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password *
               </Label>
@@ -281,18 +281,18 @@ const AuthModal: React.FC = () => {
                 </button>
               </div>
               {fieldErrors.password && (
-                <p id="password-error" className="text-sm text-red-500 flex items-center mt-1">
+                <p id="password-error" className="text-sm text-red-500 flex items-center mt-2">
                   <AlertCircle size={14} className="mr-1" />
                   {fieldErrors.password}
                 </p>
               )}
               {!isLogin && password && passwordStrength.text && (
-                <p id="password-strength" className={`text-sm ${passwordStrength.color} mt-1`}>
+                <p id="password-strength" className={`text-sm ${passwordStrength.color} mt-2`}>
                   Password strength: {passwordStrength.text}
                 </p>
               )}
               {!isLogin && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
                   Use 8+ characters with a mix of letters, numbers & symbols
                 </p>
               )}
@@ -313,7 +313,7 @@ const AuthModal: React.FC = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-caregrowth-blue hover:bg-blue-700 transition-all duration-200 h-12 text-base font-medium"
+              className="w-3/4 mx-auto block bg-caregrowth-blue hover:bg-blue-700 transition-all duration-200 h-12 text-base font-medium"
               disabled={loading}
             >
               {loading ? (
@@ -326,7 +326,7 @@ const AuthModal: React.FC = () => {
               )}
             </Button>
 
-            <div className="relative my-6">
+            <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200"></div>
               </div>
@@ -341,7 +341,7 @@ const AuthModal: React.FC = () => {
               <button
                 type="button"
                 onClick={switchMode}
-                className="text-caregrowth-blue hover:underline font-medium transition-colors text-base"
+                className="text-caregrowth-blue hover:underline font-medium transition-colors text-base inline-block px-6 py-2"
                 disabled={loading}
               >
                 {isLogin ? 'Create Account' : 'Sign In'}
