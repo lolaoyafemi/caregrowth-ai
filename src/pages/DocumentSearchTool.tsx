@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -302,12 +301,22 @@ const DocumentSearchTool = () => {
                   
                   {smartSearchResult.sources && smartSearchResult.sources.length > 0 && (
                     <div>
-                      <h3 className="font-semibold mb-3">Source Documents</h3>
+                      <h3 className="font-semibold mb-3">
+                        Source Documents ({smartSearchResult.sources.length} found)
+                      </h3>
                       <div className="space-y-3">
                         {smartSearchResult.sources.map((source, index) => (
-                          <div key={index} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
-                            <div className="flex justify-between items-start">
-                              <h4 className="font-medium text-blue-600">{source.documentTitle}</h4>
+                          <div key={index} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-blue-600">{source.documentTitle}</h4>
+                                {source.pageNumber && (
+                                  <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                                    <BookOpenIcon className="h-3 w-3" />
+                                    Page {source.pageNumber}
+                                  </div>
+                                )}
+                              </div>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -317,6 +326,28 @@ const DocumentSearchTool = () => {
                                 <ExternalLinkIcon className="h-4 w-4" />
                                 Open
                               </Button>
+                            </div>
+                            
+                            {source.relevantContent && (
+                              <div className="bg-gray-50 border-l-4 border-blue-500 p-3 rounded-r">
+                                <div className="text-gray-700 leading-relaxed text-sm">
+                                  {source.relevantContent}
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="flex justify-between items-center mt-3">
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                {source.pageNumber && (
+                                  <span className="flex items-center gap-1">
+                                    <BookOpenIcon className="h-3 w-3" />
+                                    Found on page {source.pageNumber}
+                                  </span>
+                                )}
+                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                  {Math.round(source.confidence * 100)}% relevance
+                                </span>
+                              </div>
                             </div>
                           </div>
                         ))}

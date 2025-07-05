@@ -42,6 +42,23 @@ function extractDocumentId(url: string): string | null {
   return null;
 }
 
+// Advanced page estimation
+function estimatePageLocation(content: string, targetText: string): number {
+  const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+  const contentLower = content.toLowerCase();
+  const targetLower = targetText.toLowerCase();
+  
+  // Find the position of the target text in the content
+  const targetIndex = contentLower.indexOf(targetLower);
+  if (targetIndex === -1) return 1;
+  
+  // Count characters up to the target position
+  const charCount = targetIndex;
+  const CHARS_PER_PAGE = 2800;
+  
+  return Math.max(1, Math.ceil(charCount / CHARS_PER_PAGE));
+}
+
 // Fetch content directly from Google Docs
 async function fetchDocumentContent(url: string, title: string): Promise<DocumentContent | null> {
   try {
@@ -82,25 +99,25 @@ async function fetchDocumentContent(url: string, title: string): Promise<Documen
   }
 }
 
-// Smart search function using GPT
+// Smart search function using GPT with source tracking
 async function performSmartSearch(query: string, documents: DocumentContent[]): Promise<{answer: string, sources: SearchResult[], tokensUsed?: number}> {
   if (!openAIApiKey) {
     throw new Error('OpenAI API key not configured');
   }
 
-  // Prepare document context
+  // Prepare document context with indexing for source tracking
   const documentContext = documents
-    .map((doc, index) => `Document ${index + 1}: ${doc.title}\nContent: ${doc.content.substring(0, 2000)}...`)
+    .map((doc, index) => `Document ${index + 1} (${doc.title}):\nContent: ${doc.content.substring(0, 2000)}...`)
     .join('\n\n');
 
-  const prompt = `Based on the following documents, please answer the user's question. Be specific and reference which documents contain the relevant information.
+  const prompt = `Based on the following documents, please answer the user's question. Be specific and reference which documents contain the relevant information. For each piece of information you use, please indicate which document number it came from.
 
 DOCUMENTS:
 ${documentContext}
 
 QUESTION: ${query}
 
-Please provide a comprehensive answer based on the document content. If the answer isn't found in the documents, please say so.`;
+Please provide a comprehensive answer based on the document content. If the answer isn't found in the documents, please say so. When referencing information, please mention the document number (e.g., "According to Document 1..." or "Document 2 states...").`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -114,7 +131,7 @@ Please provide a comprehensive answer based on the document content. If the answ
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that analyzes documents and provides accurate answers based on their content. Always cite which documents you\'re referencing.'
+            content: 'You are a helpful assistant that analyzes documents and provides accurate answers based on their content. Always cite which documents you\'re referencing by their document number. When you reference specific information, try to include a relevant excerpt or quote.'
           },
           {
             role: 'user',
@@ -134,13 +151,85 @@ Please provide a comprehensive answer based on the document content. If the answ
     const answer = data.choices[0].message.content;
     const tokensUsed = data.usage?.total_tokens;
 
-    // Create sources from documents
-    const sources: SearchResult[] = documents.map(doc => ({
-      documentTitle: doc.title,
-      documentUrl: doc.url,
-      relevantContent: doc.content.substring(0, 500) + '...',
-      confidence: 0.8 // High confidence since we're using full documents
-    }));
+    // Analyze the answer to determine which documents were actually referenced
+    const referencedDocuments: Set<number> = new Set();
+    const documentNumbers = /Document (\d+)/g;
+    let match;
+    
+    while ((match = documentNumbers.exec(answer)) !== null) {
+      const docNum = parseInt(match[1]) - 1; // Convert to 0-based index
+      if (docNum >= 0 && docNum < documents.length) {
+        referencedDocuments.add(docNum);
+      }
+    }
+
+    // If no specific documents were referenced, check for content relevance
+    if (referencedDocuments.size === 0) {
+      const queryLower = query.toLowerCase();
+      documents.forEach((doc, index) => {
+        if (doc.content.toLowerCase().includes(queryLower) || 
+            answer.toLowerCase().includes(doc.title.toLowerCase())) {
+          referencedDocuments.add(index);
+        }
+      });
+    }
+
+    // Create sources only from documents that were actually referenced or contain relevant content
+    const sources: SearchResult[] = [];
+    
+    if (referencedDocuments.size > 0) {
+      referencedDocuments.forEach(docIndex => {
+        const doc = documents[docIndex];
+        if (doc) {
+          // Find the most relevant excerpt from this document
+          const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
+          let bestExcerpt = doc.content.substring(0, 300);
+          let bestScore = 0;
+          
+          // Look for the best matching paragraph
+          const paragraphs = doc.content.split(/\n\s*\n/).filter(p => p.trim().length > 50);
+          paragraphs.forEach(paragraph => {
+            const paragraphLower = paragraph.toLowerCase();
+            let score = 0;
+            queryWords.forEach(word => {
+              if (paragraphLower.includes(word)) {
+                score++;
+              }
+            });
+            
+            if (score > bestScore && paragraph.length >= 100) {
+              bestScore = score;
+              bestExcerpt = paragraph.substring(0, 400);
+            }
+          });
+          
+          // Estimate page number based on the excerpt location
+          const pageNumber = estimatePageLocation(doc.content, bestExcerpt.substring(0, 100));
+          
+          sources.push({
+            documentTitle: doc.title,
+            documentUrl: doc.url,
+            relevantContent: bestExcerpt + (bestExcerpt.length < doc.content.length ? '...' : ''),
+            pageNumber: pageNumber,
+            confidence: Math.min(0.9, 0.6 + (bestScore * 0.1)) // High confidence for smart search
+          });
+        }
+      });
+    }
+
+    // If no sources were found but we have an answer, include all documents as potential sources
+    if (sources.length === 0 && !answer.includes("don't have access") && !answer.includes("not contain")) {
+      documents.forEach(doc => {
+        const pageNumber = estimatePageLocation(doc.content, query);
+        sources.push({
+          documentTitle: doc.title,
+          documentUrl: doc.url,
+          relevantContent: doc.content.substring(0, 300) + '...',
+          pageNumber: pageNumber,
+          confidence: 0.5
+        });
+      });
+    }
 
     return {
       answer,
