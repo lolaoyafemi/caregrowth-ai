@@ -59,14 +59,18 @@ function estimatePageLocation(content: string, targetText: string): number {
   return Math.max(1, Math.ceil(charCount / CHARS_PER_PAGE));
 }
 
-// Fetch content directly from Google Docs
+// Fetch content directly from Google Docs with better error handling
 async function fetchDocumentContent(url: string, title: string): Promise<DocumentContent | null> {
   try {
+    console.log(`Attempting to fetch content for document: "${title}" from URL: ${url}`);
+    
     const docId = extractDocumentId(url);
     if (!docId) {
       console.error('Could not extract document ID from URL:', url);
       return null;
     }
+
+    console.log(`Extracted document ID: ${docId} for document: "${title}"`);
 
     const exportUrls = [
       `https://docs.google.com/document/d/${docId}/export?format=txt`,
@@ -74,27 +78,42 @@ async function fetchDocumentContent(url: string, title: string): Promise<Documen
       `https://docs.google.com/presentation/d/${docId}/export?format=txt`
     ];
 
-    for (const exportUrl of exportUrls) {
+    for (let i = 0; i < exportUrls.length; i++) {
+      const exportUrl = exportUrls[i];
+      console.log(`Trying export URL ${i + 1}/3 for "${title}": ${exportUrl}`);
+      
       try {
         const response = await fetch(exportUrl);
+        console.log(`Response status for "${title}": ${response.status} ${response.statusText}`);
+        
         if (response.ok) {
           const content = await response.text();
+          console.log(`Content length for "${title}": ${content.length} characters`);
+          console.log(`First 200 characters of "${title}": ${content.substring(0, 200)}...`);
+          
           if (content && content.trim().length > 50) {
+            console.log(`Successfully fetched content for "${title}"`);
             return {
               title,
               url,
               content: content.trim()
             };
+          } else {
+            console.log(`Content too short for "${title}" (${content.length} chars)`);
           }
+        } else {
+          console.log(`Failed to fetch from export URL for "${title}": ${response.status} ${response.statusText}`);
         }
       } catch (error) {
+        console.error(`Error fetching from export URL for "${title}":`, error);
         continue;
       }
     }
 
+    console.error(`All export attempts failed for document: "${title}"`);
     return null;
   } catch (error) {
-    console.error('Error fetching document content:', error);
+    console.error(`Error fetching document content for "${title}":`, error);
     return null;
   }
 }
@@ -104,6 +123,11 @@ async function performSmartSearch(query: string, documents: DocumentContent[]): 
   if (!openAIApiKey) {
     throw new Error('OpenAI API key not configured');
   }
+
+  console.log(`Performing smart search with ${documents.length} documents`);
+  documents.forEach((doc, index) => {
+    console.log(`Document ${index + 1}: "${doc.title}" - ${doc.content.length} characters`);
+  });
 
   // Prepare document context with indexing for source tracking
   const documentContext = documents
@@ -118,6 +142,8 @@ ${documentContext}
 QUESTION: ${query}
 
 Please provide a comprehensive answer based on the document content. If the answer isn't found in the documents, please say so. When referencing information, please mention the document number (e.g., "According to Document 1..." or "Document 2 states...").`;
+
+  console.log(`Sending prompt to OpenAI with ${documentContext.length} characters of context`);
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -144,12 +170,16 @@ Please provide a comprehensive answer based on the document content. If the answ
     });
 
     if (!response.ok) {
+      console.error(`OpenAI API error: ${response.status} ${response.statusText}`);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
     const answer = data.choices[0].message.content;
     const tokensUsed = data.usage?.total_tokens;
+
+    console.log(`OpenAI response received. Tokens used: ${tokensUsed}`);
+    console.log(`Answer preview: ${answer.substring(0, 200)}...`);
 
     // Analyze the answer to determine which documents were actually referenced
     const referencedDocuments: Set<number> = new Set();
@@ -163,12 +193,17 @@ Please provide a comprehensive answer based on the document content. If the answ
       }
     }
 
+    console.log(`Documents referenced in answer: ${Array.from(referencedDocuments).map(i => documents[i]?.title).join(', ')}`);
+
     // If no specific documents were referenced, check for content relevance
     if (referencedDocuments.size === 0) {
       const queryLower = query.toLowerCase();
       documents.forEach((doc, index) => {
-        if (doc.content.toLowerCase().includes(queryLower) || 
-            answer.toLowerCase().includes(doc.title.toLowerCase())) {
+        const titleMatch = answer.toLowerCase().includes(doc.title.toLowerCase());
+        const contentMatch = doc.content.toLowerCase().includes(queryLower);
+        
+        if (titleMatch || contentMatch) {
+          console.log(`Document "${doc.title}" appears to be relevant based on content analysis`);
           referencedDocuments.add(index);
         }
       });
@@ -181,6 +216,8 @@ Please provide a comprehensive answer based on the document content. If the answ
       referencedDocuments.forEach(docIndex => {
         const doc = documents[docIndex];
         if (doc) {
+          console.log(`Creating source entry for document: "${doc.title}"`);
+          
           // Find the most relevant excerpt from this document
           const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
           let bestExcerpt = doc.content.substring(0, 300);
@@ -217,8 +254,11 @@ Please provide a comprehensive answer based on the document content. If the answ
       });
     }
 
+    console.log(`Created ${sources.length} source entries`);
+
     // If no sources were found but we have an answer, include all documents as potential sources
-    if (sources.length === 0 && !answer.includes("don't have access") && !answer.includes("not contain")) {
+    if (sources.length === 0 && !answer.includes("don't have access") && !answer.includes("not contain") && !answer.includes("do not contain")) {
+      console.log('No specific sources found, including all documents as potential sources');
       documents.forEach(doc => {
         const pageNumber = estimatePageLocation(doc.content, query);
         sources.push({
@@ -253,6 +293,8 @@ serve(async (req) => {
     const requestBody = await req.json();
     const { query, userId } = requestBody;
     
+    console.log(`Processing query: "${query}" for user: ${userId}`);
+    
     if (!query || !userId) {
       return new Response(JSON.stringify({ 
         error: 'Query and userId are required' 
@@ -274,6 +316,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get user's documents
+    console.log('Fetching user documents from database...');
     const { data: userDocs, error: docsError } = await supabase
       .from('google_documents')
       .select('id, doc_title, doc_link')
@@ -290,6 +333,10 @@ serve(async (req) => {
     }
 
     const documents = userDocs || [];
+    console.log(`Found ${documents.length} documents in database:`);
+    documents.forEach((doc, index) => {
+      console.log(`  ${index + 1}. "${doc.doc_title}" - ${doc.doc_link}`);
+    });
     
     if (documents.length === 0) {
       return new Response(JSON.stringify({ 
@@ -302,18 +349,24 @@ serve(async (req) => {
     }
 
     // Fetch document contents
+    console.log('Fetching document contents...');
     const documentContents: DocumentContent[] = [];
     
     for (const doc of documents.slice(0, 5)) { // Limit to 5 docs to avoid token limits
       const content = await fetchDocumentContent(doc.doc_link, doc.doc_title || 'Untitled Document');
       if (content) {
         documentContents.push(content);
+        console.log(`Successfully added content for: "${content.title}"`);
+      } else {
+        console.log(`Failed to fetch content for: "${doc.doc_title}"`);
       }
     }
 
+    console.log(`Successfully fetched content from ${documentContents.length} out of ${Math.min(documents.length, 5)} documents`);
+
     if (documentContents.length === 0) {
       return new Response(JSON.stringify({ 
-        answer: "I couldn't access the content of your documents. Please ensure they are publicly accessible or shared with view permissions.",
+        answer: "I couldn't access the content of your documents. Please ensure they are publicly accessible or shared with view permissions. Make sure the documents are not restricted and that the sharing settings allow viewing.",
         sources: [],
         tokensUsed: 0
       }), {
@@ -322,6 +375,7 @@ serve(async (req) => {
     }
 
     // Perform smart search
+    console.log('Performing smart search...');
     const result = await performSmartSearch(query, documentContents);
 
     console.log(`Smart search completed: ${result.sources.length} sources, ${result.tokensUsed} tokens used`);
