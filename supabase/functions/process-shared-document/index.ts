@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -37,13 +36,40 @@ async function extractTextFromFile(fileBuffer: ArrayBuffer, mimeType: string, fi
       return decoder.decode(fileBuffer);
     }
     
-    // For other file types, we'll return a basic extraction
-    // In a production environment, you might want to use specialized libraries
-    const decoder = new TextDecoder('utf-8');
-    const text = decoder.decode(fileBuffer);
+    if (mimeType === 'application/pdf') {
+      console.log('PDF file detected - cannot process binary PDFs without specialized library');
+      throw new Error('PDF files are not currently supported. Please convert to plain text or Word document format.');
+    }
     
-    // Basic cleanup for common file formats
-    return text.replace(/[^\x20-\x7E\n\r\t]/g, ' ').trim();
+    if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+        mimeType === 'application/msword') {
+      console.log('Word document detected - cannot process binary Word docs without specialized library');
+      throw new Error('Word documents are not currently supported. Please convert to plain text format.');
+    }
+    
+    // For unknown file types, attempt text extraction with error handling
+    const decoder = new TextDecoder('utf-8');
+    try {
+      const text = decoder.decode(fileBuffer);
+      
+      // Check if the decoded text contains mostly binary/garbage data
+      const readableCharCount = text.split('').filter(char => {
+        const code = char.charCodeAt(0);
+        // Count printable ASCII characters, spaces, tabs, and newlines
+        return (code >= 32 && code <= 126) || code === 9 || code === 10 || code === 13;
+      }).length;
+      
+      const readableRatio = readableCharCount / text.length;
+      
+      if (readableRatio < 0.7) {
+        throw new Error(`File appears to contain binary data (${Math.round(readableRatio * 100)}% readable). Please upload a plain text file instead.`);
+      }
+      
+      // Basic cleanup for text files
+      return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+    } catch (decodeError) {
+      throw new Error(`Unable to decode file as text. Please ensure the file is in plain text format.`);
+    }
   } catch (error) {
     console.error('Error in text extraction:', error);
     throw new Error(`Failed to extract text from ${fileName}: ${error.message}`);
@@ -54,7 +80,17 @@ function chunkText(text: string, maxChunkSize: number = 1000): DocumentChunk[] {
   try {
     console.log(`Starting text chunking for text of length: ${text.length}`);
     
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    // Clean up the text first
+    const cleanText = text
+      .replace(/\s+/g, ' ') // Replace multiple whitespace with single spaces
+      .replace(/\n\s*\n/g, '\n\n') // Clean up excessive line breaks
+      .trim();
+    
+    if (cleanText.length < 50) {
+      throw new Error('Document text is too short to create meaningful chunks');
+    }
+    
+    const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 0);
     console.log(`Split into ${sentences.length} sentences`);
     
     const chunks: DocumentChunk[] = [];
@@ -63,6 +99,8 @@ function chunkText(text: string, maxChunkSize: number = 1000): DocumentChunk[] {
 
     for (const sentence of sentences) {
       const trimmedSentence = sentence.trim();
+      if (trimmedSentence.length === 0) continue;
+      
       if (currentChunk.length + trimmedSentence.length > maxChunkSize && currentChunk.length > 0) {
         chunks.push({
           content: currentChunk.trim(),
@@ -83,6 +121,10 @@ function chunkText(text: string, maxChunkSize: number = 1000): DocumentChunk[] {
 
     const filteredChunks = chunks.filter(chunk => chunk.content.length > 50);
     console.log(`Created ${filteredChunks.length} valid chunks (minimum 50 chars each)`);
+    
+    if (filteredChunks.length === 0) {
+      throw new Error('No valid text chunks could be created from the document');
+    }
     
     return filteredChunks;
   } catch (error) {
@@ -285,7 +327,24 @@ serve(async (req) => {
     const fileBuffer = await fileData.arrayBuffer();
     console.log('File buffer size:', fileBuffer.byteLength);
     
-    const extractedText = await extractTextFromFile(fileBuffer, document.mime_type || 'text/plain', document.file_name);
+    let extractedText;
+    try {
+      extractedText = await extractTextFromFile(fileBuffer, document.mime_type || 'text/plain', document.file_name);
+    } catch (extractError) {
+      console.error('Text extraction failed:', extractError);
+      await supabase
+        .from('shared_documents')
+        .update({ processing_status: 'error' })
+        .eq('id', documentId);
+      
+      return new Response(JSON.stringify({ 
+        error: extractError.message,
+        suggestion: 'Please upload a plain text (.txt) file for best results.'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     if (!extractedText || extractedText.length < 100) {
       console.error('Insufficient text content extracted:', extractedText?.length || 0);
@@ -296,7 +355,8 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({ 
         error: 'Insufficient text content extracted from document',
-        extractedLength: extractedText?.length || 0
+        extractedLength: extractedText?.length || 0,
+        suggestion: 'Please ensure the document contains readable text content.'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -307,17 +367,18 @@ serve(async (req) => {
 
     // Create chunks
     console.log('=== Starting text chunking ===');
-    const chunks = chunkText(extractedText);
-
-    if (chunks.length === 0) {
-      console.error('No valid chunks created');
+    let chunks;
+    try {
+      chunks = chunkText(extractedText);
+    } catch (chunkError) {
+      console.error('Text chunking failed:', chunkError);
       await supabase
         .from('shared_documents')
         .update({ processing_status: 'error' })
         .eq('id', documentId);
       
       return new Response(JSON.stringify({ 
-        error: 'No valid chunks could be created from document' 
+        error: chunkError.message
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
