@@ -22,8 +22,16 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Shield, MessageSquare, User, Calendar, Send, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useSupportTickets, SupportTicket } from '@/hooks/useSupportTickets';
+import { useSupportTickets } from '@/hooks/useSupportTickets';
 import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const SuperAdminSupportDashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
@@ -32,9 +40,12 @@ const SuperAdminSupportDashboard = () => {
     tickets, 
     loading, 
     updateTicketStatus, 
-    createResponse 
+    createResponse,
+    fetchResponses
   } = useSupportTickets();
   const { toast } = useToast();
+  const [ticketResponses, setTicketResponses] = useState<any[]>([]);
+  const [loadingResponses, setLoadingResponses] = useState(false);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -58,13 +69,33 @@ const SuperAdminSupportDashboard = () => {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const handleViewTicket = async (ticketId: string) => {
+    setSelectedTicket(ticketId);
+    setLoadingResponses(true);
+    try {
+      const responses = await fetchResponses(ticketId);
+      setTicketResponses(responses);
+    } catch (error) {
+      console.error('Error fetching responses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load ticket responses",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingResponses(false);
+    }
+  };
+
   const handleSendResponse = async () => {
     if (!selectedTicket || !response.trim()) return;
     
     const success = await createResponse(selectedTicket, response);
     if (success) {
       setResponse('');
-      setSelectedTicket(null);
+      // Refresh responses
+      const updatedResponses = await fetchResponses(selectedTicket);
+      setTicketResponses(updatedResponses);
     }
   };
 
@@ -149,7 +180,7 @@ const SuperAdminSupportDashboard = () => {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => setSelectedTicket(ticket.id)}
+                              onClick={() => handleViewTicket(ticket.id)}
                             >
                               View
                             </Button>
@@ -187,6 +218,11 @@ const SuperAdminSupportDashboard = () => {
               {selectedTicketData ? (
                 <div className="space-y-4">
                   <div>
+                    <h4 className="font-medium mb-2">Subject:</h4>
+                    <p className="text-sm text-gray-700 font-medium">{selectedTicketData.subject}</p>
+                  </div>
+                  
+                  <div>
                     <h4 className="font-medium mb-2">Question/Issue:</h4>
                     <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
                       {selectedTicketData.question}
@@ -201,9 +237,29 @@ const SuperAdminSupportDashboard = () => {
                       Priority: {getPriorityBadge(selectedTicketData.priority)}
                     </div>
                   </div>
+
+                  {/* Previous Responses */}
+                  {ticketResponses.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2">Previous Responses:</h4>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {ticketResponses.map((resp) => (
+                          <div key={resp.id} className="bg-blue-50 p-2 rounded text-sm">
+                            <div className="font-medium text-blue-700">
+                              {resp.admin_email || 'Admin'}
+                            </div>
+                            <div className="text-gray-700">{resp.response_text}</div>
+                            <div className="text-xs text-gray-500">
+                              {format(new Date(resp.created_at), 'MMM dd, yyyy HH:mm')}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Response:</label>
+                    <label className="text-sm font-medium">New Response:</label>
                     <Textarea
                       placeholder="Type your response here..."
                       value={response}
@@ -245,14 +301,24 @@ const SuperAdminSupportDashboard = () => {
 const RegularUserHelpPage = () => {
   const [subject, setSubject] = useState('');
   const [question, setQuestion] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { createTicket } = useSupportTickets();
+  const { createTicket, tickets, loading } = useSupportTickets();
   const { user } = useUser();
+  const { toast } = useToast();
+
+  // Filter tickets for current user
+  const userTickets = tickets.filter(ticket => ticket.user_id === user?.id);
 
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!subject.trim() || !question.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -261,12 +327,19 @@ const RegularUserHelpPage = () => {
     try {
       await createTicket({
         subject: subject.trim(),
-        question: question.trim()
+        question: question.trim(),
+        priority
       });
       
       // Reset form on success
       setSubject('');
       setQuestion('');
+      setPriority('medium');
+      
+      toast({
+        title: "Success",
+        description: "Your support ticket has been submitted successfully",
+      });
     } catch (error) {
       // Error is already handled in the hook
     } finally {
@@ -342,24 +415,39 @@ const RegularUserHelpPage = () => {
         <div>
           <Card>
             <CardHeader>
-              <CardTitle>Ask a Question</CardTitle>
+              <CardTitle>Submit a Support Ticket</CardTitle>
               <CardDescription>
-                Can't find what you're looking for? Submit a support ticket.
+                Can't find what you're looking for? Submit a support ticket and we'll help you out.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmitQuestion} className="space-y-4">
                 <div>
+                  <label className="text-sm font-medium">Subject *</label>
                   <Input 
-                    placeholder="Subject" 
+                    placeholder="Brief description of your issue" 
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="mb-2" 
                     required
                   />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Priority</label>
+                  <select 
+                    value={priority} 
+                    onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
+                    className="w-full mt-1 p-2 border rounded-md"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Description *</label>
                   <Textarea 
                     className="min-h-[120px]" 
-                    placeholder="Describe your question or issue..."
+                    placeholder="Describe your question or issue in detail..."
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     required
@@ -378,7 +466,7 @@ const RegularUserHelpPage = () => {
                   ) : (
                     <>
                       <Send size={16} className="mr-2" />
-                      Submit Ticket
+                      Submit Support Ticket
                     </>
                   )}
                 </Button>
@@ -387,6 +475,41 @@ const RegularUserHelpPage = () => {
           </Card>
         </div>
       </div>
+      
+      {/* User's Tickets */}
+      {userTickets.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Your Support Tickets</CardTitle>
+            <CardDescription>
+              Track the status of your submitted support tickets
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {userTickets.map((ticket) => (
+                <div key={ticket.id} className="border rounded-lg p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">{ticket.subject}</h4>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={ticket.status === 'resolved' ? 'default' : ticket.status === 'pending' ? 'secondary' : 'destructive'}>
+                        {ticket.status}
+                      </Badge>
+                      <Badge variant={ticket.priority === 'high' ? 'destructive' : ticket.priority === 'medium' ? 'secondary' : 'outline'}>
+                        {ticket.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 line-clamp-2">{ticket.question}</p>
+                  <div className="text-xs text-gray-500">
+                    Submitted on {format(new Date(ticket.created_at), 'MMM dd, yyyy')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <Card>
         <CardHeader>

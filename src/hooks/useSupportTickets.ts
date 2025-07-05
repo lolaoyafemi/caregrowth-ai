@@ -28,7 +28,6 @@ export interface SupportResponse {
 
 export const useSupportTickets = () => {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [responses, setResponses] = useState<SupportResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useUser();
@@ -37,13 +36,19 @@ export const useSupportTickets = () => {
     try {
       setLoading(true);
       
-      // Super admins can see all tickets, regular users only their own
-      const { data, error } = await supabase
+      let query = supabase
         .from('support_tickets')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      // Regular users can only see their own tickets
+      // Super admins can see all tickets (handled by RLS)
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
       
       // Type cast the data to ensure proper typing
       setTickets((data || []) as SupportTicket[]);
@@ -67,7 +72,11 @@ export const useSupportTickets = () => {
         .eq('ticket_id', ticketId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching responses:', error);
+        throw error;
+      }
+      
       return (data || []) as SupportResponse[];
     } catch (error) {
       console.error('Error fetching responses:', error);
@@ -81,12 +90,16 @@ export const useSupportTickets = () => {
     priority?: 'low' | 'medium' | 'high';
   }) => {
     try {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { data, error } = await supabase
         .from('support_tickets')
         .insert({
-          user_id: user?.id,
-          user_email: user?.email || '',
-          user_role: user?.role,
+          user_id: user.id,
+          user_email: user.email || '',
+          user_role: user.role,
           subject: ticketData.subject,
           question: ticketData.question,
           priority: ticketData.priority || 'medium'
@@ -94,7 +107,10 @@ export const useSupportTickets = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating ticket:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -124,7 +140,10 @@ export const useSupportTickets = () => {
         })
         .eq('id', ticketId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating ticket status:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -144,21 +163,31 @@ export const useSupportTickets = () => {
 
   const createResponse = async (ticketId: string, responseText: string) => {
     try {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { error } = await supabase
         .from('support_responses')
         .insert({
           ticket_id: ticketId,
-          admin_id: user?.id,
-          admin_email: user?.email,
+          admin_id: user.id,
+          admin_email: user.email,
           response_text: responseText
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating response:', error);
+        throw error;
+      }
 
       // Update ticket status to pending if it was open
       const ticket = tickets.find(t => t.id === ticketId);
       if (ticket && ticket.status === 'open') {
         await updateTicketStatus(ticketId, 'pending');
+      } else {
+        // Just refresh tickets if no status change needed
+        await fetchTickets();
       }
 
       toast({
@@ -179,12 +208,13 @@ export const useSupportTickets = () => {
   };
 
   useEffect(() => {
-    fetchTickets();
-  }, []);
+    if (user) {
+      fetchTickets();
+    }
+  }, [user]);
 
   return {
     tickets,
-    responses,
     loading,
     fetchTickets,
     fetchResponses,
