@@ -65,7 +65,7 @@ const AppContent = () => {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="help" element={<HelpPage />} />
             
-            {/* Super Admin route */}
+            {/* Super Admin route - now properly defined */}
             <Route path="super-admin" element={<SuperAdminDashboard />} />
             
             {/* Admin routes */}
