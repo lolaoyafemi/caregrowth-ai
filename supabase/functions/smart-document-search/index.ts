@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -129,19 +128,19 @@ async function performSmartSearch(query: string, documents: DocumentContent[]): 
     console.log(`Document ${index + 1}: "${doc.title}" - ${doc.content.length} characters`);
   });
 
-  // Prepare document context with indexing for source tracking
+  // Prepare document context using actual document titles instead of generic numbering
   const documentContext = documents
-    .map((doc, index) => `Document ${index + 1} (${doc.title}):\nContent: ${doc.content.substring(0, 2000)}...`)
+    .map((doc) => `"${doc.title}":\nContent: ${doc.content.substring(0, 2000)}...`)
     .join('\n\n');
 
-  const prompt = `Based on the following documents, please answer the user's question. Be specific and reference which documents contain the relevant information. For each piece of information you use, please indicate which document number it came from.
+  const prompt = `Based on the following documents, please answer the user's question. Be specific and reference which documents contain the relevant information. For each piece of information you use, please indicate which document it came from by using the exact document title.
 
 DOCUMENTS:
 ${documentContext}
 
 QUESTION: ${query}
 
-Please provide a comprehensive answer based on the document content. If the answer isn't found in the documents, please say so. When referencing information, please mention the document number (e.g., "According to Document 1..." or "Document 2 states...").`;
+Please provide a comprehensive answer based on the document content. If the answer isn't found in the documents, please say so. When referencing information, please mention the document by its exact title (e.g., "According to '[Document Title]'..." or "'[Document Title]' states...").`;
 
   console.log(`Sending prompt to OpenAI with ${documentContext.length} characters of context`);
 
@@ -157,7 +156,7 @@ Please provide a comprehensive answer based on the document content. If the answ
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that analyzes documents and provides accurate answers based on their content. Always cite which documents you\'re referencing by their document number. When you reference specific information, try to include a relevant excerpt or quote.'
+            content: 'You are a helpful assistant that analyzes documents and provides accurate answers based on their content. Always cite which documents you\'re referencing by their exact document title. When you reference specific information, try to include a relevant excerpt or quote.'
           },
           {
             role: 'user',
@@ -181,28 +180,30 @@ Please provide a comprehensive answer based on the document content. If the answ
     console.log(`OpenAI response received. Tokens used: ${tokensUsed}`);
     console.log(`Answer preview: ${answer.substring(0, 200)}...`);
 
-    // Analyze the answer to determine which documents were actually referenced
+    // Analyze the answer to determine which documents were actually referenced by their titles
     const referencedDocuments: Set<number> = new Set();
-    const documentNumbers = /Document (\d+)/g;
-    let match;
     
-    while ((match = documentNumbers.exec(answer)) !== null) {
-      const docNum = parseInt(match[1]) - 1; // Convert to 0-based index
-      if (docNum >= 0 && docNum < documents.length) {
-        referencedDocuments.add(docNum);
+    // Check for document title mentions in the answer
+    documents.forEach((doc, index) => {
+      const titleInAnswer = answer.toLowerCase().includes(doc.title.toLowerCase()) || 
+                           answer.includes(`"${doc.title}"`) ||
+                           answer.includes(`'${doc.title}'`);
+      
+      if (titleInAnswer) {
+        console.log(`Document "${doc.title}" was referenced in the answer`);
+        referencedDocuments.add(index);
       }
-    }
+    });
 
     console.log(`Documents referenced in answer: ${Array.from(referencedDocuments).map(i => documents[i]?.title).join(', ')}`);
 
-    // If no specific documents were referenced, check for content relevance
+    // If no specific documents were referenced by title, check for content relevance
     if (referencedDocuments.size === 0) {
       const queryLower = query.toLowerCase();
       documents.forEach((doc, index) => {
-        const titleMatch = answer.toLowerCase().includes(doc.title.toLowerCase());
         const contentMatch = doc.content.toLowerCase().includes(queryLower);
         
-        if (titleMatch || contentMatch) {
+        if (contentMatch) {
           console.log(`Document "${doc.title}" appears to be relevant based on content analysis`);
           referencedDocuments.add(index);
         }
