@@ -10,9 +10,36 @@ import UsageAnalytics from '@/components/admin/UsageAnalytics';
 import OpenAIKeyManager from '@/components/admin/OpenAIKeyManager';
 import RealtimeActivity from '@/components/admin/RealtimeActivity';
 import SharedDocumentManager from '@/components/admin/SharedDocumentManager';
+import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const {
+    users,
+    agencies,
+    metrics,
+    loading,
+    suspendUser,
+    activateUser,
+    deleteUser,
+    addCreditsToUser,
+    refetch
+  } = useAdminData();
+
+  const handleUpdateCredits = async (userId: string, credits: number) => {
+    await addCreditsToUser(userId, credits);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading admin dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,7 +87,7 @@ const SuperAdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <SystemMetrics />
+            <SystemMetrics metrics={metrics} />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
@@ -72,17 +99,23 @@ const SuperAdminDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <UserManagementTable />
+                <UserManagementTable
+                  users={users}
+                  onSuspendUser={suspendUser}
+                  onActivateUser={activateUser}
+                  onDeleteUser={deleteUser}
+                  onAddCredits={addCreditsToUser}
+                />
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="credits" className="space-y-6">
-            <CreditManagement />
+            <CreditManagement onUpdateCredits={handleUpdateCredits} />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            <UsageAnalytics />
+            <UsageAnalytics metrics={metrics} />
           </TabsContent>
 
           <TabsContent value="knowledge" className="space-y-6">
