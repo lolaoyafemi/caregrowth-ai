@@ -27,13 +27,26 @@ export const deductCredits = async (
   description?: string
 ): Promise<CreditDeductionResult> => {
   try {
-    console.log('Deducting credits:', { userId, tool, creditsToUse, description });
+    console.log('=== CREDIT DEDUCTION START ===');
+    console.log('User ID:', userId);
+    console.log('Tool:', tool);
+    console.log('Credits to use:', creditsToUse);
+    console.log('Description:', description);
+
+    // Check current credits before deduction
+    const { data: currentCredits } = await supabase.rpc('get_active_credits', {
+      p_user_id: userId
+    });
+    console.log('Current active credits before deduction:', currentCredits);
 
     // Use the new FIFO credit deduction function
     const { data, error } = await supabase.rpc('deduct_credits_fifo', {
       p_user_id: userId,
       p_credits_to_deduct: creditsToUse
     });
+
+    console.log('deduct_credits_fifo response data:', data);
+    console.log('deduct_credits_fifo response error:', error);
 
     if (error) {
       console.error('Error deducting credits:', error);
@@ -54,6 +67,7 @@ export const deductCredits = async (
 
     // Now we can safely cast to our expected type using unknown first
     const response = data as unknown as DeductCreditsResponse;
+    console.log('Parsed response:', response);
 
     if (!('success' in response)) {
       console.error('Response missing success property:', response);
@@ -64,6 +78,7 @@ export const deductCredits = async (
     }
 
     if (!response.success) {
+      console.log('Credit deduction failed:', response.error);
       return {
         success: false,
         error: response.error,
@@ -88,6 +103,8 @@ export const deductCredits = async (
     if (logError) {
       console.error('Error logging credit usage:', logError);
       // Don't fail the operation if logging fails
+    } else {
+      console.log('Credit usage logged with ID:', logData?.id);
     }
 
     console.log('Credit deduction successful:', {
@@ -108,6 +125,8 @@ export const deductCredits = async (
         timestamp: new Date().toISOString()
       }
     });
+
+    console.log('=== CREDIT DEDUCTION END ===');
     
     return {
       success: true,

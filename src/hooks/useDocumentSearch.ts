@@ -37,8 +37,14 @@ export const useDocumentSearch = () => {
       return null;
     }
 
+    console.log('=== DOCUMENT SEARCH START ===');
+    console.log('User:', user.id);
+    console.log('Current credits:', credits);
+    console.log('Query:', query.substring(0, 100) + '...');
+
     // Check credits before proceeding (1 credit per search)
     if (credits < 1) {
+      console.log('Insufficient credits for Document Search');
       toast.error("You need at least 1 credit to use Document Search. Please purchase more credits to continue.", {
         duration: 5000,
         action: {
@@ -53,6 +59,7 @@ export const useDocumentSearch = () => {
     setError(null);
 
     try {
+      console.log('Making API call to document-search...');
       // First, make the API call to avoid deducting credits if the search fails
       const { data, error: functionError } = await supabase.functions.invoke('document-search', {
         body: {
@@ -60,6 +67,9 @@ export const useDocumentSearch = () => {
           userId: user.id
         }
       });
+
+      console.log('document-search response data:', data);
+      console.log('document-search response error:', functionError);
 
       if (functionError) {
         throw new Error(functionError.message);
@@ -69,6 +79,7 @@ export const useDocumentSearch = () => {
         throw new Error(data.error);
       }
 
+      console.log('API call successful, now deducting credits...');
       // Only deduct credits after successful search
       const deductionResult = await deductCredits(
         user.id, 
@@ -77,15 +88,19 @@ export const useDocumentSearch = () => {
         `Document search: ${query.substring(0, 50)}...`
       );
 
+      console.log('Deduction result:', deductionResult);
+
       if (!deductionResult.success) {
         handleCreditError(deductionResult);
         throw new Error('Failed to deduct credits');
       }
 
       // Refresh credits to reflect the deduction
+      console.log('Refreshing credits...');
       refetch();
       
       toast.success(`1 credit deducted. Remaining credits: ${deductionResult.remainingCredits}`);
+      console.log('=== DOCUMENT SEARCH END ===');
       return data as SearchResponse;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to search documents';
@@ -103,8 +118,14 @@ export const useDocumentSearch = () => {
       return null;
     }
 
+    console.log('=== SMART DOCUMENT SEARCH START ===');
+    console.log('User:', user.id);
+    console.log('Current credits:', credits);
+    console.log('Query:', query.substring(0, 100) + '...');
+
     // Check credits before proceeding (2 credits for smart search)
     if (credits < 2) {
+      console.log('Insufficient credits for Smart Document Search');
       toast.error("You need at least 2 credits to use Smart Document Search. Please purchase more credits to continue.", {
         duration: 5000,
         action: {
@@ -119,6 +140,7 @@ export const useDocumentSearch = () => {
     setError(null);
 
     try {
+      console.log('Making API call to smart-document-search...');
       // First, make the API call to avoid deducting credits if the search fails
       const { data, error: functionError } = await supabase.functions.invoke('smart-document-search', {
         body: {
@@ -126,6 +148,9 @@ export const useDocumentSearch = () => {
           userId: user.id
         }
       });
+
+      console.log('smart-document-search response data:', data);
+      console.log('smart-document-search response error:', functionError);
 
       if (functionError) {
         throw new Error(functionError.message);
@@ -135,6 +160,7 @@ export const useDocumentSearch = () => {
         throw new Error(data.error);
       }
 
+      console.log('API call successful, now deducting credits...');
       // Only deduct credits after successful search
       const deductionResult = await deductCredits(
         user.id, 
@@ -143,15 +169,19 @@ export const useDocumentSearch = () => {
         `Smart document search: ${query.substring(0, 50)}...`
       );
 
+      console.log('Deduction result:', deductionResult);
+
       if (!deductionResult.success) {
         handleCreditError(deductionResult);
         throw new Error('Failed to deduct credits');
       }
 
       // Refresh credits to reflect the deduction
+      console.log('Refreshing credits...');
       refetch();
       
       toast.success(`2 credits deducted. Remaining credits: ${deductionResult.remainingCredits}`);
+      console.log('=== SMART DOCUMENT SEARCH END ===');
       return data as SmartSearchResult;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to perform smart search';
