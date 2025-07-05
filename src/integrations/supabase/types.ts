@@ -496,6 +496,80 @@ export type Database = {
           },
         ]
       }
+      support_responses: {
+        Row: {
+          admin_email: string | null
+          admin_id: string | null
+          created_at: string | null
+          id: string
+          response_text: string
+          ticket_id: string | null
+        }
+        Insert: {
+          admin_email?: string | null
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          response_text: string
+          ticket_id?: string | null
+        }
+        Update: {
+          admin_email?: string | null
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          response_text?: string
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_responses_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          created_at: string | null
+          id: string
+          priority: string
+          question: string
+          status: string
+          subject: string
+          updated_at: string | null
+          user_email: string
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          priority?: string
+          question: string
+          status?: string
+          subject: string
+          updated_at?: string | null
+          user_email: string
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          priority?: string
+          question?: string
+          status?: string
+          subject?: string
+          updated_at?: string | null
+          user_email?: string
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           audience_problem: string | null

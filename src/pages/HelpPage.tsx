@@ -22,54 +22,18 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Shield, MessageSquare, User, Calendar, Send, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-// Mock support tickets data
-const mockSupportTickets = [
-  {
-    id: 1,
-    user: 'john@example.com',
-    userRole: 'agency_admin',
-    subject: 'How to add team members?',
-    question: 'I\'m having trouble adding new team members to my agency. The invite button doesn\'t seem to work.',
-    status: 'open',
-    createdAt: '2024-01-15',
-    priority: 'medium'
-  },
-  {
-    id: 2,
-    user: 'sarah@careagency.com',
-    userRole: 'admin',
-    subject: 'Social Media tool not generating content',
-    question: 'When I try to generate social media posts, I get an error message. This has been happening for the past 2 days.',
-    status: 'pending',
-    createdAt: '2024-01-14',
-    priority: 'high'
-  },
-  {
-    id: 3,
-    user: 'mike@homecare.com',
-    userRole: 'content_writer',
-    subject: 'API usage tracking question',
-    question: 'Where can I see how many API calls I\'ve used this month?',
-    status: 'resolved',
-    createdAt: '2024-01-13',
-    priority: 'low'
-  },
-  {
-    id: 4,
-    user: 'lisa@wellness.com',
-    userRole: 'collaborator',
-    subject: 'Document search not finding files',
-    question: 'I uploaded several documents but they don\'t appear in search results. Are there specific file formats required?',
-    status: 'open',
-    createdAt: '2024-01-12',
-    priority: 'medium'
-  }
-];
+import { useSupportTickets, SupportTicket } from '@/hooks/useSupportTickets';
+import { format } from 'date-fns';
 
 const SuperAdminSupportDashboard = () => {
-  const [selectedTicket, setSelectedTicket] = useState<number | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [response, setResponse] = useState('');
+  const { 
+    tickets, 
+    loading, 
+    updateTicketStatus, 
+    createResponse 
+  } = useSupportTickets();
   const { toast } = useToast();
 
   const getStatusBadge = (status: string) => {
@@ -94,15 +58,31 @@ const SuperAdminSupportDashboard = () => {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const handleSendResponse = () => {
-    console.log('Sending response for ticket:', selectedTicket, 'Response:', response);
-    toast({
-      title: "Response Sent",
-      description: "Your response has been sent to the user successfully.",
-    });
-    setResponse('');
-    setSelectedTicket(null);
+  const handleSendResponse = async () => {
+    if (!selectedTicket || !response.trim()) return;
+    
+    const success = await createResponse(selectedTicket, response);
+    if (success) {
+      setResponse('');
+      setSelectedTicket(null);
+    }
   };
+
+  const handleStatusChange = async (ticketId: string, newStatus: 'open' | 'pending' | 'resolved') => {
+    await updateTicketStatus(ticketId, newStatus);
+  };
+
+  const selectedTicketData = tickets.find(t => t.id === selectedTicket);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6 bg-green-50/30">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-700"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 bg-green-50/30">
@@ -118,60 +98,78 @@ const SuperAdminSupportDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare size={20} />
-                Support Tickets
+                Support Tickets ({tickets.length})
               </CardTitle>
               <CardDescription>
                 Manage and respond to user support requests
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockSupportTickets.map((ticket) => (
-                    <TableRow key={ticket.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User size={16} className="text-gray-500" />
-                          <div>
-                            <div className="font-medium">{ticket.user}</div>
-                            <div className="text-sm text-gray-500">{ticket.userRole}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-xs">
-                        <div className="truncate">{ticket.subject}</div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                      <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Calendar size={14} className="text-gray-500" />
-                          {ticket.createdAt}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => setSelectedTicket(ticket.id)}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
+              {tickets.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No support tickets found
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {tickets.map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <User size={16} className="text-gray-500" />
+                            <div>
+                              <div className="font-medium">{ticket.user_email}</div>
+                              <div className="text-sm text-gray-500">{ticket.user_role || 'user'}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          <div className="truncate">{ticket.subject}</div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                        <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Calendar size={14} className="text-gray-500" />
+                            {format(new Date(ticket.created_at), 'MMM dd, yyyy')}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => setSelectedTicket(ticket.id)}
+                            >
+                              View
+                            </Button>
+                            {ticket.status !== 'resolved' && (
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => handleStatusChange(ticket.id, 'resolved')}
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                Resolve
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -186,50 +184,50 @@ const SuperAdminSupportDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {selectedTicket ? (
+              {selectedTicketData ? (
                 <div className="space-y-4">
-                  {(() => {
-                    const ticket = mockSupportTickets.find(t => t.id === selectedTicket);
-                    if (!ticket) return null;
-                    
-                    return (
-                      <>
-                        <div>
-                          <h4 className="font-medium mb-2">Question/Issue:</h4>
-                          <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
-                            {ticket.question}
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Response:</label>
-                          <Textarea
-                            placeholder="Type your response here..."
-                            value={response}
-                            onChange={(e) => setResponse(e.target.value)}
-                            className="min-h-[100px]"
-                          />
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button 
-                            onClick={handleSendResponse}
-                            disabled={!response.trim()}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <Send size={16} className="mr-2" />
-                            Send Response
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setSelectedTicket(null)}
-                          >
-                            Close
-                          </Button>
-                        </div>
-                      </>
-                    );
-                  })()}
+                  <div>
+                    <h4 className="font-medium mb-2">Question/Issue:</h4>
+                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
+                      {selectedTicketData.question}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Status: {getStatusBadge(selectedTicketData.status)}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Priority: {getPriorityBadge(selectedTicketData.priority)}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Response:</label>
+                    <Textarea
+                      placeholder="Type your response here..."
+                      value={response}
+                      onChange={(e) => setResponse(e.target.value)}
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSendResponse}
+                      disabled={!response.trim()}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Send size={16} className="mr-2" />
+                      Send Response
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setSelectedTicket(null)}
+                    >
+                      Close
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-8">
@@ -248,48 +246,29 @@ const RegularUserHelpPage = () => {
   const [subject, setSubject] = useState('');
   const [question, setQuestion] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const { createTicket } = useSupportTickets();
   const { user } = useUser();
 
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!subject.trim() || !question.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in both subject and question fields.",
-        variant: "destructive"
-      });
       return;
     }
 
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create mailto link for now
-      const emailSubject = `CareGrowthAI Support: ${subject}`;
-      const emailBody = `User: ${user?.email || 'Unknown'}\nRole: ${user?.role || 'Unknown'}\n\nQuestion:\n${question}`;
-      const mailtoLink = `mailto:admin@caregrowth.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      
-      window.open(mailtoLink, '_blank');
-      
-      toast({
-        title: "Question Submitted",
-        description: "Your support request has been submitted. We'll get back to you soon!",
+      await createTicket({
+        subject: subject.trim(),
+        question: question.trim()
       });
       
-      // Reset form
+      // Reset form on success
       setSubject('');
       setQuestion('');
     } catch (error) {
-      toast({
-        title: "Submission Failed",
-        description: "There was an error submitting your question. Please try again.",
-        variant: "destructive"
-      });
+      // Error is already handled in the hook
     } finally {
       setIsSubmitting(false);
     }
@@ -365,7 +344,7 @@ const RegularUserHelpPage = () => {
             <CardHeader>
               <CardTitle>Ask a Question</CardTitle>
               <CardDescription>
-                Can't find what you're looking for? Ask us directly.
+                Can't find what you're looking for? Submit a support ticket.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -376,12 +355,14 @@ const RegularUserHelpPage = () => {
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     className="mb-2" 
+                    required
                   />
                   <Textarea 
                     className="min-h-[120px]" 
                     placeholder="Describe your question or issue..."
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
+                    required
                   />
                 </div>
                 <Button 
@@ -397,7 +378,7 @@ const RegularUserHelpPage = () => {
                   ) : (
                     <>
                       <Send size={16} className="mr-2" />
-                      Submit Question
+                      Submit Ticket
                     </>
                   )}
                 </Button>
