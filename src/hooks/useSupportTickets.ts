@@ -44,7 +44,9 @@ export const useSupportTickets = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTickets(data || []);
+      
+      // Type cast the data to ensure proper typing
+      setTickets((data || []) as SupportTicket[]);
     } catch (error) {
       console.error('Error fetching support tickets:', error);
       toast({
@@ -66,7 +68,7 @@ export const useSupportTickets = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as SupportResponse[];
     } catch (error) {
       console.error('Error fetching responses:', error);
       return [];
@@ -100,7 +102,7 @@ export const useSupportTickets = () => {
       });
 
       await fetchTickets();
-      return data;
+      return data as SupportTicket;
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast({
