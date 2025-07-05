@@ -8,9 +8,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Check environment variables at startup
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+
+console.log('=== Environment Check ===');
+console.log('SUPABASE_URL:', supabaseUrl ? 'Set' : 'Missing');
+console.log('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'Set' : 'Missing');
+console.log('OPENAI_API_KEY:', openAIApiKey ? 'Set' : 'Missing');
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('CRITICAL: Missing required environment variables');
+}
 
 interface DocumentChunk {
   content: string;
@@ -118,18 +128,51 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
 }
 
 serve(async (req) => {
+  console.log('=== NEW REQUEST RECEIVED ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     console.log('=== Starting document processing ===');
     
+    // Validate environment variables first
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase configuration');
+      return new Response(JSON.stringify({ 
+        error: 'Server configuration error - missing Supabase config',
+        details: 'SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not configured'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Parse request body
     let requestBody;
     try {
-      requestBody = await req.json();
-      console.log('Request body parsed successfully:', { documentId: requestBody.documentId, filePath: requestBody.filePath });
+      const bodyText = await req.text();
+      console.log('Raw request body length:', bodyText.length);
+      
+      if (!bodyText) {
+        console.error('Empty request body');
+        return new Response(JSON.stringify({ 
+          error: 'Empty request body' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      requestBody = JSON.parse(bodyText);
+      console.log('Request body parsed successfully:', { 
+        documentId: requestBody.documentId, 
+        filePath: requestBody.filePath 
+      });
     } catch (error) {
       console.error('Error parsing request body:', error);
       return new Response(JSON.stringify({ 
@@ -149,17 +192,6 @@ serve(async (req) => {
         error: 'Document ID and file path are required' 
       }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Validate environment variables
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing Supabase configuration');
-      return new Response(JSON.stringify({ 
-        error: 'Server configuration error - missing Supabase config' 
-      }), {
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -246,7 +278,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('File downloaded successfully');
+    console.log('File downloaded successfully, size:', fileData.size);
 
     // Extract text content
     console.log('=== Starting text extraction ===');
