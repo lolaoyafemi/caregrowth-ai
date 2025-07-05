@@ -84,7 +84,7 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
     });
 
     if (!response.ok) {
-      console.error('OpenAI API error:', response.status);
+      console.error('OpenAI API error:', response.status, await response.text());
       return null;
     }
 
@@ -102,12 +102,27 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Processing shared document...');
+    console.log('Processing shared document request...');
     
-    const requestBody = await req.json();
+    // Parse request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON in request body' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     const { documentId, filePath } = requestBody;
+    console.log('Request data:', { documentId, filePath });
     
     if (!documentId || !filePath) {
+      console.error('Missing required parameters:', { documentId, filePath });
       return new Response(JSON.stringify({ 
         error: 'Document ID and file path are required' 
       }), {
@@ -116,17 +131,40 @@ serve(async (req) => {
       });
     }
 
+    // Validate environment variables
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase configuration');
+      return new Response(JSON.stringify({ 
+        error: 'Server configuration error' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get document details
+    console.log('Fetching document details...');
     const { data: document, error: docError } = await supabase
       .from('shared_documents')
       .select('*')
       .eq('id', documentId)
       .single();
 
-    if (docError || !document) {
+    if (docError) {
       console.error('Error fetching document:', docError);
+      return new Response(JSON.stringify({ 
+        error: 'Document not found',
+        details: docError.message
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!document) {
+      console.error('Document not found');
       return new Response(JSON.stringify({ 
         error: 'Document not found' 
       }), {
@@ -135,18 +173,22 @@ serve(async (req) => {
       });
     }
 
+    console.log('Document found:', document.file_name);
+
     // Update processing status
+    console.log('Updating processing status...');
     await supabase
       .from('shared_documents')
       .update({ processing_status: 'processing' })
       .eq('id', documentId);
 
     // Download file from storage
+    console.log('Downloading file from storage...');
     const { data: fileData, error: fileError } = await supabase.storage
       .from('shared-knowledge')
       .download(filePath);
 
-    if (fileError || !fileData) {
+    if (fileError) {
       console.error('Error downloading file:', fileError);
       await supabase
         .from('shared_documents')
@@ -154,26 +196,46 @@ serve(async (req) => {
         .eq('id', documentId);
       
       return new Response(JSON.stringify({ 
-        error: 'Failed to download file' 
+        error: 'Failed to download file',
+        details: fileError.message
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Extract text content
-    const fileBuffer = await fileData.arrayBuffer();
-    const extractedText = await extractTextFromFile(fileBuffer, document.mime_type || 'text/plain', document.file_name);
-    
-    if (!extractedText || extractedText.length < 100) {
-      console.error('Insufficient text content extracted');
+    if (!fileData) {
+      console.error('No file data received');
       await supabase
         .from('shared_documents')
         .update({ processing_status: 'error' })
         .eq('id', documentId);
       
       return new Response(JSON.stringify({ 
-        error: 'Insufficient text content extracted from document' 
+        error: 'Failed to download file - no data received' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('File downloaded successfully');
+
+    // Extract text content
+    console.log('Extracting text content...');
+    const fileBuffer = await fileData.arrayBuffer();
+    const extractedText = await extractTextFromFile(fileBuffer, document.mime_type || 'text/plain', document.file_name);
+    
+    if (!extractedText || extractedText.length < 100) {
+      console.error('Insufficient text content extracted:', extractedText?.length || 0);
+      await supabase
+        .from('shared_documents')
+        .update({ processing_status: 'error' })
+        .eq('id', documentId);
+      
+      return new Response(JSON.stringify({ 
+        error: 'Insufficient text content extracted from document',
+        extractedLength: extractedText?.length || 0
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -183,13 +245,38 @@ serve(async (req) => {
     console.log(`Extracted ${extractedText.length} characters from ${document.file_name}`);
 
     // Create chunks
+    console.log('Creating text chunks...');
     const chunks = chunkText(extractedText);
     console.log(`Created ${chunks.length} chunks`);
 
+    if (chunks.length === 0) {
+      console.error('No valid chunks created');
+      await supabase
+        .from('shared_documents')
+        .update({ processing_status: 'error' })
+        .eq('id', documentId);
+      
+      return new Response(JSON.stringify({ 
+        error: 'No valid chunks could be created from document' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Generate embeddings and store chunks
+    console.log('Processing chunks and generating embeddings...');
     let successfulChunks = 0;
+    let embeddingErrors = 0;
+
     for (const chunk of chunks) {
+      console.log(`Processing chunk ${chunk.chunk_index + 1}/${chunks.length}`);
+      
       const embedding = await generateEmbedding(chunk.content);
+      if (!embedding) {
+        embeddingErrors++;
+        console.warn(`Failed to generate embedding for chunk ${chunk.chunk_index}`);
+      }
       
       const { error: chunkError } = await supabase
         .from('document_chunks')
@@ -208,6 +295,8 @@ serve(async (req) => {
       }
     }
 
+    console.log(`Processed chunks: ${successfulChunks}/${chunks.length} successful, ${embeddingErrors} embedding errors`);
+
     // Update document status
     const finalStatus = successfulChunks > 0 ? 'completed' : 'error';
     await supabase
@@ -219,21 +308,25 @@ serve(async (req) => {
       })
       .eq('id', documentId);
 
-    console.log(`Processing completed: ${successfulChunks}/${chunks.length} chunks stored`);
+    console.log(`Processing completed with status: ${finalStatus}`);
 
     return new Response(JSON.stringify({ 
       success: true,
       chunksProcessed: successfulChunks,
       totalChunks: chunks.length,
-      textLength: extractedText.length
+      textLength: extractedText.length,
+      embeddingErrors: embeddingErrors,
+      status: finalStatus
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error processing shared document:', error);
+    console.error('Unexpected error processing shared document:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'An error occurred processing the document'
+      error: 'An unexpected error occurred processing the document',
+      details: error.message,
+      stack: error.stack
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
