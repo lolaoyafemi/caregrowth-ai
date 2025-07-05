@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,6 +90,8 @@ const fetchDocumentContent = async (docUrl: string): Promise<string | null> => {
 export const useGoogleDocuments = () => {
   const [documents, setDocuments] = useState<GoogleDoc[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const { user } = useAuth();
 
   const fetchDocuments = async () => {
@@ -113,6 +116,7 @@ export const useGoogleDocuments = () => {
   const addDocument = async (docLink: string, docTitle?: string) => {
     if (!user) return;
 
+    setIsAdding(true);
     try {
       // First, try to fetch the document content
       console.log('Fetching document content for:', docLink);
@@ -174,30 +178,56 @@ export const useGoogleDocuments = () => {
       console.error('Error adding document:', error);
       toast.error('Failed to add document');
       throw error;
+    } finally {
+      setIsAdding(false);
     }
   };
 
   const deleteDocument = async (id: string) => {
+    if (deletingIds.has(id)) return; // Prevent multiple deletions
+
+    setDeletingIds(prev => new Set(prev).add(id));
     try {
-      console.log('Deleting document:', id);
+      console.log('Deleting document and its chunks:', id);
       
-      const { error } = await supabase
+      // First delete all chunks associated with this document
+      const { error: chunksError } = await supabase
+        .from('document_chunks')
+        .delete()
+        .eq('document_id', id);
+
+      if (chunksError) {
+        console.error('Error deleting document chunks:', chunksError);
+        toast.error('Failed to remove document chunks');
+        return;
+      }
+
+      console.log('Document chunks deleted successfully');
+
+      // Then delete the document itself
+      const { error: docError } = await supabase
         .from('google_documents')
         .delete()
         .eq('id', id);
 
-      if (error) {
-        console.error('Error deleting document:', error);
+      if (docError) {
+        console.error('Error deleting document:', docError);
         toast.error('Failed to remove document');
         return;
       }
       
       console.log('Document deleted successfully');
       setDocuments(prev => prev.filter(doc => doc.id !== id));
-      toast.success('Document removed successfully');
+      toast.success('Document and all its chunks removed successfully');
     } catch (error) {
       console.error('Error during document deletion:', error);
       toast.error('Failed to remove document');
+    } finally {
+      setDeletingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
   };
 
@@ -210,6 +240,8 @@ export const useGoogleDocuments = () => {
   return {
     documents,
     loading,
+    isAdding,
+    deletingIds,
     addDocument,
     deleteDocument,
     refetch: fetchDocuments
