@@ -26,16 +26,46 @@ export class DatabaseService {
     return userDocs || [];
   }
 
+  async getSharedDocuments() {
+    const { data: sharedDocs, error: sharedError } = await this.supabase
+      .from('shared_documents')
+      .select('id, doc_title, document_category, training_priority')
+      .eq('fetched', true)
+      .eq('processing_status', 'completed')
+      .order('training_priority', { ascending: false });
+
+    if (sharedError) {
+      console.error('Error fetching shared documents:', sharedError);
+      return [];
+    }
+
+    return sharedDocs || [];
+  }
+
   async getDocumentChunks(documentIds: string[]): Promise<DocumentChunk[]> {
     if (documentIds.length === 0) return [];
 
     const { data: chunksData, error: chunksError } = await this.supabase
       .from('document_chunks')
-      .select('content, document_id, embedding, chunk_index')
+      .select('content, document_id, embedding, chunk_index, is_shared')
       .in('document_id', documentIds);
 
     if (chunksError) {
       console.error('Error fetching document chunks:', chunksError);
+      return [];
+    }
+
+    return chunksData || [];
+  }
+
+  async getSharedDocumentChunks(): Promise<DocumentChunk[]> {
+    const { data: chunksData, error: chunksError } = await this.supabase
+      .from('document_chunks')
+      .select('content, document_id, embedding, chunk_index, is_shared')
+      .eq('is_shared', true);
+
+    if (chunksError) {
+      console.error('Error fetching shared document chunks:', chunksError);
       return [];
     }
 

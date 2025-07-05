@@ -152,6 +152,7 @@ export type Database = {
           document_id: string | null
           embedding: string | null
           id: string
+          is_shared: boolean | null
         }
         Insert: {
           chunk_index?: number | null
@@ -160,6 +161,7 @@ export type Database = {
           document_id?: string | null
           embedding?: string | null
           id?: string
+          is_shared?: boolean | null
         }
         Update: {
           chunk_index?: number | null
@@ -168,6 +170,7 @@ export type Database = {
           document_id?: string | null
           embedding?: string | null
           id?: string
+          is_shared?: boolean | null
         }
         Relationships: [
           {
@@ -415,6 +418,54 @@ export type Database = {
           tone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      shared_documents: {
+        Row: {
+          created_at: string
+          doc_title: string | null
+          document_category: string | null
+          fetched: boolean
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          processing_status: string | null
+          training_priority: number | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          doc_title?: string | null
+          document_category?: string | null
+          fetched?: boolean
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          processing_status?: string | null
+          training_priority?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          doc_title?: string | null
+          document_category?: string | null
+          fetched?: boolean
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          processing_status?: string | null
+          training_priority?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
         }
         Relationships: []
       }

@@ -74,25 +74,49 @@ serve(async (req) => {
     const userDocIds = userDocs.map(doc => doc.id);
     console.log('Found user documents:', userDocIds.length);
 
+    // Step 4: Get shared documents and chunks
+    console.log('Fetching shared documents and chunks...');
+    const sharedDocs = await databaseService.getSharedDocuments();
+    const sharedDocIds = sharedDocs.map(doc => doc.id);
+    console.log('Found shared documents:', sharedDocIds.length);
+
     let relevantChunks: any[] = [];
     let allChunks: any[] = [];
 
+    // Get user document chunks
     if (userDocIds.length > 0) {
-      allChunks = await databaseService.getDocumentChunks(userDocIds);
-      console.log('Retrieved chunks:', {
-        totalChunks: allChunks.length,
-        chunksWithEmbeddings: allChunks.filter(c => c.embedding).length,
-        averageContentLength: allChunks.length > 0 
-          ? Math.round(allChunks.reduce((sum, c) => sum + (c.content?.length || 0), 0) / allChunks.length)
-          : 0
-      });
+      const userChunks = await databaseService.getDocumentChunks(userDocIds);
+      allChunks = [...allChunks, ...userChunks];
+      console.log('Retrieved user chunks:', userChunks.length);
+    }
 
+    // Get shared document chunks
+    const sharedChunks = await databaseService.getSharedDocumentChunks();
+    allChunks = [...allChunks, ...sharedChunks];
+    console.log('Retrieved shared chunks:', sharedChunks.length);
+
+    console.log('Total chunks available:', {
+      totalChunks: allChunks.length,
+      userChunks: allChunks.filter(c => !c.is_shared).length,
+      sharedChunks: allChunks.filter(c => c.is_shared).length,
+      chunksWithEmbeddings: allChunks.filter(c => c.embedding).length,
+      averageContentLength: allChunks.length > 0 
+        ? Math.round(allChunks.reduce((sum, c) => sum + (c.content?.length || 0), 0) / allChunks.length)
+        : 0
+    });
+
+    if (allChunks.length > 0) {
       // Find relevant chunks using enhanced search
       relevantChunks = await searchService.findRelevantChunks(questionEmbedding, allChunks, question);
       console.log(`Selected ${relevantChunks.length} relevant chunks from ${allChunks.length} total`);
+      
+      // Log source breakdown
+      const userSourceChunks = relevantChunks.filter(c => !c.is_shared).length;
+      const sharedSourceChunks = relevantChunks.filter(c => c.is_shared).length;
+      console.log(`Source breakdown: ${userSourceChunks} user chunks, ${sharedSourceChunks} shared chunks`);
     }
 
-    // Step 4: Generate answer using enhanced context with conversation history
+    // Step 5: Generate answer using enhanced context with conversation history
     console.log('Generating enhanced answer with conversation context...');
     let answer = "I apologize, but I'm having trouble generating a response right now. Please try again in a moment.";
     let tokensUsed = 0;
@@ -106,11 +130,11 @@ serve(async (req) => {
       console.error('Error generating answer:', error);
     }
 
-    // Step 5: Categorize the response
+    // Step 6: Categorize the response
     console.log('Categorizing the response...');
     const category = await answerGenerator.categorizeResponse(question, answer);
 
-    // Step 6: Log the Q&A interaction
+    // Step 7: Log the Q&A interaction
     await databaseService.logQAInteraction(
       userId, 
       question, 
@@ -126,9 +150,13 @@ serve(async (req) => {
       category,
       sources: relevantChunks.length,
       debug: {
-        documentsFound: userDocIds.length,
+        documentsFound: userDocIds.length + sharedDocIds.length,
+        userDocuments: userDocIds.length,
+        sharedDocuments: sharedDocIds.length,
         chunksFound: allChunks.length,
         relevantChunks: relevantChunks.length,
+        userSourceChunks: relevantChunks.filter(c => !c.is_shared).length,
+        sharedSourceChunks: relevantChunks.filter(c => c.is_shared).length,
         searchMethod: relevantChunks[0]?.searchMethod || 'none',
         tokensUsed: tokensUsed,
         hasEmbedding: !!questionEmbedding
