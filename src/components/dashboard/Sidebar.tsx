@@ -15,7 +15,8 @@ import {
   Shield,
   Coins,
   ChevronRight,
-  Zap
+  Zap,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '../../contexts/UserContext';
@@ -290,6 +291,20 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               >
                 <Shield size={20} />
                 {!collapsed && <span>Credit Management</span>}
+              </NavLink>
+
+              <NavLink
+                to="/dashboard/knowledge"
+                className={({ isActive }) => cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+                  isActive 
+                    ? "bg-green-100 text-green-800" 
+                    : "text-gray-700 hover:bg-gray-100",
+                  collapsed && "justify-center"
+                )}
+              >
+                <BookOpen size={20} />
+                {!collapsed && <span>Knowledge Base</span>}
               </NavLink>
               
               <NavLink

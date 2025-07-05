@@ -19,6 +19,7 @@ import UsageMonitoringPage from './pages/admin/UsageMonitoringPage';
 import SuperAdminDashboard from './pages/admin/SuperAdminDashboard';
 import TeamManagementPage from './pages/agency/TeamManagementPage';
 import AgencyUsagePage from './pages/agency/AgencyUsagePage';
+import KnowledgePage from './pages/KnowledgePage';
 import LoginPage from './pages/LoginPage';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -64,6 +65,7 @@ const AppContent = () => {
             <Route path="prompts" element={<PromptsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="help" element={<HelpPage />} />
+            <Route path="knowledge" element={<KnowledgePage />} />
             
             {/* Super Admin route - now properly defined */}
             <Route path="super-admin" element={<SuperAdminDashboard />} />
