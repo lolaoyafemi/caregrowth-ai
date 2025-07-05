@@ -172,15 +172,7 @@ export type Database = {
           id?: string
           is_shared?: boolean | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "document_chunks_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "google_documents"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       google_documents: {
         Row: {
