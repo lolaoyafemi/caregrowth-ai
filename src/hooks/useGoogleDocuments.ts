@@ -128,7 +128,7 @@ export const useGoogleDocuments = () => {
       // Use provided title or generate a fallback name
       const finalTitle = docTitle || generateDocumentName(docLink);
 
-      // Save document to database first (without fetched=true yet)
+      // Save document to database first
       const { data, error } = await supabase
         .from('google_documents')
         .insert({
@@ -144,68 +144,30 @@ export const useGoogleDocuments = () => {
       
       console.log('Document saved to database:', data.id);
 
-      // Process the document content into chunks
-      const chunks = [];
-      const chunkSize = 1000;
-      const words = content.split(/\s+/);
-      
-      for (let i = 0; i < words.length; i += chunkSize) {
-        const chunk = words.slice(i, i + chunkSize).join(' ');
-        chunks.push({
-          document_id: data.id,
-          content: chunk,
-          chunk_index: Math.floor(i / chunkSize)
-        });
-      }
-
-      console.log('Created chunks:', chunks.length);
-
-      // Save chunks to database
-      if (chunks.length > 0) {
-        const { error: chunksError } = await supabase
-          .from('document_chunks')
-          .insert(chunks);
-
-        if (chunksError) {
-          console.error('Error saving document chunks:', chunksError);
-          throw chunksError;
-        }
-        
-        console.log('Document chunks saved successfully');
-      }
-
-      // Update document as fetched after chunks are created
-      const { error: updateError } = await supabase
-        .from('google_documents')
-        .update({ fetched: true })
-        .eq('id', data.id);
-
-      if (updateError) {
-        console.error('Error updating fetched status:', updateError);
-      } else {
-        console.log('Document marked as fetched');
-      }
-
-      // Call the process-document function for title extraction only
+      // Call the process-document function to handle both chunking and embedding generation
       try {
         const { error: processError } = await supabase.functions.invoke('process-document', {
           body: {
             documentId: data.id,
             content: content,
-            skipChunking: true // Tell the function we already created chunks
+            skipChunking: false // Let the function handle chunking and embeddings
           }
         });
 
         if (processError) {
           console.error('Error in process-document function:', processError);
+          throw processError;
         }
+        
+        console.log('Document processed successfully with embeddings');
       } catch (processError) {
         console.error('Error calling process-document function:', processError);
+        throw processError;
       }
       
       // Refresh the documents list to show the updated document
       await fetchDocuments();
-      toast.success(`Document processed successfully! Created ${chunks.length} searchable chunks.`);
+      toast.success(`Document processed successfully with embeddings generated!`);
 
       return data;
     } catch (error) {

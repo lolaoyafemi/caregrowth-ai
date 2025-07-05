@@ -7,6 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+
 // Function to extract document title from content
 function extractDocumentTitle(content: string): string | null {
   // Try to find title patterns in the content
@@ -28,6 +30,44 @@ function extractDocumentTitle(content: string): string | null {
   }
   
   return firstLine;
+}
+
+// Function to generate embeddings using OpenAI
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  if (!openAIApiKey) {
+    console.error('OpenAI API key not configured');
+    return null;
+  }
+
+  try {
+    console.log('Generating embedding for text of length:', text.length);
+    
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: text,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Embedding API error:', response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    const embedding = data.data[0].embedding;
+    console.log('Generated embedding, vector length:', embedding.length);
+    return embedding;
+  } catch (error) {
+    console.error('Error generating embedding:', error);
+    return null;
+  }
 }
 
 serve(async (req) => {
@@ -72,6 +112,8 @@ serve(async (req) => {
       }
     }
 
+    let chunksCreated = 0;
+
     // Only create chunks if skipChunking is not true
     if (!skipChunking) {
       // Process the document content into chunks for search
@@ -81,16 +123,23 @@ serve(async (req) => {
       
       for (let i = 0; i < words.length; i += chunkSize) {
         const chunk = words.slice(i, i + chunkSize).join(' ');
+        
+        // Generate embedding for this chunk
+        console.log(`Generating embedding for chunk ${Math.floor(i / chunkSize) + 1}`);
+        const embedding = await generateEmbedding(chunk);
+        
         chunks.push({
           document_id: documentId,
           content: chunk,
-          chunk_index: Math.floor(i / chunkSize)
+          chunk_index: Math.floor(i / chunkSize),
+          embedding: embedding ? JSON.stringify(embedding) : null
         });
       }
 
-      console.log('Created chunks:', chunks.length);
+      console.log('Created chunks with embeddings:', chunks.length);
+      chunksCreated = chunks.length;
 
-      // Save chunks to database
+      // Save chunks to database with embeddings
       if (chunks.length > 0) {
         const { error: chunksError } = await supabaseClient
           .from('document_chunks')
@@ -100,6 +149,8 @@ serve(async (req) => {
           console.error('Error saving document chunks:', chunksError);
           throw chunksError;
         }
+        
+        console.log('Document chunks with embeddings saved successfully');
       }
 
       // Mark document as processed
@@ -117,9 +168,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        chunksCreated: skipChunking ? 0 : undefined,
+        chunksCreated: chunksCreated,
         titleExtracted: extractedTitle,
-        skippedChunking: skipChunking 
+        skippedChunking: skipChunking,
+        embeddingsGenerated: !skipChunking ? chunksCreated : 0
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

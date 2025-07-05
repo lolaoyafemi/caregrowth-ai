@@ -580,7 +580,7 @@ export type Database = {
         Returns: Json
       }
       expire_old_credits: {
-        Args: Record<PropertyKey, never> | { p_user_id: string }
+        Args: { p_user_id: string }
         Returns: number
       }
       get_active_credits: {
