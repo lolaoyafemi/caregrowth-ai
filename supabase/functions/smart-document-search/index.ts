@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -317,12 +316,13 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user's documents - remove the fetched filter to include all documents
+    // Get user's documents - include all documents for search
     console.log('Fetching user documents from database...');
     const { data: userDocs, error: docsError } = await supabase
       .from('google_documents')
       .select('id, doc_title, doc_link')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
     if (docsError) {
       console.error('Error fetching user documents:', docsError);
@@ -350,11 +350,11 @@ serve(async (req) => {
       });
     }
 
-    // Fetch document contents
+    // Fetch document contents - increased limit to 10 documents
     console.log('Fetching document contents...');
     const documentContents: DocumentContent[] = [];
     
-    for (const doc of documents.slice(0, 5)) { // Limit to 5 docs to avoid token limits
+    for (const doc of documents.slice(0, 10)) { // Increased limit to 10 docs
       const content = await fetchDocumentContent(doc.doc_link, doc.doc_title || 'Untitled Document');
       if (content) {
         documentContents.push(content);
@@ -364,7 +364,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Successfully fetched content from ${documentContents.length} out of ${Math.min(documents.length, 5)} documents`);
+    console.log(`Successfully fetched content from ${documentContents.length} out of ${Math.min(documents.length, 10)} documents`);
 
     if (documentContents.length === 0) {
       return new Response(JSON.stringify({ 
