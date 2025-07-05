@@ -45,6 +45,17 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
     }).format(amount / 100);
   };
 
+  // Calculate percentage change for requests/min (mock calculation for demo)
+  const calculateRequestsChange = () => {
+    const currentHourRequests = analyticsData.requestsTrend.slice(-1)[0]?.requests || 0;
+    const previousHourRequests = analyticsData.requestsTrend.slice(-2)[0]?.requests || 0;
+    
+    if (previousHourRequests === 0) return '+0%';
+    
+    const change = ((currentHourRequests - previousHourRequests) / previousHourRequests) * 100;
+    return `${change >= 0 ? '+' : ''}${Math.round(change)}%`;
+  };
+
   const currentStats = [
     {
       title: 'Daily Active Users',
@@ -69,7 +80,7 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
     {
       title: 'Requests/min',
       value: analyticsData.apiRequestsPerMinute.toString(),
-      change: '+1%',
+      change: calculateRequestsChange(),
       trend: 'up',
       icon: Activity,
       color: 'text-purple-600',
@@ -154,6 +165,45 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
         <Card className="border-green-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              🔥 API Requests Trend
+            </CardTitle>
+            <CardDescription>Hourly API requests over the past 24 hours</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={analyticsData.requestsTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="time" 
+                    fontSize={12}
+                    tickFormatter={(value) => new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                  />
+                  <YAxis fontSize={12} />
+                  <Tooltip 
+                    formatter={(value) => [value.toLocaleString(), 'Requests']}
+                    labelFormatter={(label) => new Date(label).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="requests" 
+                    stroke="#8b5cf6" 
+                    strokeWidth={3}
+                    dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#8b5cf6' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-green-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               💰 Revenue Trend
             </CardTitle>
             <CardDescription>Daily revenue over the past week</CardDescription>
@@ -182,6 +232,39 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
                     activeDot={{ r: 6, fill: '#059669' }}
                   />
                 </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-green-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              📊 Daily Requests Trend
+            </CardTitle>
+            <CardDescription>Total requests per day over the past week</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analyticsData.usageTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    fontSize={12}
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis fontSize={12} />
+                  <Tooltip 
+                    formatter={(value) => [value.toLocaleString(), 'Requests']}
+                    labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                  />
+                  <Bar 
+                    dataKey="requests" 
+                    fill="#8b5cf6" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>

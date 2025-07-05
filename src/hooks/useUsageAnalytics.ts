@@ -9,7 +9,8 @@ export const useUsageAnalytics = () => {
     apiRequestsPerMinute: 0,
     revenueToday: 0,
     usageTrend: [],
-    toolUsage: []
+    toolUsage: [],
+    requestsTrend: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -22,6 +23,11 @@ export const useUsageAnalytics = () => {
 
   useEffect(() => {
     loadAnalytics();
+    
+    // Set up auto-refresh every 30 seconds for real-time data
+    const interval = setInterval(loadAnalytics, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const refetch = () => {

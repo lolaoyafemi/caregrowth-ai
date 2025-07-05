@@ -12,11 +12,16 @@ export interface UsageAnalyticsData {
     credits: number;
     users: number;
     revenue: number;
+    requests: number;
   }>;
   toolUsage: Array<{
     tool: string;
     usage: number;
     percentage: number;
+  }>;
+  requestsTrend: Array<{
+    time: string;
+    requests: number;
   }>;
 }
 
@@ -27,6 +32,7 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const last7Days = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last24Hours = new Date(today.getTime() - 24 * 60 * 60 * 1000);
     
     // Fetch current credit pricing
     const { data: creditPricingData } = await supabase
@@ -59,6 +65,15 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     // Calculate revenue today based on credits used * price per credit
     const revenueToday = creditsUsedToday * pricePerCredit * 100; // Convert to cents for consistency
     
+    // Calculate API requests per minute based on recent activity
+    const { data: recentRequestsData } = await supabase
+      .from('credit_usage_log')
+      .select('used_at')
+      .gte('used_at', last24Hours.toISOString());
+    
+    const totalRequestsLast24Hours = recentRequestsData?.length || 0;
+    const apiRequestsPerMinute = Math.round(totalRequestsLast24Hours / (24 * 60));
+    
     // Fetch usage trend for last 7 days
     const { data: usageTrendData } = await supabase
       .from('credit_usage_log')
@@ -75,7 +90,7 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
       const date = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
       const dateKey = date.toISOString().split('T')[0];
       last7DaysArray.push(dateKey);
-      usageTrendMap.set(dateKey, { credits: 0, users: new Set(), revenue: 0 });
+      usageTrendMap.set(dateKey, { credits: 0, users: new Set(), revenue: 0, requests: 0 });
     }
     
     // Fill in actual data and calculate daily revenue based on credits used
@@ -85,6 +100,7 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
         const dayData = usageTrendMap.get(date);
         dayData.credits += log.credits_used;
         dayData.users.add(log.user_id);
+        dayData.requests += 1; // Each credit usage log represents an API request
         // Calculate revenue for this day based on credits used * current price
         dayData.revenue += log.credits_used * pricePerCredit * 100; // Convert to cents
       }
@@ -94,8 +110,26 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
       date,
       credits: usageTrendMap.get(date).credits,
       users: usageTrendMap.get(date).users.size,
-      revenue: usageTrendMap.get(date).revenue
+      revenue: usageTrendMap.get(date).revenue,
+      requests: usageTrendMap.get(date).requests
     }));
+    
+    // Generate hourly requests trend for the last 24 hours
+    const requestsTrend = [];
+    for (let i = 23; i >= 0; i--) {
+      const hourStart = new Date(today.getTime() - i * 60 * 60 * 1000);
+      const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
+      
+      const hourlyRequests = recentRequestsData?.filter(log => {
+        const logTime = new Date(log.used_at);
+        return logTime >= hourStart && logTime < hourEnd;
+      }).length || 0;
+      
+      requestsTrend.push({
+        time: hourStart.toISOString(),
+        requests: hourlyRequests
+      });
+    }
     
     // Fetch tool usage distribution with proper mapping
     const { data: toolUsageData } = await supabase
@@ -127,19 +161,17 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
       percentage: totalCreditsUsed > 0 ? Math.round((usage / totalCreditsUsed) * 100) : 0
     })).sort((a, b) => b.usage - a.usage);
     
-    // Calculate API requests per minute (estimate based on credit usage)
-    const apiRequestsPerMinute = Math.round(creditsUsedToday / (24 * 60) * 2);
-    
     const analyticsData = {
       dailyActiveUsers,
       creditsUsedToday,
       apiRequestsPerMinute,
       revenueToday,
       usageTrend,
-      toolUsage
+      toolUsage,
+      requestsTrend
     };
     
-    console.log('Usage analytics data with calculated revenue:', analyticsData);
+    console.log('Usage analytics data with requests tracking:', analyticsData);
     return analyticsData;
     
   } catch (error) {
@@ -151,7 +183,8 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
       apiRequestsPerMinute: 0,
       revenueToday: 0,
       usageTrend: [],
-      toolUsage: []
+      toolUsage: [],
+      requestsTrend: []
     };
   }
 };
