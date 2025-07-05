@@ -354,7 +354,7 @@ serve(async (req) => {
     console.log('Fetching document contents...');
     const documentContents: DocumentContent[] = [];
     
-    for (const doc of documents.slice(0, 10)) { // Increased limit to 10 docs
+    for (const doc of documents.slice(0, 25)) { // Increased limit to 25 docs
       const content = await fetchDocumentContent(doc.doc_link, doc.doc_title || 'Untitled Document');
       if (content) {
         documentContents.push(content);
