@@ -7,8 +7,8 @@ import { Trash2, ExternalLink, Link, Loader2 } from 'lucide-react';
 import { useGoogleDocuments } from '@/hooks/useGoogleDocuments';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { QAHeader } from '@/components/qa/QAHeader';
-import { ChatInterface } from '@/components/qa/ChatInterface';
+import QAHeader from '@/components/qa/QAHeader';
+import ChatInterface from '@/components/qa/ChatInterface';
 
 const DocumentSearchTool = () => {
   const [activeTab, setActiveTab] = useState<'chat' | 'manage'>('chat');
