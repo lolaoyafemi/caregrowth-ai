@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
+import { deductCredits, handleCreditError } from '@/utils/creditUtils';
 import { toast } from 'sonner';
 
 interface SearchResult {
@@ -69,39 +70,22 @@ export const useDocumentSearch = () => {
       }
 
       // Only deduct credits after successful search
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ 
-          credits: credits - 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+      const deductionResult = await deductCredits(
+        user.id, 
+        'document_search', 
+        1, 
+        `Document search: ${query.substring(0, 50)}...`
+      );
 
-      if (updateError) {
-        console.error('Error updating credits:', updateError);
-        toast.error('Failed to deduct credits');
+      if (!deductionResult.success) {
+        handleCreditError(deductionResult);
         throw new Error('Failed to deduct credits');
-      }
-
-      // Log the credit usage
-      const { error: logError } = await supabase
-        .from('credit_usage_log')
-        .insert({
-          user_id: user.id,
-          tool: 'document_search',
-          credits_used: 1,
-          description: `Document search: ${query.substring(0, 50)}...`,
-          used_at: new Date().toISOString()
-        });
-
-      if (logError) {
-        console.error('Error logging credit usage:', logError);
       }
 
       // Refresh credits to reflect the deduction
       refetch();
       
-      toast.success(`1 credit deducted. Remaining credits: ${credits - 1}`);
+      toast.success(`1 credit deducted. Remaining credits: ${deductionResult.remainingCredits}`);
       return data as SearchResponse;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to search documents';
@@ -152,39 +136,22 @@ export const useDocumentSearch = () => {
       }
 
       // Only deduct credits after successful search
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ 
-          credits: credits - 2,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+      const deductionResult = await deductCredits(
+        user.id, 
+        'smart_document_search', 
+        2, 
+        `Smart document search: ${query.substring(0, 50)}...`
+      );
 
-      if (updateError) {
-        console.error('Error updating credits:', updateError);
-        toast.error('Failed to deduct credits');
+      if (!deductionResult.success) {
+        handleCreditError(deductionResult);
         throw new Error('Failed to deduct credits');
-      }
-
-      // Log the credit usage
-      const { error: logError } = await supabase
-        .from('credit_usage_log')
-        .insert({
-          user_id: user.id,
-          tool: 'smart_document_search',
-          credits_used: 2,
-          description: `Smart document search: ${query.substring(0, 50)}...`,
-          used_at: new Date().toISOString()
-        });
-
-      if (logError) {
-        console.error('Error logging credit usage:', logError);
       }
 
       // Refresh credits to reflect the deduction
       refetch();
       
-      toast.success(`2 credits deducted. Remaining credits: ${credits - 2}`);
+      toast.success(`2 credits deducted. Remaining credits: ${deductionResult.remainingCredits}`);
       return data as SmartSearchResult;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to perform smart search';
