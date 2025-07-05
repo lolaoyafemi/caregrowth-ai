@@ -7,6 +7,15 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
   try {
     console.log('=== ADMIN METRICS SERVICE: Fetching metrics ===');
     
+    // Fetch current credit pricing
+    const { data: creditPricingData } = await supabase
+      .from('credit_pricing')
+      .select('price_per_credit')
+      .single();
+    
+    const pricePerCredit = creditPricingData?.price_per_credit || 0.01;
+    console.log('Current price per credit for metrics:', pricePerCredit);
+    
     // Try fetching from both users and user_profiles tables
     const { data: usersData } = await supabase
       .from('users')
@@ -34,7 +43,7 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
 
     const { data: creditsData } = await supabase
       .from('credit_usage_log')
-      .select('credits_used');
+      .select('credits_used, used_at');
 
     const { data: salesData } = await supabase
       .from('credit_sales_log')
@@ -54,14 +63,22 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
     const totalUsers = userData?.length || 0;
     const totalCreditsUsed = creditsData?.reduce((sum, log) => sum + log.credits_used, 0) || 0;
     
-    // Calculate total revenue from both sales log and payments
+    // Calculate total revenue: credits used * current price + actual payments
+    const creditBasedRevenue = totalCreditsUsed * pricePerCredit;
     const salesRevenue = salesData?.reduce((sum, sale) => sum + Number(sale.amount_paid), 0) || 0;
     const paymentsRevenue = paymentsData?.reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
-    const totalRevenue = (salesRevenue + paymentsRevenue) / 100; // Convert from cents to dollars
+    const totalRevenue = creditBasedRevenue + (salesRevenue + paymentsRevenue) / 100; // Convert payments from cents to dollars
     
     // Calculate monthly revenue
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
+    
+    const monthlyCreditsUsed = creditsData?.filter(log => {
+      const logDate = new Date(log.used_at);
+      return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+    }).reduce((sum, log) => sum + log.credits_used, 0) || 0;
+    
+    const monthlyCreditRevenue = monthlyCreditsUsed * pricePerCredit;
     
     const monthlySalesRevenue = salesData?.filter(sale => {
       const saleDate = new Date(sale.timestamp);
@@ -73,7 +90,7 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
       return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
     }).reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
     
-    const monthlyRevenue = (monthlySalesRevenue + monthlyPaymentsRevenue) / 100; // Convert from cents to dollars
+    const monthlyRevenue = monthlyCreditRevenue + (monthlySalesRevenue + monthlyPaymentsRevenue) / 100; // Convert from cents to dollars
 
     // All users are considered active since we don't have reliable status tracking
     const activeUsers = totalUsers;
@@ -87,7 +104,7 @@ export const fetchMetrics = async (agencies: AdminAgency[]): Promise<SystemMetri
       activeUsers
     };
 
-    console.log('Calculated metrics:', metrics);
+    console.log('Calculated metrics with credit-based revenue:', metrics);
     
     return metrics;
   } catch (error) {

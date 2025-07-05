@@ -28,6 +28,15 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const last7Days = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     
+    // Fetch current credit pricing
+    const { data: creditPricingData } = await supabase
+      .from('credit_pricing')
+      .select('price_per_credit')
+      .single();
+    
+    const pricePerCredit = creditPricingData?.price_per_credit || 0.01;
+    console.log('Current price per credit:', pricePerCredit);
+    
     // Fetch daily active users (users who used credits today)
     const { data: dailyActiveUsersData } = await supabase
       .from('credit_usage_log')
@@ -47,13 +56,8 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
     
     const creditsUsedToday = creditsUsedTodayData?.reduce((sum, log) => sum + log.credits_used, 0) || 0;
     
-    // Fetch revenue today (convert from cents)
-    const { data: revenueTodayData } = await supabase
-      .from('credit_sales_log')
-      .select('amount_paid')
-      .gte('timestamp', startOfDay.toISOString());
-    
-    const revenueToday = revenueTodayData?.reduce((sum, sale) => sum + (Number(sale.amount_paid) * 100), 0) || 0;
+    // Calculate revenue today based on credits used * price per credit
+    const revenueToday = creditsUsedToday * pricePerCredit * 100; // Convert to cents for consistency
     
     // Fetch usage trend for last 7 days
     const { data: usageTrendData } = await supabase
@@ -74,26 +78,15 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
       usageTrendMap.set(dateKey, { credits: 0, users: new Set(), revenue: 0 });
     }
     
-    // Fill in actual data
+    // Fill in actual data and calculate daily revenue based on credits used
     usageTrendData?.forEach(log => {
       const date = new Date(log.used_at).toISOString().split('T')[0];
       if (usageTrendMap.has(date)) {
         const dayData = usageTrendMap.get(date);
         dayData.credits += log.credits_used;
         dayData.users.add(log.user_id);
-      }
-    });
-    
-    // Fetch revenue data for trend
-    const { data: revenueTrendData } = await supabase
-      .from('credit_sales_log')
-      .select('timestamp, amount_paid')
-      .gte('timestamp', last7Days.toISOString());
-    
-    revenueTrendData?.forEach(sale => {
-      const date = new Date(sale.timestamp).toISOString().split('T')[0];
-      if (usageTrendMap.has(date)) {
-        usageTrendMap.get(date).revenue += Number(sale.amount_paid) * 100; // Convert to cents
+        // Calculate revenue for this day based on credits used * current price
+        dayData.revenue += log.credits_used * pricePerCredit * 100; // Convert to cents
       }
     });
     
@@ -146,7 +139,7 @@ export const fetchUsageAnalytics = async (): Promise<UsageAnalyticsData> => {
       toolUsage
     };
     
-    console.log('Usage analytics data:', analyticsData);
+    console.log('Usage analytics data with calculated revenue:', analyticsData);
     return analyticsData;
     
   } catch (error) {
