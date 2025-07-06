@@ -71,19 +71,19 @@ const SystemMetrics = ({ metrics }: SystemMetricsProps) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {metricsData.map((metric, index) => (
-        <Card key={index} className="border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
+        <Card key={index} className="border-green-200 p-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-base font-medium text-gray-600">
               {metric.title}
             </CardTitle>
-            <div className={`p-2 rounded-lg ${metric.bgColor}`}>
-              <metric.icon className={`h-4 w-4 ${metric.color}`} />
+            <div className={`p-3 rounded-lg ${metric.bgColor}`}>
+              <metric.icon className={`h-6 w-6 ${metric.color}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${metric.color}`}>
+            <div className={`text-3xl font-bold ${metric.color}`}>
               {metric.value}
             </div>
           </CardContent>
