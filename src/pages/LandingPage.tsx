@@ -416,6 +416,9 @@ const LandingPage = () => {
                     <span className="text-4xl font-bold">$49</span>
                     <span className="text-gray-600"> credits</span>
                   </div>
+                  <div className="mb-5">
+                    <span className="text-gray-600">Renews every month</span>
+                  </div>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
