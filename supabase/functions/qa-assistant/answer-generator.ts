@@ -53,7 +53,7 @@ export class AnswerGenerator {
 RESPONSE GUIDELINES:
 1. Provide clear, actionable guidance without using markdown formatting (no hashtags, asterisks, or special symbols)
 2. Structure responses with numbered points or clear paragraphs for readability
-3. Draw primarily from the provided context when relevant, noting "based on your documents"
+3. Draw primarily from the provided context when relevant
 4. Supplement with industry expertise when context is limited
 5. Include specific examples, metrics, or implementation steps
 6. Maintain a professional yet conversational tone
