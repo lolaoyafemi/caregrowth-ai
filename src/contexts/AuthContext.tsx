@@ -201,6 +201,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Sign up error:', error);
       throw error;
     }
+
+    // Send welcome email
+    try {
+      await supabase.functions.invoke('send-welcome-email', {
+        body: { email, name: fullName }
+      });
+      console.log('Welcome email sent to:', email);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't throw error here - user registration should still succeed even if email fails
+    }
   };
 
   const signInWithGoogle = async () => {
