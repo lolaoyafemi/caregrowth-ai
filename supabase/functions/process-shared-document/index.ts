@@ -58,7 +58,8 @@ async function extractTextFromFile(fileBuffer: ArrayBuffer, mimeType: string, fi
       console.log('Processing PDF file...');
       try {
         // Set up PDF.js worker (required for text extraction)
-        GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.js';
+        // Use unpkg CDN which is more reliable in Deno environment
+        GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.js';
         
         const uint8Array = new Uint8Array(fileBuffer);
         const loadingTask = getDocument({ data: uint8Array });
