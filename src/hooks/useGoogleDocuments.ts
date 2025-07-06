@@ -181,6 +181,13 @@ export const useGoogleDocuments = () => {
     try {
       console.log('Deleting document:', id);
       
+      // Delete associated document chunks
+      await supabase
+        .from('document_chunks')
+        .delete()
+        .eq('document_id', id)
+        .eq('is_shared', false);
+      
       const { error } = await supabase
         .from('google_documents')
         .delete()
