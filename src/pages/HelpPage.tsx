@@ -575,20 +575,27 @@ const RegularUserHelpPage = () => {
                           </div>
                           
                           {/* Responses */}
-                          {ticketResponses.map((response) => (
-                            <div key={response.id} className="bg-green-50 p-3 rounded-lg shadow-sm">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Shield size={16} className="text-green-600" />
-                                <span className="font-medium text-green-600">
-                                  {response.admin_email || 'Support Team'}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {format(new Date(response.created_at), 'MMM dd, yyyy HH:mm')}
-                                </span>
+                          {ticketResponses.map((response) => {
+                            const isSuperAdmin = response.admin_email === 'admin@caregrowth.ai';
+                            return (
+                              <div key={response.id} className={`p-3 rounded-lg shadow-sm ${isSuperAdmin ? 'bg-green-50' : 'bg-blue-50'}`}>
+                                <div className="flex items-center gap-2 mb-2">
+                                  {isSuperAdmin ? (
+                                    <Shield size={16} className="text-green-600" />
+                                  ) : (
+                                    <User size={16} className="text-blue-600" />
+                                  )}
+                                  <span className={`font-medium ${isSuperAdmin ? 'text-green-600' : 'text-blue-600'}`}>
+                                    {response.admin_email || 'Support Team'}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {format(new Date(response.created_at), 'MMM dd, yyyy HH:mm')}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-700">{response.response_text}</p>
                               </div>
-                              <p className="text-sm text-gray-700">{response.response_text}</p>
-                            </div>
-                          ))}
+                            );
+                          })}
                           
                           {/* Response input - only show if ticket is not resolved */}
                           {ticket.status !== 'resolved' && (
