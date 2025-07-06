@@ -379,11 +379,11 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
             content: selectedPrompt.userPrompt
           }
         ],
-        temperature: 0.8,
-        max_tokens: 600,
-        presence_penalty: 0.3,
-        frequency_penalty: 0.2,
-        top_p: 1
+        temperature: 0.7, // Reduced for faster processing
+        max_tokens: 500, // Reduced for faster response
+        presence_penalty: 0.2,
+        frequency_penalty: 0.1,
+        top_p: 0.9 // Slightly reduced for efficiency
       })
     });
 
