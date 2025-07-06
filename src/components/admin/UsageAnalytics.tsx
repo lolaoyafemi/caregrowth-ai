@@ -76,33 +76,13 @@ const UsageAnalytics = ({ metrics }: UsageAnalyticsProps) => {
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200'
-    },
-    {
-      title: 'Requests/min',
-      value: analyticsData.apiRequestsPerMinute.toString(),
-      change: calculateRequestsChange(),
-      trend: 'up',
-      icon: Activity,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200'
-    },
-    {
-      title: 'Revenue Today',
-      value: formatCurrency(analyticsData.revenueToday),
-      change: '+7%',
-      trend: 'up',
-      icon: DollarSign,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
-      borderColor: 'border-emerald-200'
     }
   ];
 
   return (
     <div className="space-y-6">
       {/* Real-time Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {currentStats.map((stat, index) => (
           <Card key={index} className={`${stat.borderColor} ${stat.bgColor}`}>
             <CardContent className="p-4">
