@@ -1,0 +1,1 @@
+UPDATE user_profiles SET role = 'super_admin' WHERE email = 'admin@caregrowth.ai';
