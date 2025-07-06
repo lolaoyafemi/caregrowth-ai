@@ -21,6 +21,7 @@ import TeamManagementPage from './pages/agency/TeamManagementPage';
 import AgencyUsagePage from './pages/agency/AgencyUsagePage';
 import KnowledgePage from './pages/KnowledgePage';
 import LoginPage from './pages/LoginPage';
+import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -51,6 +52,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/registration-success" element={<RegistrationSuccessPage />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/stripe-payment" element={<StripePaymentPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />

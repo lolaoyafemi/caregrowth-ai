@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Mail, User, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from 'react-router-dom';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 const AuthModal: React.FC = () => {
@@ -23,6 +24,7 @@ const AuthModal: React.FC = () => {
   });
   
   const { signInWithEmail, signUpWithEmail } = useAuth();
+  const navigate = useNavigate();
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -123,10 +125,7 @@ const AuthModal: React.FC = () => {
         });
       } else {
         await signUpWithEmail(email, password, name);
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account.",
-        });
+        navigate('/registration-success');
       }
     } catch (error: any) {
       console.error('Auth error:', error);
