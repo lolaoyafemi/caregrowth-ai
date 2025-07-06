@@ -303,12 +303,50 @@ const RegularUserHelpPage = () => {
   const [question, setQuestion] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { createTicket, tickets, loading } = useSupportTickets();
+  const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
+  const [newResponse, setNewResponse] = useState('');
+  const [ticketResponses, setTicketResponses] = useState<any[]>([]);
+  const [loadingResponses, setLoadingResponses] = useState(false);
+  const { createTicket, tickets, loading, fetchResponses, createResponse } = useSupportTickets();
   const { user } = useUser();
   const { toast } = useToast();
 
   // Filter tickets for current user
   const userTickets = tickets.filter(ticket => ticket.user_id === user?.id);
+
+  const handleViewTicketResponses = async (ticketId: string) => {
+    setSelectedTicket(ticketId);
+    setLoadingResponses(true);
+    try {
+      const responses = await fetchResponses(ticketId);
+      setTicketResponses(responses);
+    } catch (error) {
+      console.error('Error fetching responses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load ticket responses",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingResponses(false);
+    }
+  };
+
+  const handleSendUserResponse = async (ticketId: string) => {
+    if (!newResponse.trim()) return;
+    
+    const success = await createResponse(ticketId, newResponse);
+    if (success) {
+      setNewResponse('');
+      // Refresh responses
+      const updatedResponses = await fetchResponses(ticketId);
+      setTicketResponses(updatedResponses);
+      toast({
+        title: "Success",
+        description: "Your response has been sent successfully"
+      });
+    }
+  };
 
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -476,34 +514,129 @@ const RegularUserHelpPage = () => {
         </div>
       </div>
       
-      {/* User's Tickets */}
+      {/* User's Tickets with Conversation */}
       {userTickets.length > 0 && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Your Support Tickets</CardTitle>
             <CardDescription>
-              Track the status of your submitted support tickets
+              Track and continue conversations with our support team
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {userTickets.map((ticket) => (
-                <div key={ticket.id} className="border rounded-lg p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">{ticket.subject}</h4>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={ticket.status === 'resolved' ? 'default' : ticket.status === 'pending' ? 'secondary' : 'destructive'}>
-                        {ticket.status}
-                      </Badge>
-                      <Badge variant={ticket.priority === 'high' ? 'destructive' : ticket.priority === 'medium' ? 'secondary' : 'outline'}>
-                        {ticket.priority}
-                      </Badge>
+                <div key={ticket.id} className="border rounded-lg">
+                  <div 
+                    className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => handleViewTicketResponses(ticket.id)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">{ticket.subject}</h4>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={ticket.status === 'resolved' ? 'default' : ticket.status === 'pending' ? 'secondary' : 'destructive'}>
+                          {ticket.status}
+                        </Badge>
+                        <Badge variant={ticket.priority === 'high' ? 'destructive' : ticket.priority === 'medium' ? 'secondary' : 'outline'}>
+                          {ticket.priority}
+                        </Badge>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-2">{ticket.question}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="text-xs text-gray-500">
+                        Submitted on {format(new Date(ticket.created_at), 'MMM dd, yyyy')}
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        {selectedTicket === ticket.id ? 'Hide Conversation' : 'View Conversation'}
+                      </Button>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 line-clamp-2">{ticket.question}</p>
-                  <div className="text-xs text-gray-500">
-                    Submitted on {format(new Date(ticket.created_at), 'MMM dd, yyyy')}
-                  </div>
+                  
+                  {/* Conversation Display */}
+                  {selectedTicket === ticket.id && (
+                    <div className="border-t bg-gray-50 p-4">
+                      {loadingResponses ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-700"></div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {/* Original ticket message */}
+                          <div className="bg-white p-3 rounded-lg shadow-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                              <User size={16} className="text-blue-600" />
+                              <span className="font-medium text-blue-600">You</span>
+                              <span className="text-xs text-gray-500">
+                                {format(new Date(ticket.created_at), 'MMM dd, yyyy HH:mm')}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700">{ticket.question}</p>
+                          </div>
+                          
+                          {/* Responses */}
+                          {ticketResponses.map((response) => (
+                            <div key={response.id} className="bg-green-50 p-3 rounded-lg shadow-sm">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Shield size={16} className="text-green-600" />
+                                <span className="font-medium text-green-600">
+                                  {response.admin_email || 'Support Team'}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {format(new Date(response.created_at), 'MMM dd, yyyy HH:mm')}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-700">{response.response_text}</p>
+                            </div>
+                          ))}
+                          
+                          {/* Response input - only show if ticket is not resolved */}
+                          {ticket.status !== 'resolved' && (
+                            <div className="bg-white p-3 rounded-lg shadow-sm">
+                              <div className="space-y-3">
+                                <label className="text-sm font-medium">Continue the conversation:</label>
+                                <Textarea
+                                  placeholder="Type your response here..."
+                                  value={selectedTicket === ticket.id ? newResponse : ''}
+                                  onChange={(e) => setNewResponse(e.target.value)}
+                                  className="min-h-[80px]"
+                                />
+                                <div className="flex gap-2">
+                                  <Button 
+                                    size="sm"
+                                    onClick={() => handleSendUserResponse(ticket.id)}
+                                    disabled={!newResponse.trim()}
+                                  >
+                                    <Send size={14} className="mr-2" />
+                                    Send Response
+                                  </Button>
+                                  <Button 
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedTicket(null);
+                                      setNewResponse('');
+                                    }}
+                                  >
+                                    Close
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {ticket.status === 'resolved' && (
+                            <div className="text-center py-4">
+                              <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm">
+                                <CheckCircle size={16} />
+                                This ticket has been resolved
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
