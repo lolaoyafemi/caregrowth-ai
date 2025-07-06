@@ -1,6 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+// PDF parsing library
+import { getDocument, GlobalWorkerOptions } from 'https://esm.sh/pdfjs-dist@4.0.379';
+// Word document parsing (for .docx files)
+import mammoth from 'https://esm.sh/mammoth@1.6.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,45 +35,170 @@ async function extractTextFromFile(fileBuffer: ArrayBuffer, mimeType: string, fi
   console.log(`Extracting text from ${fileName} (${mimeType})`);
   
   try {
-    if (mimeType === 'text/plain' || mimeType === 'text/csv') {
+    // Handle plain text files
+    if (mimeType === 'text/plain' || mimeType === 'text/csv' || mimeType === 'text/html') {
       const decoder = new TextDecoder('utf-8');
-      return decoder.decode(fileBuffer);
+      let text = decoder.decode(fileBuffer);
+      
+      // Clean up HTML if it's an HTML file
+      if (mimeType === 'text/html') {
+        // Basic HTML tag removal
+        text = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+        text = text.replace(/<[^>]+>/g, ' ');
+        text = text.replace(/&nbsp;/g, ' ');
+        text = text.replace(/&[a-z]+;/gi, ' ');
+      }
+      
+      return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
     }
     
+    // Handle PDF files
     if (mimeType === 'application/pdf') {
-      console.log('PDF file detected - cannot process binary PDFs without specialized library');
-      throw new Error('PDF files are not currently supported. Please convert to plain text or Word document format.');
+      console.log('Processing PDF file...');
+      try {
+        // Set up PDF.js worker (required for text extraction)
+        GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.js';
+        
+        const uint8Array = new Uint8Array(fileBuffer);
+        const loadingTask = getDocument({ data: uint8Array });
+        const pdf = await loadingTask.promise;
+        
+        console.log(`PDF loaded successfully. Pages: ${pdf.numPages}`);
+        
+        let fullText = '';
+        
+        // Extract text from each page
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          console.log(`Processing PDF page ${pageNum}/${pdf.numPages}`);
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(' ');
+          
+          fullText += pageText + '\n\n';
+        }
+        
+        if (fullText.trim().length === 0) {
+          throw new Error('No text content found in PDF. The PDF might be image-based or password protected.');
+        }
+        
+        console.log(`Successfully extracted ${fullText.length} characters from PDF`);
+        return fullText.trim();
+        
+      } catch (pdfError) {
+        console.error('PDF processing error:', pdfError);
+        throw new Error(`Failed to process PDF: ${pdfError.message}. Please ensure the PDF contains text content and is not password protected.`);
+      }
     }
     
-    if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-        mimeType === 'application/msword') {
-      console.log('Word document detected - cannot process binary Word docs without specialized library');
-      throw new Error('Word documents are not currently supported. Please convert to plain text format.');
+    // Handle Word documents (.docx)
+    if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      console.log('Processing DOCX file...');
+      try {
+        const result = await mammoth.extractRawText({ arrayBuffer: fileBuffer });
+        
+        if (result.value.trim().length === 0) {
+          throw new Error('No text content found in Word document.');
+        }
+        
+        console.log(`Successfully extracted ${result.value.length} characters from DOCX`);
+        
+        // Log any warnings from mammoth
+        if (result.messages.length > 0) {
+          console.warn('Word document processing warnings:', result.messages);
+        }
+        
+        return result.value.trim();
+        
+      } catch (docxError) {
+        console.error('DOCX processing error:', docxError);
+        throw new Error(`Failed to process Word document: ${docxError.message}`);
+      }
     }
     
-    // For unknown file types, attempt text extraction with error handling
+    // Handle legacy Word documents (.doc)
+    if (mimeType === 'application/msword') {
+      console.log('Legacy Word document detected (.doc format)');
+      throw new Error('Legacy Word documents (.doc) are not supported. Please save the document in .docx format or convert to plain text.');
+    }
+    
+    // Handle RTF files
+    if (mimeType === 'application/rtf' || mimeType === 'text/rtf') {
+      console.log('Processing RTF file...');
+      try {
+        const decoder = new TextDecoder('utf-8');
+        let rtfContent = decoder.decode(fileBuffer);
+        
+        // Basic RTF cleanup - remove RTF control codes
+        rtfContent = rtfContent.replace(/\\[a-z]{1,32}(-?\d{1,10})?[ ]?/gi, '');
+        rtfContent = rtfContent.replace(/\{\*?\\[^{}]+}|[{}]|\\\r?\n?/g, '');
+        rtfContent = rtfContent.replace(/\s+/g, ' ');
+        
+        if (rtfContent.trim().length === 0) {
+          throw new Error('No readable text content found in RTF file.');
+        }
+        
+        console.log(`Successfully extracted ${rtfContent.length} characters from RTF`);
+        return rtfContent.trim();
+        
+      } catch (rtfError) {
+        console.error('RTF processing error:', rtfError);
+        throw new Error(`Failed to process RTF file: ${rtfError.message}`);
+      }
+    }
+    
+    // Handle Markdown files
+    if (mimeType === 'text/markdown' || fileName.toLowerCase().endsWith('.md')) {
+      const decoder = new TextDecoder('utf-8');
+      let text = decoder.decode(fileBuffer);
+      
+      // Basic markdown cleanup (remove formatting but keep content)
+      text = text.replace(/^#{1,6}\s+/gm, ''); // Remove headers
+      text = text.replace(/\*\*(.*?)\*\*/g, '$1'); // Remove bold
+      text = text.replace(/\*(.*?)\*/g, '$1'); // Remove italic
+      text = text.replace(/`{1,3}[^`]*`{1,3}/g, ''); // Remove code blocks
+      text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // Convert links to text
+      
+      return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+    }
+    
+    // For unknown file types, attempt text extraction with better validation
+    console.log(`Unknown file type (${mimeType}), attempting text extraction...`);
     const decoder = new TextDecoder('utf-8');
     try {
       const text = decoder.decode(fileBuffer);
       
-      // Check if the decoded text contains mostly binary/garbage data
+      // More sophisticated binary detection
       const readableCharCount = text.split('').filter(char => {
         const code = char.charCodeAt(0);
-        // Count printable ASCII characters, spaces, tabs, and newlines
-        return (code >= 32 && code <= 126) || code === 9 || code === 10 || code === 13;
+        // Count printable ASCII characters, spaces, tabs, newlines, and common unicode
+        return (code >= 32 && code <= 126) || 
+               code === 9 || code === 10 || code === 13 || 
+               (code >= 128 && code <= 255); // Extended ASCII
       }).length;
       
       const readableRatio = readableCharCount / text.length;
       
-      if (readableRatio < 0.7) {
-        throw new Error(`File appears to contain binary data (${Math.round(readableRatio * 100)}% readable). Please upload a plain text file instead.`);
+      if (readableRatio < 0.6) {
+        throw new Error(`File appears to contain binary data (${Math.round(readableRatio * 100)}% readable). Supported formats: PDF, DOCX, TXT, CSV, HTML, RTF, Markdown.`);
       }
       
-      // Basic cleanup for text files
-      return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+      // Additional validation for minimum content
+      const trimmedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+      if (trimmedText.length < 50) {
+        throw new Error('File contains insufficient readable content for processing.');
+      }
+      
+      console.log(`Successfully extracted ${trimmedText.length} characters as plain text`);
+      return trimmedText;
+      
     } catch (decodeError) {
-      throw new Error(`Unable to decode file as text. Please ensure the file is in plain text format.`);
+      throw new Error(`Unable to decode file as text. Supported formats: PDF, DOCX, TXT, CSV, HTML, RTF, Markdown. Error: ${decodeError.message}`);
     }
+    
   } catch (error) {
     console.error('Error in text extraction:', error);
     throw new Error(`Failed to extract text from ${fileName}: ${error.message}`);
