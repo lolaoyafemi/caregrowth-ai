@@ -216,6 +216,22 @@ const StripePaymentPage = () => {
             updated_at: new Date().toISOString()
           });
 
+        // Send purchase confirmation email
+        try {
+          await supabase.functions.invoke('send-purchase-confirmation-email', {
+            body: {
+              email: user.email,
+              name: user.user_metadata?.full_name || user.email?.split('@')[0],
+              credits: credits,
+              planName: planName,
+              amount: 0 // Free credits
+            }
+          });
+        } catch (emailError) {
+          console.error('Failed to send purchase confirmation email:', emailError);
+          // Don't fail the credit addition if email fails
+        }
+
         toast({
           title: "Credits Added!",
           description: `Successfully added ${credits} credits to your account. They expire in 30 days.`,
