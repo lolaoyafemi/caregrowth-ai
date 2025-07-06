@@ -204,10 +204,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Send welcome email
     try {
-      await supabase.functions.invoke('send-welcome-email', {
+      console.log('Attempting to send welcome email to:', email);
+      const emailResult = await supabase.functions.invoke('send-welcome-email', {
         body: { email, name: fullName }
       });
-      console.log('Welcome email sent to:', email);
+      console.log('Welcome email result:', emailResult);
+      
+      if (emailResult.error) {
+        console.error('Welcome email error:', emailResult.error);
+      } else {
+        console.log('Welcome email sent successfully to:', email);
+      }
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
       // Don't throw error here - user registration should still succeed even if email fails
