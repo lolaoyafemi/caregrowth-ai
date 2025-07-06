@@ -66,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
                   </div>
                   
                   <div style="text-align: center; margin: 30px 0;">
-                    <a href="${Deno.env.get('PROJECT_URL') || 'https://www.spicymessaging.com'}/dashboard" 
+                    <a href="${'https://www.spicymessaging.com'}/dashboard" 
                        style="background: linear-gradient(135deg, #3B82F6, #6366F1); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
                       Access Your Dashboard
                     </a>
