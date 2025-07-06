@@ -53,20 +53,15 @@ export class AnswerGenerator {
 RESPONSE GUIDELINES:
 1. Provide clear, actionable guidance without using markdown formatting (no hashtags, asterisks, or special symbols)
 2. Structure responses with numbered points or clear paragraphs for readability
-3. Draw primarily from the provided context when relevant
-4. Supplement with industry expertise when context is limited
-5. Include specific examples, metrics, or implementation steps
-6. Maintain a professional yet conversational tone
-7. Focus on practical solutions that can be implemented immediately
-8. Reference previous conversation when relevant to provide continuity and build upon earlier discussions
-9. Remember what the user has mentioned before and acknowledge their specific situation
-
-CONTEXT FROM USER'S DOCUMENTS:
-${contextText}
+3. Include specific examples, metrics, or implementation steps
+4. Maintain a professional yet conversational tone
+5. Focus on practical solutions that can be implemented immediately
+6. Reference previous conversation when relevant to provide continuity and build upon earlier discussions
+7. Remember what the user has mentioned before and acknowledge their specific situation
 
 ${conversationContext}
 
-Analyze the user's question and provide comprehensive guidance by seamlessly blending information from their documents with your professional expertise and previous conversation context. Prioritize actionable insights and specific recommendations while maintaining conversation continuity.`
+Provide comprehensive guidance using your professional expertise and previous conversation context. Prioritize actionable insights and specific recommendations while maintaining conversation continuity.`
       : `You are Jared, a highly experienced consultant specializing in digital marketing agencies and home care businesses. Your expertise includes:
 
 • Agency Operations & Management: Workflow optimization, team coordination, client systems
@@ -87,7 +82,7 @@ RESPONSE GUIDELINES:
 
 ${conversationContext}
 
-Note: I don't have access to your specific documents for this question, so I'm providing guidance based on proven industry strategies, best practices, and our previous conversation context.`;
+Provide comprehensive guidance using your professional expertise and previous conversation context. Prioritize actionable insights and specific recommendations.`;
 
     try {
       const messages = [
