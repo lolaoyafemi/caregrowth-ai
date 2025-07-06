@@ -111,7 +111,7 @@ const DashboardHome = () => {
                 <span>Used this month: {usedThisMonth.toLocaleString()}</span>
                 <span>{getUsagePercentage()}%</span>
               </div>
-              <Progress value={getRemainingPercentage()} className="h-2 mb-4" />
+              <Progress value={getRemainingPercentage()} className="h-2 mb-4 [&>div]:bg-caregrowth-green" />
               <div className="flex gap-2">
                 <Link to="/stripe-payment" className="flex-1">
                   <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
