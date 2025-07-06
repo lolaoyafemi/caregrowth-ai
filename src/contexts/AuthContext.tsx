@@ -186,8 +186,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUpWithEmail = async (email: string, password: string, fullName: string) => {
-    console.log('Attempting sign up with:', email);
-    const { error } = await supabase.auth.signUp({
+    console.log('*** SIGNUP FLOW STARTED ***');
+    console.log('Attempting sign up with:', email, 'name:', fullName);
+    
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -197,12 +199,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     });
+    
+    console.log('Signup data:', data);
+    console.log('Signup error:', error);
+    
     if (error) {
       console.error('Sign up error:', error);
       throw error;
     }
 
     // Send welcome email
+    console.log('*** STARTING WELCOME EMAIL FLOW ***');
     try {
       console.log('Attempting to send welcome email to:', email);
       const emailResult = await supabase.functions.invoke('send-welcome-email', {
