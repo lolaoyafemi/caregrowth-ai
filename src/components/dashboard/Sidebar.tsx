@@ -320,8 +320,12 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <Users size={20} />
                 {!collapsed && <span>User Management</span>}
               </NavLink>
+
               
-              <NavLink
+              //Commented out Usage Monitoring Link
+
+              
+              {/* <NavLink
                 to="/dashboard/admin/usage"
                 className={({ isActive }) => cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
@@ -333,7 +337,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               >
                 <BarChart size={20} />
                 {!collapsed && <span>Usage Monitoring</span>}
-              </NavLink>
+              </NavLink> */}
             </>
           )}
           
