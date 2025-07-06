@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import AuthModal from '../components/auth/AuthModal';
 import { useUser } from '../contexts/UserContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,10 @@ import { useAuth } from '../contexts/AuthContext';
 const LoginPage = () => {
   const { isAuthenticated } = useUser();
   const { loading, user } = useAuth();
+  const location = useLocation();
+  
+  // Check if user came from registration success page
+  const fromRegistration = location.state?.fromRegistration;
 
   // Show loading state while auth is initializing - this prevents the flash
   if (loading) {
@@ -21,9 +25,9 @@ const LoginPage = () => {
     );
   }
 
-  // Redirect to dashboard if already authenticated
-  // Use both isAuthenticated and user to ensure proper state
-  if (isAuthenticated && user) {
+  // Only redirect to dashboard if authenticated AND not coming from registration
+  // This allows users from registration success to see the login form
+  if (isAuthenticated && user && !fromRegistration) {
     return <Navigate to="/dashboard" replace />;
   }
 

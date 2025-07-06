@@ -36,7 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
         personalizations: [
           {
             to: [{ email, name: name || email.split('@')[0] }],
-            subject: 'Purchase Confirmation - Credits Added to Your Account!'
+            subject: amount > 0 ? 'Purchase Confirmation - Credits Added to Your Account!' : 'Free Credits Added to Your Account!'
           }
         ],
         from: {
@@ -49,24 +49,27 @@ const handler = async (req: Request): Promise<Response> => {
             value: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="background: linear-gradient(135deg, #10B981, #059669); padding: 40px 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                  <h1 style="color: white; margin: 0; font-size: 28px;">Payment Successful! 🎉</h1>
+                  <h1 style="color: white; margin: 0; font-size: 28px;">${amount > 0 ? 'Payment Successful! 🎉' : 'Credits Added! 🎉'}</h1>
                   <p style="color: #D1FAE5; margin: 10px 0 0 0; font-size: 16px;">Your credits have been added to your account</p>
                 </div>
                 
                 <div style="background: white; padding: 40px 20px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                   <h2 style="color: #1F2937; margin-bottom: 20px;">Hi ${name || 'there'}! 👋</h2>
                   
-                  <p style="color: #4B5563; line-height: 1.6; margin-bottom: 20px;">
-                    Thank you for your purchase! Your payment has been processed successfully and your credits are now available.
-                  </p>
+                   <p style="color: #4B5563; line-height: 1.6; margin-bottom: 20px;">
+                     ${amount > 0 ? 
+                       'Thank you for your purchase! Your payment has been processed successfully and your credits are now available.' : 
+                       'Great news! Your free credits have been added to your account and are now available for use.'
+                     }
+                   </p>
                   
                   <div style="background: #F0FDF4; border: 2px solid #10B981; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <h3 style="color: #065F46; margin-top: 0; margin-bottom: 15px;">📋 Purchase Details:</h3>
-                    <div style="color: #065F46; line-height: 1.8;">
-                      <div><strong>Plan:</strong> ${planName}</div>
-                      <div><strong>Credits Added:</strong> ${credits.toLocaleString()}</div>
-                      <div><strong>Amount Paid:</strong> $${amountInDollars}</div>
-                    </div>
+                    <h3 style="color: #065F46; margin-top: 0; margin-bottom: 15px;">📋 ${amount > 0 ? 'Purchase Details:' : 'Credit Details:'}</h3>
+                     <div style="color: #065F46; line-height: 1.8;">
+                       <div><strong>Plan:</strong> ${planName}</div>
+                       <div><strong>Credits Added:</strong> ${credits.toLocaleString()}</div>
+                       ${amount > 0 ? `<div><strong>Amount Paid:</strong> $${amountInDollars}</div>` : `<div><strong>Amount Paid:</strong> Free</div>`}
+                     </div>
                   </div>
                   
                   <div style="text-align: center; margin: 30px 0;">

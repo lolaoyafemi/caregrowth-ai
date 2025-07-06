@@ -38,7 +38,11 @@ const RegistrationSuccessPage = () => {
               asChild
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg h-12"
             >
-              <Link to="/login" className="flex items-center justify-center space-x-2">
+              <Link 
+                to="/login" 
+                state={{ fromRegistration: true }}
+                className="flex items-center justify-center space-x-2"
+              >
                 <span>Continue to Sign In</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
