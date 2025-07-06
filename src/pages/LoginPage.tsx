@@ -27,8 +27,7 @@ const LoginPage = () => {
 
   // Only redirect to dashboard if authenticated AND not coming from registration
   // This allows users from registration success to see the login form
-  // Check both UserContext (isAuthenticated) and AuthContext (user) to handle timing issues
-  if ((isAuthenticated || user) && !fromRegistration) {
+  if (isAuthenticated && user && !fromRegistration) {
     return <Navigate to="/dashboard" replace />;
   }
 

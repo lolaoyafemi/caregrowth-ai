@@ -146,18 +146,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user && session.user.email) {
-          // For new signups, don't fetch user data immediately to prevent dashboard flash
-          if (event === 'SIGNED_UP' as any) {
-            // Don't set user context for new signups - let registration success page handle the flow
-            setUserContext(null);
-          } else {
-            // Fetch user data from public.users table for other auth events
-            setTimeout(() => {
-              if (mounted) {
-                fetchUserFromPublicTable(session.user.id, session.user.email!);
-              }
-            }, 100);
-          }
+          // Fetch user data from public.users table
+          setTimeout(() => {
+            if (mounted) {
+              fetchUserFromPublicTable(session.user.id, session.user.email!);
+            }
+          }, 100);
         } else {
           setUserContext(null);
         }
@@ -199,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/registration-success`,
+        emailRedirectTo: window.location.href,
         data: {
           full_name: fullName,
         }

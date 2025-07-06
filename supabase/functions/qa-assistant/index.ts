@@ -20,97 +20,122 @@ serve(async (req) => {
   }
 
   try {
-    const startTime = Date.now();
-    console.log('Starting optimized Q&A assistant processing...');
+    console.log('Starting Q&A assistant request processing...');
     
     const requestBody = await req.json();
+    console.log('Request received:', { 
+      hasQuestion: !!requestBody.question,
+      hasUserId: !!requestBody.userId,
+      questionLength: requestBody.question?.length || 0
+    });
+    
     const { question, userId } = requestBody;
     
-    // Fast validation
-    if (!question || !userId || !openAIApiKey) {
-      const errorMsg = !question || !userId ? 'Question and userId are required' : 'OpenAI API key not configured';
-      return new Response(JSON.stringify({ error: errorMsg }), {
-        status: !openAIApiKey ? 500 : 400,
+    if (!question || !userId) {
+      console.error('Missing required fields:', { question: !!question, userId: !!userId });
+      return new Response(JSON.stringify({ 
+        error: 'Question and userId are required' 
+      }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Processing question for user:', userId, 'Length:', question.length);
+    if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
+      return new Response(JSON.stringify({ 
+        error: 'OpenAI API key not configured. Please contact support.' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // Initialize services once
+    console.log('Processing question for user:', userId);
+
+    // Initialize services
     const embeddingService = new EmbeddingService(openAIApiKey);
     const searchService = new SearchService();
     const answerGenerator = new AnswerGenerator(openAIApiKey);
     const databaseService = new DatabaseService();
 
-    // Parallel data fetching for optimal performance
-    console.log('Starting parallel data fetching...');
-    const fetchStart = Date.now();
-    
-    const [conversationHistory, questionEmbedding, userDocs, sharedDocs] = await Promise.all([
-      databaseService.getRecentConversationHistory(userId, 3), // Reduced for speed
-      embeddingService.generateEmbedding(question),
-      databaseService.getUserDocuments(userId),
-      databaseService.getSharedDocuments()
-    ]);
-    
-    console.log('Parallel fetch completed in:', Date.now() - fetchStart, 'ms');
+    // Step 1: Get recent conversation history for context
+    console.log('Fetching conversation history...');
+    const conversationHistory = await databaseService.getRecentConversationHistory(userId, 5);
+    console.log('Retrieved conversation history:', conversationHistory.length, 'messages');
 
+    // Step 2: Generate embedding for the question
+    console.log('Generating embedding for question...');
+    const questionEmbedding = await embeddingService.generateEmbedding(question);
+
+    // Step 3: Get user's documents and chunks
+    console.log('Fetching user documents and chunks...');
+    const userDocs = await databaseService.getUserDocuments(userId);
     const userDocIds = userDocs.map(doc => doc.id);
-    const sharedDocIds = sharedDocs.map(doc => doc.id);
+    console.log('Found user documents:', userDocIds.length);
 
-    // Parallel chunk fetching
-    const chunkPromises = [];
+    // Step 4: Get shared documents and chunks
+    console.log('Fetching shared documents and chunks...');
+    const sharedDocs = await databaseService.getSharedDocuments();
+    const sharedDocIds = sharedDocs.map(doc => doc.id);
+    console.log('Found shared documents:', sharedDocIds.length);
+
+    let relevantChunks: any[] = [];
+    let allChunks: any[] = [];
+
+    // Get user document chunks
     if (userDocIds.length > 0) {
-      chunkPromises.push(databaseService.getDocumentChunks(userDocIds));
+      const userChunks = await databaseService.getDocumentChunks(userDocIds);
+      allChunks = [...allChunks, ...userChunks];
+      console.log('Retrieved user chunks:', userChunks.length);
     }
-    chunkPromises.push(databaseService.getSharedDocumentChunks());
-    
-    const chunkResults = await Promise.all(chunkPromises);
-    const allChunks = chunkResults.flat();
-    
-    console.log('Document chunks loaded:', {
-      userDocs: userDocIds.length,
-      sharedDocs: sharedDocIds.length,
-      totalChunks: allChunks.length
+
+    // Get shared document chunks
+    const sharedChunks = await databaseService.getSharedDocumentChunks();
+    allChunks = [...allChunks, ...sharedChunks];
+    console.log('Retrieved shared chunks:', sharedChunks.length);
+
+    console.log('Total chunks available:', {
+      totalChunks: allChunks.length,
+      userChunks: allChunks.filter(c => !c.is_shared).length,
+      sharedChunks: allChunks.filter(c => c.is_shared).length,
+      chunksWithEmbeddings: allChunks.filter(c => c.embedding).length,
+      averageContentLength: allChunks.length > 0 
+        ? Math.round(allChunks.reduce((sum, c) => sum + (c.content?.length || 0), 0) / allChunks.length)
+        : 0
     });
 
-    // Early exit if no chunks available
-    let relevantChunks: any[] = [];
-    
-    if (allChunks.length === 0) {
-      console.log('No document chunks available - returning generic answer');
-      const genericAnswer = "I don't have access to any documents to answer your question. Please upload some documents first or ask a general question about agency management.";
+    if (allChunks.length > 0) {
+      // Find relevant chunks using enhanced search
+      relevantChunks = await searchService.findRelevantChunks(questionEmbedding, allChunks, question);
+      console.log(`Selected ${relevantChunks.length} relevant chunks from ${allChunks.length} total`);
       
-      // Quick response without heavy processing
-      return new Response(JSON.stringify({
-        answer: genericAnswer,
-        category: 'other',
-        sources: 0,
-        generation_time_ms: Date.now() - startTime
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // Log source breakdown
+      const userSourceChunks = relevantChunks.filter(c => !c.is_shared).length;
+      const sharedSourceChunks = relevantChunks.filter(c => c.is_shared).length;
+      console.log(`Source breakdown: ${userSourceChunks} user chunks, ${sharedSourceChunks} shared chunks`);
     }
 
-    // Optimized search and answer generation
-    const searchStart = Date.now();
-    relevantChunks = await searchService.findRelevantChunks(questionEmbedding, allChunks, question);
-    console.log(`Search completed in ${Date.now() - searchStart}ms - found ${relevantChunks.length} relevant chunks`);
+    // Step 5: Generate answer using enhanced context with conversation history
+    console.log('Generating enhanced answer with conversation context...');
+    let answer = "I apologize, but I'm having trouble generating a response right now. Please try again in a moment.";
+    let tokensUsed = 0;
 
-    // Parallel answer generation and categorization
-    const generationStart = Date.now();
-    const [answerResult, category] = await Promise.all([
-      answerGenerator.generateContextualAnswer(question, relevantChunks, conversationHistory),
-      answerGenerator.categorizeResponse(question, question) // Pre-categorize based on question
-    ]);
-    
-    const answer = answerResult.answer;
-    const tokensUsed = answerResult.tokensUsed || 0;
-    console.log('Answer generated in:', Date.now() - generationStart, 'ms, tokens:', tokensUsed);
+    try {
+      const result = await answerGenerator.generateContextualAnswer(question, relevantChunks, conversationHistory);
+      answer = result.answer;
+      tokensUsed = result.tokensUsed || 0;
+      console.log('Successfully generated answer with conversation context, tokens used:', tokensUsed);
+    } catch (error) {
+      console.error('Error generating answer:', error);
+    }
 
-    // Background logging (don't block response)
-    const logPromise = databaseService.logQAInteraction(
+    // Step 6: Categorize the response
+    console.log('Categorizing the response...');
+    const category = await answerGenerator.categorizeResponse(question, answer);
+
+    // Step 7: Log the Q&A interaction
+    await databaseService.logQAInteraction(
       userId, 
       question, 
       answer, 
@@ -118,14 +143,12 @@ serve(async (req) => {
       relevantChunks.map(chunk => chunk.document_id) || []
     );
 
-    const totalTime = Date.now() - startTime;
-    console.log('Q&A processing completed in:', totalTime, 'ms');
+    console.log('Q&A processing completed successfully');
 
     const response: QAResponse = {
       answer, 
       category,
       sources: relevantChunks.length,
-      generation_time_ms: totalTime,
       debug: {
         documentsFound: userDocIds.length + sharedDocIds.length,
         userDocuments: userDocIds.length,
@@ -139,9 +162,6 @@ serve(async (req) => {
         hasEmbedding: !!questionEmbedding
       }
     };
-
-    // Complete background logging
-    EdgeRuntime.waitUntil(logPromise);
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -346,14 +346,19 @@ serve(async (req) => {
   }
 
   try {
-    const startTime = Date.now();
-    console.log('Starting optimized document search...');
+    console.log('Starting document search request processing...');
     
     const requestBody = await req.json();
+    console.log('Request received:', { 
+      hasQuery: !!requestBody.query,
+      hasUserId: !!requestBody.userId,
+      queryLength: requestBody.query?.length || 0
+    });
+    
     const { query, userId } = requestBody;
     
-    // Fast validation
     if (!query || !userId) {
+      console.error('Missing required fields:', { query: !!query, userId: !!userId });
       return new Response(JSON.stringify({ 
         error: 'Query and userId are required' 
       }), {
@@ -362,10 +367,11 @@ serve(async (req) => {
       });
     }
 
-    console.log('Processing search for user:', userId, 'Query length:', query.length);
+    console.log('Processing search query for user:', userId);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fast document fetch
+    // Get user's documents
+    console.log('Fetching user documents...');
     const { data: userDocs, error: docsError } = await supabase
       .from('google_documents')
       .select('id, doc_title, doc_link')
@@ -382,62 +388,57 @@ serve(async (req) => {
     }
 
     const documents = userDocs || [];
-    console.log('Found documents:', documents.length, 'in', Date.now() - startTime, 'ms');
+    console.log('Found user documents:', documents.length);
 
-    // Early return for no documents
     if (documents.length === 0) {
       return new Response(JSON.stringify({ 
         results: [],
-        totalDocumentsSearched: 0,
-        search_time_ms: Date.now() - startTime
+        totalDocumentsSearched: 0
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Parallel document processing for better performance
-    const searchStart = Date.now();
-    const searchPromises = documents.map(async (doc) => {
+    // Search through each document
+    const searchResults: SearchResult[] = [];
+    let documentsProcessed = 0;
+
+    for (const doc of documents) {
       try {
+        console.log(`Searching document: ${doc.doc_title}`);
+        
         const documentContent = await fetchDocumentContent(doc.doc_link, doc.doc_title || 'Untitled Document');
         
         if (documentContent) {
           const searchResult = searchInDocument(documentContent.content, query);
           
           if (searchResult) {
-            return {
+            searchResults.push({
               documentTitle: documentContent.title,
               documentUrl: doc.doc_link,
               relevantContent: searchResult.relevantContent,
               pageNumber: searchResult.pageNumber,
               confidence: searchResult.confidence
-            };
+            });
+            console.log(`Found match in ${doc.doc_title}: page ${searchResult.pageNumber}, confidence ${searchResult.confidence}`);
           }
         }
-        return null;
+        
+        documentsProcessed++;
       } catch (error) {
         console.error(`Error searching document ${doc.doc_title}:`, error);
-        return null;
+        // Continue with other documents
       }
-    });
+    }
 
-    // Wait for all searches to complete and filter out null results
-    const searchResultsArray = await Promise.all(searchPromises);
-    const searchResults = searchResultsArray.filter((result): result is SearchResult => result !== null);
-    
-    console.log('Parallel search completed in:', Date.now() - searchStart, 'ms');
-
-    // Sort results by confidence (higher confidence first)
+    // Sort results by confidence
     searchResults.sort((a, b) => b.confidence - a.confidence);
 
-    const totalTime = Date.now() - startTime;
-    console.log(`Document search completed in ${totalTime}ms: ${searchResults.length} results from ${documents.length} documents`);
+    console.log(`Document search completed: ${searchResults.length} results from ${documentsProcessed} documents`);
 
     return new Response(JSON.stringify({ 
       results: searchResults,
-      totalDocumentsSearched: documents.length,
-      search_time_ms: totalTime,
-      results_found: searchResults.length
+      totalDocumentsSearched: documentsProcessed
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

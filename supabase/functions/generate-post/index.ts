@@ -19,29 +19,32 @@ serve(async (req) => {
   }
 
   try {
-    const startTime = Date.now();
     const { userId, postType, tone, platform, audience } = await req.json();
-    console.log('Generate post request:', { userId, postType, tone, platform, audience });
+    console.log('Generate post request:', {
+      userId,
+      postType,
+      tone,
+      platform,
+      audience
+    });
 
-    // Fast validation first
     if (!openAIApiKey || !supabaseServiceKey || !supabaseUrl) {
+      console.error('Missing environment variables');
       throw new Error('Missing environment variables');
     }
+
     if (!userId || !postType || !tone) {
       throw new Error('Missing required parameters: userId, postType, or tone');
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Parallel operations for better performance
-    const [profile] = await Promise.all([
-      getUserProfile(supabase, userId)
-    ]);
-    
-    console.log('User profile loaded in:', Date.now() - startTime, 'ms');
 
-    // Pre-compute values for efficiency
-    const targetAudience = audience || profile?.ideal_client || 'families needing care';
+    // Get user profile to understand their business
+    const profile = await getUserProfile(supabase, userId);
+    console.log('User profile loaded:', !!profile);
+
+    // Build comprehensive business context for personalization
+    const targetAudience = audience || (profile?.ideal_client || 'families needing care');
     const businessContext = buildBusinessContext(profile, audience);
     console.log('Business context built for:', profile?.business_name || 'Unknown business');
 
@@ -73,10 +76,8 @@ serve(async (req) => {
       console.log('❌ Database prompt generation failed, falling back to AI generation');
     */
       
-    // Generate content using coded prompts with AI (optimized)
-    console.log('🤖 Generating content with optimized AI processing');
-    const generationStart = Date.now();
-    
+    // Generate content using coded prompts with AI
+    console.log('🤖 Generating content using coded prompts with AI');
     const generatedContent = await generateContentWithAI({
       userId,
       postType,
@@ -87,56 +88,46 @@ serve(async (req) => {
       openAIApiKey
     });
 
-    console.log('AI generation completed in:', Date.now() - generationStart, 'ms');
+    hook = generatedContent.hook;
+    body = generatedContent.body;
+    cta = generatedContent.cta;
+    contentSource = 'coded_prompt_ai';
+    
+    // } // End of commented database logic
 
-    let { hook, body, cta } = generatedContent;
-    const contentSource = 'coded_prompt_ai';
-
-    // Parallel processing: Apply personalization and prepare final post simultaneously
-    const [personalizedHook, personalizedBody, personalizedCta] = profile ? 
-      await Promise.all([
-        Promise.resolve(personalizeContent(hook, profile, targetAudience, tone, platform)),
-        Promise.resolve(personalizeContent(body, profile, targetAudience, tone, platform)),
-        Promise.resolve(personalizeContent(cta, profile, targetAudience, tone, platform))
-      ]) : [hook, body, cta];
-
-    hook = personalizedHook;
-    body = personalizedBody;  
-    cta = personalizedCta;
+    // Apply additional personalization if we have business profile
+    if (profile) {
+      console.log('Applying additional business personalization...');
+      hook = personalizeContent(hook, profile, targetAudience, tone, platform);
+      body = personalizeContent(body, profile, targetAudience, tone, platform);
+      cta = personalizeContent(cta, profile, targetAudience, tone, platform);
+    }
 
     const finalPost = `${hook}\n\n${body}\n\n${cta}`;
 
-    // Start logging in background (don't await to improve response time)
-    const logPromise = logPostToHistory(supabase, userId, postType, tone, platform, targetAudience, finalPost);
+    // Log post to post_history
+    await logPostToHistory(supabase, userId, postType, tone, platform, targetAudience, finalPost);
 
-    const totalTime = Date.now() - startTime;
-    console.log('Post generated successfully in:', totalTime, 'ms', {
+    console.log('Final post generated successfully:', {
       source: contentSource,
       content_length: finalPost.length,
       business_context_used: !!profile
     });
 
-    // Return response immediately, let logging complete in background
-    const response = new Response(JSON.stringify({
+    return new Response(JSON.stringify({
       post: finalPost,
       hook,
       body,
       cta,
       source: contentSource,
       business_context_used: !!profile,
-      content_length: finalPost.length,
-      generation_time_ms: totalTime
+      content_length: finalPost.length
     }), {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/json'
       }
     });
-
-    // Ensure logging completes (but don't block response)
-    EdgeRuntime.waitUntil(logPromise);
-    
-    return response;
 
   } catch (error) {
     console.error('Error in generate-post function:', error);
