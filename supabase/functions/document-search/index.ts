@@ -348,34 +348,62 @@ serve(async (req) => {
   try {
     console.log('Starting document search request processing...');
     
+    // SECURITY: Validate JWT token and extract userId
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({
+        error: 'Unauthorized - Missing or invalid authorization header'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.substring(7);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Verify the JWT token and get the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Authentication failed:', authError);
+      return new Response(JSON.stringify({
+        error: 'Unauthorized - Invalid token'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Use the authenticated user's ID instead of trusting client input
+    const authenticatedUserId = user.id;
+    
     const requestBody = await req.json();
     console.log('Request received:', { 
       hasQuery: !!requestBody.query,
-      hasUserId: !!requestBody.userId,
+      userId: authenticatedUserId,
       queryLength: requestBody.query?.length || 0
     });
     
-    const { query, userId } = requestBody;
+    const { query } = requestBody;
     
-    if (!query || !userId) {
-      console.error('Missing required fields:', { query: !!query, userId: !!userId });
+    if (!query) {
+      console.error('Missing required field: query');
       return new Response(JSON.stringify({ 
-        error: 'Query and userId are required' 
+        error: 'Query is required' 
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Processing search query for user:', userId);
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('Processing search query for user:', authenticatedUserId);
 
     // Get user's documents
     console.log('Fetching user documents...');
     const { data: userDocs, error: docsError } = await supabase
       .from('google_documents')
       .select('id, doc_title, doc_link')
-      .eq('user_id', userId);
+      .eq('user_id', authenticatedUserId);
 
     if (docsError) {
       console.error('Error fetching user documents:', docsError);

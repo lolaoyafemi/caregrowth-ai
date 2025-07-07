@@ -22,19 +22,62 @@ serve(async (req) => {
   try {
     console.log('Starting Q&A assistant request processing...');
     
+    // SECURITY: Validate JWT token and extract userId
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({
+        error: 'Unauthorized - Missing or invalid authorization header'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.substring(7);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase configuration');
+      return new Response(JSON.stringify({
+        error: 'Server configuration error'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.49.8');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Verify the JWT token and get the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Authentication failed:', authError);
+      return new Response(JSON.stringify({
+        error: 'Unauthorized - Invalid token'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Use the authenticated user's ID instead of trusting client input
+    const authenticatedUserId = user.id;
+    
     const requestBody = await req.json();
     console.log('Request received:', { 
       hasQuestion: !!requestBody.question,
-      hasUserId: !!requestBody.userId,
+      userId: authenticatedUserId,
       questionLength: requestBody.question?.length || 0
     });
     
-    const { question, userId } = requestBody;
+    const { question } = requestBody;
     
-    if (!question || !userId) {
-      console.error('Missing required fields:', { question: !!question, userId: !!userId });
+    if (!question) {
+      console.error('Missing required field: question');
       return new Response(JSON.stringify({ 
-        error: 'Question and userId are required' 
+        error: 'Question is required' 
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -51,7 +94,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Processing question for user:', userId);
+    console.log('Processing question for user:', authenticatedUserId);
 
     // Initialize services
     const embeddingService = new EmbeddingService(openAIApiKey);
@@ -61,7 +104,7 @@ serve(async (req) => {
 
     // Step 1: Get recent conversation history for context
     console.log('Fetching conversation history...');
-    const conversationHistory = await databaseService.getRecentConversationHistory(userId, 5);
+    const conversationHistory = await databaseService.getRecentConversationHistory(authenticatedUserId, 5);
     console.log('Retrieved conversation history:', conversationHistory.length, 'messages');
 
     // Step 2: Generate embedding for the question
@@ -70,7 +113,7 @@ serve(async (req) => {
 
     // Step 3: Get user's documents and chunks
     console.log('Fetching user documents and chunks...');
-    const userDocs = await databaseService.getUserDocuments(userId);
+    const userDocs = await databaseService.getUserDocuments(authenticatedUserId);
     const userDocIds = userDocs.map(doc => doc.id);
     console.log('Found user documents:', userDocIds.length);
 
@@ -136,7 +179,7 @@ serve(async (req) => {
 
     // Step 7: Log the Q&A interaction
     await databaseService.logQAInteraction(
-      userId, 
+      authenticatedUserId, 
       question, 
       answer, 
       category, 

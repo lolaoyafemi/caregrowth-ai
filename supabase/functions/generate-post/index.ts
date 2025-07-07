@@ -19,9 +19,43 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, postType, tone, platform, audience } = await req.json();
+    // SECURITY: Validate JWT token and extract userId
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({
+        error: 'Unauthorized - Missing or invalid authorization header'
+      }), {
+        status: 401,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    const token = authHeader.substring(7);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Verify the JWT token and get the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Authentication failed:', authError);
+      return new Response(JSON.stringify({
+        error: 'Unauthorized - Invalid token'
+      }), {
+        status: 401,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    // Use the authenticated user's ID instead of trusting client input
+    const authenticatedUserId = user.id;
+    const { postType, tone, platform, audience } = await req.json();
     console.log('Generate post request:', {
-      userId,
+      userId: authenticatedUserId,
       postType,
       tone,
       platform,
@@ -33,14 +67,12 @@ serve(async (req) => {
       throw new Error('Missing environment variables');
     }
 
-    if (!userId || !postType || !tone) {
-      throw new Error('Missing required parameters: userId, postType, or tone');
+    if (!postType || !tone) {
+      throw new Error('Missing required parameters: postType or tone');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     // Get user profile to understand their business
-    const profile = await getUserProfile(supabase, userId);
+    const profile = await getUserProfile(supabase, authenticatedUserId);
     console.log('User profile loaded:', !!profile);
 
     // Build comprehensive business context for personalization
@@ -79,7 +111,7 @@ serve(async (req) => {
     // Generate content using coded prompts with AI
     console.log('🤖 Generating content using coded prompts with AI');
     const generatedContent = await generateContentWithAI({
-      userId,
+      userId: authenticatedUserId,
       postType,
       tone,
       platform,
@@ -106,7 +138,7 @@ serve(async (req) => {
     const finalPost = `${hook}\n\n${body}\n\n${cta}`;
 
     // Log post to post_history
-    await logPostToHistory(supabase, userId, postType, tone, platform, targetAudience, finalPost);
+    await logPostToHistory(supabase, authenticatedUserId, postType, tone, platform, targetAudience, finalPost);
 
     console.log('Final post generated successfully:', {
       source: contentSource,
