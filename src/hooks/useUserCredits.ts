@@ -29,6 +29,9 @@ export const useUserCredits = () => {
     try {
       console.log('Fetching credits for user:', user.id);
       
+      // First, expire old credits by calling the database function
+      await supabase.rpc('expire_old_credits', { p_user_id: user.id });
+      
       // Get user profile for credit balance (this is the authoritative source)
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
