@@ -14,7 +14,7 @@ import CreditExpirationWarning from '@/components/dashboard/CreditExpirationWarn
 const StripePaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
   const [loading, setLoading] = useState(false);
-  const [addingCredits, setAddingCredits] = useState<string | null>(null);
+  
   const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -44,11 +44,6 @@ const StripePaymentPage = () => {
     }
   ];
 
-  const creditPackages = [
-    { credits: 50, label: '50 Credits', planName: 'Starter Package' },
-    { credits: 200, label: '200 Credits', planName: 'Professional Package' },
-    { credits: 500, label: '500 Credits', planName: 'Enterprise Package' }
-  ];
 
   const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
 
@@ -169,87 +164,6 @@ const StripePaymentPage = () => {
     }
   };
 
-  const handleAddCredits = async (credits: number, planName: string) => {
-    if (!user || !session) {
-      toast({
-        title: "Login Required",
-        description: "Please log in to add credits.",
-        variant: "destructive"
-      });
-      navigate('/login');
-      return;
-    }
-
-    setAddingCredits(credits.toString());
-
-    try {
-      // Create a credit purchase record directly for testing
-      const { data, error } = await supabase
-        .from('credit_purchases')
-        .insert({
-          user_id: user.id,
-          email: user.email,
-          credits_granted: credits,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-          status: 'active'
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      // Update user profile credits using the new function
-      const { data: updatedCredits, error: updateError } = await supabase.rpc('get_active_credits', {
-        p_user_id: user.id
-      });
-
-      if (!updateError) {
-        await supabase
-          .from('user_profiles')
-          .upsert({
-            user_id: user.id,
-            email: user.email,
-            credits: updatedCredits,
-            credits_expire_at: data.expires_at,
-            updated_at: new Date().toISOString()
-          });
-
-        // Send purchase confirmation email
-        try {
-          await supabase.functions.invoke('send-purchase-confirmation-email', {
-            body: {
-              email: user.email,
-              name: user.user_metadata?.full_name || user.email?.split('@')[0],
-              credits: credits,
-              planName: planName,
-              amount: 0 // Free credits
-            }
-          });
-        } catch (emailError) {
-          console.error('Failed to send purchase confirmation email:', emailError);
-          // Don't fail the credit addition if email fails
-        }
-
-        toast({
-          title: "Credits Added!",
-          description: `Successfully added ${credits} credits to your account. They expire in 30 days.`,
-        });
-      } else {
-        throw new Error("Failed to update credit balance");
-      }
-    } catch (error) {
-      console.error('Add credits error:', error);
-      toast({
-        title: "Failed to Add Credits",
-        description: error.message || "Unable to add credits to your account.",
-        variant: "destructive"
-      });
-    } finally {
-      setAddingCredits(null);
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -311,32 +225,6 @@ const StripePaymentPage = () => {
                 </Card>
               ))}
 
-              {/* Free Credit Addition Section */}
-              <div className="mt-8">
-                <h3 className="text-xl font-bold mb-4">Add Credits Directly (Free for Testing)</h3>
-                <div className="space-y-3">
-                  {creditPackages.map((pkg) => (
-                    <Button
-                      key={pkg.credits}
-                      onClick={() => handleAddCredits(pkg.credits, pkg.planName)}
-                      disabled={addingCredits === pkg.credits.toString()}
-                      variant="outline"
-                      className="w-full text-left justify-between border-2 border-gray-300 hover:border-caregrowth-blue transition-colors"
-                    >
-                      <span>Add {pkg.label}</span>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-500">30 days</span>
-                        {addingCredits === pkg.credits.toString() ? (
-                          <span className="text-sm">Adding...</span>
-                        ) : (
-                          <span className="text-sm text-gray-500">Free</span>
-                        )}
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <div className="space-y-6">

@@ -29,17 +29,37 @@ export const useUserCredits = () => {
     try {
       console.log('Fetching credits for user:', user.id);
       
-      // Get active credits using the new function
-      const { data: activeCredits, error: creditsError } = await supabase.rpc('get_active_credits', {
-        p_user_id: user.id
-      });
+      // Get user profile for credit balance (this is the authoritative source)
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('credits, credits_expire_at')
+        .eq('user_id', user.id)
+        .single();
 
-      if (creditsError) {
-        console.error('Error fetching active credits:', creditsError);
-        if (initialLoad) setCredits(0);
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        // If no profile exists, try to create one
+        if (profileError.code === 'PGRST116') {
+          console.log('No profile found, creating one...');
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: user.id,
+              email: user.email,
+              credits: 0
+            });
+          
+          if (insertError) {
+            console.error('Error creating profile:', insertError);
+          }
+          if (initialLoad) setCredits(0);
+        } else {
+          if (initialLoad) setCredits(0);
+        }
       } else {
-        console.log('Active credits fetched:', activeCredits || 0);
-        setCredits(activeCredits || 0);
+        console.log('Credits fetched from profile:', profile?.credits || 0);
+        setCredits(profile?.credits || 0);
+        setExpiresAt(profile?.credits_expire_at || null);
       }
 
       // Get credits used this month
@@ -61,34 +81,6 @@ export const useUserCredits = () => {
         setUsedThisMonth(totalUsed);
       }
 
-      // Get user profile for expiration date
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('credits_expire_at')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profileError) {
-        console.error('Error fetching user profile:', profileError);
-        // If no profile exists, try to create one
-        if (profileError.code === 'PGRST116') {
-          console.log('No profile found, creating one...');
-          const { error: insertError } = await supabase
-            .from('user_profiles')
-            .insert({
-              user_id: user.id,
-              email: user.email,
-              credits: activeCredits || 0
-            });
-          
-          if (insertError) {
-            console.error('Error creating profile:', insertError);
-          }
-        }
-        if (initialLoad) setExpiresAt(null);
-      } else {
-        setExpiresAt(profile?.credits_expire_at || null);
-      }
     } catch (error) {
       console.error('Error fetching user credits:', error);
       if (initialLoad) {
