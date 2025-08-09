@@ -162,51 +162,6 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
                     />
                   </div>
                   
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-medium">Regenerate Sections</h4>
-                      {credits <= 0 && (
-                        <p className="text-sm text-red-600">
-                          Credits required for regeneration
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleRegenerateSection(platform, 'hook')}
-                        disabled={regeneratingSection !== null || credits <= 0}
-                      >
-                        {regeneratingSection?.platform === platform && regeneratingSection?.section === 'hook'
-                          ? "Regenerating..."
-                          : "Regenerate Hook"
-                        }
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleRegenerateSection(platform, 'body')}
-                        disabled={regeneratingSection !== null || credits <= 0}
-                      >
-                        {regeneratingSection?.platform === platform && regeneratingSection?.section === 'body'
-                          ? "Regenerating..."
-                          : "Regenerate Body"
-                        }
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleRegenerateSection(platform, 'cta')}
-                        disabled={regeneratingSection !== null || credits <= 0}
-                      >
-                        {regeneratingSection?.platform === platform && regeneratingSection?.section === 'cta'
-                          ? "Regenerating..."
-                          : "Regenerate CTA"
-                        }
-                      </Button>
-                    </div>
-                  </div>
                   
                   <div className="flex gap-3">
                     <Button 
