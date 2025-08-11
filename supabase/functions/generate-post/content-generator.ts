@@ -174,7 +174,7 @@ CTA: [clear call-to-action - 1-2 sentences]`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',
@@ -208,10 +208,28 @@ CTA: [clear call-to-action - 1-2 sentences]`;
 };
 */
 
+// Enhanced model selection based on content complexity
+const selectOptimalModel = (postType: string, audience: string): string => {
+  // Use o3-2025-04-16 for complex reasoning tasks that require:
+  // - Multi-step thinking about audience psychology
+  // - Strategic content planning
+  // - Complex business positioning
+  const complexReasoningTypes = ['results-offers', 'trust-authority'];
+  const complexAudiences = ['business owners', 'professionals', 'executives'];
+  
+  const isComplexTask = complexReasoningTypes.includes(postType) || 
+                       complexAudiences.some(audienceType => 
+                         audience.toLowerCase().includes(audienceType.toLowerCase())
+                       );
+  
+  return isComplexTask ? 'o3-2025-04-16' : 'gpt-4.1-2025-04-14';
+};
+
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
 
-  console.log('Generating AI content with updated prompts');
+  const selectedModel = selectOptimalModel(postType, audience);
+  console.log(`Generating AI content with ${selectedModel} (selected based on complexity)`);
   
   const toneMap = {
     "professional": "Clear, polished, confident, respectful, yet personable",
@@ -230,10 +248,10 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   // Parse business context to extract key information
   const businessInfo = parseBusinessContext(businessContext);
 
-  // Enhanced content category specific prompts with more engaging, human-like approach
+  // Enhanced content category specific prompts optimized for advanced AI reasoning
   const contentPrompts = {
     "trust-authority": {
-      systemPrompt: "You are a thoughtful and creative social media strategist. Create authentic, engaging content that builds trust and demonstrates authority through genuine stories and insights. Each post should feel unique and human, avoiding generic business language.",
+      systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.`,
       userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
 
 IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
@@ -264,7 +282,7 @@ BODY: [authoritative content that demonstrates expertise - 4-6 sentences with sp
 CTA: [natural invitation to connect or engage - 1-2 sentences]`
     },
     "heartfelt-relatable": {
-      systemPrompt: "You are a thoughtful and creative social media strategist who creates deeply human, emotionally resonant content. Your posts make people feel seen, understood, and connected through authentic stories and genuine emotions.",
+      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.`,
       userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
 
 IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
@@ -295,7 +313,7 @@ BODY: [heartfelt content with specific details and genuine emotion - 4-6 sentenc
 CTA: [warm, inclusive invitation that builds community - 1-2 sentences]`
     },
     "educational-helpful": {
-      systemPrompt: "You are a thoughtful and creative social media strategist who creates valuable, educational content that genuinely helps people. Your posts teach something useful while being engaging and easy to understand.",
+      systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.`,
       userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create an Educational & Helpful post that provides genuine value to ${businessInfo.ideal_client}.
 
 IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
@@ -326,7 +344,7 @@ BODY: [valuable, actionable advice with specific examples - 4-6 sentences]
 CTA: [encouraging invitation to implement or ask questions - 1-2 sentences]`
     },
     "results-offers": {
-      systemPrompt: "You are a thoughtful and creative social media strategist who showcases real results and presents offers authentically. Your posts highlight genuine outcomes while maintaining trust and credibility.",
+      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.`,
       userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Results & Offers post that highlights meaningful outcomes and encourages ${businessInfo.ideal_client} to explore working with ${businessInfo.business_name}, while positioning the agency as a dependable, trustworthy partner.
 
 IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
@@ -368,7 +386,7 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: selectedModel,
         messages: [
           {
             role: 'system',
