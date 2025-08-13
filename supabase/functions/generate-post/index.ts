@@ -142,7 +142,7 @@ serve(async (req) => {
       cta = personalizeContent(cta, profile, targetAudience, tone, platform);
     }
 
-    const finalPost = `${hook}\n\n${body}\n\n${cta}`;
+    const finalPost = `${hook} ${body} ${cta}`;
 
     // Log post to post_history
     await logPostToHistory(supabase, authenticatedUserId, postType, tone, platform, targetAudience, finalPost);
