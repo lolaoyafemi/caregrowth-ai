@@ -222,7 +222,7 @@ const selectOptimalModel = (postType: string, audience: string): string => {
                          audience.toLowerCase().includes(audienceType.toLowerCase())
                        );
   
-  return isComplexTask ? 'o3-2025-04-16' : 'gpt-4.1-2025-04-14';
+  return isComplexTask ? 'gpt-4.1-2025-04-14' : 'gpt-4.1-2025-04-14';
 };
 
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
@@ -399,8 +399,6 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
         ],
         temperature: 0.8,
         max_completion_tokens: 600,
-        presence_penalty: 0.3,
-        frequency_penalty: 0.2,
         top_p: 1
       })
     });
