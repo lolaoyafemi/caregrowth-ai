@@ -206,7 +206,7 @@ const StripePaymentPage = () => {
                     </div>
                     <div className="flex items-center text-sm text-gray-500 mb-3">
                       <Clock className="w-4 h-4 mr-1" />
-                      Expires 30 days after purchase
+                      Monthly subscription - auto-renews
                     </div>
                     <ul className="text-sm text-gray-600 space-y-1">
                       {plan.features.slice(0, 3).map((f, i) => (
@@ -244,8 +244,8 @@ const StripePaymentPage = () => {
                         <span className="font-bold">${selectedPlanData.price}</span>
                       </div>
                       <div className="flex justify-between text-sm text-gray-600">
-                        <span>{selectedPlanData.credits} credits</span>
-                        <span>Expires in 30 days</span>
+                        <span>{selectedPlanData.credits} credits/month</span>
+                        <span>Auto-renews monthly</span>
                       </div>
                     </>
                   )}
@@ -262,7 +262,7 @@ const StripePaymentPage = () => {
                     ) : !user || !session ? (
                       'Please Log In'
                     ) : (
-                      `Pay $${selectedPlanData?.price || 0} with Stripe`
+                      `Subscribe $${selectedPlanData?.price || 0}/month`
                     )}
                   </Button>
                   

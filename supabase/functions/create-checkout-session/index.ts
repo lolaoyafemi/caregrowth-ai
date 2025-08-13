@@ -225,9 +225,30 @@ serve(async (req) => {
       siteUrl 
     });
 
-    // Create Stripe checkout session
+    // Check if customer exists in Stripe
+    let stripeCustomer;
+    const existingCustomers = await stripe.customers.list({
+      email: userEmail,
+      limit: 1
+    });
+
+    if (existingCustomers.data.length > 0) {
+      stripeCustomer = existingCustomers.data[0];
+      console.log('Found existing Stripe customer:', stripeCustomer.id);
+    } else {
+      // Create new customer
+      stripeCustomer = await stripe.customers.create({
+        email: userEmail,
+        metadata: {
+          user_id: userId
+        }
+      });
+      console.log('Created new Stripe customer:', stripeCustomer.id);
+    }
+
+    // Create recurring subscription session
     const session = await stripe.checkout.sessions.create({
-      customer_email: userEmail,
+      customer: stripeCustomer.id,
       client_reference_id: userId,
       metadata: {
         user_id: userId,
@@ -235,16 +256,19 @@ serve(async (req) => {
         credits: numericCredits.toString(),
         plan_name: planName,
       },
-      mode: "payment",
+      mode: "subscription",
       line_items: [
         {
           price_data: {
             currency: "usd",
             product_data: {
-              name: planName,
-              description: `${numericCredits} credits`,
+              name: `${planName} Subscription`,
+              description: `${numericCredits} credits per month`,
             },
             unit_amount: Math.round(numericAmount * 100),
+            recurring: {
+              interval: "month"
+            }
           },
           quantity: 1,
         },
@@ -254,6 +278,14 @@ serve(async (req) => {
       expires_at: Math.floor(Date.now() / 1000) + (30 * 60),
       payment_method_types: ['card'],
       billing_address_collection: 'auto',
+      subscription_data: {
+        metadata: {
+          user_id: userId,
+          plan,
+          credits: numericCredits.toString(),
+          plan_name: planName,
+        }
+      }
     });
 
     console.log('Stripe checkout session created successfully:', session.id);
