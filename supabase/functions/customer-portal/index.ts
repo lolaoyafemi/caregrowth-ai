@@ -30,9 +30,9 @@ serve(async (req) => {
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Missing Supabase configuration");
       return new Response(JSON.stringify({ error: "Server configuration error" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -40,7 +40,7 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false }
     });
 
@@ -74,38 +74,36 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Find Stripe customer
+    // Find customer
     const customers = await stripe.customers.list({
       email: user.email,
       limit: 1
     });
 
     if (customers.data.length === 0) {
-      console.error("No Stripe customer found for user");
+      console.error("No Stripe customer found for user:", user.email);
       return new Response(JSON.stringify({ 
-        error: "No subscription found. Please subscribe first." 
+        error: "No subscription found for this user" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 404,
       });
     }
 
-    const customerId = customers.data[0].id;
-    console.log('Found Stripe customer:', customerId);
+    const customer = customers.data[0];
+    console.log('Found Stripe customer:', customer.id);
 
-    // Get the site URL
-    const siteUrl = Deno.env.get("SITE_URL") || req.headers.get("origin") || "http://localhost:3000";
-    
-    // Create customer portal session
+    // Create billing portal session
+    const origin = req.headers.get("origin") || "https://www.spicymessaging.com";
     const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${siteUrl}/stripe-payment`,
+      customer: customer.id,
+      return_url: `${origin}/settings`,
     });
 
     console.log('Customer portal session created:', portalSession.id);
 
     return new Response(JSON.stringify({ 
-      url: portalSession.url 
+      url: portalSession.url
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

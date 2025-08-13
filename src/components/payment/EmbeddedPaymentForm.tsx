@@ -39,7 +39,19 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
   }, []);
 
   const createPaymentIntent = async () => {
+    if (!session?.access_token) {
+      console.error('No session token available');
+      toast({
+        title: "Authentication Error",
+        description: "Please log in to continue with your subscription.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      console.log('Creating payment intent for plan:', plan);
+      
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: {
           plan: plan.id,
@@ -48,19 +60,27 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
           credits: plan.credits
         },
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
+      if (!data?.clientSecret) {
+        throw new Error('No client secret received from server');
+      }
+
+      console.log('Payment intent created successfully');
       setClientSecret(data.clientSecret);
       setPaymentIntentId(data.paymentIntentId);
     } catch (error) {
       console.error('Error creating payment intent:', error);
       toast({
         title: "Setup Error",
-        description: "Failed to initialize payment. Please try again.",
+        description: `Failed to initialize payment: ${error.message || 'Please try again.'}`,
         variant: "destructive"
       });
     }
@@ -105,6 +125,8 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
     if (paymentIntent.status === 'succeeded') {
       // Confirm subscription setup
       try {
+        console.log('Confirming subscription for payment intent:', paymentIntent.id);
+        
         const { data, error } = await supabase.functions.invoke('confirm-subscription', {
           body: {
             paymentIntentId: paymentIntent.id
@@ -114,7 +136,12 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase function error:', error);
+          throw error;
+        }
+
+        console.log('Subscription confirmed successfully:', data);
 
         toast({
           title: "Subscription Active!",
@@ -126,7 +153,7 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
         console.error('Error confirming subscription:', error);
         toast({
           title: "Setup Error",
-          description: "Payment succeeded but subscription setup failed. Please contact support.",
+          description: `Payment succeeded but subscription setup failed: ${error.message || 'Please contact support.'}`,
           variant: "destructive"
         });
       }
