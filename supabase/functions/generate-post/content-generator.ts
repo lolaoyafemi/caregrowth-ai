@@ -159,7 +159,7 @@ Instructions:
 ✅ Make it speak directly to ${audience}
 ✅ Incorporate business name, location, services, and unique value propositions naturally
 
-The template might be a complete post or just a section. Personalize it and then structure your response as a complete social media post with these sections:
+The template might be a complete post or just a section. Personalize it and then structure your response as a complete social media post with these sections as a single paragraph:
 
 Return your response in this exact format:
 HOOK: [compelling opening - 1-2 sentences]
