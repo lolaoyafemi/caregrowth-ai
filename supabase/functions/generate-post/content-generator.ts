@@ -239,9 +239,23 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
 
   const toneDescription = toneMap[tone.toLowerCase()] || "Clear and natural tone";
 
-  // Add randomization to ensure variety
+  // Add randomization and variety to ensure unique content
   const currentTime = new Date().toISOString();
   const randomSeed = Math.random().toString(36).substring(7);
+  
+  // Creative opening variations to avoid repetitive content
+  const openingVariations = [
+    "Start with an unexpected observation",
+    "Open with a relatable moment",
+    "Begin with a surprising truth",
+    "Start with a gentle insight",
+    "Open with a meaningful reflection",
+    "Begin with a thought-provoking question",
+    "Start with a specific scenario",
+    "Open with an empowering statement"
+  ];
+  
+  const selectedOpening = openingVariations[Math.floor(Math.random() * openingVariations.length)];
 
   // Parse business context to extract key information
   const businessInfo = parseBusinessContext(businessContext);
@@ -252,7 +266,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
       systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.`,
       userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
 
-IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
+IMPORTANT: Generate completely fresh, original content. Avoid repetitive openings like "Every day", "Have you ever", "Raise your hand if", or similar patterns. ${selectedOpening}.
 
 Current context: ${currentTime} - Seed: ${randomSeed}
 
@@ -283,7 +297,7 @@ CTA: [natural invitation to connect or engage - 1-2 sentences]`
       systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.`,
       userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
 
-IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
+IMPORTANT: Generate completely fresh, original content. Avoid repetitive openings like "Every day", "Have you ever", "Raise your hand if", or similar patterns. ${selectedOpening}.
 
 Current context: ${currentTime} - Seed: ${randomSeed}
 
@@ -395,9 +409,11 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
             content: selectedPrompt.userPrompt
           }
         ],
-        temperature: 0.6,
+        temperature: 0.9,
         max_completion_tokens: 500,
-        top_p: 0.9
+        top_p: 0.95,
+        presence_penalty: 0.3,
+        frequency_penalty: 0.4
       })
     });
 
