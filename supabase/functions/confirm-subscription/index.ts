@@ -148,14 +148,22 @@ serve(async (req) => {
       });
     }
 
-    // Allocate initial credits
-    const { data: creditsResult, error: creditsError } = await supabase.rpc('allocate_subscription_credits', {
-      p_subscription_id: subscriptionData.id,
-      p_credits: creditsPerCycle
-    });
+    // Allocate initial credits - use direct insert since RPC might fail in some contexts
+    const expiresAt = new Date(subscription.current_period_end * 1000).toISOString();
     
-    if (creditsError) {
-      console.error('Error allocating credits:', creditsError);
+    const { error: creditError } = await supabase
+      .from('credit_purchases')
+      .insert({
+        user_id: user.id,
+        email: user.email,
+        credits_granted: creditsPerCycle,
+        expires_at: expiresAt,
+        source_type: 'subscription',
+        source_id: subscriptionData.id
+      });
+
+    if (creditError) {
+      console.error('Error creating credit purchase record:', creditError);
       return new Response(JSON.stringify({ 
         error: "Failed to allocate credits" 
       }), {
@@ -164,7 +172,21 @@ serve(async (req) => {
       });
     }
 
-    // Update user profile
+    // Update user profile with current active credits
+    const { data: activeCredits } = await supabase.rpc('get_active_credits', {
+      p_user_id: user.id
+    });
+
+    const { data: nextExpiration } = await supabase
+      .from('credit_purchases')
+      .select('expires_at')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .gt('expires_at', new Date().toISOString())
+      .order('expires_at', { ascending: true })
+      .limit(1)
+      .single();
+
     await supabase
       .from('user_profiles')
       .upsert({
@@ -173,11 +195,14 @@ serve(async (req) => {
         subscription_id: subscriptionData.id,
         plan_name,
         status: 'active',
+        credits: activeCredits || creditsPerCycle,
+        credits_expire_at: nextExpiration?.expires_at || expiresAt,
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id',
         ignoreDuplicates: false
       });
+
 
     console.log('Subscription setup completed successfully');
 
