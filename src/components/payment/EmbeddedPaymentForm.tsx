@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // IMPORTANT: Use your actual publishable key that matches your secret key
 // Get both keys from the same Stripe account: https://dashboard.stripe.com/apikeys
-const stripePromise = loadStripe('pk_test_51QhzUdIEfs7kgyZOjJDXWOIRPJkj0iSHNBUUiJnTa5mDOFHI3hBkXGKcFbTOjTqgPYKw8hEcIJ4yCo7O7Q3l9GVl00uLVbmR9U');
+const stripePromise = loadStripe('pk_test_51Rvd1mPnmK6WBcMPuLc4LUtR6QqvDel67C17W732wNADYDfmYDa6fLKDkGEbH5qxi6eJPBVnpNwTfmtGIQecat3u00ln5dp6WQ');
 
 interface EmbeddedPaymentFormProps {
   plan: {
