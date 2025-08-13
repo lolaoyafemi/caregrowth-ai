@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useUser } from './UserContext';
+import { useUser, UserRole } from './UserContext';
 
 interface AuthContextType {
   user: User | null;
@@ -56,8 +56,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (userData) {
         console.log('User data from public.users:', userData);
-        // Map the role from public.users to UserContext format
-        const userRole = userData.role === 'super_admin' ? 'super_admin' : 'admin';
+        // Map the role from public.users to UserContext format - preserve all role types
+        const validRoles = ['super_admin', 'agency_admin', 'admin', 'collaborator', 'content_writer'];
+        const userRole = validRoles.includes(userData.role) ? userData.role as UserRole : 'content_writer';
         
         setUserContext({
           id: userData.id,
