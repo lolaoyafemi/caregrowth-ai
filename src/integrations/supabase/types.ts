@@ -63,6 +63,8 @@ export type Database = {
           email: string
           expires_at: string
           id: string
+          source_id: string | null
+          source_type: string | null
           status: string
           user_id: string
         }
@@ -72,6 +74,8 @@ export type Database = {
           email: string
           expires_at: string
           id?: string
+          source_id?: string | null
+          source_type?: string | null
           status?: string
           user_id: string
         }
@@ -81,6 +85,8 @@ export type Database = {
           email?: string
           expires_at?: string
           id?: string
+          source_id?: string | null
+          source_type?: string | null
           status?: string
           user_id?: string
         }
@@ -561,6 +567,57 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string
+          credits_per_cycle: number
+          current_period_end: string | null
+          current_period_start: string | null
+          email: string
+          id: string
+          plan_name: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string
+          credits_per_cycle?: number
+          current_period_end?: string | null
+          current_period_start?: string | null
+          email: string
+          id?: string
+          plan_name: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string
+          credits_per_cycle?: number
+          current_period_end?: string | null
+          current_period_start?: string | null
+          email?: string
+          id?: string
+          plan_name?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       support_responses: {
         Row: {
           admin_email: string | null
@@ -657,6 +714,7 @@ export type Database = {
           role: string | null
           services: string | null
           status: string | null
+          subscription_id: string | null
           testimonial: string | null
           updated_at: string
           user_id: string
@@ -682,6 +740,7 @@ export type Database = {
           role?: string | null
           services?: string | null
           status?: string | null
+          subscription_id?: string | null
           testimonial?: string | null
           updated_at?: string
           user_id: string
@@ -707,11 +766,20 @@ export type Database = {
           role?: string | null
           services?: string | null
           status?: string | null
+          subscription_id?: string | null
           testimonial?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {
@@ -748,6 +816,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      allocate_subscription_credits: {
+        Args: { p_subscription_id: string; p_credits: number }
+        Returns: boolean
+      }
       deduct_credits_and_log: {
         Args: {
           p_user_id: string
