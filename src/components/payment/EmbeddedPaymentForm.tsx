@@ -9,7 +9,7 @@ import { Lock, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-// Note: Replace with your actual Stripe publishable key
+// Use your actual Stripe publishable key (test mode)
 const stripePromise = loadStripe('pk_test_TYooMQauvdEDq54NiTphI7jx');
 
 interface EmbeddedPaymentFormProps {
@@ -90,76 +90,84 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
     event.preventDefault();
 
     if (!stripe || !elements || !clientSecret) {
+      console.error('Stripe not loaded or missing client secret');
+      return;
+    }
+
+    if (!session?.access_token) {
+      toast({
+        title: "Authentication Error",
+        description: "Please log in to continue.",
+        variant: "destructive"
+      });
       return;
     }
 
     setLoading(true);
 
-    const cardElement = elements.getElement(CardElement);
-    if (!cardElement) {
-      setLoading(false);
-      return;
-    }
+    try {
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        throw new Error('Card element not found');
+      }
 
-    // Confirm the payment
-    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: cardElement,
-        billing_details: {
-          email: user?.email,
+      console.log('Confirming payment with client secret:', clientSecret.substring(0, 20) + '...');
+
+      // Confirm the payment using Stripe's client-side library
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            email: user?.email,
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      console.error('Payment failed:', error);
+      if (error) {
+        console.error('Payment confirmation failed:', error);
+        throw new Error(error.message || 'Payment failed');
+      }
+
+      if (paymentIntent.status !== 'succeeded') {
+        throw new Error(`Payment status: ${paymentIntent.status}`);
+      }
+
+      console.log('Payment succeeded, confirming subscription...');
+
+      // Confirm subscription setup
+      const { data, error: subscriptionError } = await supabase.functions.invoke('confirm-subscription', {
+        body: {
+          paymentIntentId: paymentIntent.id
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      });
+
+      if (subscriptionError) {
+        console.error('Subscription confirmation error:', subscriptionError);
+        throw new Error(subscriptionError.message || 'Subscription setup failed');
+      }
+
+      console.log('Subscription confirmed successfully:', data);
+
       toast({
-        title: "Payment Failed",
-        description: error.message || "Your payment could not be processed.",
+        title: "Subscription Active!",
+        description: `Your ${plan.name} subscription has been activated. Credits will be added to your account.`,
+      });
+
+      onSuccess();
+
+    } catch (error) {
+      console.error('Payment/subscription error:', error);
+      toast({
+        title: "Payment Error",
+        description: error.message || "There was an issue processing your payment. Please try again.",
         variant: "destructive"
       });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (paymentIntent.status === 'succeeded') {
-      // Confirm subscription setup
-      try {
-        console.log('Confirming subscription for payment intent:', paymentIntent.id);
-        
-        const { data, error } = await supabase.functions.invoke('confirm-subscription', {
-          body: {
-            paymentIntentId: paymentIntent.id
-          },
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-          }
-        });
-
-        if (error) {
-          console.error('Supabase function error:', error);
-          throw error;
-        }
-
-        console.log('Subscription confirmed successfully:', data);
-
-        toast({
-          title: "Subscription Active!",
-          description: `Your ${plan.name} subscription has been activated. Credits will be added to your account.`,
-        });
-
-        onSuccess();
-      } catch (error) {
-        console.error('Error confirming subscription:', error);
-        toast({
-          title: "Setup Error",
-          description: `Payment succeeded but subscription setup failed: ${error.message || 'Please contact support.'}`,
-          variant: "destructive"
-        });
-      }
-    }
-
-    setLoading(false);
   };
 
   const cardElementOptions = {

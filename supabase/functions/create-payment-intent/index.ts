@@ -15,6 +15,8 @@ serve(async (req) => {
 
   try {
     console.log('=== CREATE PAYMENT INTENT START ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
     
     // Get the authorization header
     const authHeader = req.headers.get("Authorization");
@@ -61,7 +63,11 @@ serve(async (req) => {
     console.log('User authenticated:', { userId: user.id, email: user.email });
 
     // Parse the request body
-    const { plan, planName, credits, amount } = await req.json();
+    const requestBody = await req.text();
+    console.log('Raw request body:', requestBody);
+    
+    const { plan, planName, credits, amount } = JSON.parse(requestBody);
+    console.log('Parsed request data:', { plan, planName, credits, amount });
     
     // Validate inputs
     if (!plan || !planName || !credits || !amount) {
