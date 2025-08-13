@@ -288,10 +288,10 @@ Use these points as invisible guidance — do not copy them into the post direct
 
 Main goal of this post: Build trust and establish authority while connecting authentically with families.
 
-Return your response in this exact format:
-HOOK: [compelling opening that draws readers in - 1-2 sentences]
-BODY: [authoritative content that demonstrates expertise - 4-6 sentences with specific details]
-CTA: [natural invitation to connect or engage - 1-2 sentences]`
+Return your response in this format format:
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`
     },
     "heartfelt-relatable": {
       systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.`,
@@ -319,10 +319,10 @@ Use these points as invisible guidance — do not copy them into the post direct
 
 Main goal of this post: Create genuine emotional connection and make families feel understood and less alone.
 
-Return your response in this exact format:
-HOOK: [emotionally engaging opening that makes people stop scrolling - 1-2 sentences]
-BODY: [heartfelt content with specific details and genuine emotion - 4-6 sentences]
-CTA: [warm, inclusive invitation that builds community - 1-2 sentences]`
+Return your response in this format format:
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`
     },
     "educational-helpful": {
       systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.`,
@@ -350,10 +350,10 @@ Use these points as invisible guidance — do not copy them into the post direct
 
 Main goal of this post: Provide genuine value and establish ${businessInfo.business_name} as a helpful resource for families.
 
-Return your response in this exact format:
-HOOK: [attention-grabbing statement about valuable information - 1-2 sentences]
-BODY: [valuable, actionable advice with specific examples - 4-6 sentences]
-CTA: [encouraging invitation to implement or ask questions - 1-2 sentences]`
+Return your response in this format format:
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`
     },
     "results-offers": {
       systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.`,
@@ -381,10 +381,10 @@ Use these points as invisible guidance — do not copy them into the post direct
 
 Main goal of this post: Build confidence in ${businessInfo.business_name} by showing meaningful results and inviting families to consider working with them.
 
-Return your response in this exact format:
-HOOK: [compelling result or transformation that grabs attention - 1-2 sentences]
-BODY: [story of success with specific details and social proof - 4-6 sentences]
-CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
+Return your response in this format format:
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`
     }
   };
 
