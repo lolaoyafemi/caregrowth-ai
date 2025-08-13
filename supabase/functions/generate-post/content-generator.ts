@@ -208,12 +208,9 @@ CTA: [clear call-to-action - 1-2 sentences]`;
 };
 */
 
-// Enhanced model selection based on content complexity
+// Optimized model selection for faster responses
 const selectOptimalModel = (postType: string, audience: string): string => {
-  // Use o3-2025-04-16 for complex reasoning tasks that require:
-  // - Multi-step thinking about audience psychology
-  // - Strategic content planning
-  // - Complex business positioning
+  // Use the mini model for faster generation unless it's a complex reasoning task
   const complexReasoningTypes = ['results-offers', 'trust-authority'];
   const complexAudiences = ['business owners', 'professionals', 'executives'];
   
@@ -222,7 +219,8 @@ const selectOptimalModel = (postType: string, audience: string): string => {
                          audience.toLowerCase().includes(audienceType.toLowerCase())
                        );
   
-  return isComplexTask ? 'gpt-4.1-2025-04-14' : 'gpt-4.1-2025-04-14';
+  // Use mini model for speed unless complex reasoning is needed
+  return isComplexTask ? 'gpt-4.1-2025-04-14' : 'gpt-4.1-mini-2025-04-14';
 };
 
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
@@ -397,9 +395,9 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
             content: selectedPrompt.userPrompt
           }
         ],
-        temperature: 0.8,
-        max_completion_tokens: 600,
-        top_p: 1
+        temperature: 0.6,
+        max_completion_tokens: 500,
+        top_p: 0.9
       })
     });
 
