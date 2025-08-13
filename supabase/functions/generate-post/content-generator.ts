@@ -528,9 +528,10 @@ export const parseGeneratedContent = (content: string): { hook: string; body: st
     }
   }
   
-  hook = hookLines.join(' ').trim();
-  body = bodyLines.join(' ').trim();
-  cta = ctaLines.join(' ').trim();
+  // Join all lines with spaces to create single paragraph flow
+  hook = hookLines.join(' ').trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  body = bodyLines.join(' ').trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  cta = ctaLines.join(' ').trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
   
   return { hook, body, cta };
 };
