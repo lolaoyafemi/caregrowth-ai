@@ -79,6 +79,21 @@ const SubscriptionManager = () => {
 
       if (data?.url) {
         window.open(data.url, '_blank');
+      } else if (data?.fallback_url) {
+        // Handle case where billing portal is not configured
+        toast({
+          title: "Portal Unavailable",
+          description: data.message || "Please contact support to manage your subscription.",
+          variant: "default"
+        });
+        // Optionally redirect to payment page
+        window.open(data.fallback_url, '_blank');
+      } else if (data?.error === "Billing portal not configured") {
+        toast({
+          title: "Portal Configuration Required",
+          description: "The billing portal needs to be set up. Please contact support.",
+          variant: "default"
+        });
       } else {
         throw new Error('No portal URL returned');
       }

@@ -95,19 +95,38 @@ serve(async (req) => {
 
     // Create billing portal session
     const origin = req.headers.get("origin") || "https://www.spicymessaging.com";
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customer.id,
-      return_url: `${origin}/settings`,
-    });
+    
+    try {
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customer.id,
+        return_url: `${origin}/settings`,
+      });
 
-    console.log('Customer portal session created:', portalSession.id);
+      console.log('Customer portal session created:', portalSession.id);
 
-    return new Response(JSON.stringify({ 
-      url: portalSession.url
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+      return new Response(JSON.stringify({ 
+        url: portalSession.url
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    } catch (stripeError) {
+      console.error('Stripe billing portal error:', stripeError);
+      
+      // If billing portal is not configured, provide fallback
+      if (stripeError.message?.includes('not activated')) {
+        return new Response(JSON.stringify({ 
+          error: "Billing portal not configured",
+          message: "Please contact support to manage your subscription",
+          fallback_url: `${origin}/stripe-payment`
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      
+      throw stripeError;
+    }
 
   } catch (error) {
     console.error("=== CUSTOMER PORTAL ERROR ===");
