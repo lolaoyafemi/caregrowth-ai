@@ -99,8 +99,7 @@ serve(async (req) => {
         interval: 'month'
       },
       product_data: {
-        name: `${plan_name} Subscription`,
-        description: `${creditsPerCycle} credits per month`
+        name: `${plan_name} Subscription`
       }
     });
 
