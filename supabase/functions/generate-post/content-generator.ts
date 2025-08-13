@@ -398,7 +398,7 @@ CTA: [natural offer presentation with clear value proposition - 1-2 sentences]`
           }
         ],
         temperature: 0.8,
-        max_tokens: 600,
+        max_completion_tokens: 600,
         presence_penalty: 0.3,
         frequency_penalty: 0.2,
         top_p: 1

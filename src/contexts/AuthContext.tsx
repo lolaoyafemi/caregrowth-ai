@@ -56,8 +56,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (userData) {
         console.log('User data from public.users:', userData);
-        // Map the role from public.users to UserContext format
-        const userRole = userData.role === 'super_admin' ? 'super_admin' : 'admin';
+        // Use the actual role from database - validate it matches UserRole type
+        const userRole = userData.role as 'super_admin' | 'agency_admin' | 'admin' | 'collaborator' | 'content_writer';
         
         setUserContext({
           id: userData.id,
