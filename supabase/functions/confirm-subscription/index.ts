@@ -149,10 +149,20 @@ serve(async (req) => {
     }
 
     // Allocate initial credits
-    const creditsAllocated = await supabase.rpc('allocate_subscription_credits', {
+    const { data: creditsResult, error: creditsError } = await supabase.rpc('allocate_subscription_credits', {
       p_subscription_id: subscriptionData.id,
       p_credits: creditsPerCycle
     });
+    
+    if (creditsError) {
+      console.error('Error allocating credits:', creditsError);
+      return new Response(JSON.stringify({ 
+        error: "Failed to allocate credits" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
 
     // Update user profile
     await supabase
