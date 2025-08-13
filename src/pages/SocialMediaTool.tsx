@@ -37,7 +37,7 @@ const SocialMediaTool = () => {
   const [regeneratingSection, setRegeneratingSection] = useState<{platform: string, section: string} | null>(null);
 
   // Credit management
-  const { credits, loading: creditsLoading } = useUserCredits();
+  const { credits, loading: creditsLoading, refetch } = useUserCredits();
 
   // Load business profile on component mount
   useEffect(() => {
@@ -144,7 +144,18 @@ const SocialMediaTool = () => {
 
       console.log('Starting post generation...');
 
-      // Deduct credits before generating content (1 credit per generation)
+      // First generate content, then deduct credits only if successful
+      const result = await generatePost(userId, contentCategory, toneOfPost, platform, audience);
+
+      console.log('Generation result:', result);
+
+      if (!result || !result.post) {
+        console.error('No post content in result:', result);
+        toast.error("No content was generated. Please try again.");
+        return;
+      }
+
+      // Only deduct credits after successful content generation
       const creditResult = await deductCredits(
         userId, 
         'social_media', 
@@ -159,43 +170,37 @@ const SocialMediaTool = () => {
 
       toast.success(`1 credit deducted. Remaining credits: ${creditResult.remainingCredits}`);
 
-      const result = await generatePost(userId, contentCategory, toneOfPost, platform, audience);
+      // Refresh credits to reflect the deduction
+      refetch();
 
-      console.log('Generation result:', result);
-
-      if (result && result.post) {
-        // Use the parsed components if available, otherwise split the post
-        let hook, body, cta;
-        
-        if (result.hook && result.body && result.cta) {
-          hook = result.hook;
-          body = result.body;
-          cta = result.cta;
-        } else {
-          // Fallback to splitting the post
-          const postLines = result.post.split('\n').filter(line => line.trim());
-          hook = postLines[0] || result.post;
-          body = postLines.slice(1, -1).join('\n') || result.post;
-          cta = postLines[postLines.length - 1] || "Contact us today!";
-        }
-
-        const content: GeneratedContent = {
-          facebook: { hook, body, cta },
-          twitter: { hook, body, cta },
-          linkedin: { hook, body, cta },
-          instagram: { hook, body, cta }
-        };
-
-        setGeneratedContent(content);
-        toast.success("Content generated successfully!");
-        
-        // Refresh post history after generation
-        fetchPostHistory(1);
-        setCurrentPage(1);
+      // Use the parsed components if available, otherwise split the post
+      let hook, body, cta;
+      
+      if (result.hook && result.body && result.cta) {
+        hook = result.hook;
+        body = result.body;
+        cta = result.cta;
       } else {
-        console.error('No post content in result:', result);
-        toast.error("No content was generated. Please try again.");
+        // Fallback to splitting the post
+        const postLines = result.post.split('\n').filter(line => line.trim());
+        hook = postLines[0] || result.post;
+        body = postLines.slice(1, -1).join('\n') || result.post;
+        cta = postLines[postLines.length - 1] || "Contact us today!";
       }
+
+      const content: GeneratedContent = {
+        facebook: { hook, body, cta },
+        twitter: { hook, body, cta },
+        linkedin: { hook, body, cta },
+        instagram: { hook, body, cta }
+      };
+
+      setGeneratedContent(content);
+      toast.success("Content generated successfully!");
+      
+      // Refresh post history after generation
+      fetchPostHistory(1);
+      setCurrentPage(1);
     } catch (error: any) {
       console.error("Error generating post:", error);
       toast.error(`Error generating post: ${error.message || 'Unknown error'}`);
@@ -233,7 +238,23 @@ const SocialMediaTool = () => {
     setRegeneratingSection({platform, section});
 
     try {
-      // Deduct credits for regeneration (1 credit per section regeneration)
+      // Get current content for the section
+      const currentContent = generatedContent[platform as keyof GeneratedContent][section as keyof GeneratedSection];
+
+      // First regenerate content, then deduct credits only if successful
+      const result = await regenerateSection(
+        userId,
+        contentCategory,
+        platform === 'all' ? 'all' : platform,
+        section,
+        currentContent
+      );
+
+      if (!result || !result.success || !result.newContent) {
+        throw new Error(result?.error || 'Failed to regenerate section');
+      }
+
+      // Only deduct credits after successful regeneration
       const creditResult = await deductCredits(
         userId, 
         'social_media', 
@@ -247,29 +268,16 @@ const SocialMediaTool = () => {
         return;
       }
 
-      // Get current content for the section
-      const currentContent = generatedContent[platform as keyof GeneratedContent][section as keyof GeneratedSection];
-
-      // Call the regenerate section function
-      const result = await regenerateSection(
-        userId,
-        contentCategory,
-        platform === 'all' ? 'all' : platform,
-        section,
-        currentContent
-      );
-
-      if (result && result.success && result.newContent) {
-        // Update the content with the new regenerated section
-        const updatedContent = {...generatedContent};
-        updatedContent[platform as keyof GeneratedContent][section as keyof GeneratedSection] = result.newContent;
-        setGeneratedContent(updatedContent);
-        
-        setRegeneratingSection(null);
-        toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} regenerated! Remaining credits: ${creditResult.remainingCredits}`);
-      } else {
-        throw new Error(result?.error || 'Failed to regenerate section');
-      }
+      // Update the content with the new regenerated section
+      const updatedContent = {...generatedContent};
+      updatedContent[platform as keyof GeneratedContent][section as keyof GeneratedSection] = result.newContent;
+      setGeneratedContent(updatedContent);
+      
+      // Refresh credits to reflect the deduction
+      refetch();
+      
+      setRegeneratingSection(null);
+      toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} regenerated! Remaining credits: ${creditResult.remainingCredits}`);
     } catch (error: any) {
       console.error("Error regenerating section:", error);
       toast.error(`Error regenerating ${section}: ${error.message}`);
