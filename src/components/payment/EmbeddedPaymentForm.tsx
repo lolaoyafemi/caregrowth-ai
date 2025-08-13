@@ -9,8 +9,9 @@ import { Lock, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-// Use your actual Stripe publishable key (test mode)
-const stripePromise = loadStripe('pk_test_TYooMQauvdEDq54NiTphI7jx');
+// IMPORTANT: Use your actual publishable key that matches your secret key
+// Get both keys from the same Stripe account: https://dashboard.stripe.com/apikeys
+const stripePromise = loadStripe('pk_test_51QhzUdIEfs7kgyZOjJDXWOIRPJkj0iSHNBUUiJnTa5mDOFHI3hBkXGKcFbTOjTqgPYKw8hEcIJ4yCo7O7Q3l9GVl00uLVbmR9U');
 
 interface EmbeddedPaymentFormProps {
   plan: {
