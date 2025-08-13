@@ -108,22 +108,29 @@ serve(async (req) => {
       console.log('❌ Database prompt generation failed, falling back to AI generation');
     */
       
-    // Generate content using coded prompts with AI
-    console.log('🤖 Generating content using coded prompts with AI');
-    const generatedContent = await generateContentWithAI({
-      userId: authenticatedUserId,
-      postType,
-      tone,
-      platform,
-      audience: targetAudience,
-      businessContext,
-      openAIApiKey
-    });
+    try {
+      // Generate content using coded prompts with AI
+      console.log('🤖 Generating content using coded prompts with AI');
+      const generatedContent = await generateContentWithAI({
+        userId: authenticatedUserId,
+        postType,
+        tone,
+        platform,
+        audience: targetAudience,
+        businessContext,
+        openAIApiKey
+      });
 
-    hook = generatedContent.hook;
-    body = generatedContent.body;
-    cta = generatedContent.cta;
-    contentSource = 'coded_prompt_ai';
+      console.log('✅ Content generation successful:', generatedContent);
+      
+      hook = generatedContent.hook;
+      body = generatedContent.body;
+      cta = generatedContent.cta;
+      contentSource = 'coded_prompt_ai';
+    } catch (generationError) {
+      console.error('❌ Content generation failed:', generationError);
+      throw new Error(`Content generation failed: ${generationError.message}`);
+    }
     
     // } // End of commented database logic
 
