@@ -15,9 +15,7 @@ interface Prompt {
   name: string;
   platform: string;
   category: string;
-  hook: string;
-  body: string;
-  cta: string;
+  prompt: string;
   created_at: string;
   updated_at: string;
 }
@@ -61,12 +59,12 @@ const PromptsPage = () => {
   const fetchPrompts = async () => {
     try {
       const { data, error } = await supabase
-        .from('prompts')
+        .from('prompts_modified' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPrompts(data || []);
+      setPrompts((data || []) as unknown as Prompt[]);
     } catch (error) {
       console.error('Error fetching prompts:', error);
       toast.error('Failed to load prompts');
@@ -109,22 +107,18 @@ const PromptsPage = () => {
         return;
       }
 
-      // For now, we'll store the entire template in the hook field
-      // This maintains backward compatibility with existing system
       const promptData = {
         name: formData.name,
         platform: formData.platform,
         category: formData.category,
-        hook: formData.template,
-        body: '', // Keep empty for backward compatibility
-        cta: '', // Keep empty for backward compatibility
+        prompt: formData.template,
         updated_at: new Date().toISOString()
       };
 
       if (editingPrompt) {
         // Update existing prompt
         const { error } = await supabase
-          .from('prompts')
+          .from('prompts_modified' as any)
           .update(promptData)
           .eq('id', editingPrompt.id);
 
@@ -133,7 +127,7 @@ const PromptsPage = () => {
       } else {
         // Create new prompt
         const { error } = await supabase
-          .from('prompts')
+          .from('prompts_modified' as any)
           .insert([{
             ...promptData,
             user_id: data.user.id
@@ -157,16 +151,11 @@ const PromptsPage = () => {
       return;
     }
 
-    // Combine hook, body, and cta into a single template for editing
-    const combinedTemplate = [prompt.hook, prompt.body, prompt.cta]
-      .filter(part => part && part.trim())
-      .join('\n\n');
-
     setFormData({
       name: prompt.name,
       platform: prompt.platform,
       category: prompt.category,
-      template: combinedTemplate
+      template: prompt.prompt
     });
     setEditingPrompt(prompt);
     setIsCreateMode(true);
@@ -182,7 +171,7 @@ const PromptsPage = () => {
 
     try {
       const { error } = await supabase
-        .from('prompts')
+        .from('prompts_modified' as any)
         .delete()
         .eq('id', promptId);
 
@@ -364,10 +353,7 @@ const PromptsPage = () => {
                 <div>
                   <h4 className="font-medium text-sm text-gray-700 mb-1">Template Content:</h4>
                   <div className="text-sm text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
-                    {/* Show combined content or individual parts */}
-                    {prompt.hook && prompt.body && prompt.cta ? 
-                      `${prompt.hook}\n\n${prompt.body}\n\n${prompt.cta}` : 
-                      prompt.hook || 'No template content'}
+                    {prompt.prompt || 'No template content'}
                   </div>
                 </div>
               </div>
