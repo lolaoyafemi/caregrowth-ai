@@ -73,11 +73,47 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   // Parse business context to extract key information
   const businessInfo = parseBusinessContext(businessContext);
 
+  // Create Supabase client for database access
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // Fetch random prompt from prompts_modified table based on category
+  const getRandomPromptByCategory = async (category: string) => {
+    const { data: prompts, error } = await supabase
+      .from('prompts_modified')
+      .select('prompt')
+      .eq('category', category);
+    
+    if (error) {
+      console.error('Error fetching prompts:', error);
+      return null;
+    }
+    
+    if (!prompts || prompts.length === 0) {
+      console.error(`No prompts found for category: ${category}`);
+      return null;
+    }
+    
+    // Select random prompt from the array
+    const randomIndex = Math.floor(Math.random() * prompts.length);
+    return prompts[randomIndex].prompt;
+  };
+
+  // Get random prompt for the selected category
+  const randomPrompt = await getRandomPromptByCategory(postType);
+  
+  if (!randomPrompt) {
+    throw new Error(`No prompt found for category: ${postType}`);
+  }
+
   // Enhanced content category specific prompts optimized for advanced AI reasoning
   const contentPrompts = {
     "trust-authority": {
       systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.`,
-      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
+      userPrompt: randomPrompt
+      /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
+      `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
 
 IMPORTANT: Generate completely fresh, original content. Avoid repetitive openings like "Every day", "Have you ever", "Raise your hand if", or similar patterns. ${selectedOpening}.
 
@@ -105,10 +141,13 @@ Return your response in this format format:
 HOOK: [compelling opening - 1-2 sentences]
 BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`
+      */
     },
     "heartfelt-relatable": {
       systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.`,
-      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
+      userPrompt: randomPrompt
+      /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
+      `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
 
 IMPORTANT: Generate completely fresh, original content. Avoid repetitive openings like "Every day", "Have you ever", "Raise your hand if", or similar patterns. ${selectedOpening}.
 
@@ -136,10 +175,13 @@ Return your response in this format format:
 HOOK: [compelling opening - 1-2 sentences]
 BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`
+      */
     },
     "educational-helpful": {
       systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.`,
-      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create an Educational & Helpful post that provides genuine value to ${businessInfo.ideal_client}.
+      userPrompt: randomPrompt
+      /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
+      `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create an Educational & Helpful post that provides genuine value to ${businessInfo.ideal_client}.
 
 IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
 
@@ -167,10 +209,13 @@ Return your response in this format format:
 HOOK: [compelling opening - 1-2 sentences]
 BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`
+      */
     },
     "results-offers": {
       systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.`,
-      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Results & Offers post that highlights meaningful outcomes and encourages ${businessInfo.ideal_client} to explore working with ${businessInfo.business_name}, while positioning the agency as a dependable, trustworthy partner.
+      userPrompt: randomPrompt
+      /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
+      `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Results & Offers post that highlights meaningful outcomes and encourages ${businessInfo.ideal_client} to explore working with ${businessInfo.business_name}, while positioning the agency as a dependable, trustworthy partner.
 
 IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
 
@@ -198,6 +243,7 @@ Return your response in this format format:
 HOOK: [compelling opening - 1-2 sentences]
 BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`
+      */
     }
   };
 
