@@ -497,7 +497,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
         },
         {
           role: 'user',
-          content: processedPrompt || 'Generate social media content.'
+          content: contentPrompts[postType].userPrompt || 'Generate social media content.'
         }
       ],
       // Use filtered OpenAI settings
