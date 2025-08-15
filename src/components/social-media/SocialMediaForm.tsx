@@ -87,7 +87,7 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
             <Label htmlFor="audience">Target Audience</Label>
             <Input
               id="audience"
-              placeholder="e.g., Small Business Owners, Marketing Managers"
+              placeholder="e.g. dementia patients, autistic children"
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
             />
