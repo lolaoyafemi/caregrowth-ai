@@ -139,51 +139,84 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
 
   // Fetch random prompt from prompts_modified table based on category
   const getRandomPromptByCategory = async (category: string) => {
-    const { data: prompts, error } = await supabase
-      .from('prompts_modified')
-      .select('prompt')
-      .eq('category', category);
-    
-    if (error) {
-      console.error('Error fetching prompts:', error);
+    try {
+      if (!category) {
+        console.error('Category is required for prompt fetching');
+        return null;
+      }
+
+      const { data: prompts, error } = await supabase
+        .from('prompts_modified')
+        .select('prompt')
+        .eq('category', category);
+      
+      if (error) {
+        console.error('Database error fetching prompts:', error.message);
+        return null;
+      }
+      
+      if (!prompts || prompts.length === 0) {
+        console.log(`No prompts found for category: ${category}`);
+        return null;
+      }
+      
+      // Select random prompt
+      const randomIndex = Math.floor(Math.random() * prompts.length);
+      const selectedPrompt = prompts[randomIndex]?.prompt;
+      
+      if (!selectedPrompt) {
+        console.error('Selected prompt is empty or undefined');
+        return null;
+      }
+      
+      return selectedPrompt;
+    } catch (error) {
+      console.error('Unexpected error in getRandomPromptByCategory:', error.message);
       return null;
     }
-    
-    if (!prompts || prompts.length === 0) {
-      console.error(`No prompts found for category: ${category}`);
-      return null;
-    }
-    
-    // Select random prompt from the array
-    const randomIndex = Math.floor(Math.random() * prompts.length);
-    return prompts[randomIndex].prompt;
   };
 
-  // Get random prompt for the selected category
-  const randomPrompt = await getRandomPromptByCategory(postType);
+  // Get random prompt from database
+  let randomPrompt;
+  try {
+    randomPrompt = await getRandomPromptByCategory(postType);
+  } catch (error) {
+    console.error('Error getting random prompt:', error.message);
+    throw new Error(`Failed to fetch prompt for category: ${postType}`);
+  }
   
-  if (!randomPrompt) {
-    console.error(`No prompt found for category: ${postType}. Available categories: trust-authority, heartfelt-relatable, educational-helpful, results-offers`);
-    throw new Error(`No prompt found for category: ${postType}. Please use one of: trust-authority, heartfelt-relatable, educational-helpful, results-offers`);
+  if (!randomPrompt || randomPrompt.trim() === '') {
+    console.log(`Falling back to hardcoded prompts for category: ${postType}`);
+    throw new Error(`No valid prompt found for category: ${postType}. Please use one of: trust-authority, heartfelt-relatable, educational-helpful, results-offers`);
   }
 
   // Parse and filter OpenAI settings from prompt
   let filteredSettings = {};
   let cleanPrompt = randomPrompt;
   
-  const openAISettingsMatch = randomPrompt.match(/OpenAI Settings:\s*(\{[\s\S]*?\})/);
-  if (openAISettingsMatch) {
-    try {
-      const rawSettings = JSON.parse(openAISettingsMatch[1]);
-      filteredSettings = filterOpenAISettings(rawSettings, selectedModel);
-      // Remove the OpenAI Settings section from the prompt
-      cleanPrompt = randomPrompt.replace(/OpenAI Settings:\s*\{[\s\S]*?\}/g, '').trim();
-      console.log('Extracted and filtered OpenAI settings:', filteredSettings);
-    } catch (e) {
-      console.warn('Failed to parse OpenAI settings, using defaults:', e);
+  try {
+    const openAISettingsMatch = randomPrompt.match(/OpenAI Settings:\s*(\{[\s\S]*?\})/);
+    if (openAISettingsMatch && openAISettingsMatch[1]) {
+      try {
+        const rawSettings = JSON.parse(openAISettingsMatch[1]);
+        if (rawSettings && typeof rawSettings === 'object') {
+          filteredSettings = filterOpenAISettings(rawSettings, selectedModel);
+          // Remove the OpenAI Settings section from the prompt
+          cleanPrompt = randomPrompt.replace(/OpenAI Settings:\s*\{[\s\S]*?\}/g, '').trim();
+          console.log('Extracted and filtered OpenAI settings:', filteredSettings);
+        } else {
+          console.warn('Invalid OpenAI settings format, using defaults');
+          filteredSettings = getDefaultSettings(selectedModel);
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse OpenAI settings JSON, using defaults:', parseError.message);
+        filteredSettings = getDefaultSettings(selectedModel);
+      }
+    } else {
       filteredSettings = getDefaultSettings(selectedModel);
     }
-  } else {
+  } catch (error) {
+    console.error('Error processing OpenAI settings:', error.message);
     filteredSettings = getDefaultSettings(selectedModel);
   }
 
@@ -356,40 +389,82 @@ CTA: [clear call-to-action - 1-2 sentences]`
   }
   
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          {
-            role: 'system',
-            content: contentPrompts[postType].systemPrompt
-          },
-          {
-            role: 'user',
-            content: processedPrompt
-          }
-        ],
-        // Use filtered OpenAI settings
-        ...filteredSettings
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+    console.log(`Making OpenAI API call with model: ${selectedModel}`);
+    
+    // Validate required parameters before API call
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key is missing');
+    }
+    
+    if (!selectedModel) {
+      throw new Error('Model selection failed');
+    }
+    
+    if (!contentPrompts[postType]) {
+      throw new Error(`Content prompt not found for post type: ${postType}`);
+    }
+    
+    const requestBody = {
+      model: selectedModel,
+      messages: [
+        {
+          role: 'system',
+          content: contentPrompts[postType].systemPrompt || 'You are a helpful assistant.'
+        },
+        {
+          role: 'user',
+          content: processedPrompt || 'Generate social media content.'
+        }
+      ],
+      // Use filtered OpenAI settings
+      ...filteredSettings
+    };
+    
+    console.log('OpenAI request body:', JSON.stringify(requestBody, null, 2));
+    
+    let response;
+    try {
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+    } catch (fetchError) {
+      console.error('Network error calling OpenAI API:', fetchError.message);
+      throw new Error(`Network error: ${fetchError.message}`);
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse error response:', jsonError.message);
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      }
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      console.error('Failed to parse OpenAI response:', jsonError.message);
+      throw new Error('Invalid JSON response from OpenAI API');
+    }
     
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
       console.error('Invalid OpenAI response structure:', data);
       throw new Error('Invalid response structure from OpenAI API');
+    }
+    
+    if (!data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      console.error('Missing content in OpenAI response:', data.choices[0]);
+      throw new Error('No content received from OpenAI API');
     }
     
     const generatedContent = data.choices[0].message.content;
