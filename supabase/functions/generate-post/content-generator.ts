@@ -247,7 +247,8 @@ CTA: [clear call-to-action - 1-2 sentences]`
     }
   };
 
-  const selectedPrompt = contentPrompts[postType] || contentPrompts["educational-helpful"];
+  // const selectedPrompt = contentPrompts[postType] || contentPrompts["educational-helpful"];
+  const selectedPrompt = contentPrompts[postType];
   
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
