@@ -10,9 +10,7 @@ import { useUserCredits } from '@/hooks/useUserCredits';
 import { validateCreditsBeforeAction } from '@/utils/creditValidation';
 
 interface GeneratedSection {
-  hook: string;
-  body: string;
-  cta: string;
+  content: string;
 }
 
 interface GeneratedContent {
@@ -52,7 +50,7 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
     if (!generatedContent) return;
     
     const content = generatedContent[platform as keyof GeneratedContent];
-    const fullText = `${content.hook}\n\n${content.body}\n\n${content.cta}`;
+    const fullText = content.content;
     
     navigator.clipboard.writeText(fullText);
     toast.success("Copied!");
@@ -62,7 +60,7 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
     if (!generatedContent) return;
     
     const content = generatedContent[platform as keyof GeneratedContent];
-    const fullText = `${content.hook}\n\n${content.body}\n\n${content.cta}`;
+    const fullText = content.content;
     
     setPreviewContent(fullText);
     setPreviewPlatform(platform.charAt(0).toUpperCase() + platform.slice(1));
@@ -76,33 +74,14 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
   };
 
   const handleFullContentChange = (platform: string, value: string) => {
-    // Split the content back into sections for storage
-    const lines = value.split('\n').filter(line => line.trim());
-    
-    if (lines.length >= 3) {
-      // Find natural breaks in the content
-      const firstBreakIndex = lines.findIndex((line, index) => index > 0 && line.trim() !== '');
-      const lastBreakIndex = lines.length - 1;
-      
-      const hook = lines.slice(0, Math.max(1, firstBreakIndex)).join('\n');
-      const body = lines.slice(Math.max(1, firstBreakIndex), lastBreakIndex).join('\n');
-      const cta = lines[lastBreakIndex];
-      
-      onContentChange(platform, 'hook', hook);
-      onContentChange(platform, 'body', body);
-      onContentChange(platform, 'cta', cta);
-    } else {
-      // If content is too short, put it all in hook
-      onContentChange(platform, 'hook', value);
-      onContentChange(platform, 'body', '');
-      onContentChange(platform, 'cta', '');
-    }
+    // Update the content directly
+    onContentChange(platform, 'content', value);
   };
 
   const getConcatenatedContent = (platform: string) => {
     if (!generatedContent) return '';
     const content = generatedContent[platform as keyof GeneratedContent];
-    return `${content.hook}${content.body}${content.cta}`;
+    return content.content;
   };
 
   return (

@@ -173,26 +173,12 @@ const SocialMediaTool = () => {
       // Refresh credits to reflect the deduction
       refetch();
 
-      // Use the parsed components if available, otherwise split the post
-      let hook, body, cta;
-      
-      if (result.hook && result.body && result.cta) {
-        hook = result.hook;
-        body = result.body;
-        cta = result.cta;
-      } else {
-        // Fallback to splitting the post
-        const postLines = result.post.split('\n').filter(line => line.trim());
-        hook = postLines[0] || result.post;
-        body = postLines.slice(1, -1).join('\n') || result.post;
-        cta = postLines[postLines.length - 1] || "Contact us today!";
-      }
-
+      // Use the generated content directly
       const content: GeneratedContent = {
-        facebook: { hook, body, cta },
-        twitter: { hook, body, cta },
-        linkedin: { hook, body, cta },
-        instagram: { hook, body, cta }
+        facebook: { content: result.content || result.post || result },
+        twitter: { content: result.content || result.post || result },
+        linkedin: { content: result.content || result.post || result },
+        instagram: { content: result.content || result.post || result }
       };
 
       setGeneratedContent(content);
@@ -289,7 +275,7 @@ const SocialMediaTool = () => {
     if (!generatedContent) return;
     
     const content = generatedContent[platform as keyof GeneratedContent];
-    const fullText = `${content.hook}\n\n${content.body}\n\n${content.cta}`;
+    const fullText = content.content;
     
     navigator.clipboard.writeText(fullText);
     toast.success(`${platform.charAt(0).toUpperCase() + platform.slice(1)} content copied to clipboard!`);
@@ -317,7 +303,7 @@ const SocialMediaTool = () => {
       }
 
       const content = generatedContent[platform as keyof GeneratedContent];
-      const fullText = `${content.hook}\n\n${content.body}\n\n${content.cta}`;
+      const fullText = content.content;
       
       await saveSocialPost(
         userId,
@@ -342,7 +328,7 @@ const SocialMediaTool = () => {
     if (!generatedContent) return;
     
     const updated = {...generatedContent};
-    updated[platform as keyof GeneratedContent][section as keyof typeof updated.facebook] = value;
+    updated[platform as keyof GeneratedContent].content = value;
     setGeneratedContent(updated);
   };
 
