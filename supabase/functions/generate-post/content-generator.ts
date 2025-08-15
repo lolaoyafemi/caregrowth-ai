@@ -108,11 +108,31 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
     throw new Error(`No prompt found for category: ${postType}. Please use one of: trust-authority, heartfelt-relatable, educational-helpful, results-offers`);
   }
 
+  // Replace placeholders in the prompt with actual business context
+  const processedPrompt = randomPrompt
+    .replace(/\{business_name\}/g, businessInfo.business_name)
+    .replace(/\{core_service\}/g, businessInfo.core_service)
+    .replace(/\{location\}/g, businessInfo.location)
+    .replace(/\{ideal_client\}/g, businessInfo.ideal_client)
+    .replace(/\{tone\}/g, tone)
+    .replace(/\{tone_description\}/g, toneDescription)
+    .replace(/\{pain_points\}/g, businessInfo.pain_points)
+    .replace(/\{objections\}/g, businessInfo.objections)
+    .replace(/\{differentiator\}/g, businessInfo.differentiator)
+    .replace(/\{big_promise\}/g, businessInfo.big_promise)
+    .replace(/\{selected_opening\}/g, selectedOpening)
+    .replace(/\{current_time\}/g, currentTime)
+    .replace(/\{random_seed\}/g, randomSeed)
+    .replace(/\{audience\}/g, audience)
+    .replace(/\{platform\}/g, platform);
+
+  console.log('Processed prompt with business context:', processedPrompt.substring(0, 200) + '...');
+
   // Enhanced content category specific prompts optimized for advanced AI reasoning
   const contentPrompts = {
     "trust-authority": {
       systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.`,
-      userPrompt: randomPrompt
+      userPrompt: processedPrompt
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
 
@@ -146,7 +166,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     },
     "heartfelt-relatable": {
       systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.`,
-      userPrompt: randomPrompt
+      userPrompt: processedPrompt
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
 
@@ -180,7 +200,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     },
     "educational-helpful": {
       systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.`,
-      userPrompt: randomPrompt
+      userPrompt: processedPrompt
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create an Educational & Helpful post that provides genuine value to ${businessInfo.ideal_client}.
 
@@ -214,7 +234,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     },
     "results-offers": {
       systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.`,
-      userPrompt: randomPrompt
+      userPrompt: processedPrompt
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Results & Offers post that highlights meaningful outcomes and encourages ${businessInfo.ideal_client} to explore working with ${businessInfo.business_name}, while positioning the agency as a dependable, trustworthy partner.
 
