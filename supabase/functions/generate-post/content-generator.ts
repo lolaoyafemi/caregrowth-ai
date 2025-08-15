@@ -20,51 +20,82 @@ export interface GeneratedContent {
   template_id?: string;
 }
 
-// Database prompt generation function - now uses prompts_modified table
-export const generateContentFromDatabasePrompts = async (
+// COMMENTED OUT - Database prompt generation
+/*
+export const generateContentFromPrompts = async (
   supabase: any,
   params: ContentGenerationParams
 ): Promise<GeneratedContent | null> => {
   const { userId, postType, tone, platform, audience, businessContext, openAIApiKey } = params;
 
-  console.log('🎯 Fetching prompts from prompts_modified for category:', postType);
+  console.log('Fetching prompts for:', { postType, platform });
 
-  // Get prompt templates from prompts_modified table based on category (content type)
+  // Get prompt templates for the specified content category and platform
   const { data: prompts, error: promptError } = await supabase
-    .from('prompts_modified')
+    .from('prompts')
     .select('*')
-    .eq('category', postType);
+    .eq('category', postType)
+    .in('platform', [platform, 'all']);
 
-  console.log('✅ Fetched prompts:', prompts?.length || 0, 'prompts found for category:', postType);
+  console.log('Fetched prompts:', prompts?.length || 0, 'prompts found');
+  console.log('First prompt structure:', prompts?.[0] ? Object.keys(prompts[0]) : 'No prompts');
 
   if (promptError) {
-    console.error('❌ Prompt fetch error:', promptError);
+    console.error('Prompt fetch error:', promptError);
     return null;
   }
 
   if (!prompts || prompts.length === 0) {
-    console.log('📝 No prompts found for category:', postType);
+    console.log('No prompts found for category:', postType, 'platform:', platform);
     return null;
   }
 
-  // Randomly select one prompt from the available prompts for this category
-  const selectedPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-  
-  console.log('🎲 Selected random prompt:', selectedPrompt.name, 'from', prompts.length, 'available prompts');
+  // Separate prompts by platform preference
+  const platformSpecificPrompts = prompts.filter(p => p.platform === platform);
+  const generalPrompts = prompts.filter(p => p.platform === 'all');
 
-  // Use the prompt field directly (prompts_modified has a single prompt field)
-  const promptTemplate = selectedPrompt.prompt || '';
+  // Choose from platform-specific first, then general
+  const availablePrompts = platformSpecificPrompts.length > 0 ? platformSpecificPrompts : generalPrompts;
   
-  if (!promptTemplate) {
-    console.log('❌ No content found in prompt field');
+  if (availablePrompts.length === 0) {
+    console.log('No available prompts after filtering');
     return null;
   }
 
-  console.log('📄 Using prompts_modified template, length:', promptTemplate.length);
+  // Randomly select one prompt from available prompts
+  const selectedPrompt = availablePrompts[Math.floor(Math.random() * availablePrompts.length)];
+  
+  console.log('Selected prompt:', selectedPrompt.id, selectedPrompt.name);
+  console.log('Selected prompt keys:', Object.keys(selectedPrompt));
+
+  // Get the prompt content - try different possible field names
+  let promptContent = '';
+  if (selectedPrompt.prompt) {
+    promptContent = selectedPrompt.prompt;
+    console.log('Using prompt field:', promptContent.substring(0, 100));
+  } else if (selectedPrompt.hook) {
+    promptContent = selectedPrompt.hook;
+    console.log('Using hook field (fallback):', promptContent.substring(0, 100));
+  } else if (selectedPrompt.body) {
+    promptContent = selectedPrompt.body;
+    console.log('Using body field (fallback):', promptContent.substring(0, 100));
+  } else {
+    console.log('No prompt content found in any field');
+    console.log('Available fields:', Object.keys(selectedPrompt));
+    return null;
+  }
+
+  // Skip if prompt is completely empty
+  if (!promptContent || !promptContent.trim()) {
+    console.log('Prompt content is empty after all attempts, skipping');
+    return null;
+  }
+
+  console.log('Final prompt content length:', promptContent.length);
 
   // Personalize the content with business context using AI
   const personalizedContent = await personalizeWithAI({
-    promptContent: promptTemplate,
+    promptContent,
     businessContext,
     audience,
     tone,
@@ -73,19 +104,19 @@ export const generateContentFromDatabasePrompts = async (
   });
 
   if (personalizedContent) {
-    console.log('✅ Successfully personalized content from prompts_modified table');
+    console.log('Successfully personalized content from database prompt');
     return {
       ...personalizedContent,
-      source: 'prompts_modified',
+      source: 'database_prompt',
       template_id: selectedPrompt.id
     };
   }
 
-  console.log('❌ Failed to personalize content');
+  console.log('Failed to personalize content, will try next approach');
   return null;
 };
 
-export const personalizeWithAI = async (params: {
+const personalizeWithAI = async (params: {
   promptContent: string;
   businessContext: string;
   audience: string;
@@ -130,7 +161,7 @@ Instructions:
 
 The template might be a complete post or just a section. Personalize it and then structure your response as a complete social media post with these sections as a single paragraph:
 
-Return your response in this format format:
+Return your response in this exact format:
 HOOK: [compelling opening - 1-2 sentences]
 BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`;
@@ -155,7 +186,7 @@ CTA: [clear call-to-action - 1-2 sentences]`;
           }
         ],
         temperature: 0.7,
-        max_completion_tokens: 1000
+        max_tokens: 1000
       })
     });
 
@@ -175,6 +206,7 @@ CTA: [clear call-to-action - 1-2 sentences]`;
     return null;
   }
 };
+*/
 
 // Optimized model selection for faster responses
 const selectOptimalModel = (postType: string, audience: string): string => {
@@ -191,20 +223,11 @@ const selectOptimalModel = (postType: string, audience: string): string => {
   return isComplexTask ? 'gpt-4.1-2025-04-14' : 'gpt-4.1-mini-2025-04-14';
 };
 
-export const generateContentWithAI = async (params: ContentGenerationParams, supabase: any): Promise<GeneratedContent> => {
+export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
 
   const selectedModel = selectOptimalModel(postType, audience);
   console.log(`Generating AI content with ${selectedModel} (selected based on complexity)`);
-  
-  // First try to generate from database prompts
-  const databaseContent = await generateContentFromDatabasePrompts(supabase, params);
-  if (databaseContent) {
-    console.log('Successfully generated content from database prompts');
-    return databaseContent;
-  }
-  
-  console.log('Falling back to hardcoded AI generation');
   
   const toneMap = {
     "professional": "Clear, polished, confident, respectful, yet personable",
@@ -237,48 +260,135 @@ export const generateContentWithAI = async (params: ContentGenerationParams, sup
   // Parse business context to extract key information
   const businessInfo = parseBusinessContext(businessContext);
 
-  // COMMENTED OUT - Original hardcoded prompts for future reference
-  /*
+  // Enhanced content category specific prompts optimized for advanced AI reasoning
   const contentPrompts = {
     "trust-authority": {
       systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.`,
-      userPrompt: `...trust authority prompt content...`
-    },
-    "heartfelt-relatable": {
-      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection...`,
-      userPrompt: `...heartfelt relatable prompt content...`
-    },
-    "educational-helpful": {
-      systemPrompt: `You are an expert social media strategist and educational content specialist...`,
-      userPrompt: `...educational helpful prompt content...`
-    },
-    "results-offers": {
-      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology...`,
-      userPrompt: `...results offers prompt content...`
-    }
-  };
-  const selectedPrompt = contentPrompts[postType] || contentPrompts["educational-helpful"];
-  */
+      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
 
-  // Fallback to AI generation if database prompts are not available
-  
-  const fallbackPrompt = `You are a social media content creator. Create a ${postType} post for ${businessInfo.business_name} on ${platform}.
-   
-Business Context: ${businessContext}
-Target Audience: ${audience}
-Tone: ${tone}
+IMPORTANT: Generate completely fresh, original content. Avoid repetitive openings like "Every day", "Have you ever", "Raise your hand if", or similar patterns. ${selectedOpening}.
 
-Generate original content that is engaging and appropriate for ${platform}. 
+Current context: ${currentTime} - Seed: ${randomSeed}
+
+The tone for this post is: ${tone}.
+Examples of this tone: ${toneDescription}.
+Let this tone shape the style, word choice, and flow naturally.
+
+Use these points as invisible guidance — do not copy them into the post directly:
+- The daily pressures their audience faces: ${businessInfo.pain_points}
+- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
+- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
+- The promise they stand by: ${businessInfo.big_promise}
+
+✅ Write a post that feels confident, genuine, and human — aim for about 200-250 words to provide depth and authority.
+✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
+✅ Focus on sharing expertise and building trust — no generic filler or robotic language.
+✅ Use varied, creative openings that avoid overused phrases like "Have you ever" or "Raise your hand if"
+✅ End with a soft, tone-appropriate invitation that encourages engagement.
+
+Main goal of this post: Build trust and establish authority while connecting authentically with families.
 
 Return your response in this format format:
 HOOK: [compelling opening - 1-2 sentences]
 BODY: [valuable main content - 3-5 sentences]
-CTA: [clear call-to-action - 1-2 sentences]`;
+CTA: [clear call-to-action - 1-2 sentences]`
+    },
+    "heartfelt-relatable": {
+      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.`,
+      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
 
-  const selectedPrompt = {
-    systemPrompt: 'You are an expert social media content creator.',
-    userPrompt: fallbackPrompt
+IMPORTANT: Generate completely fresh, original content. Avoid repetitive openings like "Every day", "Have you ever", "Raise your hand if", or similar patterns. ${selectedOpening}.
+
+Current context: ${currentTime} - Seed: ${randomSeed}
+
+The tone for this post is: ${tone}.
+Examples of this tone: ${toneDescription}.
+Let this tone shape the style, word choice, and flow naturally.
+
+Use these points as invisible guidance — do not copy them into the post directly:
+- The daily pressures their audience faces: ${businessInfo.pain_points}
+- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
+- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
+- The promise they stand by: ${businessInfo.big_promise}
+
+✅ Write a post that feels warm, genuine, and human — aim for about 200-250 words to create meaningful connection.
+✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
+✅ Focus on shared experiences and emotional connection — no generic filler or robotic language.
+✅ Use varied, creative openings that feel fresh and authentic
+✅ End with a soft, tone-appropriate invitation that builds community.
+
+Main goal of this post: Create genuine emotional connection and make families feel understood and less alone.
+
+Return your response in this format format:
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`
+    },
+    "educational-helpful": {
+      systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.`,
+      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create an Educational & Helpful post that provides genuine value to ${businessInfo.ideal_client}.
+
+IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
+
+Current context: ${currentTime} - Seed: ${randomSeed}
+
+The tone for this post is: ${tone}.
+Examples of this tone: ${toneDescription}.
+Let this tone shape the style, word choice, and flow naturally.
+
+Use these points as invisible guidance — do not copy them into the post directly:
+- The daily pressures their audience faces: ${businessInfo.pain_points}
+- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
+- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
+- The promise they stand by: ${businessInfo.big_promise}
+
+✅ Write a post that feels helpful, genuine, and human — aim for about 200-250 words to provide valuable insights.
+✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
+✅ Focus on providing actionable advice and useful information — no generic filler or robotic language.
+✅ Use varied, creative openings that immediately signal value
+✅ End with a soft, tone-appropriate invitation to implement the advice or ask questions.
+
+Main goal of this post: Provide genuine value and establish ${businessInfo.business_name} as a helpful resource for families.
+
+Return your response in this format format:
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`
+    },
+    "results-offers": {
+      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.`,
+      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Results & Offers post that highlights meaningful outcomes and encourages ${businessInfo.ideal_client} to explore working with ${businessInfo.business_name}, while positioning the agency as a dependable, trustworthy partner.
+
+IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
+
+Current context: ${currentTime} - Seed: ${randomSeed}
+
+The tone for this post is: ${tone}.
+Examples of this tone: ${toneDescription}.
+Let this tone shape the style, word choice, and flow naturally.
+
+Use these points as invisible guidance — do not copy them into the post directly:
+- The daily pressures their audience faces: ${businessInfo.pain_points}  
+- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
+- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
+- The promise they stand by: ${businessInfo.big_promise}
+
+✅ Write a post that feels confident, genuine, and human — aim for about 200-250 words so it provides space for showcasing results and inviting next steps.
+✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
+✅ Focus on demonstrating real outcomes and consistent care — no generic filler or overhyped claims.
+✅ Use varied, creative openings that showcase success without being pushy
+✅ End with a soft, tone-appropriate invitation (e.g., "Curious if we're the right fit? Let's find out — no pressure." or "Reach out — let's explore what's possible.")
+
+Main goal of this post: Build confidence in ${businessInfo.business_name} by showing meaningful results and inviting families to consider working with them.
+
+Return your response in this format format:
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`
+    }
   };
+
+  const selectedPrompt = contentPrompts[postType] || contentPrompts["educational-helpful"];
   
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
