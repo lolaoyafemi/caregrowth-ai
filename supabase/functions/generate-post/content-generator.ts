@@ -194,10 +194,6 @@ CTA: [clear call-to-action - 1-2 sentences]`;
   }
 };
 
-// COMMENTED OUT - Original hardcoded prompt logic for future reference
-/*
-export const generateContentFromPrompts = async (
-
 // Optimized model selection for faster responses
 const selectOptimalModel = (postType: string, audience: string): string => {
   // Use the mini model for faster generation unless it's a complex reasoning task
@@ -261,144 +257,30 @@ export const generateContentWithAI = async (params: ContentGenerationParams, sup
 
   // COMMENTED OUT - Original hardcoded prompts for future reference
   /*
-  // Enhanced content category specific prompts optimized for advanced AI reasoning
   const contentPrompts = {
     "trust-authority": {
       systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.`,
-      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
-
-IMPORTANT: Generate completely fresh, original content. Avoid repetitive openings like "Every day", "Have you ever", "Raise your hand if", or similar patterns. ${selectedOpening}.
-
-Current context: ${currentTime} - Seed: ${randomSeed}
-
-The tone for this post is: ${tone}.
-Examples of this tone: ${toneDescription}.
-Let this tone shape the style, word choice, and flow naturally.
-
-Use these points as invisible guidance — do not copy them into the post directly:
-- The daily pressures their audience faces: ${businessInfo.pain_points}
-- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
-- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
-- The promise they stand by: ${businessInfo.big_promise}
-
-✅ Write a post that feels confident, genuine, and human — aim for about 200-250 words to provide depth and authority.
-✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
-✅ Focus on sharing expertise and building trust — no generic filler or robotic language.
-✅ Use varied, creative openings that avoid overused phrases like "Have you ever" or "Raise your hand if"
-✅ End with a soft, tone-appropriate invitation that encourages engagement.
-
-Main goal of this post: Build trust and establish authority while connecting authentically with families.
-
-Return your response in this format format:
-HOOK: [compelling opening - 1-2 sentences]
-BODY: [valuable main content - 3-5 sentences]
-CTA: [clear call-to-action - 1-2 sentences]`
+      userPrompt: `...trust authority prompt content...`
     },
     "heartfelt-relatable": {
-      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.`,
-      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
-
-IMPORTANT: Generate completely fresh, original content. Avoid repetitive openings like "Every day", "Have you ever", "Raise your hand if", or similar patterns. ${selectedOpening}.
-
-Current context: ${currentTime} - Seed: ${randomSeed}
-
-The tone for this post is: ${tone}.
-Examples of this tone: ${toneDescription}.
-Let this tone shape the style, word choice, and flow naturally.
-
-Use these points as invisible guidance — do not copy them into the post directly:
-- The daily pressures their audience faces: ${businessInfo.pain_points}
-- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
-- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
-- The promise they stand by: ${businessInfo.big_promise}
-
-✅ Write a post that feels warm, genuine, and human — aim for about 200-250 words to create meaningful connection.
-✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
-✅ Focus on shared experiences and emotional connection — no generic filler or robotic language.
-✅ Use varied, creative openings that feel fresh and authentic
-✅ End with a soft, tone-appropriate invitation that builds community.
-
-Main goal of this post: Create genuine emotional connection and make families feel understood and less alone.
-
-Return your response in this format format:
-HOOK: [compelling opening - 1-2 sentences]
-BODY: [valuable main content - 3-5 sentences]
-CTA: [clear call-to-action - 1-2 sentences]`
+      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection...`,
+      userPrompt: `...heartfelt relatable prompt content...`
     },
     "educational-helpful": {
-      systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.`,
-      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create an Educational & Helpful post that provides genuine value to ${businessInfo.ideal_client}.
-
-IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
-
-Current context: ${currentTime} - Seed: ${randomSeed}
-
-The tone for this post is: ${tone}.
-Examples of this tone: ${toneDescription}.
-Let this tone shape the style, word choice, and flow naturally.
-
-Use these points as invisible guidance — do not copy them into the post directly:
-- The daily pressures their audience faces: ${businessInfo.pain_points}
-- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
-- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
-- The promise they stand by: ${businessInfo.big_promise}
-
-✅ Write a post that feels helpful, genuine, and human — aim for about 200-250 words to provide valuable insights.
-✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
-✅ Focus on providing actionable advice and useful information — no generic filler or robotic language.
-✅ Use varied, creative openings that immediately signal value
-✅ End with a soft, tone-appropriate invitation to implement the advice or ask questions.
-
-Main goal of this post: Provide genuine value and establish ${businessInfo.business_name} as a helpful resource for families.
-
-Return your response in this format format:
-HOOK: [compelling opening - 1-2 sentences]
-BODY: [valuable main content - 3-5 sentences]
-CTA: [clear call-to-action - 1-2 sentences]`
+      systemPrompt: `You are an expert social media strategist and educational content specialist...`,
+      userPrompt: `...educational helpful prompt content...`
     },
     "results-offers": {
-      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.`,
-      userPrompt: `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Results & Offers post that highlights meaningful outcomes and encourages ${businessInfo.ideal_client} to explore working with ${businessInfo.business_name}, while positioning the agency as a dependable, trustworthy partner.
+      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology...`,
+      userPrompt: `...results offers prompt content...`
+    }
+  };
+  const selectedPrompt = contentPrompts[postType] || contentPrompts["educational-helpful"];
+  */
 
-IMPORTANT: Generate completely fresh, original content. Avoid starting with "Have you ever" or other overused openings.
-
-Current context: ${currentTime} - Seed: ${randomSeed}
-
-The tone for this post is: ${tone}.
-Examples of this tone: ${toneDescription}.
-Let this tone shape the style, word choice, and flow naturally.
-
-Use these points as invisible guidance — do not copy them into the post directly:
-- The daily pressures their audience faces: ${businessInfo.pain_points}  
-- The hidden doubts or hesitations they have before seeking help: ${businessInfo.objections}
-- What makes ${businessInfo.business_name} different: ${businessInfo.differentiator}
-- The promise they stand by: ${businessInfo.big_promise}
-
-✅ Write a post that feels confident, genuine, and human — aim for about 200-250 words so it provides space for showcasing results and inviting next steps.
-✅ Make the post sound natural and sincere, as if ${businessInfo.business_name} is speaking directly to the reader in their chosen tone.
-✅ Focus on demonstrating real outcomes and consistent care — no generic filler or overhyped claims.
-✅ Use varied, creative openings that showcase success without being pushy
-✅ End with a soft, tone-appropriate invitation (e.g., "Curious if we're the right fit? Let's find out — no pressure." or "Reach out — let's explore what's possible.")
-
-Main goal of this post: Build confidence in ${businessInfo.business_name} by showing meaningful results and inviting families to consider working with them.
-
-Return your response in this format format:
-HOOK: [compelling opening - 1-2 sentences]
-BODY: [valuable main content - 3-5 sentences]
-CTA: [clear call-to-action - 1-2 sentences]`
-     }
-   };
-
-   const selectedPrompt = contentPrompts[postType] || contentPrompts["educational-helpful"];
-   */
-
-   // Fallback to AI generation if database prompts are not available
-   const currentTime = new Date().toISOString();
-   const randomSeed = Math.random().toString(36).substring(7);
-   
-   const businessInfo = parseBusinessContext(businessContext);
-   
-   const fallbackPrompt = `You are a social media content creator. Create a ${postType} post for ${businessInfo.business_name} on ${platform}.
+  // Fallback to AI generation if database prompts are not available
+  
+  const fallbackPrompt = `You are a social media content creator. Create a ${postType} post for ${businessInfo.business_name} on ${platform}.
    
 Business Context: ${businessContext}
 Target Audience: ${audience}
@@ -411,10 +293,10 @@ HOOK: [compelling opening - 1-2 sentences]
 BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`;
 
-   const selectedPrompt = {
-     systemPrompt: 'You are an expert social media content creator.',
-     userPrompt: fallbackPrompt
-   };
+  const selectedPrompt = {
+    systemPrompt: 'You are an expert social media content creator.',
+    userPrompt: fallbackPrompt
+  };
   
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
