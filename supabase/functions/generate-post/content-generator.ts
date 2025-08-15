@@ -36,6 +36,65 @@ const selectOptimalModel = (postType: string, audience: string): string => {
   return isComplexTask ? 'gpt-4.1-2025-04-14' : 'gpt-4.1-mini-2025-04-14';
 };
 
+// Filter OpenAI settings based on model compatibility
+const filterOpenAISettings = (settings: any, model: string) => {
+  const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
+  const filtered: any = {};
+  
+  // Parameters supported by all models
+  if (settings.top_p !== undefined) filtered.top_p = settings.top_p;
+  if (settings.presence_penalty !== undefined) filtered.presence_penalty = settings.presence_penalty;
+  if (settings.frequency_penalty !== undefined) filtered.frequency_penalty = settings.frequency_penalty;
+  
+  // Handle token limits based on model
+  if (isNewerModel) {
+    // Newer models use max_completion_tokens and don't support temperature
+    if (settings.max_tokens !== undefined) {
+      filtered.max_completion_tokens = settings.max_tokens;
+    } else if (settings.max_completion_tokens !== undefined) {
+      filtered.max_completion_tokens = settings.max_completion_tokens;
+    }
+    
+    // Temperature is not supported, so we filter it out
+    if (settings.temperature !== undefined) {
+      console.log(`Filtering out unsupported temperature parameter for model: ${model}`);
+    }
+  } else {
+    // Legacy models support temperature and use max_tokens
+    if (settings.temperature !== undefined) filtered.temperature = settings.temperature;
+    if (settings.max_tokens !== undefined) {
+      filtered.max_tokens = settings.max_tokens;
+    } else if (settings.max_completion_tokens !== undefined) {
+      filtered.max_tokens = settings.max_completion_tokens;
+    }
+  }
+  
+  console.log(`Filtered settings for model ${model}:`, filtered);
+  return filtered;
+};
+
+// Get default settings based on model
+const getDefaultSettings = (model: string) => {
+  const isNewerModel = model.includes('gpt-5') || model.includes('gpt-4.1') || model.includes('o3') || model.includes('o4');
+  
+  if (isNewerModel) {
+    return {
+      max_completion_tokens: 500,
+      top_p: 0.95,
+      presence_penalty: 0.3,
+      frequency_penalty: 0.4
+    };
+  } else {
+    return {
+      max_tokens: 500,
+      temperature: 0.7,
+      top_p: 0.95,
+      presence_penalty: 0.3,
+      frequency_penalty: 0.4
+    };
+  }
+};
+
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
 
@@ -108,20 +167,24 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
     throw new Error(`No prompt found for category: ${postType}. Please use one of: trust-authority, heartfelt-relatable, educational-helpful, results-offers`);
   }
 
-  // Parse OpenAI settings from prompt if they exist
-  let openAISettings = {};
+  // Parse and filter OpenAI settings from prompt
+  let filteredSettings = {};
   let cleanPrompt = randomPrompt;
   
   const openAISettingsMatch = randomPrompt.match(/OpenAI Settings:\s*(\{[\s\S]*?\})/);
   if (openAISettingsMatch) {
     try {
-      openAISettings = JSON.parse(openAISettingsMatch[1]);
+      const rawSettings = JSON.parse(openAISettingsMatch[1]);
+      filteredSettings = filterOpenAISettings(rawSettings, selectedModel);
       // Remove the OpenAI Settings section from the prompt
       cleanPrompt = randomPrompt.replace(/OpenAI Settings:\s*\{[\s\S]*?\}/g, '').trim();
-      console.log('Extracted OpenAI settings:', openAISettings);
+      console.log('Extracted and filtered OpenAI settings:', filteredSettings);
     } catch (e) {
       console.warn('Failed to parse OpenAI settings, using defaults:', e);
+      filteredSettings = getDefaultSettings(selectedModel);
     }
+  } else {
+    filteredSettings = getDefaultSettings(selectedModel);
   }
 
   // Replace placeholders in the prompt with actual business context
@@ -307,11 +370,8 @@ CTA: [clear call-to-action - 1-2 sentences]`
             content: processedPrompt
           }
         ],
-        // Use extracted OpenAI settings or defaults
-        max_completion_tokens: openAISettings.max_tokens || 500,
-        top_p: openAISettings.top_p || 0.95,
-        presence_penalty: openAISettings.presence_penalty || 0.3,
-        frequency_penalty: openAISettings.frequency_penalty || 0.4
+        // Use filtered OpenAI settings
+        ...filteredSettings
       })
     });
 
