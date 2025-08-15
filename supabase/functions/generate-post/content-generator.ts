@@ -20,65 +20,47 @@ export interface GeneratedContent {
   template_id?: string;
 }
 
-// Database prompt generation function
+// Database prompt generation function - now uses prompts_modified table
 export const generateContentFromDatabasePrompts = async (
   supabase: any,
   params: ContentGenerationParams
 ): Promise<GeneratedContent | null> => {
   const { userId, postType, tone, platform, audience, businessContext, openAIApiKey } = params;
 
-  console.log('Fetching prompts for:', { postType, platform });
+  console.log('🎯 Fetching prompts from prompts_modified for category:', postType);
 
-  // Get prompt templates for the specified content category and platform
+  // Get prompt templates from prompts_modified table based on category (content type)
   const { data: prompts, error: promptError } = await supabase
-    .from('prompts')
+    .from('prompts_modified')
     .select('*')
-    .eq('category', postType)
-    .in('platform', [platform, 'all']);
+    .eq('category', postType);
 
-  console.log('Fetched prompts:', prompts?.length || 0, 'prompts found');
+  console.log('✅ Fetched prompts:', prompts?.length || 0, 'prompts found for category:', postType);
 
   if (promptError) {
-    console.error('Prompt fetch error:', promptError);
+    console.error('❌ Prompt fetch error:', promptError);
     return null;
   }
 
   if (!prompts || prompts.length === 0) {
-    console.log('No prompts found for category:', postType, 'platform:', platform);
+    console.log('📝 No prompts found for category:', postType);
     return null;
   }
 
-  // Separate prompts by platform preference
-  const platformSpecificPrompts = prompts.filter(p => p.platform === platform);
-  const generalPrompts = prompts.filter(p => p.platform === 'all');
-
-  // Choose from platform-specific first, then general
-  const availablePrompts = platformSpecificPrompts.length > 0 ? platformSpecificPrompts : generalPrompts;
+  // Randomly select one prompt from the available prompts for this category
+  const selectedPrompt = prompts[Math.floor(Math.random() * prompts.length)];
   
-  if (availablePrompts.length === 0) {
-    console.log('No available prompts after filtering');
-    return null;
-  }
+  console.log('🎲 Selected random prompt:', selectedPrompt.name, 'from', prompts.length, 'available prompts');
 
-  // Randomly select one prompt from available prompts
-  const selectedPrompt = availablePrompts[Math.floor(Math.random() * availablePrompts.length)];
-  
-  console.log('Selected prompt:', selectedPrompt.id, selectedPrompt.name);
-
-  // Construct content from hook, body, and cta fields
-  const hook = selectedPrompt.hook || '';
-  const body = selectedPrompt.body || '';
-  const cta = selectedPrompt.cta || '';
-  
-  // Combine sections into a complete prompt template
-  const promptTemplate = `${hook}\n\n${body}\n\n${cta}`.trim();
+  // Use the prompt field directly (prompts_modified has a single prompt field)
+  const promptTemplate = selectedPrompt.prompt || '';
   
   if (!promptTemplate) {
-    console.log('No content found in prompt fields');
+    console.log('❌ No content found in prompt field');
     return null;
   }
 
-  console.log('Using database prompt template, length:', promptTemplate.length);
+  console.log('📄 Using prompts_modified template, length:', promptTemplate.length);
 
   // Personalize the content with business context using AI
   const personalizedContent = await personalizeWithAI({
@@ -91,15 +73,15 @@ export const generateContentFromDatabasePrompts = async (
   });
 
   if (personalizedContent) {
-    console.log('Successfully personalized content from database prompt');
+    console.log('✅ Successfully personalized content from prompts_modified table');
     return {
       ...personalizedContent,
-      source: 'database_prompt',
+      source: 'prompts_modified',
       template_id: selectedPrompt.id
     };
   }
 
-  console.log('Failed to personalize content');
+  console.log('❌ Failed to personalize content');
   return null;
 };
 
