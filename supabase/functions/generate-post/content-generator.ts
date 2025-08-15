@@ -108,8 +108,24 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
     throw new Error(`No prompt found for category: ${postType}. Please use one of: trust-authority, heartfelt-relatable, educational-helpful, results-offers`);
   }
 
+  // Parse OpenAI settings from prompt if they exist
+  let openAISettings = {};
+  let cleanPrompt = randomPrompt;
+  
+  const openAISettingsMatch = randomPrompt.match(/OpenAI Settings:\s*(\{[\s\S]*?\})/);
+  if (openAISettingsMatch) {
+    try {
+      openAISettings = JSON.parse(openAISettingsMatch[1]);
+      // Remove the OpenAI Settings section from the prompt
+      cleanPrompt = randomPrompt.replace(/OpenAI Settings:\s*\{[\s\S]*?\}/g, '').trim();
+      console.log('Extracted OpenAI settings:', openAISettings);
+    } catch (e) {
+      console.warn('Failed to parse OpenAI settings, using defaults:', e);
+    }
+  }
+
   // Replace placeholders in the prompt with actual business context
-  const processedPrompt = randomPrompt
+  const processedPrompt = cleanPrompt
     .replace(/\{business_name\}/g, businessInfo.business_name)
     .replace(/\{core_service\}/g, businessInfo.core_service)
     .replace(/\{location\}/g, businessInfo.location)
@@ -126,6 +142,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
     .replace(/\{audience\}/g, audience)
     .replace(/\{platform\}/g, platform);
 
+  console.log('Using random prompt from prompts_modified table for category:', postType);
   console.log('Processed prompt with business context:', processedPrompt.substring(0, 200) + '...');
 
   // Enhanced content category specific prompts optimized for advanced AI reasoning
@@ -286,18 +303,15 @@ CTA: [clear call-to-action - 1-2 sentences]`
         model: selectedModel,
         messages: [
           {
-            role: 'system',
-            content: selectedPrompt.systemPrompt
-          },
-          {
             role: 'user',
-            content: selectedPrompt.userPrompt
+            content: processedPrompt
           }
         ],
-        max_completion_tokens: 500,
-        top_p: 0.95,
-        presence_penalty: 0.3,
-        frequency_penalty: 0.4
+        // Use extracted OpenAI settings or defaults
+        max_completion_tokens: openAISettings.max_tokens || 500,
+        top_p: openAISettings.top_p || 0.95,
+        presence_penalty: openAISettings.presence_penalty || 0.3,
+        frequency_penalty: openAISettings.frequency_penalty || 0.4
       })
     });
 
