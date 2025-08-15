@@ -83,34 +83,9 @@ serve(async (req) => {
     let hook = '', body = '', cta = '';
     let contentSource = '';
 
-    // COMMENTED OUT - Database prompt generation
-    /*
-    // PRIORITY 1: Try to use a prompt from the database
-    console.log('Attempting to generate content from database prompts...');
-    const contentFromPrompts = await generateContentFromPrompts(supabase, {
-      userId,
-      postType,
-      tone,
-      platform,
-      audience: targetAudience,
-      businessContext,
-      openAIApiKey
-    });
-
-    if (contentFromPrompts) {
-      console.log('✅ Successfully generated content from database prompt');
-      hook = contentFromPrompts.hook;
-      body = contentFromPrompts.body;
-      cta = contentFromPrompts.cta;
-      selectedPrompt = { id: contentFromPrompts.template_id };
-      contentSource = 'database_prompt';
-    } else {
-      console.log('❌ Database prompt generation failed, falling back to AI generation');
-    */
-      
     try {
-      // Generate content using coded prompts with AI
-      console.log('🤖 Generating content using coded prompts with AI');
+      // Generate content using database prompts first, then fallback to coded prompts
+      console.log('🤖 Generating content with database prompt integration');
       const generatedContent = await generateContentWithAI({
         userId: authenticatedUserId,
         postType,
@@ -119,20 +94,18 @@ serve(async (req) => {
         audience: targetAudience,
         businessContext,
         openAIApiKey
-      });
+      }, supabase);
 
       console.log('✅ Content generation successful:', generatedContent);
       
       hook = generatedContent.hook;
       body = generatedContent.body;
       cta = generatedContent.cta;
-      contentSource = 'coded_prompt_ai';
+      contentSource = generatedContent.source || 'ai_generation';
     } catch (generationError) {
       console.error('❌ Content generation failed:', generationError);
       throw new Error(`Content generation failed: ${generationError.message}`);
     }
-    
-    // } // End of commented database logic
 
     // Apply additional personalization if we have business profile
     if (profile) {

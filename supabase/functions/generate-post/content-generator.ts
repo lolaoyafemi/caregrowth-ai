@@ -20,9 +20,8 @@ export interface GeneratedContent {
   template_id?: string;
 }
 
-// COMMENTED OUT - Database prompt generation
-/*
-export const generateContentFromPrompts = async (
+// Database prompt generation function
+export const generateContentFromDatabasePrompts = async (
   supabase: any,
   params: ContentGenerationParams
 ): Promise<GeneratedContent | null> => {
@@ -38,7 +37,6 @@ export const generateContentFromPrompts = async (
     .in('platform', [platform, 'all']);
 
   console.log('Fetched prompts:', prompts?.length || 0, 'prompts found');
-  console.log('First prompt structure:', prompts?.[0] ? Object.keys(prompts[0]) : 'No prompts');
 
   if (promptError) {
     console.error('Prompt fetch error:', promptError);
@@ -66,36 +64,25 @@ export const generateContentFromPrompts = async (
   const selectedPrompt = availablePrompts[Math.floor(Math.random() * availablePrompts.length)];
   
   console.log('Selected prompt:', selectedPrompt.id, selectedPrompt.name);
-  console.log('Selected prompt keys:', Object.keys(selectedPrompt));
 
-  // Get the prompt content - try different possible field names
-  let promptContent = '';
-  if (selectedPrompt.prompt) {
-    promptContent = selectedPrompt.prompt;
-    console.log('Using prompt field:', promptContent.substring(0, 100));
-  } else if (selectedPrompt.hook) {
-    promptContent = selectedPrompt.hook;
-    console.log('Using hook field (fallback):', promptContent.substring(0, 100));
-  } else if (selectedPrompt.body) {
-    promptContent = selectedPrompt.body;
-    console.log('Using body field (fallback):', promptContent.substring(0, 100));
-  } else {
-    console.log('No prompt content found in any field');
-    console.log('Available fields:', Object.keys(selectedPrompt));
+  // Construct content from hook, body, and cta fields
+  const hook = selectedPrompt.hook || '';
+  const body = selectedPrompt.body || '';
+  const cta = selectedPrompt.cta || '';
+  
+  // Combine sections into a complete prompt template
+  const promptTemplate = `${hook}\n\n${body}\n\n${cta}`.trim();
+  
+  if (!promptTemplate) {
+    console.log('No content found in prompt fields');
     return null;
   }
 
-  // Skip if prompt is completely empty
-  if (!promptContent || !promptContent.trim()) {
-    console.log('Prompt content is empty after all attempts, skipping');
-    return null;
-  }
-
-  console.log('Final prompt content length:', promptContent.length);
+  console.log('Using database prompt template, length:', promptTemplate.length);
 
   // Personalize the content with business context using AI
   const personalizedContent = await personalizeWithAI({
-    promptContent,
+    promptContent: promptTemplate,
     businessContext,
     audience,
     tone,
@@ -112,11 +99,11 @@ export const generateContentFromPrompts = async (
     };
   }
 
-  console.log('Failed to personalize content, will try next approach');
+  console.log('Failed to personalize content');
   return null;
 };
 
-const personalizeWithAI = async (params: {
+export const personalizeWithAI = async (params: {
   promptContent: string;
   businessContext: string;
   audience: string;
@@ -161,7 +148,7 @@ Instructions:
 
 The template might be a complete post or just a section. Personalize it and then structure your response as a complete social media post with these sections as a single paragraph:
 
-Return your response in this exact format:
+Return your response in this format format:
 HOOK: [compelling opening - 1-2 sentences]
 BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`;
@@ -186,7 +173,7 @@ CTA: [clear call-to-action - 1-2 sentences]`;
           }
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_completion_tokens: 1000
       })
     });
 
@@ -206,7 +193,10 @@ CTA: [clear call-to-action - 1-2 sentences]`;
     return null;
   }
 };
-*/
+
+// COMMENTED OUT - Original hardcoded prompt logic for future reference
+/*
+export const generateContentFromPrompts = async (
 
 // Optimized model selection for faster responses
 const selectOptimalModel = (postType: string, audience: string): string => {
@@ -223,11 +213,20 @@ const selectOptimalModel = (postType: string, audience: string): string => {
   return isComplexTask ? 'gpt-4.1-2025-04-14' : 'gpt-4.1-mini-2025-04-14';
 };
 
-export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
+export const generateContentWithAI = async (params: ContentGenerationParams, supabase: any): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
 
   const selectedModel = selectOptimalModel(postType, audience);
   console.log(`Generating AI content with ${selectedModel} (selected based on complexity)`);
+  
+  // First try to generate from database prompts
+  const databaseContent = await generateContentFromDatabasePrompts(supabase, params);
+  if (databaseContent) {
+    console.log('Successfully generated content from database prompts');
+    return databaseContent;
+  }
+  
+  console.log('Falling back to hardcoded AI generation');
   
   const toneMap = {
     "professional": "Clear, polished, confident, respectful, yet personable",
@@ -260,6 +259,8 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   // Parse business context to extract key information
   const businessInfo = parseBusinessContext(businessContext);
 
+  // COMMENTED OUT - Original hardcoded prompts for future reference
+  /*
   // Enhanced content category specific prompts optimized for advanced AI reasoning
   const contentPrompts = {
     "trust-authority": {
@@ -385,10 +386,35 @@ Return your response in this format format:
 HOOK: [compelling opening - 1-2 sentences]
 BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`
-    }
-  };
+     }
+   };
 
-  const selectedPrompt = contentPrompts[postType] || contentPrompts["educational-helpful"];
+   const selectedPrompt = contentPrompts[postType] || contentPrompts["educational-helpful"];
+   */
+
+   // Fallback to AI generation if database prompts are not available
+   const currentTime = new Date().toISOString();
+   const randomSeed = Math.random().toString(36).substring(7);
+   
+   const businessInfo = parseBusinessContext(businessContext);
+   
+   const fallbackPrompt = `You are a social media content creator. Create a ${postType} post for ${businessInfo.business_name} on ${platform}.
+   
+Business Context: ${businessContext}
+Target Audience: ${audience}
+Tone: ${tone}
+
+Generate original content that is engaging and appropriate for ${platform}. 
+
+Return your response in this format format:
+HOOK: [compelling opening - 1-2 sentences]
+BODY: [valuable main content - 3-5 sentences]
+CTA: [clear call-to-action - 1-2 sentences]`;
+
+   const selectedPrompt = {
+     systemPrompt: 'You are an expert social media content creator.',
+     userPrompt: fallbackPrompt
+   };
   
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
