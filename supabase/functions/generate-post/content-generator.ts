@@ -366,6 +366,10 @@ CTA: [clear call-to-action - 1-2 sentences]`
         model: selectedModel,
         messages: [
           {
+            role: 'system',
+            content: contentPrompts[postType].systemPrompt
+          },
+          {
             role: 'user',
             content: processedPrompt
           }
