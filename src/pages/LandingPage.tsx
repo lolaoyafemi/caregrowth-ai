@@ -299,7 +299,7 @@ const LandingPage = () => {
                           <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       </div>
-                      <span>Generate cohesive, complete social media posts</span>
+                      <span>Customize hooks, body text, and CTAs separately</span>
                     </li>
                     <li className="flex items-start">
                       <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center mr-3 mt-1">

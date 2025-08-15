@@ -1,6 +1,8 @@
 
 export interface GeneratedSection {
-  content: string;
+  hook: string;
+  body: string;
+  cta: string;
 }
 
 export interface GeneratedContent {

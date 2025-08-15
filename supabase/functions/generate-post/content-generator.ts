@@ -13,7 +13,9 @@ export interface ContentGenerationParams {
 }
 
 export interface GeneratedContent {
-  content: string;
+  hook: string;
+  body: string;
+  cta: string;
   source: string;
   template_id?: string;
 }
@@ -239,10 +241,10 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   console.log('Using random prompt from prompts_modified table for category:', postType);
   console.log('Processed prompt with business context:', processedPrompt.substring(0, 200) + '...');
 
-  // Enhanced content category specific prompts optimized for direct content generation
+  // Enhanced content category specific prompts optimized for advanced AI reasoning
   const contentPrompts = {
     "trust-authority": {
-      systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration. Generate a single, cohesive social media post without breaking it into sections.`,
+      systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.`,
       userPrompt: processedPrompt
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
@@ -276,7 +278,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
     "heartfelt-relatable": {
-      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. Create deeply resonant content that makes people feel genuinely understood. Generate a single, cohesive social media post that creates authentic emotional connection.`,
+      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.`,
       userPrompt: processedPrompt
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
@@ -310,7 +312,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
     "educational-helpful": {
-      systemPrompt: `You are an expert social media strategist and educational content specialist. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth. Generate a single, cohesive social media post that provides actionable value.`,
+      systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.`,
       userPrompt: processedPrompt
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create an Educational & Helpful post that provides genuine value to ${businessInfo.ideal_client}.
@@ -344,7 +346,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
     "results-offers": {
-      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. Create compelling content that drives action through trust and demonstrated value. Generate a single, cohesive social media post that showcases results and encourages engagement.`,
+      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.`,
       userPrompt: processedPrompt
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Results & Offers post that highlights meaningful outcomes and encourages ${businessInfo.ideal_client} to explore working with ${businessInfo.business_name}, while positioning the agency as a dependable, trustworthy partner.
@@ -466,21 +468,35 @@ CTA: [clear call-to-action - 1-2 sentences]`
     }
     
     const generatedContent = data.choices[0].message.content;
-    console.log('Generated content:', generatedContent);
+    console.log('Generated fresh content:', generatedContent);
 
     if (!generatedContent || generatedContent.trim().length === 0) {
       console.error('Empty content returned from OpenAI');
       throw new Error('Empty content generated by OpenAI');
     }
 
-    // Return the content directly without parsing into sections
-    return {
-      content: generatedContent.trim(),
-      source: 'enhanced_prompt_ai'
-    };
+    const parsed = parseGeneratedContent(generatedContent);
+    console.log('Parsed content:', { hook: !!parsed.hook, body: !!parsed.body, cta: !!parsed.cta });
+    
+    // Ensure we have proper content
+    if (parsed.hook && parsed.body && parsed.cta) {
+      return {
+        ...parsed,
+        source: 'enhanced_prompt_ai'
+      };
+    }
+    
+    // If parsing fails, provide more detailed error
+    console.error('Parsing failed. Content sections found:', {
+      hook: parsed.hook ? 'YES' : 'NO',
+      body: parsed.body ? 'YES' : 'NO', 
+      cta: parsed.cta ? 'YES' : 'NO',
+      originalContent: generatedContent
+    });
+    throw new Error(`Failed to parse generated content properly. Missing: ${!parsed.hook ? 'hook ' : ''}${!parsed.body ? 'body ' : ''}${!parsed.cta ? 'cta' : ''}`);
   } catch (error) {
     console.error('Error generating content:', error);
-    throw error;
+    throw error; // Let the calling function handle the error instead of using hardcoded fallback
   }
 };
 
