@@ -94,7 +94,7 @@ serve(async (req) => {
         audience: targetAudience,
         businessContext,
         openAIApiKey
-      }, supabase);
+      });
 
       console.log('✅ Content generation successful:', generatedContent);
       
