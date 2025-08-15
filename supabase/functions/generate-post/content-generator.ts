@@ -546,47 +546,87 @@ const parseBusinessContext = (businessContext: string) => {
 };
 
 export const parseGeneratedContent = (content: string): { hook: string; body: string; cta: string } => {
+  console.log('Parsing content:', content.substring(0, 300) + '...');
+  
   let hook = '', body = '', cta = '';
   
-  // Split content by lines and clean up
-  const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+  // First try to extract using structured format (HOOK:, BODY:, CTA:)
+  const hookMatch = content.match(/(?:^|\n)\s*(?:\*{0,2})?hook:\s*(?:\*{0,2})?\s*(.*?)(?=\n\s*(?:\*{0,2})?(?:body|cta):|$)/is);
+  const bodyMatch = content.match(/(?:^|\n)\s*(?:\*{0,2})?body:\s*(?:\*{0,2})?\s*(.*?)(?=\n\s*(?:\*{0,2})?cta:|$)/is);
+  const ctaMatch = content.match(/(?:^|\n)\s*(?:\*{0,2})?cta:\s*(?:\*{0,2})?\s*(.*?)$/is);
   
-  let currentSection = '';
-  let hookLines = [];
-  let bodyLines = [];
-  let ctaLines = [];
+  if (hookMatch) hook = hookMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  if (bodyMatch) body = bodyMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  if (ctaMatch) cta = ctaMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
   
-  for (const line of lines) {
-    const lowerLine = line.toLowerCase();
+  // If structured parsing failed, try fallback approach
+  if (!hook || !body || !cta) {
+    console.log('Structured parsing failed, trying fallback approach');
     
-    // Handle both formats: "HOOK:" and "**HOOK:**"
-    if (lowerLine.startsWith('hook:') || lowerLine.startsWith('**hook:**')) {
-      currentSection = 'hook';
-      // Remove both "HOOK:" and "**HOOK:**" prefixes
-      const hookContent = line.replace(/^\*{0,2}hook:\*{0,2}\s*/i, '').trim();
-      if (hookContent) hookLines.push(hookContent);
-    } else if (lowerLine.startsWith('body:') || lowerLine.startsWith('**body:**')) {
-      currentSection = 'body';
-      // Remove both "BODY:" and "**BODY:**" prefixes
-      const bodyContent = line.replace(/^\*{0,2}body:\*{0,2}\s*/i, '').trim();
-      if (bodyContent) bodyLines.push(bodyContent);
-    } else if (lowerLine.startsWith('cta:') || lowerLine.startsWith('**cta:**')) {
-      currentSection = 'cta';
-      // Remove both "CTA:" and "**CTA:**" prefixes
-      const ctaContent = line.replace(/^\*{0,2}cta:\*{0,2}\s*/i, '').trim();
-      if (ctaContent) ctaLines.push(ctaContent);
-    } else if (line && currentSection) {
-      // Add content to current section
-      if (currentSection === 'hook') hookLines.push(line);
-      else if (currentSection === 'body') bodyLines.push(line);
-      else if (currentSection === 'cta') ctaLines.push(line);
+    // Split content by lines and clean up
+    const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+    
+    let currentSection = '';
+    let hookLines = [];
+    let bodyLines = [];
+    let ctaLines = [];
+    
+    for (const line of lines) {
+      const lowerLine = line.toLowerCase();
+      
+      // Handle various formats
+      if (lowerLine.includes('hook') && (lowerLine.includes(':') || lowerLine.includes('**'))) {
+        currentSection = 'hook';
+        const hookContent = line.replace(/^.*?(?:hook[:*\s]+|hook)\s*/i, '').trim();
+        if (hookContent) hookLines.push(hookContent);
+      } else if (lowerLine.includes('body') && (lowerLine.includes(':') || lowerLine.includes('**'))) {
+        currentSection = 'body';
+        const bodyContent = line.replace(/^.*?(?:body[:*\s]+|body)\s*/i, '').trim();
+        if (bodyContent) bodyLines.push(bodyContent);
+      } else if (lowerLine.includes('cta') && (lowerLine.includes(':') || lowerLine.includes('**'))) {
+        currentSection = 'cta';
+        const ctaContent = line.replace(/^.*?(?:cta[:*\s]+|cta)\s*/i, '').trim();
+        if (ctaContent) ctaLines.push(ctaContent);
+      } else if (line && currentSection) {
+        // Add content to current section
+        if (currentSection === 'hook') hookLines.push(line);
+        else if (currentSection === 'body') bodyLines.push(line);
+        else if (currentSection === 'cta') ctaLines.push(line);
+      }
+    }
+    
+    // Only update if we found better content
+    if (!hook && hookLines.length > 0) hook = hookLines.join(' ').trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+    if (!body && bodyLines.length > 0) body = bodyLines.join(' ').trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+    if (!cta && ctaLines.length > 0) cta = ctaLines.join(' ').trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  }
+  
+  // Final fallback: if still missing parts, try to extract from unstructured content
+  if (!hook || !body || !cta) {
+    console.log('Both parsing methods failed, using emergency fallback');
+    
+    const sentences = content.split(/[.!?]+/).map(s => s.trim()).filter(s => s);
+    
+    if (!hook && sentences.length > 0) {
+      hook = sentences[0] + (sentences[0].endsWith('.') ? '' : '.');
+    }
+    
+    if (!body && sentences.length > 1) {
+      const bodyStart = hook ? 1 : 0;
+      const bodyEnd = sentences.length > 3 ? sentences.length - 1 : sentences.length;
+      body = sentences.slice(bodyStart, bodyEnd).join('. ') + '.';
+    }
+    
+    if (!cta && sentences.length > 0) {
+      cta = sentences[sentences.length - 1] + (sentences[sentences.length - 1].endsWith('.') ? '' : '.');
     }
   }
   
-  // Join all lines with spaces to create single paragraph flow
-  hook = hookLines.join(' ').trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
-  body = bodyLines.join(' ').trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
-  cta = ctaLines.join(' ').trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  console.log('Final parsed sections:', {
+    hook: hook ? 'YES (' + hook.length + ' chars)' : 'NO',
+    body: body ? 'YES (' + body.length + ' chars)' : 'NO',
+    cta: cta ? 'YES (' + cta.length + ' chars)' : 'NO'
+  });
   
   return { hook, body, cta };
 };
