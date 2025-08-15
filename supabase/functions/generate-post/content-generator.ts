@@ -241,11 +241,32 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   console.log('Using random prompt from prompts_modified table for category:', postType);
   console.log('Processed prompt with business context:', processedPrompt.substring(0, 200) + '...');
 
-  // Enhanced content category specific prompts optimized for advanced AI reasoning
+  // Enhanced content category specific prompts optimized for advanced AI reasoning with self-refinement
   const contentPrompts = {
     "trust-authority": {
-      systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.`,
-      userPrompt: processedPrompt
+      systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.
+
+CRITICAL: After generating your initial response, immediately review and refine it to:
+- Eliminate repetitive phrases or clichéd openings
+- Improve flow and natural transitions between sentences
+- Make the tone more authentic and less robotic
+- Ensure unique voice that stands out from generic content
+- Strengthen emotional connection and specificity
+
+Generate your content, then provide an improved, refined version that flows better and feels more unique.`,
+      userPrompt: processedPrompt + `
+
+SELF-REFINEMENT INSTRUCTIONS:
+1. First, generate your initial content following the prompt
+2. Then, critically review it for:
+   - Repetitive or clichéd language patterns
+   - Generic phrases that could apply to any business
+   - Awkward transitions or choppy flow
+   - Opportunities to be more specific and compelling
+3. Provide a refined version that addresses these issues
+4. Return ONLY the refined version in the requested format
+
+Focus on making the content flow naturally, feel authentic, and be more engaging than typical AI-generated content.`
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Trust & Authority post that demonstrates expertise while building genuine connection with ${businessInfo.ideal_client}.
 
@@ -278,8 +299,29 @@ CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
     "heartfelt-relatable": {
-      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.`,
-      userPrompt: processedPrompt
+      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.
+
+CRITICAL: After generating your initial response, immediately review and refine it to:
+- Eliminate repetitive phrases or clichéd openings
+- Improve flow and natural transitions between sentences
+- Make the tone more authentic and emotionally resonant
+- Ensure unique voice that creates genuine connection
+- Strengthen relatability and emotional impact
+
+Generate your content, then provide an improved, refined version that flows better and feels more uniquely human.`,
+      userPrompt: processedPrompt + `
+
+SELF-REFINEMENT INSTRUCTIONS:
+1. First, generate your initial content following the prompt
+2. Then, critically review it for:
+   - Repetitive or clichéd language patterns
+   - Generic emotional appeals that lack authenticity
+   - Awkward transitions or choppy flow
+   - Opportunities to be more emotionally specific and relatable
+3. Provide a refined version that addresses these issues
+4. Return ONLY the refined version in the requested format
+
+Focus on making the content feel genuinely human, emotionally authentic, and uniquely connecting.`
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Heartfelt & Relatable post that creates genuine emotional connection with ${businessInfo.ideal_client}.
 
@@ -312,8 +354,29 @@ CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
     "educational-helpful": {
-      systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.`,
-      userPrompt: processedPrompt
+      systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.
+
+CRITICAL: After generating your initial response, immediately review and refine it to:
+- Eliminate repetitive phrases or clichéd educational openings
+- Improve flow and logical progression of ideas
+- Make the advice more specific and actionable
+- Ensure unique voice that stands out from generic tips
+- Strengthen practical value and clarity
+
+Generate your content, then provide an improved, refined version that flows better and offers more unique value.`,
+      userPrompt: processedPrompt + `
+
+SELF-REFINEMENT INSTRUCTIONS:
+1. First, generate your initial content following the prompt
+2. Then, critically review it for:
+   - Repetitive or clichéd educational language patterns
+   - Generic advice that lacks specificity
+   - Awkward transitions or unclear explanations
+   - Opportunities to be more actionable and valuable
+3. Provide a refined version that addresses these issues
+4. Return ONLY the refined version in the requested format
+
+Focus on making the content genuinely helpful, clearly explained, and uniquely valuable to the specific audience.`
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create an Educational & Helpful post that provides genuine value to ${businessInfo.ideal_client}.
 
@@ -346,8 +409,29 @@ CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
     "results-offers": {
-      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.`,
-      userPrompt: processedPrompt
+      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.
+
+CRITICAL: After generating your initial response, immediately review and refine it to:
+- Eliminate repetitive phrases or clichéd sales language
+- Improve flow and persuasive progression
+- Make the results more specific and credible
+- Ensure unique voice that builds authentic trust
+- Strengthen compelling reasons to take action
+
+Generate your content, then provide an improved, refined version that flows better and is more persuasively unique.`,
+      userPrompt: processedPrompt + `
+
+SELF-REFINEMENT INSTRUCTIONS:
+1. First, generate your initial content following the prompt
+2. Then, critically review it for:
+   - Repetitive or clichéd sales language patterns
+   - Generic results claims that lack credibility
+   - Awkward transitions or pushy tone
+   - Opportunities to be more compelling and trustworthy
+3. Provide a refined version that addresses these issues
+4. Return ONLY the refined version in the requested format
+
+Focus on making the content authentically persuasive, credibly specific, and uniquely compelling without being pushy.`
       /* COMMENTED OUT - ORIGINAL HARDCODED PROMPT:
       `You are a thoughtful and creative social media strategist writing for ${businessInfo.business_name}, a ${businessInfo.core_service} provider in ${businessInfo.location}. Your task is to create a Results & Offers post that highlights meaningful outcomes and encourages ${businessInfo.ideal_client} to explore working with ${businessInfo.business_name}, while positioning the agency as a dependable, trustworthy partner.
 
