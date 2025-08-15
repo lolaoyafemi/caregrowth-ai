@@ -5,6 +5,7 @@ import { Clock, AlertTriangle } from 'lucide-react';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 const CreditExpirationWarning = () => {
   const { getExpirationInfo } = useUserCredits();
@@ -75,7 +76,7 @@ const CreditExpirationWarning = () => {
         <AlertTriangle className="h-4 w-4 text-orange-600" />
         <AlertDescription className="text-orange-800">
           <strong>Credits expiring soon!</strong> Your credits will expire in {effectiveExpirationInfo.daysUntilExpiry} day{effectiveExpirationInfo.daysUntilExpiry !== 1 ? 's' : ''} 
-          ({effectiveExpirationInfo.expiresAt.toLocaleDateString()}).
+          ({format(effectiveExpirationInfo.expiresAt, 'MMMM d, yyyy')}).
         </AlertDescription>
       </Alert>
     );
@@ -85,7 +86,7 @@ const CreditExpirationWarning = () => {
     <Alert className="mb-4 border-blue-200 bg-blue-50">
       <Clock className="h-4 w-4 text-blue-600" />
       <AlertDescription className="text-blue-800">
-        Your credits expire on {effectiveExpirationInfo.expiresAt.toLocaleDateString()} 
+        Your credits expire on {format(effectiveExpirationInfo.expiresAt, 'MMMM d, yyyy')} 
         ({effectiveExpirationInfo.daysUntilExpiry} days remaining).
       </AlertDescription>
     </Alert>
