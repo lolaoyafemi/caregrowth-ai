@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -353,6 +353,39 @@ export type Database = {
           id?: string
           name?: string
           platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      prompts_modified: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+          platform: string
+          prompt: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          platform: string
+          prompt: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          platform?: string
+          prompt?: string
           updated_at?: string
           user_id?: string
         }
@@ -817,20 +850,20 @@ export type Database = {
     }
     Functions: {
       allocate_subscription_credits: {
-        Args: { p_subscription_id: string; p_credits: number }
+        Args: { p_credits: number; p_subscription_id: string }
         Returns: boolean
       }
       deduct_credits_and_log: {
         Args: {
-          p_user_id: string
-          p_tool: string
           p_credits_used: number
           p_description?: string
+          p_tool: string
+          p_user_id: string
         }
         Returns: Json
       }
       deduct_credits_fifo: {
-        Args: { p_user_id: string; p_credits_to_deduct: number }
+        Args: { p_credits_to_deduct: number; p_user_id: string }
         Returns: Json
       }
       expire_old_credits: {
@@ -846,7 +879,7 @@ export type Database = {
         Returns: boolean
       }
       log_security_event: {
-        Args: { event_type: string; event_data?: Json; target_user_id?: string }
+        Args: { event_data?: Json; event_type: string; target_user_id?: string }
         Returns: undefined
       }
     }
