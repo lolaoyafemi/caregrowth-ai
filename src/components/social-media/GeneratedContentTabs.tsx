@@ -102,7 +102,7 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
   const getConcatenatedContent = (platform: string) => {
     if (!generatedContent) return '';
     const content = generatedContent[platform as keyof GeneratedContent];
-    return `${content.hook}\n\n${content.body}\n\n${content.cta}`;
+    return `${content.hook}${content.body}${content.cta}`;
   };
 
   return (
