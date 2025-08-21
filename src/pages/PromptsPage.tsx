@@ -260,9 +260,9 @@ const PromptsPage = () => {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="trust-authority">Trust & Authority</SelectItem>
-                    <SelectItem value="heartfelt-relatable">Heartfelt & Relatable</SelectItem>
-                    <SelectItem value="educational-helpful">Educational & Helpful</SelectItem>
+                    <SelectItem value="attract">Trust & Authority</SelectItem>
+                    <SelectItem value="connect">Heartfelt & Relatable</SelectItem>
+                    <SelectItem value="transact">Educational & Helpful</SelectItem>
                     <SelectItem value="results-offers">Results & Offers</SelectItem>
                   </SelectContent>
                 </Select>
