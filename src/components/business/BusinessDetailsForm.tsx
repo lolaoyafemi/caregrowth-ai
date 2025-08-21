@@ -39,6 +39,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
     idealClient: '',
     mainOffer: '',
     bigPromise: '',
+    phoneNumber: '',
     audienceProblem: '',
     objections: '',
     differentiator: '',
@@ -83,6 +84,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
           idealClient: typedProfile.ideal_client || '',
           mainOffer: typedProfile.main_offer || '',
           bigPromise: typedProfile.big_promise || '',
+          phoneNumber: (typedProfile as any).phone_number || '',
           audienceProblem: typedProfile.audience_problem || '',
           objections: typedProfile.objections?.join(', ') || '',
           differentiator: typedProfile.differentiator || '',
@@ -125,6 +127,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
         ideal_client: formData.idealClient,
         main_offer: formData.mainOffer,
         big_promise: formData.bigPromise,
+        phone_number: formData.phoneNumber,
         audience_problem: formData.audienceProblem,
         pain_points: formData.audienceProblem ? [formData.audienceProblem] : [],
         objections: formData.objections ? formData.objections.split(',').map(item => item.trim()) : [],
@@ -259,6 +262,16 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                     value={formData.bigPromise}
                     onChange={(e) => handleInputChange('bigPromise', e.target.value)}
                     className="min-h-[80px]"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <Label htmlFor="phoneNumber">7. Phone Number</Label>
+                  <Input
+                    id="phoneNumber"
+                    placeholder="e.g., (555) 123-4567"
+                    value={formData.phoneNumber}
+                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                   />
                 </div>
               </div>

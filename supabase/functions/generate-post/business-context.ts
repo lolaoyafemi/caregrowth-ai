@@ -6,6 +6,7 @@ export const buildBusinessContext = (profile: any, audience: string): string => 
 Business Name: ${profile.business_name || 'Home Care Business'}
 Services: ${profile.services || profile.core_service || 'Home care services'}
 Location: ${profile.location || 'Local area'}
+Phone Number: ${profile.phone_number || 'Contact us for more information'}
 Target Client: ${targetAudience}
 Main Offer: ${profile.main_offer || 'Professional home care'}
 Differentiator: ${profile.differentiator || 'Compassionate, professional care'}
@@ -25,6 +26,7 @@ export const personalizeContent = (text: string, profile: any, targetAudience: s
     .replace(/\{location\}/gi, profile.location || 'your area')
     .replace(/\{services\}/gi, profile.services || 'our services')
     .replace(/\{core_service\}/gi, profile.core_service || 'our services')
+    .replace(/\{phone_number\}/gi, profile.phone_number || 'contact us')
     .replace(/\{ideal_client\}/gi, targetAudience)
     .replace(/\{main_offer\}/gi, profile.main_offer || 'our services')
     .replace(/\{differentiator\}/gi, profile.differentiator || 'professional care')
