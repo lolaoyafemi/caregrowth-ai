@@ -743,6 +743,7 @@ export type Database = {
           main_offer: string | null
           objections: string[] | null
           pain_points: string[] | null
+          phone_number: string | null
           plan_name: string | null
           role: string | null
           services: string | null
@@ -769,6 +770,7 @@ export type Database = {
           main_offer?: string | null
           objections?: string[] | null
           pain_points?: string[] | null
+          phone_number?: string | null
           plan_name?: string | null
           role?: string | null
           services?: string | null
@@ -795,6 +797,7 @@ export type Database = {
           main_offer?: string | null
           objections?: string[] | null
           pain_points?: string[] | null
+          phone_number?: string | null
           plan_name?: string | null
           role?: string | null
           services?: string | null
