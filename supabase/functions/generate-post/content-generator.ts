@@ -24,7 +24,7 @@ export interface GeneratedContent {
 // Optimized model selection for faster responses
 const selectOptimalModel = (postType: string, audience: string): string => {
   // Use the mini model for faster generation unless it's a complex reasoning task
-  const complexReasoningTypes = ['results-offers', 'trust-authority'];
+  const complexReasoningTypes = ['transact', 'attract'];
   const complexAudiences = ['business owners', 'professionals', 'executives'];
   
   const isComplexTask = complexReasoningTypes.includes(postType) || 
@@ -187,7 +187,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   
   if (!randomPrompt || randomPrompt.trim() === '') {
     console.log(`Falling back to hardcoded prompts for category: ${postType}`);
-    throw new Error(`No valid prompt found for category: ${postType}. Please use one of: trust-authority, heartfelt-relatable, educational-helpful, results-offers`);
+    throw new Error(`No valid prompt found for category: ${postType}. Please use one of: attract, connect, transact`);
   }
 
   // Parse and filter OpenAI settings from prompt
@@ -243,7 +243,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
 
   // Enhanced content category specific prompts optimized for advanced AI reasoning with self-refinement
   const contentPrompts = {
-    "trust-authority": {
+    "attract": {
       systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
@@ -298,7 +298,7 @@ BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
-    "heartfelt-relatable": {
+    "connect": {
       systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
@@ -353,7 +353,7 @@ BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
-    "educational-helpful": {
+    "educate": {
       systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
@@ -408,7 +408,7 @@ BODY: [valuable main content - 3-5 sentences]
 CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
-    "results-offers": {
+    "transact": {
       systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
