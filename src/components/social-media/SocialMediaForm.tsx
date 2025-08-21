@@ -102,7 +102,6 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
                 <SelectItem value="attract">Attract</SelectItem>
                 <SelectItem value="connect">Connect</SelectItem>
                 <SelectItem value="transact">Transact</SelectItem>
-                <SelectItem value="results-offers">Results & Offers</SelectItem>
               </SelectContent>
             </Select>
           </div>
