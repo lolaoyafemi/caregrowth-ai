@@ -203,7 +203,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
               <h3 className="text-lg font-semibold text-blue-600 mb-4">Section 1: About Your Business</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="businessName">1. What's the name of your home care business? *</Label>
+                  <Label htmlFor="businessName">What's the name of your home care business?</Label>
                   <Input
                     id="businessName"
                     placeholder="e.g., Graceful Aging Home Care"
@@ -213,7 +213,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="location">2. Where is your agency based? *</Label>
+                  <Label htmlFor="location">Where is your agency based?</Label>
                   <Input
                     id="location"
                     placeholder="City and state"
@@ -223,7 +223,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                 </div>
                 
                 <div className="md:col-span-2">
-                  <Label htmlFor="coreService">3. What core service do you offer? *</Label>
+                  <Label htmlFor="coreService">What core service do you offer?</Label>
                   <Input
                     id="coreService"
                     placeholder="e.g., companion care, dementia care, live-in care, respite"
@@ -233,7 +233,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                 </div>
                 
                 <div className="md:col-span-2">
-                  <Label htmlFor="idealClient">4. Who is your ideal client?</Label>
+                  <Label htmlFor="idealClient">Who is your ideal client?</Label>
                   <Textarea
                     id="idealClient"
                     placeholder="Tell us about them in 2–3 sentences. Who do you serve best?"
@@ -244,7 +244,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                 </div>
                 
                 <div className="md:col-span-2">
-                  <Label htmlFor="mainOffer">5. What is the main offer or package you want to promote?</Label>
+                  <Label htmlFor="mainOffer">What is the main offer or package you want to promote?</Label>
                   <Textarea
                     id="mainOffer"
                     placeholder="e.g., 24/7 live-in care plans for families with aging parents"
@@ -255,7 +255,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                 </div>
                 
                 <div className="md:col-span-2">
-                  <Label htmlFor="bigPromise">6. What is the big promise you make to clients?</Label>
+                  <Label htmlFor="bigPromise">What is the big promise you make to clients?</Label>
                   <Textarea
                     id="bigPromise"
                     placeholder="What result or outcome do people get when they work with you?"
@@ -266,7 +266,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                 </div>
                 
                 <div className="md:col-span-2">
-                  <Label htmlFor="phoneNumber">7. Phone Number</Label>
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
                   <Input
                     id="phoneNumber"
                     placeholder="e.g., (555) 123-4567"
@@ -282,7 +282,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
               <h3 className="text-lg font-semibold text-blue-600 mb-4">Section 2: Audience Pains + Beliefs</h3>
               <div className="space-y-6">
                 <div>
-                  <Label htmlFor="audienceProblem">7. What are the top 3–5 problems your audience is dealing with every day?</Label>
+                  <Label htmlFor="audienceProblem">What are the top 3–5 problems your audience is dealing with every day?</Label>
                   <Textarea
                     id="audienceProblem"
                     placeholder="Think of the stress, guilt, or confusion they feel before they reach out to you"
@@ -293,7 +293,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="objections">8. What objections do people usually have before hiring your agency?</Label>
+                  <Label htmlFor="objections">What objections do people usually have before hiring your agency?</Label>
                   <Textarea
                     id="objections"
                     placeholder="e.g., cost, trust, letting a stranger into their home, etc."
@@ -304,7 +304,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="differentiator">9. What's one thing that makes your agency different from others?</Label>
+                  <Label htmlFor="differentiator">What's one thing that makes your agency different from others?</Label>
                   <Textarea
                     id="differentiator"
                     placeholder="What sets you apart, even if it's small?"
@@ -320,7 +320,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
             <div>
               <h3 className="text-lg font-semibold text-blue-600 mb-4">Section 3: Your Content Preferences</h3>
               <div>
-                <Label htmlFor="testimonials">10. Do you have any testimonials, client wins, or feedback you'd like us to include in your content?</Label>
+                <Label htmlFor="testimonials">Do you have any testimonials, client wins, or feedback you'd like us to include in your content?</Label>
                 <Textarea
                   id="testimonials"
                   placeholder="Paste a few short lines or key phrases from happy clients"
