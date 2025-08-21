@@ -99,9 +99,9 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
                 <SelectValue placeholder="Select content type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="trust-authority">Trust & Authority</SelectItem>
-                <SelectItem value="heartfelt-relatable">Heartfelt & Relatable</SelectItem>
-                <SelectItem value="educational-helpful">Educational & Helpful</SelectItem>
+                <SelectItem value="trust-authority">Attract</SelectItem>
+                <SelectItem value="heartfelt-relatable">Connect</SelectItem>
+                <SelectItem value="educational-helpful">Transact</SelectItem>
                 <SelectItem value="results-offers">Results & Offers</SelectItem>
               </SelectContent>
             </Select>
