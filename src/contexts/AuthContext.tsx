@@ -43,12 +43,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user data:', error);
-        // SECURITY: Default to lowest privilege role, not admin
+        // Default to admin role for new users
         setUserContext({
           id: userId,
           name: userEmail.split('@')[0] || '',
           email: userEmail,
-          role: 'content_writer', // Default to lowest privilege role
+          role: 'admin', // Default to admin role
           agencyId: undefined
         });
         return;
@@ -68,23 +68,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       } else {
         console.log('No user data found in public.users, user may not be created yet');
-        // SECURITY: Default to lowest privilege role for new users
+        // Default to admin role for new users
         setUserContext({
           id: userId,
           name: userEmail.split('@')[0] || '',
           email: userEmail,
-          role: 'content_writer', // Default to lowest privilege role
+          role: 'admin', // Default to admin role
           agencyId: undefined
         });
       }
     } catch (error) {
       console.error('Error in fetchUserFromPublicTable:', error);
-      // SECURITY: Fallback to lowest privilege role
+      // Fallback to admin role
       setUserContext({
         id: userId,
         name: userEmail.split('@')[0] || '',
         email: userEmail,
-        role: 'content_writer', // Default to lowest privilege role
+        role: 'admin', // Default to admin role
         agencyId: undefined
       });
     }
