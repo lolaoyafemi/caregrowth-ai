@@ -22,6 +22,7 @@ import AgencyUsagePage from './pages/agency/AgencyUsagePage';
 import KnowledgePage from './pages/KnowledgePage';
 import LoginPage from './pages/LoginPage';
 import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -53,6 +54,7 @@ const AppContent = () => {
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registration-success" element={<RegistrationSuccessPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/stripe-payment" element={<StripePaymentPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
