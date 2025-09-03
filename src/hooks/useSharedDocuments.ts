@@ -239,9 +239,120 @@ export const useSharedDocuments = () => {
     }
   };
 
+  const uploadMultipleSharedDocuments = async (
+    files: File[], 
+    category: string = 'general', 
+    priority: number = 1
+  ): Promise<boolean> => {
+    if (!user) {
+      toast.error('You must be logged in to upload documents');
+      return false;
+    }
+
+    if (files.length === 0) {
+      toast.error('No files selected');
+      return false;
+    }
+
+    setIsUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      toast.info(`Uploading ${files.length} files...`);
+      
+      for (const file of files) {
+        try {
+          console.log('Uploading file:', file.name, 'Size:', file.size);
+
+          // Generate unique file path
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          const filePath = `documents/${fileName}`;
+
+          // Upload file to storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('shared-knowledge')
+            .upload(filePath, file);
+
+          if (uploadError) {
+            console.error('Storage upload error for', file.name, ':', uploadError);
+            errorCount++;
+            continue;
+          }
+
+          console.log('File uploaded to storage:', uploadData.path);
+
+          // Create database record
+          const { data: docData, error: docError } = await supabase
+            .from('shared_documents')
+            .insert({
+              file_name: file.name,
+              file_path: filePath,
+              doc_title: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+              document_category: category,
+              training_priority: priority,
+              file_size: file.size,
+              mime_type: file.type,
+              uploaded_by: user.id,
+              processing_status: 'pending'
+            })
+            .select()
+            .single();
+
+          if (docError) {
+            console.error('Database insert error for', file.name, ':', docError);
+            // Clean up uploaded file
+            await supabase.storage.from('shared-knowledge').remove([filePath]);
+            errorCount++;
+            continue;
+          }
+
+          console.log('Document record created for', file.name, ':', docData.id);
+
+          // Trigger document processing
+          const { error: processError } = await supabase.functions.invoke('process-shared-document', {
+            body: {
+              documentId: docData.id,
+              filePath: filePath
+            }
+          });
+
+          if (processError) {
+            console.error('Document processing error for', file.name, ':', processError);
+          }
+
+          successCount++;
+        } catch (error) {
+          console.error('Error uploading file', file.name, ':', error);
+          errorCount++;
+        }
+      }
+
+      // Show final result
+      if (successCount > 0 && errorCount === 0) {
+        toast.success(`All ${successCount} files uploaded successfully!`);
+      } else if (successCount > 0 && errorCount > 0) {
+        toast.warning(`${successCount} files uploaded successfully, ${errorCount} failed`);
+      } else {
+        toast.error('Failed to upload any files');
+        return false;
+      }
+
+      return successCount > 0;
+    } catch (error) {
+      console.error('Error uploading multiple shared documents:', error);
+      toast.error('Failed to upload documents');
+      return false;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return {
     getSharedDocuments,
     uploadSharedDocument,
+    uploadMultipleSharedDocuments,
     reprocessDocument,
     deleteSharedDocument,
     updateDocumentSettings,

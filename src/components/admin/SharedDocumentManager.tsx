@@ -31,7 +31,7 @@ interface SharedDocument {
 const SharedDocumentManager = () => {
   const [documents, setDocuments] = useState<SharedDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadCategory, setUploadCategory] = useState('general');
   const [uploadPriority, setUploadPriority] = useState(1);
   const [editingDoc, setEditingDoc] = useState<SharedDocument | null>(null);
@@ -42,6 +42,7 @@ const SharedDocumentManager = () => {
   const {
     getSharedDocuments,
     uploadSharedDocument,
+    uploadMultipleSharedDocuments,
     reprocessDocument,
     deleteSharedDocument,
     updateDocumentSettings,
@@ -60,26 +61,36 @@ const SharedDocumentManager = () => {
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const maxSize = 50 * 1024 * 1024; // 50MB
+    const files = Array.from(e.target.files || []);
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+    
+    files.forEach(file => {
       if (file.size > maxSize) {
-        toast.error('File size must be less than 50MB');
-        return;
+        invalidFiles.push(`${file.name} (exceeds 50MB)`);
+      } else {
+        validFiles.push(file);
       }
-      setSelectedFile(file);
+    });
+    
+    if (invalidFiles.length > 0) {
+      toast.error(`Some files were rejected: ${invalidFiles.join(', ')}`);
     }
+    
+    setSelectedFiles(validFiles);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      toast.error('Please select a file to upload');
+    if (selectedFiles.length === 0) {
+      toast.error('Please select files to upload');
       return;
     }
 
-    const success = await uploadSharedDocument(selectedFile, uploadCategory, uploadPriority);
+    const success = await uploadMultipleSharedDocuments(selectedFiles, uploadCategory, uploadPriority);
     if (success) {
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setUploadCategory('general');
       setUploadPriority(1);
       loadDocuments();
@@ -172,6 +183,7 @@ const SharedDocumentManager = () => {
               <Input
                 id="file-upload"
                 type="file"
+                multiple
                 accept=".pdf,.txt,.docx,.doc,.csv"
                 onChange={handleFileSelect}
                 className="mt-1"
@@ -213,7 +225,7 @@ const SharedDocumentManager = () => {
             <div className="flex items-end">
               <Button 
                 onClick={handleUpload} 
-                disabled={!selectedFile || isUploading}
+                disabled={selectedFiles.length === 0 || isUploading}
                 className="w-full"
               >
                 {isUploading ? (
@@ -231,11 +243,19 @@ const SharedDocumentManager = () => {
             </div>
           </div>
 
-          {selectedFile && (
+          {selectedFiles.length > 0 && (
             <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm">
-                <strong>Selected:</strong> {selectedFile.name} ({formatFileSize(selectedFile.size)})
+              <p className="text-sm font-medium mb-2">
+                <strong>Selected files ({selectedFiles.length}):</strong>
               </p>
+              <div className="space-y-1">
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between text-sm">
+                    <span>{file.name}</span>
+                    <span className="text-muted-foreground">({formatFileSize(file.size)})</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </CardContent>
