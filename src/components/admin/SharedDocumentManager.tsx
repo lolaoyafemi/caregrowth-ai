@@ -179,7 +179,7 @@ const SharedDocumentManager = () => {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="file-upload">Select File</Label>
+              <Label htmlFor="file-upload">Select Files</Label>
               <Input
                 id="file-upload"
                 type="file"
@@ -187,7 +187,11 @@ const SharedDocumentManager = () => {
                 accept=".pdf,.txt,.docx,.doc,.csv"
                 onChange={handleFileSelect}
                 className="mt-1"
+                placeholder="Choose multiple files..."
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                You can select multiple files at once (Ctrl/Cmd + click)
+              </p>
             </div>
             
             <div>
