@@ -119,24 +119,50 @@ const DocumentSearchTool = () => {
 
   const handleAddGoogleLink = async () => {
     if (!googleUrl.trim()) {
-      toast.error("Please enter a Google document URL.");
+      toast.error("Please enter Google document URLs.");
       return;
     }
 
-    if (!googleUrl.includes('docs.google.com') && !googleUrl.includes('drive.google.com')) {
-      toast.error("Please enter a valid Google document URL.");
+    // Split by lines and filter out empty lines
+    const urls = googleUrl.split('\n').map(url => url.trim()).filter(url => url);
+    
+    if (urls.length === 0) {
+      toast.error("Please enter at least one Google document URL.");
       return;
     }
 
-    try {
-      const title = googleUrl.includes('/document/') ? 'Google Doc' :
-                   googleUrl.includes('/spreadsheets/') ? 'Google Sheet' :
-                   googleUrl.includes('/presentation/') ? 'Google Slides' : 'Google Document';
-      
-      await addDocument(googleUrl, `${title} ${documents.length + 1}`);
+    // Validate all URLs
+    const invalidUrls = urls.filter(url => !url.includes('docs.google.com') && !url.includes('drive.google.com'));
+    if (invalidUrls.length > 0) {
+      toast.error(`Invalid URLs found. Please ensure all URLs are valid Google document URLs.`);
+      return;
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const url of urls) {
+      try {
+        const title = url.includes('/document/') ? 'Google Doc' :
+                     url.includes('/spreadsheets/') ? 'Google Sheet' :
+                     url.includes('/presentation/') ? 'Google Slides' : 'Google Document';
+        
+        await addDocument(url, `${title} ${documents.length + successCount + 1}`);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Successfully added ${successCount} document${successCount !== 1 ? 's' : ''}`);
+    }
+    if (errorCount > 0) {
+      toast.error(`Failed to add ${errorCount} document${errorCount !== 1 ? 's' : ''}`);
+    }
+
+    if (successCount > 0) {
       setGoogleUrl('');
-    } catch (error) {
-      // Error already handled in hook
     }
   };
 
@@ -443,14 +469,18 @@ const DocumentSearchTool = () => {
         
         <div>
           <Card className="p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Add Google Document</h2>
+            <h2 className="text-xl font-semibold mb-4">Add Google Documents</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Google Document URL</label>
-                <Input
-                  placeholder="https://docs.google.com/document/d/..."
+                <label className="block text-sm font-medium mb-2">Google Document URLs</label>
+                <Textarea
+                  placeholder="Enter one or multiple Google document URLs (one per line):
+https://docs.google.com/document/d/...
+https://docs.google.com/spreadsheets/d/...
+https://docs.google.com/presentation/d/..."
                   value={googleUrl}
                   onChange={(e) => setGoogleUrl(e.target.value)}
+                  rows={4}
                 />
               </div>
               <Button 
@@ -459,17 +489,14 @@ const DocumentSearchTool = () => {
                 disabled={!googleUrl.trim()}
               >
                 <LinkIcon className="h-4 w-4 mr-2" />
-                Add Document Link
+                Add Document Links
               </Button>
               <p className="text-xs text-gray-500">
-                Documents must be publicly accessible or shared with view permissions
+                Documents must be publicly accessible or shared with view permissions. Add multiple URLs separated by new lines.
               </p>
             </div>
             <div className="mt-4">
-              <p className="text-sm text-gray-600 mb-2">{documents.length}/25 documents linked</p>
-              <div className="w-full h-2 bg-gray-100 rounded-full">
-                <div className="h-full bg-caregrowth-green rounded-full" style={{ width: `${(documents.length / 25) * 100}%` }}></div>
-              </div>
+              <p className="text-sm text-gray-600">{documents.length} documents linked</p>
             </div>
           </Card>
           
