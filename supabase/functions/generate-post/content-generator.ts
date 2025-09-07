@@ -246,7 +246,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   // Enhanced content category specific prompts optimized for advanced AI reasoning with self-refinement
   const contentPrompts = {
     "attract": {
-      systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.
+      systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. 5) Build your content taking cues from the user's subject ${subject}. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd openings
@@ -301,7 +301,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
     "connect": {
-      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. Create deeply resonant content that makes people feel genuinely understood.
+      systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. 5) Build your content taking cues from the user's subject ${subject}. Create deeply resonant content that makes people feel genuinely understood.
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd openings
@@ -356,7 +356,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
     "educate": {
-      systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.
+      systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. 5) Build your content taking cues from the user's subject ${subject}. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd educational openings
@@ -411,7 +411,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
       */
     },
     "transact": {
-      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. Create compelling content that drives action through trust and demonstrated value.
+      systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. 5) Build your content taking cues from the user's subject ${subject}. Create compelling content that drives action through trust and demonstrated value.
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd sales language
