@@ -8,6 +8,7 @@ export interface ContentGenerationParams {
   tone: string;
   platform: string;
   audience: string;
+  subject?: string;
   businessContext: string;
   openAIApiKey: string;
 }
@@ -96,7 +97,7 @@ const getDefaultSettings = (model: string) => {
 };
 
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
-  const { postType, audience, tone, platform, businessContext, openAIApiKey } = params;
+  const { postType, audience, tone, platform, subject, businessContext, openAIApiKey } = params;
 
   const selectedModel = selectOptimalModel(postType, audience);
   console.log(`Generating AI content with ${selectedModel} (selected based on complexity)`);
@@ -236,6 +237,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
     .replace(/\{current_time\}/g, currentTime)
     .replace(/\{random_seed\}/g, randomSeed)
     .replace(/\{audience\}/g, audience)
+    .replace(/\{subject\}/g, subject || '')
     .replace(/\{platform\}/g, platform);
 
   console.log('Using random prompt from prompts_modified table for category:', postType);

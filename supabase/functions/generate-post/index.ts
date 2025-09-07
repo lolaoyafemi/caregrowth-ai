@@ -70,14 +70,15 @@ serve(async (req) => {
       });
     }
     
-    const { postType, tone, platform, audience } = requestBody || {};
+    const { postType, tone, platform, audience, subject } = requestBody || {};
     
     console.log('Generate post request:', {
       userId: authenticatedUserId,
       postType,
       tone,
       platform,
-      audience
+      audience,
+      subject
     });
 
     // Validate environment variables
@@ -134,6 +135,7 @@ serve(async (req) => {
         tone,
         platform,
         audience: targetAudience,
+        subject,
         businessContext,
         openAIApiKey
       });

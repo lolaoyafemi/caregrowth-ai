@@ -6,7 +6,8 @@ export const generatePost = async (
   category: string,
   tone: string,
   platform: string,
-  audience: string = ''
+  audience: string = '',
+  subject: string = ''
 ) => {
   try {
     console.log('Calling generate-post edge function with:', {
@@ -14,7 +15,8 @@ export const generatePost = async (
       postType: category,
       tone,
       platform,
-      audience
+      audience,
+      subject
     });
 
     const { data, error } = await supabase.functions.invoke('generate-post', {
@@ -23,7 +25,8 @@ export const generatePost = async (
         postType: category,
         tone,
         platform,
-        audience
+        audience,
+        subject
       }
     });
 

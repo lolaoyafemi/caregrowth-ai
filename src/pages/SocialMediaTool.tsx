@@ -145,7 +145,7 @@ const SocialMediaTool = () => {
       console.log('Starting post generation...');
 
       // First generate content, then deduct credits only if successful
-      const result = await generatePost(userId, contentCategory, toneOfPost, 'all', audience);
+      const result = await generatePost(userId, contentCategory, toneOfPost, 'all', audience, subject);
 
       console.log('Generation result:', result);
 
