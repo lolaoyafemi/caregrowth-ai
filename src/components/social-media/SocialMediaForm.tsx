@@ -16,8 +16,8 @@ interface SocialMediaFormProps {
   setContentCategory: (value: string) => void;
   toneOfPost: string;
   setToneOfPost: (value: string) => void;
-  platform: string;
-  setPlatform: (value: string) => void;
+  subject: string;
+  setSubject: (value: string) => void;
   onGenerate: () => void;
   isGenerating: boolean;
   businessProfile: any;
@@ -31,8 +31,8 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
   setContentCategory,
   toneOfPost,
   setToneOfPost,
-  platform,
-  setPlatform,
+  subject,
+  setSubject,
   onGenerate,
   isGenerating,
   businessProfile,
@@ -84,6 +84,15 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <div className="mb-4">
+            <Label htmlFor="subject">Subject of Post</Label>
+            <Input
+              id="subject"
+              placeholder="What do you want to talk about?"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+          </div>
+          <div className="mb-4">
             <Label htmlFor="audience">Target Audience</Label>
             <Input
               id="audience"
@@ -91,19 +100,6 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
             />
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="contentCategory">Type of Content</Label>
-            <Select value={contentCategory} onValueChange={setContentCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select content type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="attract">Attract</SelectItem>
-                <SelectItem value="connect">Connect</SelectItem>
-                <SelectItem value="transact">Transact</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
         <div>
@@ -123,17 +119,15 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
             </Select>
           </div>
           <div className="mb-4">
-            <Label htmlFor="platform">Platform Focus</Label>
-            <Select value={platform} onValueChange={setPlatform}>
+            <Label htmlFor="contentCategory">Type of Content</Label>
+            <Select value={contentCategory} onValueChange={setContentCategory}>
               <SelectTrigger>
-                <SelectValue placeholder="Select platform" />
+                <SelectValue placeholder="Select content type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Platforms</SelectItem>
-                <SelectItem value="facebook">Facebook</SelectItem>
-                <SelectItem value="twitter">Twitter</SelectItem>
-                <SelectItem value="linkedin">LinkedIn</SelectItem>
-                <SelectItem value="instagram">Instagram</SelectItem>
+                <SelectItem value="attract">Attract</SelectItem>
+                <SelectItem value="connect">Connect</SelectItem>
+                <SelectItem value="transact">Transact</SelectItem>
               </SelectContent>
             </Select>
           </div>

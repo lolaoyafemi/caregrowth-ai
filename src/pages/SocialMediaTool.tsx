@@ -31,7 +31,7 @@ const SocialMediaTool = () => {
   const [audience, setAudience] = useState('');
   const [contentCategory, setContentCategory] = useState('');
   const [toneOfPost, setToneOfPost] = useState('professional');
-  const [platform, setPlatform] = useState('all');
+  const [subject, setSubject] = useState('');
   
   // Regeneration states
   const [regeneratingSection, setRegeneratingSection] = useState<{platform: string, section: string} | null>(null);
@@ -145,7 +145,7 @@ const SocialMediaTool = () => {
       console.log('Starting post generation...');
 
       // First generate content, then deduct credits only if successful
-      const result = await generatePost(userId, contentCategory, toneOfPost, platform, audience);
+      const result = await generatePost(userId, contentCategory, toneOfPost, 'all', audience);
 
       console.log('Generation result:', result);
 
@@ -160,7 +160,7 @@ const SocialMediaTool = () => {
         userId, 
         'social_media', 
         1, 
-        `Generated ${platform} content for ${contentCategory} targeting ${audience}`
+        `Generated content for ${contentCategory} targeting ${audience}`
       );
 
       if (!creditResult.success) {
@@ -394,8 +394,8 @@ const SocialMediaTool = () => {
         setContentCategory={setContentCategory}
         toneOfPost={toneOfPost}
         setToneOfPost={setToneOfPost}
-        platform={platform}
-        setPlatform={setPlatform}
+        subject={subject}
+        setSubject={setSubject}
         onGenerate={handleGenerate}
         isGenerating={isGenerating}
         businessProfile={businessProfile}
