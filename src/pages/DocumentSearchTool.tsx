@@ -495,14 +495,14 @@ const DocumentSearchTool = () => {
               <ol className="list-decimal ml-5 space-y-2">
                 <li>Open your Google Drive folder in a web browser</li>
                 <li>Make sure the folder is shared publicly or with "Anyone with the link can view"</li>
-                <li>Select all documents you want to add (Ctrl+A or Cmd+A)</li>
-                <li>Right-click and choose "Get link" or "Share"</li>
-                <li>Copy each document link and paste them in the text area below (one per line)</li>
+                <li>Select all documents you want to add (Ctrl+A or Cmd+A to select all)</li>
+                <li>Right-click and choose "Share"</li>
+                <li>Click on "Copy Links"</li>
               </ol>
-              <div className="mt-3 p-3 bg-blue-100 rounded border-l-4 border-blue-400">
+              {/* <div className="mt-3 p-3 bg-blue-100 rounded border-l-4 border-blue-400">
                 <p className="font-medium text-blue-800">💡 Pro Tip:</p>
                 <p>You can also use Google Drive's "List view" and copy links more efficiently by right-clicking each document individually.</p>
-              </div>
+              </div> */}
             </div>
           </Card>
 
@@ -512,11 +512,7 @@ const DocumentSearchTool = () => {
               <div>
                 <label className="block text-sm font-medium mb-2">Google Document URLs</label>
                 <Textarea
-                  placeholder="Enter one or multiple Google document URLs (separated by comma or new line):
-https://docs.google.com/document/d/..., https://docs.google.com/spreadsheets/d/...
-or
-https://docs.google.com/document/d/...
-https://docs.google.com/presentation/d/..."
+                  placeholder="Enter one or multiple Google document URLs (separated by comma or new line):"
                   value={googleUrl}
                   onChange={(e) => setGoogleUrl(e.target.value)}
                   rows={4}
@@ -540,7 +536,7 @@ https://docs.google.com/presentation/d/..."
               )}
               
               <p className="text-xs text-gray-500">
-                Documents must be publicly accessible or shared with view permissions. Add multiple URLs separated by new lines.
+                Documents must be publicly accessible or shared with view permissions. Add multiple URLs separated by a comma or a new line.
               </p>
             </div>
             <div className="mt-4">
