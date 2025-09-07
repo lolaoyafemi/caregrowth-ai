@@ -25,6 +25,8 @@ const DocumentSearchTool = () => {
   const [followUpQuery, setFollowUpQuery] = useState('');
   const [googleUrl, setGoogleUrl] = useState('');
   const [searchMode, setSearchMode] = useState<'basic' | 'smart'>('smart');
+  const [isAddingDocuments, setIsAddingDocuments] = useState(false);
+  const [progressMessage, setProgressMessage] = useState('');
 
   if (authLoading) {
     return (
@@ -123,11 +125,16 @@ const DocumentSearchTool = () => {
       return;
     }
 
+    setIsAddingDocuments(true);
+    setProgressMessage("Validating document URLs...");
+
     // Split by lines or comma-space and filter out empty lines
     const urls = googleUrl.split(/[,\n]/).map(url => url.trim()).filter(url => url);
     
     if (urls.length === 0) {
       toast.error("Please enter at least one Google document URL.");
+      setIsAddingDocuments(false);
+      setProgressMessage('');
       return;
     }
 
@@ -135,13 +142,20 @@ const DocumentSearchTool = () => {
     const invalidUrls = urls.filter(url => !url.includes('docs.google.com') && !url.includes('drive.google.com'));
     if (invalidUrls.length > 0) {
       toast.error(`Invalid URLs found. Please ensure all URLs are valid Google document URLs.`);
+      setIsAddingDocuments(false);
+      setProgressMessage('');
       return;
     }
+
+    setProgressMessage(`Processing ${urls.length} document${urls.length !== 1 ? 's' : ''}...`);
 
     let successCount = 0;
     let errorCount = 0;
 
-    for (const url of urls) {
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      setProgressMessage(`Processing document ${i + 1} of ${urls.length}...`);
+      
       try {
         const title = url.includes('/document/') ? 'Google Doc' :
                      url.includes('/spreadsheets/') ? 'Google Sheet' :
@@ -154,6 +168,8 @@ const DocumentSearchTool = () => {
       }
     }
 
+    setProgressMessage('Finalizing...');
+
     if (successCount > 0) {
       toast.success(`Successfully added ${successCount} document${successCount !== 1 ? 's' : ''}`);
     }
@@ -164,6 +180,9 @@ const DocumentSearchTool = () => {
     if (successCount > 0) {
       setGoogleUrl('');
     }
+
+    setIsAddingDocuments(false);
+    setProgressMessage('');
   };
 
   const handleDeleteDocument = async (id: string) => {
@@ -506,11 +525,20 @@ https://docs.google.com/presentation/d/..."
               <Button 
                 onClick={handleAddGoogleLink}
                 className="w-full bg-caregrowth-green"
-                disabled={!googleUrl.trim()}
+                disabled={!googleUrl.trim() || isAddingDocuments}
               >
                 <LinkIcon className="h-4 w-4 mr-2" />
                 Add Document Links
               </Button>
+              
+              {/* Loading State Display */}
+              {isAddingDocuments && (
+                <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-sm text-blue-700 font-medium">{progressMessage}</span>
+                </div>
+              )}
+              
               <p className="text-xs text-gray-500">
                 Documents must be publicly accessible or shared with view permissions. Add multiple URLs separated by new lines.
               </p>
