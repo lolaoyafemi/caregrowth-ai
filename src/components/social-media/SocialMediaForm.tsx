@@ -56,7 +56,12 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
   };
 
   const handleGenerate = () => {
+    console.log('Generate button clicked - Business Profile:', businessProfile);
+    console.log('Business profile complete?', isBusinessProfileComplete());
+    console.log('Credits available:', credits);
+    
     if (!isBusinessProfileComplete()) {
+      console.log('Business profile incomplete, showing error');
       toast.error("Please complete your business details first to generate content.", {
         duration: 5000,
         action: {
@@ -67,8 +72,12 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
       return;
     }
 
+    console.log('Validating credits...');
     if (validateCreditsBeforeAction(credits, 'Social Media Content Generator')) {
+      console.log('Credits validated, calling onGenerate');
       onGenerate();
+    } else {
+      console.log('Credit validation failed');
     }
   };
 
