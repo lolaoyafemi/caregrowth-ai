@@ -123,8 +123,8 @@ const DocumentSearchTool = () => {
       return;
     }
 
-    // Split by lines and filter out empty lines
-    const urls = googleUrl.split('\n').map(url => url.trim()).filter(url => url);
+    // Split by lines or comma-space and filter out empty lines
+    const urls = googleUrl.split(/[,\n]/).map(url => url.trim()).filter(url => url);
     
     if (urls.length === 0) {
       toast.error("Please enter at least one Google document URL.");
@@ -493,9 +493,10 @@ const DocumentSearchTool = () => {
               <div>
                 <label className="block text-sm font-medium mb-2">Google Document URLs</label>
                 <Textarea
-                  placeholder="Enter one or multiple Google document URLs (one per line):
+                  placeholder="Enter one or multiple Google document URLs (separated by comma or new line):
+https://docs.google.com/document/d/..., https://docs.google.com/spreadsheets/d/...
+or
 https://docs.google.com/document/d/...
-https://docs.google.com/spreadsheets/d/...
 https://docs.google.com/presentation/d/..."
                   value={googleUrl}
                   onChange={(e) => setGoogleUrl(e.target.value)}
