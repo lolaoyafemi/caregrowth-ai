@@ -468,6 +468,25 @@ const DocumentSearchTool = () => {
         
         
         <div>
+          {/* Folder Helper Card */}
+          <Card className="p-6 mb-6 bg-blue-50 border-blue-200">
+            <h3 className="text-lg font-semibold mb-3 text-blue-800">📁 Adding Documents from a Google Drive Folder</h3>
+            <div className="space-y-3 text-sm text-blue-700">
+              <p className="font-medium">To add all documents from a Google Drive folder:</p>
+              <ol className="list-decimal ml-5 space-y-2">
+                <li>Open your Google Drive folder in a web browser</li>
+                <li>Make sure the folder is shared publicly or with "Anyone with the link can view"</li>
+                <li>Select all documents you want to add (Ctrl+A or Cmd+A)</li>
+                <li>Right-click and choose "Get link" or "Share"</li>
+                <li>Copy each document link and paste them in the text area below (one per line)</li>
+              </ol>
+              <div className="mt-3 p-3 bg-blue-100 rounded border-l-4 border-blue-400">
+                <p className="font-medium text-blue-800">💡 Pro Tip:</p>
+                <p>You can also use Google Drive's "List view" and copy links more efficiently by right-clicking each document individually.</p>
+              </div>
+            </div>
+          </Card>
+
           <Card className="p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Add Google Documents</h2>
             <div className="space-y-4">
