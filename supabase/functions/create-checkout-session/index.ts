@@ -259,17 +259,7 @@ serve(async (req) => {
       mode: "subscription",
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `${planName} Subscription`,
-              description: `${numericCredits} credits per month`,
-            },
-            unit_amount: Math.round(numericAmount * 100),
-            recurring: {
-              interval: "month"
-            }
-          },
+          price: "price_1S5YNqIQZuAET4ugPZXvVJqs", // Live Stripe price ID
           quantity: 1,
         },
       ],
