@@ -144,7 +144,7 @@ const StripePaymentPage = () => {
                           <span className="font-medium text-lg">{plan.credits} credits</span>
                           <div className="flex items-center justify-center text-sm text-gray-500 mt-1">
                             <Clock className="w-4 h-4 mr-1" />
-                            One-time purchase
+                            Monthly subscription
                           </div>
                         </div>
                         <ul className="text-sm text-gray-600 space-y-2">
@@ -177,7 +177,7 @@ const StripePaymentPage = () => {
                           <span className="font-bold">${selectedPlanData.price}</span>
                         </div>
                         <div className="text-sm text-gray-600">
-                          {selectedPlanData.credits} credits - One-time purchase
+                          {selectedPlanData.credits} credits - Monthly subscription
                         </div>
                       </>
                     )}
@@ -189,7 +189,7 @@ const StripePaymentPage = () => {
                       {!user || !session ? (
                         'Please Log In'
                       ) : (
-                        `Buy Now - $${selectedPlanData?.price || 0}`
+                        `Subscribe $${selectedPlanData?.price || 0}/month`
                       )}
                     </Button>
                     

@@ -417,10 +417,10 @@ const LandingPage = () => {
                   <h3 className="text-2xl font-bold mb-3 text-center">CareGrowthAI Credits</h3>
                   <div className="mb-5 text-center">
                     <span className="text-4xl font-bold">$49</span>
-                    <span className="text-gray-600"> one-time</span>
+                    <span className="text-gray-600"> /month</span>
                   </div>
                   <div className="mb-5 text-center">
-                    <span className="text-black-600">1000 credits included</span>
+                    <span className="text-black-600">Monthly subscription</span>
                   </div>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
