@@ -33,10 +33,10 @@ const PaymentPage = () => {
   };
 
   const handleCheckout = () => {
-    const baseUrl = 'https://buy.stripe.com/bJe8wQeXfaAmelGeFCeUU08';
+    const baseUrl = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y';
     const successUrl = `https://www.spicymessaging.com/payment-success?plan=${selectedPlan || 'professional'}`;
     
-    // Redirect directly to your Stripe payment link with custom success URL
+    // Redirect directly to your live Stripe payment link with custom success URL
     window.open(`${baseUrl}?success_url=${encodeURIComponent(successUrl)}`, '_blank');
   };
 
