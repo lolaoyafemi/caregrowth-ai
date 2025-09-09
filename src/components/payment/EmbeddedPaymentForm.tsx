@@ -34,6 +34,9 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
   const [loading, setLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>('');
   const [paymentIntentId, setPaymentIntentId] = useState<string>('');
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [couponError, setCouponError] = useState<string>('');
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
 
   useEffect(() => {
     createPaymentIntent();
@@ -58,7 +61,8 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
           plan: plan.id,
           planName: plan.name,
           amount: plan.price,
-          credits: plan.credits
+          credits: plan.credits,
+          couponCode: couponCode.trim() || undefined
         },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -77,13 +81,27 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
       console.log('Payment intent created successfully');
       setClientSecret(data.clientSecret);
       setPaymentIntentId(data.paymentIntentId);
+      
+      // Handle coupon discount info
+      if (data.discountAmount) {
+        setDiscountAmount(data.discountAmount);
+        setCouponError('');
+      } else {
+        setDiscountAmount(0);
+      }
     } catch (error) {
       console.error('Error creating payment intent:', error);
-      toast({
-        title: "Setup Error",
-        description: `Failed to initialize payment: ${error.message || 'Please try again.'}`,
-        variant: "destructive"
-      });
+      
+      // Handle coupon-specific errors
+      if (error.message && error.message.includes('coupon')) {
+        setCouponError(error.message);
+      } else {
+        toast({
+          title: "Setup Error",
+          description: `Failed to initialize payment: ${error.message || 'Please try again.'}`,
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -190,7 +208,12 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
           Subscribe to {plan.name}
         </CardTitle>
         <div className="text-center text-2xl font-bold text-primary">
-          ${plan.price}/month
+          ${discountAmount > 0 ? (plan.price - discountAmount).toFixed(2) : plan.price}/month
+          {discountAmount > 0 && (
+            <span className="text-sm text-muted-foreground ml-2">
+              <span className="line-through">${plan.price}</span> Save ${discountAmount}
+            </span>
+          )}
         </div>
         <div className="text-center text-sm text-muted-foreground">
           {plan.credits} credits per month
@@ -210,8 +233,47 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="border rounded-lg p-3">
-            <CardElement options={cardElementOptions} />
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="coupon" className="block text-sm font-medium mb-1">
+                Coupon Code (Optional)
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  id="coupon"
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => {
+                    setCouponCode(e.target.value);
+                    setCouponError('');
+                  }}
+                  placeholder="Enter coupon code"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={createPaymentIntent}
+                  disabled={!couponCode.trim() || loading}
+                  className="px-4"
+                >
+                  Apply
+                </Button>
+              </div>
+              {couponError && (
+                <p className="text-sm text-red-500 mt-1">{couponError}</p>
+              )}
+              {discountAmount > 0 && (
+                <p className="text-sm text-green-600 mt-1">
+                  ✅ Coupon applied! You save ${discountAmount}/month
+                </p>
+              )}
+            </div>
+            
+            <div className="border rounded-lg p-3">
+              <CardElement options={cardElementOptions} />
+            </div>
           </div>
           
           <Alert>
@@ -233,7 +295,7 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
                   Processing...
                 </div>
               ) : (
-                `Subscribe $${plan.price}/month`
+                `Subscribe $${discountAmount > 0 ? (plan.price - discountAmount).toFixed(2) : plan.price}/month`
               )}
             </Button>
             

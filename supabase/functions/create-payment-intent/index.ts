@@ -66,8 +66,8 @@ serve(async (req) => {
     const requestBody = await req.text();
     console.log('Raw request body:', requestBody);
     
-    const { plan, planName, credits, amount } = JSON.parse(requestBody);
-    console.log('Parsed request data:', { plan, planName, credits, amount });
+    const { plan, planName, credits, amount, couponCode } = JSON.parse(requestBody);
+    console.log('Parsed request data:', { plan, planName, credits, amount, couponCode });
     
     // Validate inputs
     if (!plan || !planName || !credits || !amount) {
@@ -116,9 +116,50 @@ serve(async (req) => {
       console.log('Created new Stripe customer:', stripeCustomer.id);
     }
 
+    let finalAmount = Math.round(numericAmount * 100); // Convert to cents
+    let discountAmount = 0;
+    let couponId = null;
+
+    // Validate coupon code if provided
+    if (couponCode) {
+      try {
+        const coupon = await stripe.coupons.retrieve(couponCode);
+        console.log('Coupon validated:', { id: coupon.id, valid: coupon.valid });
+        
+        if (!coupon.valid) {
+          return new Response(JSON.stringify({ 
+            error: "This coupon is no longer valid" 
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          });
+        }
+
+        // Calculate discount
+        if (coupon.percent_off) {
+          discountAmount = Math.round((numericAmount * coupon.percent_off) / 100);
+        } else if (coupon.amount_off) {
+          discountAmount = coupon.amount_off / 100; // Stripe amounts are in cents
+        }
+        
+        finalAmount = Math.max(50, finalAmount - Math.round(discountAmount * 100)); // Minimum $0.50
+        couponId = coupon.id;
+        console.log('Discount applied:', { originalAmount: numericAmount, discountAmount, finalAmount: finalAmount/100 });
+        
+      } catch (couponError) {
+        console.error('Coupon validation failed:', couponError);
+        return new Response(JSON.stringify({ 
+          error: "Invalid coupon code" 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+    }
+
     // Create payment intent for subscription
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(numericAmount * 100), // Convert to cents
+      amount: finalAmount,
       currency: 'usd',
       customer: stripeCustomer.id,
       setup_future_usage: 'off_session', // For recurring payments
@@ -127,7 +168,10 @@ serve(async (req) => {
         plan,
         credits: numericCredits.toString(),
         plan_name: planName,
-        type: 'subscription_setup'
+        type: 'subscription_setup',
+        coupon_code: couponId || '',
+        original_amount: numericAmount.toString(),
+        discount_amount: discountAmount.toString()
       },
       description: `${planName} Subscription Setup - ${numericCredits} credits/month`
     });
@@ -136,7 +180,8 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id
+      paymentIntentId: paymentIntent.id,
+      discountAmount: discountAmount
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
