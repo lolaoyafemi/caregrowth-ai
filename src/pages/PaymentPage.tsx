@@ -12,46 +12,19 @@ const PaymentPage = () => {
 
   const plans = [
     {
-      id: 'starter',
-      name: 'Starter',
-      price: 1,
-      description: 'Perfect for small agencies just getting started',
-      features: [
-        '50 Social Media Posts',
-        '5 Documents (up to 25 pages each)',
-        '100 Q&A Queries',
-        'Email Support'
-      ],
-      popular: false
-    },
-    {
       id: 'professional',
-      name: 'Professional',
-      price: 2,
-      description: 'Ideal for growing agencies with multiple clients',
+      name: 'CareGrowthAI Credits',
+      price: 49,
+      description: 'Complete access to all CareGrowthAI features',
       features: [
-        '200 Social Media Posts',
-        '20 Documents (up to 50 pages each)',
-        '500 Q&A Queries',
-        'Priority Support',
-        'Advanced Analytics'
-      ],
-      popular: true
-    },
-    {
-      id: 'enterprise',
-      name: 'Enterprise',
-      price: 3,
-      description: 'For established agencies with high volume needs',
-      features: [
-        'Unlimited Social Media Posts',
+        '1000 Social Media Posts',
         'Unlimited Documents',
         'Unlimited Q&A Queries',
-        'Dedicated Account Manager',
-        'Custom Integrations',
-        'White-label Options'
+        'Priority Support',
+        'Advanced Analytics',
+        'Custom Integrations'
       ],
-      popular: false
+      popular: true
     }
   ];
 
@@ -95,8 +68,8 @@ const PaymentPage = () => {
             </p>
           </div>
 
-          {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Pricing Card */}
+          <div className="flex justify-center max-w-2xl mx-auto">
             {plans.map((plan) => (
               <Card 
                 key={plan.id}
