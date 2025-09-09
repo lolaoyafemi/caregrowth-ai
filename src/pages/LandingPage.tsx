@@ -408,104 +408,26 @@ const LandingPage = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="p-8">
-                  <h3 className="text-2xl font-bold mb-3">Starter</h3>
-                  <div className="mb-5">
-                    <span className="text-4xl font-bold">$49</span>
-                    <span className="text-gray-600"> credits</span>
-                  </div>
-                  <div className="mb-5">
-                    <span className="text-black-600">Renews every month</span>
-                  </div>
-                  <ul className="space-y-3 mb-8">
-                    <li className="flex items-center">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
-                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>50 Social Media Posts</span>
-                    </li>
-                    <li className="flex items-center">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
-                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>5 Documents (up to 25 pages each)</span>
-                    </li>
-                    <li className="flex items-center">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
-                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>100 Q&A Queries</span>
-                    </li>
-                  </ul>
-                  <Link to="/login">
-                    <Button className="w-full" variant="outline">Buy Credits Now</Button>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="border-2 border-caregrowth-blue rounded-lg overflow-hidden relative">
+            <div className="flex justify-center max-w-lg mx-auto">
+              <div className="border-2 border-caregrowth-blue rounded-lg overflow-hidden relative w-full">
                 <div className="bg-caregrowth-blue text-white text-center py-2 text-sm font-medium">
-                  MOST POPULAR
+                  COMPLETE SOLUTION
                 </div>
                 <div className="p-8">
-                  <h3 className="text-2xl font-bold mb-3">Professional</h3>
-                  <div className="mb-5">
-                    <span className="text-4xl font-bold">$99</span>
-                    <span className="text-gray-600"> credits</span>
+                  <h3 className="text-2xl font-bold mb-3 text-center">CareGrowthAI Credits</h3>
+                  <div className="mb-5 text-center">
+                    <span className="text-4xl font-bold">$49</span>
+                    <span className="text-gray-600"> one-time</span>
                   </div>
-				  <div className="mb-5">
-                    <span className="text-black-600">Renews every month</span>
+                  <div className="mb-5 text-center">
+                    <span className="text-black-600">1000 credits included</span>
                   </div>
                   <ul className="space-y-3 mb-8">
                     <li className="flex items-center">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
                         <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
-                      <span>200 Social Media Posts</span>
-                    </li>
-                    <li className="flex items-center">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
-                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>20 Documents (up to 50 pages each)</span>
-                    </li>
-                    <li className="flex items-center">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
-                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>500 Q&A Queries</span>
-                    </li>
-                    <li className="flex items-center">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
-                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>Priority Support</span>
-                    </li>
-                  </ul>
-                  <Link to="/login">
-                    <Button className="w-full bg-caregrowth-blue">Buy Credits Now</Button>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="p-8">
-                  <h3 className="text-2xl font-bold mb-3">Enterprise</h3>
-                  <div className="mb-5">
-                    <span className="text-4xl font-bold">$249</span>
-                    <span className="text-gray-600"> credits</span>
-                  </div>
-				  <div className="mb-5">
-                    <span className="text-black-600">Renews every month</span>
-                  </div>
-                  <ul className="space-y-3 mb-8">
-                    <li className="flex items-center">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
-                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>Unlimited Social Media Posts</span>
+                      <span>1000 Social Media Posts</span>
                     </li>
                     <li className="flex items-center">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
@@ -523,11 +445,23 @@ const LandingPage = () => {
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
                         <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
-                      <span>Dedicated Account Manager</span>
+                      <span>Priority Support</span>
+                    </li>
+                    <li className="flex items-center">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
+                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Advanced Analytics</span>
+                    </li>
+                    <li className="flex items-center">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500 mr-3">
+                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Custom Integrations</span>
                     </li>
                   </ul>
                   <Link to="/login">
-                    <Button className="w-full" variant="outline">Buy Credits Now</Button>
+                    <Button className="w-full bg-caregrowth-blue">Get Started Now</Button>
                   </Link>
                 </div>
               </div>
