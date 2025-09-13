@@ -28,6 +28,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
 interface DocumentChunk {
   content: string;
   chunk_index: number;
+  page_number?: number;
   embedding?: number[];
 }
 
@@ -53,7 +54,7 @@ async function extractTextFromFile(fileBuffer: ArrayBuffer, mimeType: string, fi
       return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
     }
     
-    // Handle PDF files
+// Handle PDF files with page-by-page extraction
     if (mimeType === 'application/pdf') {
       console.log('Processing PDF file...');
       try {
@@ -67,9 +68,10 @@ async function extractTextFromFile(fileBuffer: ArrayBuffer, mimeType: string, fi
         
         console.log(`PDF loaded successfully. Pages: ${pdf.numPages}`);
         
-        let fullText = '';
+        // Store page-specific text for accurate page tracking
+        const pageTexts: { pageNumber: number; text: string }[] = [];
         
-        // Extract text from each page
+        // Extract text from each page separately
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           console.log(`Processing PDF page ${pageNum}/${pdf.numPages}`);
           const page = await pdf.getPage(pageNum);
@@ -77,17 +79,20 @@ async function extractTextFromFile(fileBuffer: ArrayBuffer, mimeType: string, fi
           
           const pageText = textContent.items
             .map((item: any) => item.str)
-            .join(' ');
+            .join(' ')
+            .trim();
           
-          fullText += pageText + '\n\n';
+          if (pageText.length > 0) {
+            pageTexts.push({ pageNumber: pageNum, text: pageText });
+          }
         }
         
-        if (fullText.trim().length === 0) {
+        if (pageTexts.length === 0) {
           throw new Error('No text content found in PDF. The PDF might be image-based or password protected.');
         }
         
-        console.log(`Successfully extracted ${fullText.length} characters from PDF`);
-        return fullText.trim();
+        // Return structured data for page-aware chunking
+        return { type: 'pdf', pageTexts, totalPages: pdf.numPages };
         
       } catch (pdfError) {
         console.error('PDF processing error:', pdfError);
@@ -206,51 +211,110 @@ async function extractTextFromFile(fileBuffer: ArrayBuffer, mimeType: string, fi
   }
 }
 
-function chunkText(text: string, maxChunkSize: number = 1000): DocumentChunk[] {
+function chunkTextWithPageTracking(textData: any, maxChunkSize: number = 1000): DocumentChunk[] {
   try {
-    console.log(`Starting text chunking for text of length: ${text.length}`);
-    
-    // Clean up the text first
-    const cleanText = text
-      .replace(/\s+/g, ' ') // Replace multiple whitespace with single spaces
-      .replace(/\n\s*\n/g, '\n\n') // Clean up excessive line breaks
-      .trim();
-    
-    if (cleanText.length < 50) {
-      throw new Error('Document text is too short to create meaningful chunks');
-    }
-    
-    const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    console.log(`Split into ${sentences.length} sentences`);
+    console.log('Starting page-aware text chunking...');
     
     const chunks: DocumentChunk[] = [];
-    let currentChunk = '';
     let chunkIndex = 0;
-
-    for (const sentence of sentences) {
-      const trimmedSentence = sentence.trim();
-      if (trimmedSentence.length === 0) continue;
+    
+    // Handle page-structured PDF data
+    if (textData.type === 'pdf' && textData.pageTexts) {
+      console.log(`Processing ${textData.pageTexts.length} pages for chunking`);
       
-      if (currentChunk.length + trimmedSentence.length > maxChunkSize && currentChunk.length > 0) {
+      for (const pageData of textData.pageTexts) {
+        const { pageNumber, text } = pageData;
+        
+        if (text.length < 50) continue;
+        
+        // Clean up the text
+        const cleanText = text
+          .replace(/\s+/g, ' ')
+          .replace(/\n\s*\n/g, '\n\n')
+          .trim();
+        
+        // Split page text into sentences
+        const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        
+        let currentChunk = '';
+        
+        for (const sentence of sentences) {
+          const trimmedSentence = sentence.trim();
+          if (trimmedSentence.length === 0) continue;
+          
+          if (currentChunk.length + trimmedSentence.length > maxChunkSize && currentChunk.length > 0) {
+            // Create chunk with precise page number
+            chunks.push({
+              content: currentChunk.trim(),
+              chunk_index: chunkIndex++,
+              page_number: pageNumber
+            });
+            currentChunk = trimmedSentence;
+          } else {
+            currentChunk += (currentChunk.length > 0 ? '. ' : '') + trimmedSentence;
+          }
+        }
+        
+        // Add remaining content for this page
+        if (currentChunk.trim().length > 50) {
+          chunks.push({
+            content: currentChunk.trim(),
+            chunk_index: chunkIndex++,
+            page_number: pageNumber
+          });
+        }
+      }
+    } else {
+      // Handle regular text (DOCX, TXT, etc.) - estimate pages by content length
+      const text = typeof textData === 'string' ? textData : textData.content;
+      console.log(`Processing regular text for chunking: ${text.length} characters`);
+      
+      const cleanText = text
+        .replace(/\s+/g, ' ')
+        .replace(/\n\s*\n/g, '\n\n')
+        .trim();
+      
+      if (cleanText.length < 50) {
+        throw new Error('Document text is too short to create meaningful chunks');
+      }
+      
+      const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      let currentChunk = '';
+      let charactersProcessed = 0;
+      
+      for (const sentence of sentences) {
+        const trimmedSentence = sentence.trim();
+        if (trimmedSentence.length === 0) continue;
+        
+        if (currentChunk.length + trimmedSentence.length > maxChunkSize && currentChunk.length > 0) {
+          // Estimate page number based on characters processed (assuming ~2800 chars per page)
+          const estimatedPage = Math.max(1, Math.ceil(charactersProcessed / 2800));
+          
+          chunks.push({
+            content: currentChunk.trim(),
+            chunk_index: chunkIndex++,
+            page_number: estimatedPage
+          });
+          
+          charactersProcessed += currentChunk.length;
+          currentChunk = trimmedSentence;
+        } else {
+          currentChunk += (currentChunk.length > 0 ? '. ' : '') + trimmedSentence;
+        }
+      }
+      
+      if (currentChunk.trim().length > 50) {
+        const estimatedPage = Math.max(1, Math.ceil((charactersProcessed + currentChunk.length) / 2800));
         chunks.push({
           content: currentChunk.trim(),
-          chunk_index: chunkIndex++
+          chunk_index: chunkIndex++,
+          page_number: estimatedPage
         });
-        currentChunk = trimmedSentence;
-      } else {
-        currentChunk += (currentChunk.length > 0 ? '. ' : '') + trimmedSentence;
       }
     }
-
-    if (currentChunk.trim().length > 0) {
-      chunks.push({
-        content: currentChunk.trim(),
-        chunk_index: chunkIndex
-      });
-    }
-
+    
     const filteredChunks = chunks.filter(chunk => chunk.content.length > 50);
-    console.log(`Created ${filteredChunks.length} valid chunks (minimum 50 chars each)`);
+    console.log(`Created ${filteredChunks.length} page-aware chunks`);
     
     if (filteredChunks.length === 0) {
       throw new Error('No valid text chunks could be created from the document');
@@ -258,7 +322,7 @@ function chunkText(text: string, maxChunkSize: number = 1000): DocumentChunk[] {
     
     return filteredChunks;
   } catch (error) {
-    console.error('Error in text chunking:', error);
+    console.error('Error in page-aware text chunking:', error);
     throw new Error(`Failed to chunk text: ${error.message}`);
   }
 }
@@ -457,9 +521,9 @@ serve(async (req) => {
     const fileBuffer = await fileData.arrayBuffer();
     console.log('File buffer size:', fileBuffer.byteLength);
     
-    let extractedText;
+    let extractedData;
     try {
-      extractedText = await extractTextFromFile(fileBuffer, document.mime_type || 'text/plain', document.file_name);
+      extractedData = await extractTextFromFile(fileBuffer, document.mime_type || 'text/plain', document.file_name);
     } catch (extractError) {
       console.error('Text extraction failed:', extractError);
       await supabase
@@ -476,8 +540,14 @@ serve(async (req) => {
       });
     }
     
-    if (!extractedText || extractedText.length < 100) {
-      console.error('Insufficient text content extracted:', extractedText?.length || 0);
+    // Handle both structured (PDF with pages) and simple text data
+    const extractedText = extractedData?.content || extractedData;
+    const textLength = extractedData?.type === 'pdf' 
+      ? extractedData.pageTexts?.reduce((total, page) => total + page.text.length, 0) || 0
+      : extractedText?.length || 0;
+    
+    if (!extractedText || textLength < 100) {
+      console.error('Insufficient text content extracted:', textLength);
       await supabase
         .from('shared_documents')
         .update({ processing_status: 'error' })
@@ -485,7 +555,7 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({ 
         error: 'Insufficient text content extracted from document',
-        extractedLength: extractedText?.length || 0,
+        extractedLength: textLength,
         suggestion: 'Please ensure the document contains readable text content.'
       }), {
         status: 400,
