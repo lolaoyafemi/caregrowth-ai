@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
-import { useQAAssistant } from '@/hooks/useQAAssistant';
+import { useOptimizedQA } from '@/hooks/useOptimizedQA';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { useFeelingStuckPopup } from '@/hooks/useFeelingStuckPopup';
 import FeelingStuckPopup from '@/components/ui/FeelingStuckPopup';
-import ChatInterface from '@/components/qa/ChatInterface';
+import StreamingChatInterface from '@/components/qa/StreamingChatInterface';
 import QASidebar from '@/components/qa/QASidebar';
 import QAHeader from '@/components/qa/QAHeader';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 
 interface Message {
   id: number;
@@ -15,6 +16,8 @@ interface Message {
   content: string;
   timestamp: Date;
   category?: 'management' | 'marketing' | 'hiring' | 'compliance' | 'other';
+  isStreaming?: boolean;
+  responseTime?: number;
 }
 
 interface SavedAnswer {
@@ -32,7 +35,17 @@ const QAAssistantTool = () => {
   const [savedAnswers, setSavedAnswers] = useState<SavedAnswer[]>([]);
   const [qaHistory, setQAHistory] = useState<any[]>([]);
 
-  const { askQuestion, getQAHistory, isLoading, error } = useQAAssistant();
+  const { 
+    askQuestion, 
+    getQAHistory, 
+    cancelRequest, 
+    isLoading, 
+    isStreaming, 
+    error, 
+    connectionStatus, 
+    metrics, 
+    cacheSize 
+  } = useOptimizedQA();
   const { user } = useUser();
   const { credits, loading: creditsLoading } = useUserCredits();
   
@@ -128,43 +141,75 @@ const QAAssistantTool = () => {
       timestamp: new Date()
     };
     
-    setConversation(prev => {
-      const updated = [...prev, userMessage];
-      return updated;
-    });
+    setConversation(prev => [...prev, userMessage]);
     
     const currentQuery = query;
     setQuery('');
     
-    const response = await askQuestion(currentQuery);
+    // Create streaming message placeholder
+    const streamingMessageId = Date.now() + 1;
+    const streamingMessage: Message = {
+      id: streamingMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      isStreaming: true
+    };
+    
+    setConversation(prev => [...prev, streamingMessage]);
+    
+    // Get conversation history for context
+    const conversationHistory = conversation.slice(-6).map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
+    const response = await askQuestion(
+      currentQuery,
+      conversationHistory,
+      // Stream callback
+      (chunk: string, fullResponse: string) => {
+        setConversation(prev => 
+          prev.map(msg => 
+            msg.id === streamingMessageId
+              ? { ...msg, content: fullResponse, isStreaming: true }
+              : msg
+          )
+        );
+      }
+    );
     
     if (response) {
-      const assistantMessage: Message = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: response.answer,
-        timestamp: new Date(),
-        category: response.category as any
-      };
+      // Update final message
+      setConversation(prev => 
+        prev.map(msg => 
+          msg.id === streamingMessageId
+            ? { 
+                ...msg, 
+                content: response.answer, 
+                category: response.category as any,
+                isStreaming: false,
+                responseTime: response.responseTime
+              }
+            : msg
+        )
+      );
       
       setActiveCategory(response.category);
-      setConversation(prev => {
-        const updated = [...prev, assistantMessage];
-        return updated;
-      });
       
       const updatedHistory = await getQAHistory();
       setQAHistory(updatedHistory);
-      
-      setTimeout(() => {
-        const chatContainer = document.getElementById('chat-container');
-        if (chatContainer) {
-          chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-      }, 100);
-    } else if (error) {
-      toast.error(error);
+    } else {
+      // Remove streaming message if failed
+      setConversation(prev => prev.filter(msg => msg.id !== streamingMessageId));
+      if (error) {
+        toast.error(error);
+      }
     }
+  };
+  
+  const handleQuickReply = (question: string) => {
+    setQuery(question);
   };
 
   const handleClearChat = () => {
@@ -215,43 +260,51 @@ const QAAssistantTool = () => {
   };
 
   return (
-    <div className="p-6">
-      <QAHeader credits={credits} creditsLoading={creditsLoading} />
+    <ErrorBoundary>
+      <div className="p-6">
+        <QAHeader credits={credits} creditsLoading={creditsLoading} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
-          <ChatInterface
-            conversation={conversation}
-            query={query}
-            setQuery={setQuery}
-            onSubmit={handleSubmit}
-            onSaveAnswer={handleSaveAnswer}
-            onClearChat={handleClearChat}
-            isLoading={isLoading}
-            user={user}
-            activeCategory={activeCategory}
-            setActiveCategory={setActiveCategory}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <StreamingChatInterface
+              conversation={conversation}
+              query={query}
+              setQuery={setQuery}
+              onSubmit={handleSubmit}
+              onSaveAnswer={handleSaveAnswer}
+              onClearChat={handleClearChat}
+              onCancelRequest={cancelRequest}
+              isLoading={isLoading}
+              isStreaming={isStreaming}
+              user={user}
+              activeCategory={activeCategory}
+              setActiveCategory={setActiveCategory}
+              connectionStatus={connectionStatus}
+              metrics={metrics}
+              cacheSize={cacheSize}
+              onQuickReply={handleQuickReply}
+            />
+          </div>
+          
+          <div>
+            <QASidebar
+              onSuggestedQuestionClick={setQuery}
+              conversation={conversation}
+              onClearChat={handleClearChat}
+              qaHistory={qaHistory}
+              isLoading={isLoading}
+            />
+          </div>
         </div>
-        
-        <div>
-          <QASidebar
-            onSuggestedQuestionClick={setQuery}
-            conversation={conversation}
-            onClearChat={handleClearChat}
-            qaHistory={qaHistory}
-            isLoading={isLoading}
+
+        {showPopup && (
+          <FeelingStuckPopup 
+            onClose={closePopup}
+            onContactSue={handleContactSue}
           />
-        </div>
+        )}
       </div>
-
-      {showPopup && (
-        <FeelingStuckPopup 
-          onClose={closePopup}
-          onContactSue={handleContactSue}
-        />
-      )}
-    </div>
+    </ErrorBoundary>
   );
 };
 
