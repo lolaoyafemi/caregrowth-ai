@@ -509,22 +509,24 @@ const DocumentSearchTool = () => {
           </Card>
 
           <Card className="p-6 mb-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
               <h2 className="text-xl font-semibold">Add Documents</h2>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   variant={showFolderUpload ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setShowFolderUpload(true)}
+                  className="flex items-center gap-2 whitespace-nowrap"
                 >
-                  📁 Bulk Upload
+                  📁 <span className="hidden sm:inline">Bulk Upload</span><span className="sm:hidden">Upload</span>
                 </Button>
                 <Button
                   variant={!showFolderUpload ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setShowFolderUpload(false)}
+                  className="flex items-center gap-2 whitespace-nowrap"
                 >
-                  🔗 Google Docs
+                  🔗 <span className="hidden sm:inline">Google Docs</span><span className="sm:hidden">Docs</span>
                 </Button>
               </div>
             </div>
