@@ -7,15 +7,16 @@ import { toast } from "sonner";
 import { SearchIcon, LinkIcon, ExternalLinkIcon, Trash2Icon, LogOutIcon, UserIcon, FileTextIcon, BookOpenIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoogleDocuments } from '@/hooks/useGoogleDocuments';
-import { useDocumentSearch } from '@/hooks/useDocumentSearch';
+import { useCachedSearch } from '@/hooks/useCachedSearch';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { highlightKeywords } from '@/utils/highlightKeywords';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
+import FolderUpload from '@/components/upload/FolderUpload';
 
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { documents, loading: docsLoading, addDocument, deleteDocument } = useGoogleDocuments();
-  const { searchDocuments, smartSearchDocuments, isSearching, error: searchError } = useDocumentSearch();
+  const { smartSearch, basicSearch, isSearching, error: searchError, metrics, getCacheStats } = useCachedSearch();
   const { credits, loading: creditsLoading } = useUserCredits();
   
   const [query, setQuery] = useState('');
@@ -27,6 +28,7 @@ const DocumentSearchTool = () => {
   const [searchMode, setSearchMode] = useState<'basic' | 'smart'>('smart');
   const [isAddingDocuments, setIsAddingDocuments] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
+  const [showFolderUpload, setShowFolderUpload] = useState(false);
 
   if (authLoading) {
     return (
@@ -49,7 +51,7 @@ const DocumentSearchTool = () => {
     console.log(`Starting ${searchMode} search with query:`, query);
     
     if (searchMode === 'smart') {
-      const result = await smartSearchDocuments(query.trim());
+      const result = await smartSearch(query.trim());
       
       if (result) {
         console.log('Smart search result received:', result);
@@ -59,11 +61,11 @@ const DocumentSearchTool = () => {
         if (!result.answer || result.answer.includes("don't have access")) {
           toast.info("No relevant content found in your documents.");
         } else {
-          toast.success(`Generated intelligent answer from ${result.sources.length} documents!`);
+          toast.success(`Generated intelligent answer from ${result.sources?.length || 0} documents!`);
         }
       }
     } else {
-      const results = await searchDocuments(query.trim());
+      const results = await basicSearch(query.trim());
       
       if (results) {
         console.log('Basic search results received:', results);
@@ -88,7 +90,7 @@ const DocumentSearchTool = () => {
     setQuery(followUpQuery);
     
     if (searchMode === 'smart') {
-      const result = await smartSearchDocuments(followUpQuery.trim());
+      const result = await smartSearch(followUpQuery.trim());
       setFollowUpQuery('');
       
       if (result) {
@@ -98,11 +100,11 @@ const DocumentSearchTool = () => {
         if (!result.answer || result.answer.includes("don't have access")) {
           toast.info("No relevant content found in your documents.");
         } else {
-          toast.success(`Generated intelligent answer from ${result.sources.length} documents!`);
+          toast.success(`Generated intelligent answer from ${result.sources?.length || 0} documents!`);
         }
       }
     } else {
-      const results = await searchDocuments(followUpQuery.trim());
+      const results = await basicSearch(followUpQuery.trim());
       setFollowUpQuery('');
       
       if (results) {
@@ -507,41 +509,62 @@ const DocumentSearchTool = () => {
           </Card>
 
           <Card className="p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Add Google Documents</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Google Document URLs</label>
-                <Textarea
-                  placeholder="Enter one or multiple Google document URLs (separated by comma or new line):"
-                  value={googleUrl}
-                  onChange={(e) => setGoogleUrl(e.target.value)}
-                  rows={4}
-                />
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Add Documents</h2>
+              <div className="flex gap-2">
+                <Button
+                  variant={showFolderUpload ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowFolderUpload(true)}
+                >
+                  📁 Bulk Upload
+                </Button>
+                <Button
+                  variant={!showFolderUpload ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowFolderUpload(false)}
+                >
+                  🔗 Google Docs
+                </Button>
               </div>
-              <Button 
-                onClick={handleAddGoogleLink}
-                className="w-full bg-caregrowth-green"
-                disabled={!googleUrl.trim() || isAddingDocuments}
-              >
-                <LinkIcon className="h-4 w-4 mr-2" />
-                Add Document Links
-              </Button>
-              
-              {/* Loading State Display */}
-              {isAddingDocuments && (
-                <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span className="text-sm text-blue-700 font-medium">{progressMessage}</span>
+            </div>
+            
+            {showFolderUpload ? (
+              <FolderUpload onUploadComplete={() => toast.success('Documents uploaded successfully!')} />
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Google Document URLs</label>
+                  <Textarea
+                    placeholder="Enter one or multiple Google document URLs (separated by comma or new line):"
+                    value={googleUrl}
+                    onChange={(e) => setGoogleUrl(e.target.value)}
+                    rows={4}
+                  />
                 </div>
-              )}
-              
-              <p className="text-xs text-gray-500">
-                Documents must be publicly accessible or shared with view permissions. Add multiple URLs separated by a comma or a new line.
-              </p>
-            </div>
-            <div className="mt-4">
-              <p className="text-sm text-gray-600">{documents.length} documents linked</p>
-            </div>
+                <Button 
+                  onClick={handleAddGoogleLink}
+                  className="w-full bg-caregrowth-green"
+                  disabled={!googleUrl.trim() || isAddingDocuments}
+                >
+                  <LinkIcon className="h-4 w-4 mr-2" />
+                  Add Document Links
+                </Button>
+                
+                {/* Loading State Display */}
+                {isAddingDocuments && (
+                  <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span className="text-sm text-blue-700 font-medium">{progressMessage}</span>
+                  </div>
+                )}
+                
+                <p className="text-xs text-gray-500">
+                  Documents must be publicly accessible or shared with view permissions. Add multiple URLs separated by a comma or a new line.
+                </p>
+                <p className="text-sm text-gray-600">{documents.length} documents linked</p>
+              </div>
+            )}
           </Card>
           
           <Card className="p-6">

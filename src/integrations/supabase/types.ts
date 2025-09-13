@@ -164,6 +164,7 @@ export type Database = {
           embedding: string | null
           id: string
           is_shared: boolean | null
+          page_number: number | null
         }
         Insert: {
           chunk_index?: number | null
@@ -173,6 +174,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           is_shared?: boolean | null
+          page_number?: number | null
         }
         Update: {
           chunk_index?: number | null
@@ -182,6 +184,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           is_shared?: boolean | null
+          page_number?: number | null
         }
         Relationships: []
       }

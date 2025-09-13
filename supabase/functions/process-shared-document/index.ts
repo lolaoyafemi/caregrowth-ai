@@ -540,7 +540,7 @@ serve(async (req) => {
       });
     }
     
-    // Handle both structured (PDF with pages) and simple text data
+    // Handle both structured (PDF with pages) and simple text data  
     const extractedText = extractedData?.content || extractedData;
     const textLength = extractedData?.type === 'pdf' 
       ? extractedData.pageTexts?.reduce((total, page) => total + page.text.length, 0) || 0
@@ -563,13 +563,13 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Successfully extracted ${extractedText.length} characters from ${document.file_name}`);
+    console.log(`Successfully extracted text from ${document.file_name}`);
 
-    // Create chunks
-    console.log('=== Starting text chunking ===');
+    // Create page-aware chunks
+    console.log('=== Starting page-aware text chunking ===');
     let chunks;
     try {
-      chunks = chunkText(extractedText);
+      chunks = chunkTextWithPageTracking(extractedData);
     } catch (chunkError) {
       console.error('Text chunking failed:', chunkError);
       await supabase
@@ -607,16 +607,10 @@ serve(async (req) => {
       }
       
       try {
-        console.log(`Inserting chunk ${chunk.chunk_index} into database...`);
+        console.log(`Inserting chunk ${chunk.chunk_index} (page ${chunk.page_number || 'N/A'}) into database...`);
         const { error: chunkError } = await supabase
           .from('document_chunks')
-          .insert({
-            document_id: documentId,
-            content: chunk.content,
-            chunk_index: chunk.chunk_index,
-            embedding: embedding,
-            is_shared: true
-          });
+          .insert(chunkData);
 
         if (chunkError) {
           console.error('Error inserting chunk:', chunkError);
