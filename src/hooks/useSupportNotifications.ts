@@ -48,7 +48,8 @@ export const useSupportNotifications = () => {
           table: 'support_responses'
         },
         async (payload) => {
-          const newResponse = payload.new as SupportResponse;
+          try {
+            const newResponse = payload.new as SupportResponse;
 
             // Super admin: notify on any message not authored by this super admin
             if (user?.role === 'super_admin') {
