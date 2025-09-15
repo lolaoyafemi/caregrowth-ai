@@ -23,8 +23,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Shield, MessageSquare, User, Calendar, Send, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSupportTickets } from '@/hooks/useSupportTickets';
-import { useSupportNotifications } from '@/hooks/useSupportNotifications';
-import NotificationBanner from '@/components/ui/NotificationBanner';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -310,7 +308,6 @@ const RegularUserHelpPage = () => {
   const [ticketResponses, setTicketResponses] = useState<any[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
   const { createTicket, tickets, loading, fetchResponses, createResponse } = useSupportTickets();
-  const { showBanner, notifications, dismissBanner } = useSupportNotifications();
   const { user } = useUser();
   const { toast } = useToast();
 

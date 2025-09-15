@@ -132,8 +132,8 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
         </Button>
       </div>
 
-      {/* Credit Balance - Show for both super admins and main admins */}
-      {(showSuperAdminItems || showAdminItems) && (
+      {/* Credit Balance - Hidden for super admins */}
+      {(showAdminItems && !isSuperAdmin) && (
         <div className={cn(
           "px-3 py-3 border-b transition-all duration-300",
           collapsed ? "items-center justify-center" : "",

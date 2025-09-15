@@ -47,18 +47,41 @@ export const useSupportNotifications = () => {
           schema: 'public',
           table: 'support_responses'
         },
-        (payload) => {
+        async (payload) => {
           const newResponse = payload.new as SupportResponse;
-          
-          // Only notify if this is a response to the current user's ticket and not from the current user
-          if (newResponse.admin_id !== user.id) {
-            setNotifications(prev => ({
-              hasNewMessages: true,
-              lastNotificationId: newResponse.id,
-              newMessageCount: prev.newMessageCount + 1
-            }));
-            setShowBanner(true);
-            playNotificationSound();
+
+            // Super admin: notify on any message not authored by this super admin
+            if (user?.role === 'super_admin') {
+              if (newResponse.admin_id !== user.id) {
+                setNotifications(prev => ({
+                  hasNewMessages: true,
+                  lastNotificationId: newResponse.id,
+                  newMessageCount: prev.newMessageCount + 1
+                }));
+                setShowBanner(true);
+                playNotificationSound();
+              }
+              return;
+            }
+
+            // Regular user: notify only if the response belongs to one of their tickets
+            const { data: ticket, error } = await supabase
+              .from('support_tickets')
+              .select('user_id')
+              .eq('id', newResponse.ticket_id)
+              .maybeSingle();
+
+            if (!error && ticket && ticket.user_id === user?.id && newResponse.admin_id && newResponse.admin_id !== user.id) {
+              setNotifications(prev => ({
+                hasNewMessages: true,
+                lastNotificationId: newResponse.id,
+                newMessageCount: prev.newMessageCount + 1
+              }));
+              setShowBanner(true);
+              playNotificationSound();
+            }
+          } catch (e) {
+            console.error('Error processing support response notification:', e);
           }
         }
       )

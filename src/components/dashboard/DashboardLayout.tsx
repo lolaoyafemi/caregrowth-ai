@@ -37,7 +37,14 @@ const DashboardLayout = () => {
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader userRole={userContextUser?.role} userName={userContextUser?.name} />
+        {/* Global support notifications */}
+        {/* ... keep existing code (header remains) */}
         <main className={`flex-1 overflow-auto ${userContextUser?.role === 'super_admin' ? 'bg-green-50/30' : 'bg-gray-50'}`}>
+          {/* Inject listener at top of main content */}
+          {/* ... keep existing code (other layout elements) */}
+          {/** Support notifications banner */}
+          {/* eslint-disable-next-line */}
+          {React.createElement(require('../notifications/SupportNotificationListener').default)}
           <Outlet />
         </main>
       </div>
