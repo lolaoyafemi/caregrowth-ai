@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
@@ -41,7 +40,7 @@ const AppLoadingScreen = () => (
 const AppContent = () => {
   const { loading } = useAuth();
 
-  // Show loading screen during initial auth check - this prevents any routing until auth is determined
+  // Show loading screen during initial auth check
   if (loading) {
     return <AppLoadingScreen />;
   }
@@ -71,7 +70,7 @@ const AppContent = () => {
             <Route path="help" element={<HelpPage />} />
             <Route path="knowledge" element={<KnowledgePage />} />
             
-            {/* Super Admin route - now properly defined */}
+            {/* Super Admin route */}
             <Route path="super-admin" element={<SuperAdminDashboard />} />
             
             {/* Admin routes */}
@@ -90,7 +89,7 @@ const AppContent = () => {
   );
 };
 
-function App() {
+const App = () => {
   return (
     <UserProvider>
       <AuthProvider>
@@ -98,6 +97,6 @@ function App() {
       </AuthProvider>
     </UserProvider>
   );
-}
+};
 
 export default App;
