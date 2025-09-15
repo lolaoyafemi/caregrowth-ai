@@ -884,6 +884,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_sales_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          revenue_this_month: number
+          sales_this_month: number
+          total_revenue: number
+          total_sales: number
+        }[]
+      }
       is_current_user_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
