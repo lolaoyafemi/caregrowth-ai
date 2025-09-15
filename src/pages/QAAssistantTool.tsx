@@ -3,8 +3,6 @@ import { toast } from "sonner";
 import { useOptimizedQA } from '@/hooks/useOptimizedQA';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
-import { useFeelingStuckPopup } from '@/hooks/useFeelingStuckPopup';
-import FeelingStuckPopup from '@/components/ui/FeelingStuckPopup';
 import StreamingChatInterface from '@/components/qa/StreamingChatInterface';
 import QASidebar from '@/components/qa/QASidebar';
 import QAHeader from '@/components/qa/QAHeader';
@@ -49,10 +47,6 @@ const QAAssistantTool = () => {
   const { user } = useUser();
   const { credits, loading: creditsLoading } = useUserCredits();
   
-  const { showPopup, closePopup } = useFeelingStuckPopup({
-    delayMs: 180000,
-    enabled: !!user
-  });
 
   const saveConversationToStorage = (conversationData: Message[]) => {
     if (user && conversationData.length > 0) {
@@ -256,7 +250,6 @@ const QAAssistantTool = () => {
 
   const handleContactSue = () => {
     toast.success("We'll add Sue's contact details here soon!");
-    closePopup();
   };
 
   return (
@@ -297,12 +290,6 @@ const QAAssistantTool = () => {
           </div>
         </div>
 
-        {showPopup && (
-          <FeelingStuckPopup 
-            onClose={closePopup}
-            onContactSue={handleContactSue}
-          />
-        )}
       </div>
     </ErrorBoundary>
   );
