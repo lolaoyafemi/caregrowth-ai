@@ -880,6 +880,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: number
       }
+      is_current_user_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
