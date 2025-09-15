@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import DashboardHeader from './DashboardHeader';
 import { useUser } from '../../contexts/UserContext';
 import { useAuth } from '../../contexts/AuthContext';
-
+import SupportNotificationListener from '../notifications/SupportNotificationListener';
 const DashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { user: userContextUser, isAuthenticated } = useUser();
@@ -42,9 +41,9 @@ const DashboardLayout = () => {
         <main className={`flex-1 overflow-auto ${userContextUser?.role === 'super_admin' ? 'bg-green-50/30' : 'bg-gray-50'}`}>
           {/* Inject listener at top of main content */}
           {/* ... keep existing code (other layout elements) */}
-          {/** Support notifications banner */}
-          {/* eslint-disable-next-line */}
-          {React.createElement(require('../notifications/SupportNotificationListener').default)}
+          {/* Support notifications banner */}
+          {/** ensure ESM-safe import */}
+          <SupportNotificationListener />
           <Outlet />
         </main>
       </div>

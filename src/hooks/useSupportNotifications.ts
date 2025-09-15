@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/contexts/UserContext';
 import { useNotificationSound } from './useNotificationSound';
 import { SupportTicket, SupportResponse } from './useSupportTickets';
 
@@ -12,6 +13,7 @@ interface NotificationState {
 
 export const useSupportNotifications = () => {
   const { user } = useAuth();
+  const { user: userContextUser } = useUser();
   const { playNotificationSound } = useNotificationSound();
   const [notifications, setNotifications] = useState<NotificationState>({
     hasNewMessages: false,
@@ -52,7 +54,7 @@ export const useSupportNotifications = () => {
             const newResponse = payload.new as SupportResponse;
 
             // Super admin: notify on any message not authored by this super admin
-            if (user?.role === 'super_admin') {
+            if (userContextUser?.role === 'super_admin') {
               if (newResponse.admin_id !== user.id) {
                 setNotifications(prev => ({
                   hasNewMessages: true,
