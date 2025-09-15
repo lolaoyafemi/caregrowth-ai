@@ -255,6 +255,17 @@ const QAAssistantTool = () => {
   return (
     <ErrorBoundary>
       <div className="p-6">
+        {/* Jared Description */}
+        <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-100">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Jared – Your Business Assistant</h2>
+          <p className="text-gray-700 mb-3">
+            Jared is your on-demand business assistant. It answers questions, explains strategies, and helps you work through challenges with clear guidance. Think of it as a reliable teammate available 24/7.
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>What do you get?</strong> Instant support, clear direction, and actionable solutions.
+          </p>
+        </div>
+
         <QAHeader credits={credits} creditsLoading={creditsLoading} />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

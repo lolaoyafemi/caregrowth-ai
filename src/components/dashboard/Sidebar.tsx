@@ -410,7 +410,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <path d="M11 10H13V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M8 7H8.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              {!collapsed && <span>Social Media</span>}
+              {!collapsed && <span>Nora</span>}
             </NavLink>
           )}
 
@@ -443,7 +443,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               )}
             >
               <FileText size={20} />
-              {!collapsed && <span>Document Search</span>}
+              {!collapsed && <span>Indexa</span>}
             </NavLink>
           )}
 
@@ -459,7 +459,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               )}
             >
               <MessageCircle size={20} />
-              {!collapsed && <span>Ask Jared</span>}
+              {!collapsed && <span>Jared</span>}
             </NavLink>
           )}
         </nav>

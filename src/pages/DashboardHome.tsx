@@ -142,7 +142,7 @@ const DashboardHome = () => {
         <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
-              <CardTitle>Social Media Post</CardTitle>
+              <CardTitle>Nora</CardTitle>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -166,7 +166,7 @@ const DashboardHome = () => {
         <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
-              <CardTitle>Research & Analysis</CardTitle>
+              <CardTitle>Indexa</CardTitle>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -190,7 +190,7 @@ const DashboardHome = () => {
         <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg">
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
-              <CardTitle>Ask Jared</CardTitle>
+              <CardTitle>Jared</CardTitle>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -225,7 +225,7 @@ const DashboardHome = () => {
                 <path d="M8 7H8.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <CardTitle>Social Media Content</CardTitle>
+            <CardTitle>Nora</CardTitle>
             <CardDescription>Generate engaging posts that drive client engagement and growth</CardDescription>
           </CardHeader>
           <CardContent>
@@ -242,7 +242,7 @@ const DashboardHome = () => {
             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-caregrowth-lightgreen mb-4">
               <FileText className="h-6 w-6 text-caregrowth-green" />
             </div>
-            <CardTitle>Document Search</CardTitle>
+            <CardTitle>Indexa</CardTitle>
             <CardDescription>Extract insights and analyze data from your agency documents</CardDescription>
           </CardHeader>
           <CardContent>
@@ -259,7 +259,7 @@ const DashboardHome = () => {
             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-caregrowth-lightblue mb-4">
               <MessageCircle className="h-6 w-6 text-caregrowth-blue" />
             </div>
-            <CardTitle>Ask Jared</CardTitle>
+            <CardTitle>Jared</CardTitle>
             <CardDescription>Get instant, accurate answers to client and team questions</CardDescription>
           </CardHeader>
           <CardContent>

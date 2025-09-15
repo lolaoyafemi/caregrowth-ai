@@ -213,6 +213,17 @@ const DocumentSearchTool = () => {
 
   return (
     <div className="p-6">
+      {/* Indexa Description */}
+      <div className="mb-8 bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg border border-green-100">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Indexa – Smart Document Search</h2>
+        <p className="text-gray-700 mb-3">
+          Indexa is your intelligent document search tool. It connects to your Google Drive, indexes your files, and gives you instant answers with references. No more scrolling to search through documents.
+        </p>
+        <p className="text-sm text-gray-600">
+          <strong>What do you get?</strong> Quick, accurate answers from the right page every time.
+        </p>
+      </div>
+
       <div className="mb-8 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Document Search & Access</h1>
