@@ -354,23 +354,17 @@ const SocialMediaTool = () => {
     <div className="p-6">
       {/* Nora Description */}
       <div className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border border-blue-100">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Nora – Your Content Partner</h2>
-        <p className="text-gray-700 mb-3">
-          Nora is your content partner for social media post generation. It helps you generate posts that attract attention, connect with your audience, and keep your message consistent.
-        </p>
-        <p className="text-sm text-gray-600">
-          <strong>What do you get?</strong> Fresh ideas and ready-to-share drafts in minutes.
-        </p>
-      </div>
-
-      <div className="mb-8">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Social Media Content Generator</h1>
-            <p className="text-gray-600 mt-2">Generate engaging social media content for multiple platforms with AI assistance.</p>
-            <p className="text-sm text-gray-500 mt-1">Cost: 1 credit per generation, 1 credit per section regeneration</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Nora – Your Content Partner</h2>
+            <p className="text-gray-700 mb-3">
+              Nora is your content partner for social media post generation. It helps you generate posts that attract attention, connect with your audience, and keep your message consistent.
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>What do you get?</strong> Fresh ideas and ready-to-share drafts in minutes.
+            </p>
             {!creditsLoading && (
-              <div className="mt-2">
+              <div className="mt-4">
                 <span className={`text-sm font-medium ${credits > 0 ? 'text-green-600' : 'text-red-600'}`}>
                   Available Credits: {credits}
                 </span>

@@ -225,28 +225,6 @@ const DocumentSearchTool = () => {
       </div>
 
       <div className="mb-8 flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Document Search & Access</h1>
-          <p className="text-gray-600 mt-2">Search directly through your Google documents and get intelligent answers powered by AI.</p>
-          <p className="text-sm text-gray-500 mt-1">Cost: 1 credit per basic search, 2 credits per smart search</p>
-          {!creditsLoading && (
-            <div className="mt-2">
-              <span className={`text-sm font-medium ${credits > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                Available Credits: {credits}
-              </span>
-              {credits <= 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="ml-2"
-                  onClick={() => window.open('/payment', '_blank')}
-                >
-                  Buy Credits
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <UserIcon className="h-4 w-4" />
