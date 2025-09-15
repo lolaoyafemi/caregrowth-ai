@@ -23,6 +23,37 @@ export const useSupportNotifications = () => {
   const [showBanner, setShowBanner] = useState(false);
   const lastCheckedRef = useRef<string | null>(null);
 
+  // Determine super admin status reliably (fallback to RPC if context is missing)
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!user) {
+      setIsSuperAdmin(false);
+      return;
+    }
+    if (userContextUser?.role === 'super_admin') {
+      setIsSuperAdmin(true);
+      return;
+    }
+    let cancelled = false;
+    const checkRole = async () => {
+      try {
+        const { data, error } = await supabase.rpc('is_current_user_super_admin');
+        if (error) {
+          console.error('Error checking super admin role via RPC:', error);
+        }
+        if (!cancelled) {
+          setIsSuperAdmin(!!data);
+        }
+      } catch (e) {
+        console.error('RPC failed while checking super admin:', e);
+      }
+    };
+    checkRole();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, userContextUser?.role]);
   const clearNotifications = () => {
     setNotifications({
       hasNewMessages: false,
@@ -54,7 +85,7 @@ export const useSupportNotifications = () => {
             const newResponse = payload.new as SupportResponse;
 
             // Super admin: notify on any message not authored by this super admin
-            if (userContextUser?.role === 'super_admin') {
+             if (isSuperAdmin) {
               if (newResponse.admin_id !== user.id) {
                 setNotifications(prev => ({
                   hasNewMessages: true,
@@ -130,7 +161,7 @@ export const useSupportNotifications = () => {
         },
         (payload) => {
           const newTicket = payload.new as SupportTicket;
-          if (userContextUser?.role === 'super_admin' && newTicket.user_id !== user?.id) {
+          if (isSuperAdmin && newTicket.user_id !== user?.id) {
             setNotifications(prev => ({
               hasNewMessages: true,
               lastNotificationId: newTicket.id,
@@ -148,7 +179,7 @@ export const useSupportNotifications = () => {
       supabase.removeChannel(ticketChannel);
       supabase.removeChannel(ticketInsertChannel);
     };
-  }, [user, playNotificationSound]);
+  }, [user, isSuperAdmin, playNotificationSound]);
 
   // Check for existing unread messages on mount
   useEffect(() => {
