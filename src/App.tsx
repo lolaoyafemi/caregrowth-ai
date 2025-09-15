@@ -90,13 +90,7 @@ const AppContent = () => {
 };
 
 const App = () => {
-  return (
-    <UserProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </UserProvider>
-  );
+  return <AppContent />;
 };
 
 export default App;
