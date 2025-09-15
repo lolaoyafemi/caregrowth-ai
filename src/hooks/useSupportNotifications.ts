@@ -118,9 +118,35 @@ export const useSupportNotifications = () => {
       )
       .subscribe();
 
+    // Set up real-time subscription for new ticket insertions (super admin alert)
+    const ticketInsertChannel = supabase
+      .channel('support_tickets_inserts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_tickets'
+        },
+        (payload) => {
+          const newTicket = payload.new as SupportTicket;
+          if (userContextUser?.role === 'super_admin' && newTicket.user_id !== user?.id) {
+            setNotifications(prev => ({
+              hasNewMessages: true,
+              lastNotificationId: newTicket.id,
+              newMessageCount: prev.newMessageCount + 1
+            }));
+            setShowBanner(true);
+            playNotificationSound();
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(responseChannel);
       supabase.removeChannel(ticketChannel);
+      supabase.removeChannel(ticketInsertChannel);
     };
   }, [user, playNotificationSound]);
 

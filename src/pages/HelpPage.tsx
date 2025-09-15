@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Accordion,
@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/contexts/UserContext';
+import { useSupportNotifications } from '@/hooks/useSupportNotifications';
 import {
   Table,
   TableBody,
@@ -691,6 +692,11 @@ const RegularUserHelpPage = () => {
 const HelpPage = () => {
   const { user } = useUser();
   const isSuperAdmin = user?.role === 'super_admin';
+
+  const { clearNotifications } = useSupportNotifications();
+  useEffect(() => {
+    clearNotifications();
+  }, [clearNotifications]);
 
   return isSuperAdmin ? <SuperAdminSupportDashboard /> : <RegularUserHelpPage />;
 };

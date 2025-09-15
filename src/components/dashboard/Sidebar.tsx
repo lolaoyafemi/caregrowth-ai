@@ -28,7 +28,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useUserCredits } from '@/hooks/useUserCredits';
-
+import { useSupportNotifications } from '@/hooks/useSupportNotifications';
 interface SidebarProps {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
@@ -40,6 +40,8 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const { credits, loading, refetch, usedThisMonth, getUsagePercentage } = useUserCredits();
   const [creditUpdateAnimation, setCreditUpdateAnimation] = useState(false);
   const [previousCredits, setPreviousCredits] = useState(credits);
+  const { notifications, clearNotifications } = useSupportNotifications();
+  const unreadSupportCount = notifications.newMessageCount;
   
   // Force refetch credits when component mounts and when credits change
   useEffect(() => {
@@ -484,6 +486,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
 
           <NavLink
             to="/dashboard/help"
+            onClick={clearNotifications}
             className={({ isActive }) => cn(
               "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
               isActive 
@@ -492,8 +495,18 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
               collapsed && "justify-center"
             )}
           >
-            <HelpCircle size={20} />
+            <span className="relative inline-flex">
+              <HelpCircle size={20} />
+              {collapsed && unreadSupportCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-600" />
+              )}
+            </span>
             {!collapsed && <span>Help & Support</span>}
+            {!collapsed && unreadSupportCount > 0 && (
+              <span className="ml-auto inline-flex items-center justify-center rounded-full bg-red-600 text-white text-xs px-2 min-w-[20px] h-5">
+                {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
+              </span>
+            )}
           </NavLink>
         </div>
       </div>
