@@ -2,12 +2,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, CreditCard, TrendingUp, Settings, Database, BookOpen, Wrench } from 'lucide-react';
+import { Shield, Users, TrendingUp, Settings, Database, BookOpen, Wrench } from 'lucide-react';
 import SystemMetrics from '@/components/admin/SystemMetrics';
 import UserManagementTable from '@/components/admin/UserManagementTable';
-import CreditManagement from '@/components/admin/CreditManagement';
 import UsageAnalytics from '@/components/admin/UsageAnalytics';
-import OpenAIKeyManager from '@/components/admin/OpenAIKeyManager';
 import RealtimeActivity from '@/components/admin/RealtimeActivity';
 import SharedDocumentManager from '@/components/admin/SharedDocumentManager';
 import StuckPaymentFixer from '@/components/admin/StuckPaymentFixer';
@@ -27,10 +25,6 @@ const SuperAdminDashboard = () => {
     addCreditsToUser,
     refetch
   } = useAdminData();
-
-  const handleUpdateCredits = async (userId: string, credits: number) => {
-    await addCreditsToUser(userId, credits);
-  };
 
   if (loading) {
     return (
@@ -57,7 +51,7 @@ const SuperAdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Overview
@@ -65,10 +59,6 @@ const SuperAdminDashboard = () => {
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Users
-            </TabsTrigger>
-            <TabsTrigger value="credits" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Credits
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
@@ -116,9 +106,6 @@ const SuperAdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="credits" className="space-y-6">
-            <CreditManagement onUpdateCredits={handleUpdateCredits} />
-          </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
             <UsageAnalytics metrics={metrics} />
@@ -129,10 +116,7 @@ const SuperAdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
-            <div className="space-y-6">
-              <SuperAdminManager />
-              <OpenAIKeyManager />
-            </div>
+            <SuperAdminManager />
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-6">

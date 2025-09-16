@@ -46,27 +46,6 @@ const SystemMetrics = ({ metrics }: SystemMetricsProps) => {
       icon: Building,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'
-    },
-    {
-      title: 'Credits Used',
-      value: metrics.totalCreditsUsed.toLocaleString(),
-      icon: CreditCard,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50'
-    },
-    {
-      title: 'Monthly Revenue',
-      value: formatCurrency(metrics.monthlyRevenue),
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
-      title: 'Total Revenue',
-      value: formatCurrency(metrics.totalRevenue),
-      icon: DollarSign,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50'
     }
   ];
 

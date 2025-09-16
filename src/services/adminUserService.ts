@@ -7,21 +7,7 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
   try {
     console.log('=== ADMIN USER SERVICE: Starting to fetch users ===');
     
-    // First, let's try fetching from users table
-    const { data: usersData, error: usersError } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    console.log('=== USERS TABLE QUERY ===');
-    console.log('Users data:', usersData);
-    console.log('Users error:', usersError);
-
-    if (usersError) {
-      console.error('Error fetching from users table:', usersError);
-    }
-
-    // Also try fetching from user_profiles table to get credits
+    // Fetch from user_profiles table first (this has all the user data)
     const { data: profilesData, error: profilesError } = await supabase
       .from('user_profiles')
       .select('*')
@@ -33,42 +19,21 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
 
     if (profilesError) {
       console.error('Error fetching from user_profiles table:', profilesError);
+      throw profilesError;
     }
 
-    // Use whichever table has data
     let finalData = [];
     
-    if (usersData && usersData.length > 0) {
-      console.log('Using users table data');
-      finalData = usersData.map((user, index) => {
-        console.log(`Processing user ${index + 1} from users table:`, {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          credits: user.credits,
-          created_at: user.created_at
-        });
-        
-        return {
-          id: user.id,
-          email: user.email || '',
-          name: user.name || 'No name',
-          role: user.role || 'user',
-          created_at: user.created_at || new Date().toISOString(),
-          last_sign_in_at: null,
-          credits: user.credits || 0,
-          status: 'active' as 'active' | 'suspended'
-        };
-      });
-    } else if (profilesData && profilesData.length > 0) {
+    if (profilesData && profilesData.length > 0) {
       console.log('Using user_profiles table data');
       finalData = profilesData.map((profile, index) => {
         console.log(`Processing user ${index + 1} from user_profiles table:`, {
           id: profile.user_id,
           email: profile.email,
+          business_name: profile.business_name,
           role: profile.role,
           credits: profile.credits,
+          status: profile.status,
           created_at: profile.created_at
         });
         
@@ -76,13 +41,36 @@ export const fetchUsers = async (): Promise<AdminUser[]> => {
           id: profile.user_id,
           email: profile.email || '',
           name: profile.business_name || 'No name',
-          role: profile.role || 'user',
+          role: profile.role || 'admin',
           created_at: profile.created_at || new Date().toISOString(),
           last_sign_in_at: profile.last_sign_in_at,
           credits: profile.credits || 0,
           status: profile.status as 'active' | 'suspended' || 'active'
         };
       });
+    } else {
+      // Fallback to users table if user_profiles is empty
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (usersError) {
+        throw usersError;
+      }
+
+      if (usersData && usersData.length > 0) {
+        finalData = usersData.map((user) => ({
+          id: user.id,
+          email: user.email || '',
+          name: user.name || 'No name',
+          role: user.role || 'admin',
+          created_at: user.created_at || new Date().toISOString(),
+          last_sign_in_at: null,
+          credits: user.credits || 0,
+          status: 'active' as 'active' | 'suspended'
+        }));
+      }
     }
 
     console.log('=== FINAL RESULT ===');

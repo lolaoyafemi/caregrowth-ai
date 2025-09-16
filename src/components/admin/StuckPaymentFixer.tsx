@@ -1,12 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { CheckCircle } from 'lucide-react';
 
 const StuckPaymentFixer = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string>('');
+  const [hasStuckPayments, setHasStuckPayments] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkForStuckPayments();
+  }, []);
+
+  const checkForStuckPayments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('status', 'pending')
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking for stuck payments:', error);
+        return;
+      }
+
+      setHasStuckPayments(data && data.length > 0);
+    } catch (err) {
+      console.error('Error checking stuck payments:', err);
+    }
+  };
 
   const handleFixStuckPayment = async () => {
     setLoading(true);
@@ -29,6 +54,8 @@ const StuckPaymentFixer = () => {
       if (data?.success) {
         setResult(`✅ Payment fixed successfully! Payment ID: ${data.payment_id}, User Credits: ${data.user_credits}`);
         toast.success('Stuck payment has been processed successfully!');
+        // Recheck for stuck payments
+        checkForStuckPayments();
       } else {
         setResult(`❌ ${data?.error || 'Unknown error occurred'}`);
         toast.error(data?.error || 'Failed to fix payment');
@@ -44,19 +71,43 @@ const StuckPaymentFixer = () => {
     }
   };
 
+  if (hasStuckPayments === false) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            System Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <div className="flex justify-center">
+            <CheckCircle className="h-16 w-16 text-green-600" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-green-600">No Issues Detected</p>
+            <p className="text-sm text-gray-600">All payments are processing correctly</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>Fix Stuck Payment</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-gray-600">
-          This will process the stuck payment with ID: 737e877d-7139-493a-8bc6-963b86fbb1d1
-        </p>
+        {hasStuckPayments && (
+          <p className="text-sm text-gray-600">
+            Found stuck payments that need to be processed.
+          </p>
+        )}
         
         <Button 
           onClick={handleFixStuckPayment}
-          disabled={loading}
+          disabled={loading || hasStuckPayments === null}
           className="w-full"
         >
           {loading ? 'Processing...' : 'Fix Stuck Payment'}
