@@ -95,14 +95,67 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Handle subscription-related events
+    // Handle checkout session completion
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      console.log('Processing completed checkout session:', session.id);
+      console.log('Processing completed checkout session:', session.id, 'mode:', session.mode);
 
-      // Only handle subscription sessions
+      // Handle one-time payments
+      if (session.mode === 'payment') {
+        console.log('Processing one-time payment session:', session.id);
+
+        // Update payment record to completed
+        const { data: payment, error: paymentError } = await supabase
+          .from('payments')
+          .update({ 
+            status: 'completed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_session_id', session.id)
+          .select()
+          .single();
+
+        if (paymentError) {
+          console.error('Error updating payment:', paymentError);
+          return new Response("Failed to update payment", { status: 500 });
+        }
+
+        console.log('Payment updated to completed:', payment.id);
+
+        // Send confirmation email for one-time purchase
+        try {
+          const emailResult = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-purchase-confirmation-email`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: payment.email,
+              name: session.customer_details?.name,
+              credits: payment.credits_granted,
+              planName: payment.plan_name,
+              amount: payment.amount,
+              isSubscription: false
+            })
+          });
+          
+          if (emailResult.ok) {
+            console.log('Purchase confirmation email sent');
+          }
+        } catch (emailError) {
+          console.error('Failed to send email:', emailError);
+        }
+
+        return new Response(JSON.stringify({ received: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      // Handle subscription sessions
       if (session.mode !== 'subscription') {
-        console.log('Skipping non-subscription session');
+        console.log('Unknown session mode:', session.mode);
         return new Response(JSON.stringify({ received: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,

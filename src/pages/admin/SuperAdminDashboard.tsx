@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, CreditCard, TrendingUp, Settings, Database, BookOpen } from 'lucide-react';
+import { Shield, Users, CreditCard, TrendingUp, Settings, Database, BookOpen, Wrench } from 'lucide-react';
 import SystemMetrics from '@/components/admin/SystemMetrics';
 import UserManagementTable from '@/components/admin/UserManagementTable';
 import CreditManagement from '@/components/admin/CreditManagement';
@@ -10,6 +10,7 @@ import UsageAnalytics from '@/components/admin/UsageAnalytics';
 import OpenAIKeyManager from '@/components/admin/OpenAIKeyManager';
 import RealtimeActivity from '@/components/admin/RealtimeActivity';
 import SharedDocumentManager from '@/components/admin/SharedDocumentManager';
+import StuckPaymentFixer from '@/components/admin/StuckPaymentFixer';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
@@ -55,7 +56,7 @@ const SuperAdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Overview
@@ -83,6 +84,10 @@ const SuperAdminDashboard = () => {
             <TabsTrigger value="activity" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Activity
+            </TabsTrigger>
+            <TabsTrigger value="maintenance" className="flex items-center gap-2">
+              <Wrench className="h-4 w-4" />
+              Maintenance
             </TabsTrigger>
           </TabsList>
 
@@ -128,6 +133,22 @@ const SuperAdminDashboard = () => {
 
           <TabsContent value="activity" className="space-y-6">
             <RealtimeActivity />
+          </TabsContent>
+
+          <TabsContent value="maintenance" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>System Maintenance</CardTitle>
+                <CardDescription>
+                  Tools for fixing system issues and processing stuck payments
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  <StuckPaymentFixer />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
