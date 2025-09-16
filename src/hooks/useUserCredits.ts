@@ -1,7 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { withCache, cacheKeys, invalidateCache } from '@/lib/cache';
+import { handleAsyncError } from '@/lib/errors';
 
 export const useUserCredits = () => {
   const [credits, setCredits] = useState<number>(0);
@@ -11,7 +13,8 @@ export const useUserCredits = () => {
   const [initialLoad, setInitialLoad] = useState(true);
   const { user } = useAuth();
 
-  const fetchUserCredits = async () => {
+  // Optimized fetch function with caching and error handling
+  const fetchUserCredits = useCallback(async (useCache = true) => {
     if (!user) {
       setCredits(0);
       setExpiresAt(null);
@@ -26,7 +29,7 @@ export const useUserCredits = () => {
       setLoading(true);
     }
 
-    try {
+    const fetchData = async () => {
       console.log('Fetching credits for user:', user.id);
       
       // First, expire old credits by calling the database function
@@ -37,65 +40,88 @@ export const useUserCredits = () => {
         .from('user_profiles')
         .select('credits, credits_expire_at')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid errors when no profile exists
+
+      let currentCredits = 0;
+      let currentExpiresAt: string | null = null;
 
       if (profileError) {
         console.error('Error fetching user profile:', profileError);
-        // If no profile exists, try to create one
-        if (profileError.code === 'PGRST116') {
-          console.log('No profile found, creating one...');
-          const { error: insertError } = await supabase
-            .from('user_profiles')
-            .insert({
-              user_id: user.id,
-              email: user.email,
-              credits: 0
-            });
-          
-          if (insertError) {
-            console.error('Error creating profile:', insertError);
-          }
-          if (initialLoad) setCredits(0);
-        } else {
-          if (initialLoad) setCredits(0);
-        }
+      } else if (profile) {
+        console.log('Credits fetched from profile:', profile.credits || 0);
+        currentCredits = profile.credits || 0;
+        currentExpiresAt = profile.credits_expire_at || null;
       } else {
-        console.log('Credits fetched from profile:', profile?.credits || 0);
-        setCredits(profile?.credits || 0);
-        setExpiresAt(profile?.credits_expire_at || null);
+        // No profile exists, create one
+        console.log('No profile found, creating one...');
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            credits: 0
+          });
+        
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+        }
       }
 
-      // Get credits used this month
+      // Get credits used this month with caching
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
+      const monthKey = startOfMonth.toISOString().slice(0, 7);
 
-      const { data: usageData, error: usageError } = await supabase
-        .from('credit_usage_log')
-        .select('credits_used')
-        .eq('user_id', user.id)
-        .gte('used_at', startOfMonth.toISOString());
+      const usagePromise = async () => {
+        const { data: usageData, error: usageError } = await supabase
+          .from('credit_usage_log')
+          .select('credits_used')
+          .eq('user_id', user.id)
+          .gte('used_at', startOfMonth.toISOString());
 
-      if (usageError) {
-        console.error('Error fetching usage data:', usageError);
-        if (initialLoad) setUsedThisMonth(0);
-      } else {
-        const totalUsed = usageData.reduce((sum, log) => sum + log.credits_used, 0);
-        setUsedThisMonth(totalUsed);
-      }
+        if (usageError) {
+          console.error('Error fetching usage data:', usageError);
+          return 0;
+        }
 
-    } catch (error) {
-      console.error('Error fetching user credits:', error);
+        return usageData.reduce((sum, log) => sum + log.credits_used, 0);
+      };
+
+      const totalUsed = useCache 
+        ? await withCache(cacheKeys.creditUsage(user.id, monthKey), usagePromise, 2 * 60 * 1000) // 2 minutes cache
+        : await usagePromise();
+
+      return {
+        credits: currentCredits,
+        expiresAt: currentExpiresAt,
+        usedThisMonth: totalUsed
+      };
+    };
+
+    const { data, error } = await handleAsyncError(
+      () => useCache 
+        ? withCache(cacheKeys.userCredits(user.id), fetchData, 30000) // 30 seconds cache
+        : fetchData(),
+      'fetchUserCredits'
+    );
+
+    if (error) {
+      console.error(error);
       if (initialLoad) {
         setCredits(0);
         setExpiresAt(null);
         setUsedThisMonth(0);
       }
-    } finally {
-      setLoading(false);
-      setInitialLoad(false);
+    } else if (data) {
+      setCredits(data.credits);
+      setExpiresAt(data.expiresAt);
+      setUsedThisMonth(data.usedThisMonth);
     }
-  };
+
+    setLoading(false);
+    setInitialLoad(false);
+  }, [user, initialLoad]);
 
   useEffect(() => {
     fetchUserCredits();
@@ -171,12 +197,12 @@ export const useUserCredits = () => {
     }
   }, [user]);
 
-  const refetch = () => {
+  const refetch = useCallback(() => {
     if (user) {
       console.log('Manual refetch triggered');
-      fetchUserCredits();
+      fetchUserCredits(false); // Force fresh data
     }
-  };
+  }, [user, fetchUserCredits]);
 
   const getExpirationInfo = () => {
     if (!expiresAt) return null;
