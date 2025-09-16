@@ -45,10 +45,10 @@ const SettingsPage = () => {
       </div>
       
       <div className="space-y-6">
-        <SubscriptionManager />
+        {!isSuperAdmin && <SubscriptionManager />}
         <AccountSettings />
         <NotificationSettings />
-        <TeamPermissionsSection isVisible={isAgencyAdmin || isSuperAdmin} />
+        <TeamPermissionsSection isVisible={isAgencyAdmin && !isSuperAdmin} />
         <TokenLimitsSection isVisible={isAgencyAdmin && !isSuperAdmin} />
       </div>
     </div>
