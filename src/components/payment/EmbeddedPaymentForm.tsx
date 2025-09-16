@@ -74,6 +74,46 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
         throw error;
       }
 
+      // Check if the response contains an error/warning about coupon
+      if (data?.error && !data?.clientSecret) {
+        if (data.warning) {
+          // Show coupon warning but allow payment to proceed
+          setCouponError(data.error);
+          toast({
+            title: "Coupon Notice",
+            description: data.error,
+            variant: "default"
+          });
+          // Clear coupon code and retry without it
+          setCouponCode('');
+          // Retry payment intent creation without coupon
+          const retryResponse = await supabase.functions.invoke('create-payment-intent', {
+            body: {
+              plan: plan.id,
+              planName: plan.name,
+              amount: plan.price,
+              credits: plan.credits
+            },
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            }
+          });
+          
+          if (retryResponse.error || !retryResponse.data?.clientSecret) {
+            throw new Error('Failed to create payment intent without coupon');
+          }
+          
+          setClientSecret(retryResponse.data.clientSecret);
+          setPaymentIntentId(retryResponse.data.paymentIntentId);
+          setDiscountAmount(0);
+          return;
+        } else {
+          // Handle other coupon errors
+          setCouponError(data.error);
+          return;
+        }
+      }
+
       if (!data?.clientSecret) {
         throw new Error('No client secret received from server');
       }
@@ -92,9 +132,10 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
     } catch (error) {
       console.error('Error creating payment intent:', error);
       
-      // Handle coupon-specific errors
-      if (error.message && error.message.includes('coupon')) {
+      // Handle coupon-specific errors from response data
+      if (error?.message?.includes('coupon') || error?.message?.includes('Coupon')) {
         setCouponError(error.message);
+        setDiscountAmount(0);
       } else {
         toast({
           title: "Setup Error",

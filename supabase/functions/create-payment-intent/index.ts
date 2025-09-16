@@ -128,10 +128,11 @@ serve(async (req) => {
         
         if (!coupon.valid) {
           return new Response(JSON.stringify({ 
-            error: "This coupon is no longer valid" 
+            error: "This coupon is no longer valid",
+            success: false
           }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
+            status: 200, // Return 200 with error message instead of 400
           });
         }
 
@@ -148,11 +149,14 @@ serve(async (req) => {
         
       } catch (couponError) {
         console.error('Coupon validation failed:', couponError);
+        // Return success with warning instead of error to allow payment to proceed
         return new Response(JSON.stringify({ 
-          error: "Invalid coupon code" 
+          error: "Coupon code not found or invalid. Proceeding without discount.",
+          success: false,
+          warning: true
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
+          status: 200,
         });
       }
     }
