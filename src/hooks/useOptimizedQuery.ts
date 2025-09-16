@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { withCache, globalCache } from '@/lib/cache';
 import { handleAsyncError, withRetry } from '@/lib/errors';
 
@@ -113,7 +114,7 @@ export const useOptimizedQuery = <T>(
 
 // Specialized hook for Supabase queries with built-in optimizations
 export const useSupabaseQuery = <T>(
-  tableName: string,
+  tableName: keyof Database['public']['Tables'],
   query: (builder: any) => any,
   options: QueryOptions & {
     realtimeEvent?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
@@ -147,11 +148,11 @@ export const useSupabaseQuery = <T>(
       .on(
         'postgres_changes',
         {
-          event: realtimeEvent,
+          event: realtimeEvent as any,
           schema: 'public',
-          table: tableName,
+          table: tableName as string,
           filter: realtimeFilter
-        },
+        } as any,
         () => {
           result.invalidate();
         }
