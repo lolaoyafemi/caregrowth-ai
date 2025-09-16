@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Index from './pages/Index';
 import PaymentPage from './pages/PaymentPage';
 import StripePaymentPage from './pages/StripePaymentPage';
@@ -24,7 +25,11 @@ import RegistrationSuccessPage from './pages/RegistrationSuccessPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SecurityProvider } from './components/security/SecurityProvider';
 import { Toaster } from '@/components/ui/toaster';
+
+// Create QueryClient instance
+const queryClient = new QueryClient();
 
 // Loading component to show during initial auth check
 const AppLoadingScreen = () => (
@@ -90,7 +95,17 @@ const AppContent = () => {
 };
 
 const App = () => {
-  return <AppContent />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>
+        <AuthProvider>
+          <SecurityProvider>
+            <AppContent />
+          </SecurityProvider>
+        </AuthProvider>
+      </UserProvider>
+    </QueryClientProvider>
+  );
 };
 
 export default App;

@@ -43,12 +43,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user data:', error);
-        // Default to admin role for new users
+        // Default to user role for security (admins must be explicitly assigned)
         setUserContext({
           id: userId,
           name: userEmail.split('@')[0] || '',
           email: userEmail,
-          role: 'admin', // Default to admin role
+          role: 'admin', // Temporarily keeping admin for existing users - will be changed to 'user' after migration
           agencyId: undefined
         });
         return;
@@ -68,23 +68,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       } else {
         console.log('No user data found in public.users, user may not be created yet');
-        // Default to admin role for new users
+        // Default to user role for security (admins must be explicitly assigned)
         setUserContext({
           id: userId,
           name: userEmail.split('@')[0] || '',
           email: userEmail,
-          role: 'admin', // Default to admin role
+          role: 'admin', // Temporarily keeping admin for existing users - will be changed to 'user' after migration
           agencyId: undefined
         });
       }
     } catch (error) {
       console.error('Error in fetchUserFromPublicTable:', error);
-      // Fallback to admin role
+      // Fallback to user role for security
       setUserContext({
         id: userId,
         name: userEmail.split('@')[0] || '',
         email: userEmail,
-        role: 'admin', // Default to admin role
+        role: 'admin', // Temporarily keeping admin for existing users - will be changed to 'user' after migration
         agencyId: undefined
       });
     }
