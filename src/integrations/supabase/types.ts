@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       credit_inventory: {
         Row: {
           available_balance: number | null
@@ -424,6 +463,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          action: string
+          count: number
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          user_id: string | null
+          window_start: string
+        }
+        Insert: {
+          action: string
+          count?: number
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+          window_start?: string
+        }
+        Update: {
+          action?: string
+          count?: number
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+          window_start?: string
+        }
+        Relationships: []
+      }
       role_audit_log: {
         Row: {
           changed_at: string | null
@@ -820,6 +889,39 @@ export type Database = {
           },
         ]
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: unknown | null
+          last_activity: string | null
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip_address?: unknown | null
+          last_activity?: string | null
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: unknown | null
+          last_activity?: string | null
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null
@@ -859,6 +961,18 @@ export type Database = {
         Args: { p_credits: number; p_subscription_id: string }
         Returns: boolean
       }
+      anonymize_old_financial_data: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      assign_user_role: {
+        Args: { p_new_role: string; p_reason?: string; p_user_id: string }
+        Returns: undefined
+      }
+      cleanup_expired_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       deduct_credits_and_log: {
         Args: {
           p_credits_used: number
@@ -871,6 +985,10 @@ export type Database = {
       deduct_credits_fifo: {
         Args: { p_credits_to_deduct: number; p_user_id: string }
         Returns: Json
+      }
+      encrypt_sensitive_data: {
+        Args: { data: string }
+        Returns: string
       }
       expire_old_credits: {
         Args: { p_user_id: string }
@@ -901,9 +1019,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      log_admin_action: {
+        Args: {
+          p_action: string
+          p_new_values?: Json
+          p_old_values?: Json
+          p_resource_id?: string
+          p_resource_type: string
+        }
+        Returns: undefined
+      }
       log_security_event: {
         Args: { event_data?: Json; event_type: string; target_user_id?: string }
         Returns: undefined
+      }
+      validate_payment_access: {
+        Args: { p_payment_id: string }
+        Returns: boolean
       }
     }
     Enums: {
