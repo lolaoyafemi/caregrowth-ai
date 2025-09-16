@@ -7,6 +7,8 @@ import StripePaymentPage from './pages/StripePaymentPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import HelpPage from './pages/HelpPage';
 import NotFound from './pages/NotFound';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardHome from './pages/DashboardHome';
 import SocialMediaTool from './pages/SocialMediaTool';
@@ -63,6 +65,8 @@ const AppContent = () => {
           <Route path="/stripe-payment" element={<StripePaymentPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/help" element={<HelpPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
           
           {/* Dashboard routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>

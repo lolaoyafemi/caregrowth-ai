@@ -15,7 +15,7 @@ const Footer = () => {
       }
     } else {
       // If not on landing page, navigate to landing page with hash
-      window.location.href = `https://www.spicymessaging.com/#${sectionId}`;
+      window.location.href = `https://www.caregrowthassistant.com/#${sectionId}`;
     }
   };
 
@@ -46,7 +46,7 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Resources</h4>
             <ul className="space-y-2">
-              <li><Link to="https://www.spicymessaging.com/docs" className="text-gray-600 hover:text-caregrowth-blue">Documentation</Link></li>
+              <li><Link to="https://www.caregrowthassistant.com/docs" className="text-gray-600 hover:text-caregrowth-blue">Documentation</Link></li>
               <li>
                 <SupportDialog>
                   <button className="text-gray-600 hover:text-caregrowth-blue bg-transparent border-none p-0 text-left">
@@ -59,7 +59,7 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Company</h4>
             <ul className="space-y-2">
-              <li><Link to="https://www.spicymessaging.com/about" className="text-gray-600 hover:text-caregrowth-blue">About</Link></li>
+              <li><Link to="https://www.caregrowthassistant.com/about" className="text-gray-600 hover:text-caregrowth-blue">About</Link></li>
               <li>
                 <ContactDialog>
                   <button className="text-gray-600 hover:text-caregrowth-blue bg-transparent border-none p-0 text-left">
@@ -75,8 +75,8 @@ const Footer = () => {
             &copy; {new Date().getFullYear()} CareGrowthAI. All rights reserved.
           </p>
           <div className="flex gap-4">
-            <Link to="https://www.spicymessaging.com/privacy" className="text-gray-600 hover:text-caregrowth-blue">Privacy Policy</Link>
-            <Link to="https://www.spicymessaging.com/terms" className="text-gray-600 hover:text-caregrowth-blue">Terms of Service</Link>
+            <Link to="/privacy" className="text-gray-600 hover:text-caregrowth-blue">Privacy Policy</Link>
+            <Link to="/terms" className="text-gray-600 hover:text-caregrowth-blue">Terms of Service</Link>
           </div>
         </div>
       </div>

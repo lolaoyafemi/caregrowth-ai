@@ -17,7 +17,7 @@ const Header = () => {
       }
     } else {
       // If not on landing page, navigate to landing page with hash
-      window.location.href = `https://www.spicymessaging.com/#${sectionId}`;
+      window.location.href = `https://www.caregrowthassistant.com/#${sectionId}`;
     }
   };
 
