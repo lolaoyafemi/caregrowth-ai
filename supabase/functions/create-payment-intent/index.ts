@@ -92,6 +92,8 @@ serve(async (req) => {
       });
     }
 
+    console.log('Stripe environment:', stripeKey.substring(0, 8) + '...' + stripeKey.substring(stripeKey.length - 4));
+
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
