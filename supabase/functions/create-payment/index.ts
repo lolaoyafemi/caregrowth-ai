@@ -14,39 +14,61 @@ serve(async (req) => {
   }
 
   try {
-    const { planName, amount, email } = await req.json();
+    const { planName, amount, email, credits, couponCode } = await req.json();
     
-    console.log('Creating payment session for:', { planName, amount, email });
+    console.log('Creating checkout session for:', { planName, amount, email, credits, couponCode });
     
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
 
-    // Create a one-time payment session
-    const session = await stripe.checkout.sessions.create({
+    // Create subscription checkout session
+    const sessionData: any = {
       customer_email: email,
       line_items: [
         {
           price_data: {
             currency: "usd",
             product_data: { 
-              name: `${planName} Credit Package`,
-              description: `CareGrowthAI ${planName} credits package`
+              name: `${planName}`,
+              description: `${credits} credits per month`
             },
             unit_amount: amount * 100, // Convert to cents
+            recurring: {
+              interval: "month"
+            }
           },
           quantity: 1,
         },
       ],
-      mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      mode: "subscription",
+      success_url: `${req.headers.get("origin")}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/stripe-payment?payment=cancelled`,
       metadata: {
         plan_name: planName,
-        email: email
+        email: email,
+        credits: credits.toString()
       }
-    });
+    };
+
+    // Add coupon if provided
+    if (couponCode) {
+      try {
+        // Validate coupon exists
+        const coupon = await stripe.coupons.retrieve(couponCode);
+        if (coupon.valid) {
+          sessionData.discounts = [{
+            coupon: couponCode
+          }];
+          console.log('Applied coupon:', couponCode);
+        }
+      } catch (couponError) {
+        console.warn('Coupon validation failed, proceeding without discount:', couponError.message);
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionData);
 
     console.log('Payment session created:', session.id);
 

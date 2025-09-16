@@ -3,17 +3,19 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, ArrowLeft, CreditCard, Shield, Lock, Clock } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useToast } from '@/hooks/use-toast';
 import CreditExpirationWarning from '@/components/dashboard/CreditExpirationWarning';
-import EmbeddedPaymentForm from '@/components/payment/EmbeddedPaymentForm';
+import { supabase } from '@/integrations/supabase/client';
 
 const StripePaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
   
   const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -63,7 +65,7 @@ const StripePaymentPage = () => {
     return null;
   }
 
-  const handleSubscribe = () => {
+  const handleSubscribe = async () => {
     if (!user || !session) {
       toast({
         title: "Authentication Required",
@@ -83,15 +85,39 @@ const StripePaymentPage = () => {
       return;
     }
 
-    setShowPaymentForm(true);
-  };
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          planName: selectedPlanData.name,
+          amount: selectedPlanData.price,
+          email: user.email,
+          credits: selectedPlanData.credits,
+          couponCode: couponCode.trim() || undefined
+        }
+      });
 
-  const handlePaymentSuccess = () => {
-    navigate('/dashboard');
-  };
+      if (error) {
+        throw error;
+      }
 
-  const handlePaymentCancel = () => {
-    setShowPaymentForm(false);
+      if (data?.url) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Payment session creation failed:', error);
+      toast({
+        title: "Payment Error",
+        description: "Failed to create payment session. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -117,16 +143,7 @@ const StripePaymentPage = () => {
 
           <CreditExpirationWarning />
 
-          {showPaymentForm && selectedPlanData ? (
-            <div className="flex justify-center">
-              <EmbeddedPaymentForm
-                plan={selectedPlanData}
-                onSuccess={handlePaymentSuccess}
-                onCancel={handlePaymentCancel}
-              />
-            </div>
-          ) : (
-            <div className="space-y-8">
+          <div className="space-y-8">
               <div className="flex justify-center">
                 <div className="w-full max-w-lg">
                   <h2 className="text-2xl font-bold mb-6 text-center">Your Credit Package</h2>
@@ -180,13 +197,37 @@ const StripePaymentPage = () => {
                           {selectedPlanData.credits} credits - Monthly subscription
                         </div>
                       </>
-                    )}
+                     )}
+                    
+                    <div className="space-y-4 mt-6">
+                      <div>
+                        <label htmlFor="coupon" className="block text-sm font-medium text-gray-700 mb-2">
+                          Coupon Code (Optional)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            id="coupon"
+                            type="text"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value)}
+                            placeholder="Enter coupon code"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caregrowth-blue focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
                     <Button 
                       onClick={handleSubscribe}
-                      disabled={!selectedPlanData || !user || !session}
-                      className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg transition-colors"
+                      disabled={!selectedPlanData || !user || !session || loading}
+                      className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg transition-colors disabled:opacity-50"
                     >
-                      {!user || !session ? (
+                      {loading ? (
+                        <div className="flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Processing...
+                        </div>
+                      ) : !user || !session ? (
                         'Please Log In'
                       ) : (
                         `Subscribe $${selectedPlanData?.price || 0}/month`
@@ -202,7 +243,6 @@ const StripePaymentPage = () => {
                 </Card>
               </div>
             </div>
-          )}
         </div>
       </main>
       <Footer />
