@@ -11,6 +11,7 @@ import OpenAIKeyManager from '@/components/admin/OpenAIKeyManager';
 import RealtimeActivity from '@/components/admin/RealtimeActivity';
 import SharedDocumentManager from '@/components/admin/SharedDocumentManager';
 import StuckPaymentFixer from '@/components/admin/StuckPaymentFixer';
+import SuperAdminManager from '@/components/admin/SuperAdminManager';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
@@ -128,7 +129,10 @@ const SuperAdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
-            <OpenAIKeyManager />
+            <div className="space-y-6">
+              <SuperAdminManager />
+              <OpenAIKeyManager />
+            </div>
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-6">
