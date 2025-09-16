@@ -123,6 +123,8 @@ const AuthModal: React.FC = () => {
           title: "Welcome back!",
           description: "You have successfully signed in.",
         });
+        // Redirect to dashboard after successful sign in
+        navigate('/dashboard');
       } else {
         await signUpWithEmail(email, password, name);
         navigate('/registration-success');

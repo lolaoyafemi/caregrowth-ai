@@ -91,11 +91,14 @@ const PaymentSuccessPage = () => {
           setError(null);
           toast.success("Payment confirmed! Your credits have been added to your account.");
           
-          // Refresh credits with a slight delay to ensure backend is updated
+          // Refresh credits and redirect to dashboard
           setTimeout(() => {
             refetch();
+            // Redirect to dashboard and reload to ensure credits are reflected
+            navigate('/dashboard');
+            window.location.reload();
           }, 1500);
-        } 
+        }
         // Handle failed response with success: false
         else if (data && data.success === false) {
           const errorMsg = data.message || data.error || "Payment confirmation returned failure status";
