@@ -3,9 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
+import { Settings, CreditCard, Calendar, AlertTriangle, History, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useCreditTransactions } from '@/hooks/useCreditTransactions';
 
 interface Subscription {
   id: string;
@@ -20,9 +21,11 @@ const SubscriptionManager = () => {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [managingSubscription, setManagingSubscription] = useState(false);
+  const [showTransactions, setShowTransactions] = useState(false);
   
   const { user, session } = useAuth();
   const { toast } = useToast();
+  const { transactions } = useCreditTransactions();
 
   useEffect(() => {
     if (user) {
@@ -213,7 +216,7 @@ const SubscriptionManager = () => {
           </div>
         )}
 
-        <div className="pt-4 border-t">
+        <div className="pt-4 border-t space-y-3">
           <Button 
             onClick={handleManageSubscription}
             disabled={managingSubscription}
@@ -231,9 +234,61 @@ const SubscriptionManager = () => {
               </div>
             )}
           </Button>
-          <p className="text-xs text-muted-foreground text-center mt-2">
+          <p className="text-xs text-muted-foreground text-center">
             Update payment method, change plan, or cancel subscription
           </p>
+          
+          <Button 
+            variant="outline"
+            onClick={() => setShowTransactions(!showTransactions)}
+            className="w-full"
+          >
+            <History className="h-4 w-4 mr-2" />
+            {showTransactions ? 'Hide' : 'View'} Transaction History
+          </Button>
+          
+          {showTransactions && (
+            <div className="bg-muted/30 rounded-lg p-4 mt-4">
+              <h4 className="font-semibold mb-3 flex items-center">
+                <DollarSign className="h-4 w-4 mr-2" />
+                Recent Transactions
+              </h4>
+              {transactions.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {transactions.slice(0, 10).map((transaction) => (
+                    <div key={transaction.id} className="flex justify-between items-center py-2 px-3 bg-background rounded border">
+                      <div>
+                        <div className="text-sm font-medium">
+                          {transaction.type === 'purchase' ? 'Credit Purchase' : 'Credit Usage'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(transaction.timestamp).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-sm font-medium ${
+                          transaction.type === 'purchase' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {transaction.type === 'purchase' ? '+' : ''}{transaction.amount} credits
+                        </div>
+                        <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                          {transaction.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No transactions found</p>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

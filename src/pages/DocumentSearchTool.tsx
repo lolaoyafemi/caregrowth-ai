@@ -500,11 +500,15 @@ const DocumentSearchTool = () => {
           <Card className="p-6 mb-6">
             <div className="mb-4">
               <h3 className="text-lg font-semibold mb-2">Add New Documents</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Browse and select files directly from your Google Drive. No need to make documents public!
+              </p>
               <div className="flex gap-2 mb-4">
                 <Button
                   variant={activeTab === 'manual' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setActiveTab('manual')}
+                  className="flex items-center gap-2"
                 >
                   🔗 Manual URLs
                 </Button>
@@ -512,8 +516,9 @@ const DocumentSearchTool = () => {
                   variant={activeTab === 'googledrive' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setActiveTab('googledrive')}
+                  className="flex items-center gap-2"
                 >
-                  🔗 Google Drive
+                  📁 Google Drive
                 </Button>
               </div>
             </div>
@@ -521,7 +526,10 @@ const DocumentSearchTool = () => {
             {activeTab === 'manual' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Google Document URLs</label>
+                  <label className="block text-sm font-medium mb-2">Upload Google Docs</label>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Add individual Google documents by pasting their URLs below.
+                  </p>
                   <Textarea
                     placeholder="Enter one or multiple Google document URLs (separated by comma or new line):"
                     value={googleUrl}
@@ -547,8 +555,9 @@ const DocumentSearchTool = () => {
 
             {activeTab === 'googledrive' && (
               <div>
+                <label className="block text-sm font-medium mb-2">Share Folders from Google Drive</label>
                 <p className="text-sm text-gray-600 mb-4">
-                  Browse and select files directly from your Google Drive. No need to make documents public!
+                  Browse and select files directly from your Google Drive folders. No need to make documents public!
                 </p>
                 <GoogleDriveBrowser multiSelect={true} />
               </div>
