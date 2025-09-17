@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,23 @@ const StripePaymentPage = () => {
   const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+
+  // Check for payment cancellation and redirect
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    
+    if (paymentStatus === 'cancelled') {
+      toast({
+        title: "Payment Cancelled",
+        description: "Your payment has been cancelled. You can try again anytime.",
+        variant: "default"
+      });
+      // Redirect to payment selection page
+      navigate('/payment', { replace: true });
+      return;
+    }
+  }, [searchParams, navigate, toast]);
 
   const plans = [
     {
@@ -135,7 +152,7 @@ const StripePaymentPage = () => {
 
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Complete Your Purchase</h1>
-            <p className="text-xl text-gray-600">Secure payment powered by Stripe</p>
+            <p className="text-xl text-gray-600">Secure payment processing</p>
             {user && (
               <p className="text-sm text-gray-500 mt-2">Logged in as: {user.email}</p>
             )}
@@ -236,7 +253,7 @@ const StripePaymentPage = () => {
                     
                     <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 mt-4">
                       <Shield className="w-4 h-4" />
-                      <span>Secure payment powered by Stripe</span>
+                      <span>Secure & encrypted payment</span>
                       <Lock className="w-4 h-4" />
                     </div>
                   </CardContent>

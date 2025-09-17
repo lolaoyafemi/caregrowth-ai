@@ -143,9 +143,9 @@ const PaymentPage = () => {
               ✓ 24/7 customer support
             </p>
             <div className="flex justify-center items-center space-x-8 opacity-60">
-              <div className="text-sm font-medium">Powered by Stripe</div>
               <div className="text-sm font-medium">SSL Secured</div>
               <div className="text-sm font-medium">GDPR Compliant</div>
+              <div className="text-sm font-medium">Bank-Level Security</div>
             </div>
           </div>
         </div>
