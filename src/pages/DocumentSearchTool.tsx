@@ -12,6 +12,7 @@ import { useUserCredits } from '@/hooks/useUserCredits';
 import { highlightKeywords } from '@/utils/highlightKeywords';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
 import FolderUpload from '@/components/upload/FolderUpload';
+import { GoogleDriveBrowser } from '@/components/drive/GoogleDriveBrowser';
 
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -29,6 +30,8 @@ const DocumentSearchTool = () => {
   const [isAddingDocuments, setIsAddingDocuments] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
   const [showFolderUpload, setShowFolderUpload] = useState(false);
+  const [showGoogleDrive, setShowGoogleDrive] = useState(false);
+  const [activeTab, setActiveTab] = useState<'manual' | 'folder' | 'googledrive'>('manual');
 
   if (authLoading) {
     return (
@@ -498,31 +501,34 @@ const DocumentSearchTool = () => {
           </Card>
 
           <Card className="p-6 mb-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
-              <h2 className="text-xl font-semibold">Add Documents</h2>
-              <div className="flex gap-2 flex-wrap">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-2">Add New Documents</h3>
+              <div className="flex gap-2 mb-4">
                 <Button
-                  variant={showFolderUpload ? 'default' : 'outline'}
+                  variant={activeTab === 'manual' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setShowFolderUpload(true)}
-                  className="flex items-center gap-2 whitespace-nowrap"
+                  onClick={() => setActiveTab('manual')}
                 >
-                  📁 <span className="hidden sm:inline">Bulk Upload</span><span className="sm:hidden">Upload</span>
+                  🔗 Manual URLs
                 </Button>
                 <Button
-                  variant={!showFolderUpload ? 'default' : 'outline'}
+                  variant={activeTab === 'folder' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setShowFolderUpload(false)}
-                  className="flex items-center gap-2 whitespace-nowrap"
+                  onClick={() => setActiveTab('folder')}
                 >
-                  🔗 <span className="hidden sm:inline">Google Docs</span><span className="sm:hidden">Docs</span>
+                  📁 Folder Upload
+                </Button>
+                <Button
+                  variant={activeTab === 'googledrive' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveTab('googledrive')}
+                >
+                  🔗 Google Drive
                 </Button>
               </div>
             </div>
-            
-            {showFolderUpload ? (
-              <FolderUpload onUploadComplete={() => toast.success('Documents uploaded successfully!')} />
-            ) : (
+
+            {activeTab === 'manual' && (
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Google Document URLs</label>
@@ -542,18 +548,36 @@ const DocumentSearchTool = () => {
                   Add Document Links
                 </Button>
                 
-                {/* Loading State Display */}
-                {isAddingDocuments && (
-                  <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    <span className="text-sm text-blue-700 font-medium">{progressMessage}</span>
-                  </div>
-                )}
-                
                 <p className="text-xs text-gray-500">
                   Documents must be publicly accessible or shared with view permissions. Add multiple URLs separated by a comma or a new line.
                 </p>
                 <p className="text-sm text-gray-600">{documents.length} documents linked</p>
+              </div>
+            )}
+
+            {activeTab === 'folder' && (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Upload multiple documents at once by selecting files from your computer.
+                </p>
+                <FolderUpload onUploadComplete={() => toast.success('Documents uploaded successfully!')} />
+              </div>
+            )}
+
+            {activeTab === 'googledrive' && (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Browse and select files directly from your Google Drive. No need to make documents public!
+                </p>
+                <GoogleDriveBrowser multiSelect={true} />
+              </div>
+            )}
+
+            {/* Loading State Display */}
+            {isAddingDocuments && (
+              <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg mt-4">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm text-blue-700 font-medium">{progressMessage}</span>
               </div>
             )}
           </Card>

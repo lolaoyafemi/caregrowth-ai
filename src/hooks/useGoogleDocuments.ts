@@ -46,10 +46,27 @@ const generateDocumentName = (docUrl: string): string => {
   }
 };
 
-// Function to fetch document content from Google Docs
-const fetchDocumentContent = async (docUrl: string): Promise<string | null> => {
+// Function to fetch document content from Google Drive API or URL export
+const fetchDocumentContent = async (docUrl: string, fileId?: string): Promise<string | null> => {
   try {
-    // Convert Google Docs URL to plain text export URL
+    // If we have a fileId, use Google Drive API through edge function
+    if (fileId) {
+      const { data, error } = await supabase.functions.invoke('google-drive-integration', {
+        body: {
+          action: 'getFileContent',
+          fileId: fileId
+        }
+      });
+
+      if (error) {
+        console.error('Error getting file content from Drive API:', error);
+        return null;
+      }
+
+      return data?.content || null;
+    }
+
+    // Otherwise, use the existing URL export method
     let exportUrl = '';
     
     if (docUrl.includes('/document/d/')) {
@@ -110,16 +127,19 @@ export const useGoogleDocuments = () => {
     }
   };
 
-  const addDocument = async (docLink: string, docTitle?: string) => {
+  const addDocument = async (docLink: string, docTitle?: string, fileId?: string) => {
     if (!user) return;
 
     try {
       // First, try to fetch the document content
-      console.log('Fetching document content for:', docLink);
-      const content = await fetchDocumentContent(docLink);
+      console.log('Fetching document content for:', docLink, fileId ? `(File ID: ${fileId})` : '');
+      const content = await fetchDocumentContent(docLink, fileId);
       
       if (!content) {
-        toast.error('Unable to access document content. Please ensure the document is publicly accessible.');
+        const errorMsg = fileId 
+          ? 'Unable to access document content from Google Drive. Please check permissions.'
+          : 'Unable to access document content. Please ensure the document is publicly accessible.';
+        toast.error(errorMsg);
         return;
       }
 
