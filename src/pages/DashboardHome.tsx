@@ -16,6 +16,8 @@ import { useUserCredits } from '@/hooks/useUserCredits';
 import { useUsageTracking } from '@/hooks/useUsageTracking';
 import CreditExpirationWarning from '@/components/dashboard/CreditExpirationWarning';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const DashboardHome = () => {
   const { user } = useUser();
@@ -56,6 +58,39 @@ const DashboardHome = () => {
     console.log('Dashboard - Usage Metrics:', usageMetrics);
     console.log('Dashboard - Usage Loading:', usageLoading);
   }, [user, credits, loading, usageMetrics, usageLoading]);
+
+  // Handle payment success from Stripe redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const sessionId = urlParams.get('session_id');
+    
+    if (paymentStatus === 'success' && sessionId) {
+      console.log('Payment success detected, confirming with session ID:', sessionId);
+      
+      const confirmPayment = async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('confirm-payment', {
+            body: { session_id: sessionId }
+          });
+          
+          if (error) throw error;
+          
+          if (data?.success) {
+            console.log('Payment confirmed successfully');
+            toast.success('Payment confirmed! Your credits have been added to your account.');
+            refetch(); // Refresh credits
+            // Clear URL parameters
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (error) {
+          console.error('Payment confirmation failed:', error);
+        }
+      };
+      
+      confirmPayment();
+    }
+  }, [refetch]);
 
   // Calculate remaining percentage (inverted logic)
   const getRemainingPercentage = () => {
