@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      agencies: {
+        Row: {
+          admin_user_id: string
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -226,6 +250,62 @@ export type Database = {
           page_number?: number | null
         }
         Relationships: []
+      }
+      google_connections: {
+        Row: {
+          access_token: string
+          agency_id: string
+          created_at: string | null
+          expires_at: string
+          google_email: string | null
+          google_user_id: string
+          id: string
+          refresh_token: string
+          scope: string | null
+          selected_folder_id: string | null
+          selected_folder_name: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          agency_id: string
+          created_at?: string | null
+          expires_at: string
+          google_email?: string | null
+          google_user_id: string
+          id?: string
+          refresh_token: string
+          scope?: string | null
+          selected_folder_id?: string | null
+          selected_folder_name?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          agency_id?: string
+          created_at?: string | null
+          expires_at?: string
+          google_email?: string | null
+          google_user_id?: string
+          id?: string
+          refresh_token?: string
+          scope?: string | null
+          selected_folder_id?: string | null
+          selected_folder_name?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_connections_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       google_documents: {
         Row: {
