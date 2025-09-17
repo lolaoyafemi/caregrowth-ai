@@ -41,7 +41,7 @@ const StripePaymentPage = () => {
   const plans = [
     {
       id: 'professional',
-      name: 'CareGrowthAI Credits',
+      name: 'CareGrowth Assistant Credits',
       price: 49,
       credits: 1000,
       features: [

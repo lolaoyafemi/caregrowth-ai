@@ -88,7 +88,7 @@ const QAAssistantTool = () => {
         const welcomeMessage: Message = {
           id: 1,
           role: 'assistant',
-          content: 'Hello! I\'m Jared, your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
+          content: 'Hello! I\'m Jared, your CareGrowth Assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
           timestamp: new Date()
         };
         setConversation([welcomeMessage]);
@@ -210,7 +210,7 @@ const QAAssistantTool = () => {
     const defaultMessage: Message = {
       id: 1,
       role: 'assistant',
-      content: 'Hello! I\'m Jared, your CareGrowthAI assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
+      content: 'Hello! I\'m Jared, your CareGrowth Assistant. I can help you with questions about agency management, marketing strategies, hiring, compliance, and more. How can I help you today?',
       timestamp: new Date()
     };
     

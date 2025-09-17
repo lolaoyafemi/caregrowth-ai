@@ -74,7 +74,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
   return (
     <header className={`border-b h-16 px-6 flex items-center justify-between ${isSuperAdmin ? 'bg-green-50' : 'bg-white'}`}>
       <div className="flex items-center">
-        <h1 className="text-xl font-semibold text-gray-800">CareGrowthAI</h1>
+        <h1 className="text-xl font-semibold text-gray-800">CareGrowth Assistant</h1>
         
         {userRole && (
           <div className={`ml-4 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${getRoleBadgeClass(userRole)}`}>

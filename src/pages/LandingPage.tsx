@@ -35,7 +35,7 @@ const LandingPage = () => {
                   Supercharge Your Agency's Growth
                 </h1>
                 <p className="text-xl mb-8 text-blue-100">
-                  Say goodbye to content blocks and tedious document searches. CareGrowthAI is your team's AI co-pilot for creating killer content, finding answers fast, and scaling your agency without the headaches.
+                  Say goodbye to content blocks and tedious document searches. CareGrowth Assistant is your team's AI co-pilot for creating killer content, finding answers fast, and scaling your agency without the headaches.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link to="/login">
@@ -57,7 +57,7 @@ const LandingPage = () => {
                 <div className="bg-white p-6 rounded-lg shadow-xl">
                   <img 
                     src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
-                    alt="CareGrowthAI Dashboard" 
+                    alt="CareGrowth Assistant Dashboard" 
                     className="rounded-md w-full"
                   />
                 </div>
@@ -70,7 +70,7 @@ const LandingPage = () => {
         <section id="video" className="py-20 bg-gray-50">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">See CareGrowthAI in Action</h2>
+              <h2 className="text-3xl font-bold mb-4">See CareGrowth Assistant in Action</h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 Watch how our platform transforms your workflow in under 3 minutes
               </p>
@@ -93,7 +93,7 @@ const LandingPage = () => {
                   <iframe 
                     className="w-full h-full absolute inset-0"
                     src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" 
-                    title="CareGrowthAI Demo"
+                    title="CareGrowth Assistant Demo"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -414,7 +414,7 @@ const LandingPage = () => {
                   COMPLETE SOLUTION
                 </div>
                 <div className="p-8">
-                  <h3 className="text-2xl font-bold mb-3 text-center">CareGrowthAI Credits</h3>
+                  <h3 className="text-2xl font-bold mb-3 text-center">CareGrowth Assistant Credits</h3>
                   <div className="mb-5 text-center">
                     <span className="text-4xl font-bold">$49</span>
                     <span className="text-gray-600"> /month</span>
@@ -474,7 +474,7 @@ const LandingPage = () => {
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl font-bold mb-6">Ready to Grow Faster with Less Effort?</h2>
             <p className="text-xl mb-8 max-w-2xl mx-auto">
-              Join hundreds of agencies already using CareGrowthAI to create better content, access knowledge faster, and make smarter business decisions.
+              Join hundreds of agencies already using CareGrowth Assistant to create better content, access knowledge faster, and make smarter business decisions.
             </p>
             <Link to="/login">
               <Button size="lg" className="bg-white text-caregrowth-blue hover:bg-blue-50">

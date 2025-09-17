@@ -13,9 +13,9 @@ const PaymentPage = () => {
   const plans = [
     {
       id: 'professional',
-      name: 'CareGrowthAI Credits',
+      name: 'CareGrowth Assistant Credits',
       price: 49,
-      description: 'Complete access to all CareGrowthAI features',
+      description: 'Complete access to all CareGrowth Assistant features',
       features: [
         '1000 Social Media Posts',
         'Unlimited Documents',
@@ -64,7 +64,7 @@ const PaymentPage = () => {
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Select the perfect credit package to supercharge your agency's growth. 
-              Get instant access to all CareGrowthAI features with your credit purchase.
+              Get instant access to all CareGrowth Assistant features with your credit purchase.
             </p>
           </div>
 

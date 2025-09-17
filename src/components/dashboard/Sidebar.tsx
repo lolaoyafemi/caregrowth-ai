@@ -116,7 +116,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
         {!collapsed && (
           <span className="text-xl font-bold text-caregrowth-blue flex items-center gap-2">
             {isSuperAdmin && <Shield size={18} className="text-green-700" />}
-            CareGrowthAI
+            CareGrowth Assistant
           </span>
         )}
         {collapsed && (
@@ -253,7 +253,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
         <p className={cn("text-xs font-semibold text-gray-500 mb-2", 
           collapsed && "text-center"
         )}>
-          {!collapsed ? "CareGrowthAI Tools" : "Tools"}
+          {!collapsed ? "CareGrowth Assistant Tools" : "Tools"}
         </p>
         
         <nav className="space-y-1">

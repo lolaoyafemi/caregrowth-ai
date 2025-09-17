@@ -25,7 +25,7 @@ const Header = () => {
     <header className="border-b bg-white">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">CareGrowthAI</h1>
+          <h1 className="text-2xl font-bold text-gray-900">CareGrowth Assistant</h1>
         </Link>
         <div className="hidden md:flex items-center gap-6">
           <nav className="flex gap-6">

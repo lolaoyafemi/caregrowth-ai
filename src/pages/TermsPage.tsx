@@ -102,8 +102,8 @@ const TermsPage = () => {
             If you have any questions about these Terms of Service, please contact us at:
           </p>
           <div className="bg-gray-50 p-6 rounded-lg">
-            <p className="font-semibold text-gray-900 mb-2">Caregrowth AI</p>
-            <p className="text-gray-600">🌐 caregrowthai.com</p>
+            <p className="font-semibold text-gray-900 mb-2">CareGrowth Assistant</p>
+            <p className="text-gray-600">🌐 www.caregrowthassistant.com</p>
             <p className="text-gray-600">📧 support@caregrowth.ai</p>
             <p className="text-gray-600">📞 954-866-7875</p>
             <p className="text-gray-600">🏢 3301 N University Dr Suite 100, Coral Springs, FL 33065</p>

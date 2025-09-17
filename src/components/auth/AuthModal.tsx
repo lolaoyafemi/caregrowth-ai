@@ -177,7 +177,7 @@ const AuthModal: React.FC = () => {
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h2>
             <p className="text-blue-100 text-sm">
-              {isLogin ? 'Sign in to access your CareGrowthAI dashboard' : 'Get started with CareGrowthAI and supercharge your agency'}
+              {isLogin ? 'Sign in to access your CareGrowth Assistant dashboard' : 'Get started with CareGrowth Assistant and supercharge your agency'}
             </p>
           </div>
 

@@ -427,7 +427,7 @@ const RegularUserHelpPage = () => {
                 <AccordionItem value="item-4">
                   <AccordionTrigger>What roles are available for team members?</AccordionTrigger>
                   <AccordionContent>
-                    CareGrowthAI offers several role types including Agency Admin, Marketing, HR Admin, and
+                    CareGrowth Assistant offers several role types including Agency Admin, Marketing, HR Admin, and
                     Carer. Each role has specific permissions and access to different tools. Agency Admins
                     can manage all aspects of the dashboard.
                   </AccordionContent>
