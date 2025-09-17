@@ -11,7 +11,6 @@ import { useCachedSearch } from '@/hooks/useCachedSearch';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { highlightKeywords } from '@/utils/highlightKeywords';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
-import FolderUpload from '@/components/upload/FolderUpload';
 import { GoogleDriveBrowser } from '@/components/drive/GoogleDriveBrowser';
 
 const DocumentSearchTool = () => {
@@ -29,9 +28,7 @@ const DocumentSearchTool = () => {
   const [searchMode, setSearchMode] = useState<'basic' | 'smart'>('smart');
   const [isAddingDocuments, setIsAddingDocuments] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
-  const [showFolderUpload, setShowFolderUpload] = useState(false);
-  const [showGoogleDrive, setShowGoogleDrive] = useState(false);
-  const [activeTab, setActiveTab] = useState<'manual' | 'folder' | 'googledrive'>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'googledrive'>('manual');
 
   if (authLoading) {
     return (
@@ -512,13 +509,6 @@ const DocumentSearchTool = () => {
                   🔗 Manual URLs
                 </Button>
                 <Button
-                  variant={activeTab === 'folder' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setActiveTab('folder')}
-                >
-                  📁 Folder Upload
-                </Button>
-                <Button
                   variant={activeTab === 'googledrive' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setActiveTab('googledrive')}
@@ -552,15 +542,6 @@ const DocumentSearchTool = () => {
                   Documents must be publicly accessible or shared with view permissions. Add multiple URLs separated by a comma or a new line.
                 </p>
                 <p className="text-sm text-gray-600">{documents.length} documents linked</p>
-              </div>
-            )}
-
-            {activeTab === 'folder' && (
-              <div>
-                <p className="text-sm text-gray-600 mb-4">
-                  Upload multiple documents at once by selecting files from your computer.
-                </p>
-                <FolderUpload onUploadComplete={() => toast.success('Documents uploaded successfully!')} />
               </div>
             )}
 
