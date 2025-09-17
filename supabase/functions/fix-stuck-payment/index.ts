@@ -13,6 +13,8 @@ serve(async (req) => {
   }
 
   try {
+    const { sessionId } = await req.json();
+    
     // Initialize Supabase with service role key to bypass RLS
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -20,7 +22,57 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Get the stuck payment
+    if (sessionId) {
+      // Handle case where we need to create a payment record from Stripe session
+      console.log('Creating payment record for session:', sessionId);
+      
+      // Create the payment record for the damdam@gmail.com user
+      const { data: payment, error: createError } = await supabase
+        .from('payments')
+        .insert({
+          user_id: 'ebaef0e7-9a46-494b-a31c-84a86e10308b',
+          email: 'damdam@gmail.com',
+          stripe_session_id: sessionId,
+          plan_name: 'CareGrowth Assistant Credits',
+          amount: 4900, // $49 in cents
+          credits_granted: 1000,
+          status: 'completed'
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating payment:', createError);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Failed to create payment record' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        });
+      }
+
+      console.log('Payment created and completed:', payment.id);
+
+      // Check if credits were allocated
+      const { data: updatedProfile } = await supabase
+        .from('user_profiles')
+        .select('credits')
+        .eq('user_id', payment.user_id)
+        .single();
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'Payment created and processed successfully',
+        payment_id: payment.id,
+        user_credits: updatedProfile?.credits || 'unknown'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // Original logic for existing stuck payments
     const { data: payment, error: fetchError } = await supabase
       .from('payments')
       .select('*')
