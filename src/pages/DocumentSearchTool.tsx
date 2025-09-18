@@ -12,6 +12,7 @@ import { useUserCredits } from '@/hooks/useUserCredits';
 import { highlightKeywords } from '@/utils/highlightKeywords';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
 import FolderUpload from '@/components/upload/FolderUpload';
+import { GoogleDriveConnection } from '@/components/drive/GoogleDriveConnection';
 
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();
