@@ -104,6 +104,26 @@ serve(async (req) => {
       if (session.mode === 'payment') {
         console.log('Processing one-time payment session:', session.id);
 
+        // Check if payment already processed (idempotency)
+        const { data: existingPayment, error: checkError } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('stripe_session_id', session.id)
+          .single();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error('Error checking existing payment:', checkError);
+          return new Response("Failed to check payment status", { status: 500 });
+        }
+
+        if (existingPayment?.status === 'completed') {
+          console.log('Payment already processed, skipping:', existingPayment.id);
+          return new Response(JSON.stringify({ received: true, already_processed: true }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+
         // Update payment record to completed
         const { data: payment, error: paymentError } = await supabase
           .from('payments')
@@ -117,6 +137,17 @@ serve(async (req) => {
 
         if (paymentError) {
           console.error('Error updating payment:', paymentError);
+          
+          // Log the failure for monitoring
+          await supabase.from('security_events').insert({
+            event_type: 'payment_processing_failure',
+            event_data: {
+              stripe_session_id: session.id,
+              error: paymentError.message,
+              stage: 'webhook_payment_update'
+            }
+          });
+          
           return new Response("Failed to update payment", { status: 500 });
         }
 

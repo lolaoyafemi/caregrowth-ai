@@ -10,7 +10,8 @@ const StuckPaymentFixer = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string>('');
   const [hasStuckPayments, setHasStuckPayments] = useState<boolean | null>(null);
-  const [sessionId, setSessionId] = useState('cs_live_a1r77nz88hengOEYMJw5VvYOZulpLnNzkkpGAbF2igyKYv35BNIgol7CnB');
+  const [sessionId, setSessionId] = useState('');
+  const [monitoring, setMonitoring] = useState(false);
 
   useEffect(() => {
     checkForStuckPayments();
@@ -73,6 +74,36 @@ const StuckPaymentFixer = () => {
     }
   };
 
+  const handleMonitorPayments = async () => {
+    setMonitoring(true);
+    setResult('');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('payment-monitor');
+      
+      if (error) {
+        setResult(`Error: ${error.message}`);
+      } else if (data?.success) {
+        if (data.stuck_payments_count === 0) {
+          setResult('✅ No stuck payments found - all payments are processing correctly');
+        } else {
+          const stuckList = data.stuck_payments.map((p: any) => 
+            `• ${p.email}: $${(p.amount / 100).toFixed(2)} (${p.stripe_session_id})`
+          ).join('\n');
+          setResult(`⚠️ Found ${data.stuck_payments_count} stuck payments:\n\n${stuckList}\n\nUse the session IDs above to fix individual payments.`);
+          setHasStuckPayments(true);
+        }
+      } else {
+        setResult(`❌ Failed: ${data?.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error monitoring payments:', error);
+      setResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setMonitoring(false);
+    }
+  };
+
   const handleCreatePaymentFromSession = async () => {
     if (!sessionId.trim()) {
       toast.error('Please enter a Stripe session ID');
@@ -86,7 +117,7 @@ const StuckPaymentFixer = () => {
       console.log('Creating payment from session:', sessionId);
       
       const { data, error } = await supabase.functions.invoke('fix-stuck-payment', {
-        body: { sessionId: sessionId.trim() }
+        body: { session_id: sessionId.trim() }
       });
 
       console.log('Function response:', data);
@@ -97,11 +128,10 @@ const StuckPaymentFixer = () => {
       }
 
       if (data?.success) {
-        setResult(`✅ Payment created successfully! Payment ID: ${data.payment_id}, User Credits: ${data.user_credits}`);
+        setResult(`✅ Payment created successfully! Payment ID: ${data.payment_id}, Credits: ${data.credits_allocated}`);
         toast.success('Payment has been created and processed successfully!');
         setSessionId(''); // Clear the input
-        // Recheck for stuck payments
-        checkForStuckPayments();
+        checkForStuckPayments(); // Recheck
       } else {
         setResult(`❌ ${data?.error || 'Unknown error occurred'}`);
         toast.error(data?.error || 'Failed to create payment');
@@ -140,55 +170,73 @@ const StuckPaymentFixer = () => {
   }
 
   return (
-    <Card className="w-full max-w-lg">
+    <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Payment System Tools</CardTitle>
+        <CardTitle>Payment System Monitor & Tools</CardTitle>
+        <p className="text-sm text-gray-600">
+          Monitor payment health and fix stuck payments
+        </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Fix existing stuck payments */}
+        {/* Payment Health Monitor */}
         <div className="space-y-3">
-          <h3 className="font-medium">Fix Existing Stuck Payments</h3>
+          <h3 className="font-medium">Payment Health Check</h3>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleMonitorPayments}
+              disabled={monitoring}
+              variant="outline"
+              className="flex-1"
+            >
+              {monitoring ? 'Scanning...' : 'Check for Stuck Payments'}
+            </Button>
+            
+            <Button 
+              onClick={handleFixStuckPayment}
+              disabled={loading || !hasStuckPayments}
+              className="flex-1"
+            >
+              {loading ? 'Processing...' : 'Fix Stuck Payments'}
+            </Button>
+          </div>
+          
           {hasStuckPayments && (
-            <p className="text-sm text-gray-600">
-              Found stuck payments that need to be processed.
+            <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+              ⚠️ Found payments that need attention
             </p>
           )}
-          
-          <Button 
-            onClick={handleFixStuckPayment}
-            disabled={loading || hasStuckPayments === null}
-            className="w-full"
-          >
-            {loading ? 'Processing...' : 'Fix Stuck Payment'}
-          </Button>
         </div>
 
-        {/* Create payment from Stripe session */}
+        {/* Manual Payment Creation */}
         <div className="space-y-3 border-t pt-4">
-          <h3 className="font-medium">Create Payment from Stripe Session</h3>
+          <h3 className="font-medium">Manual Payment Recovery</h3>
           <p className="text-sm text-gray-600">
-            If a payment was made but no record exists, enter the Stripe session ID to create it.
+            If you have a Stripe session ID for a successful payment that wasn't recorded in our system:
           </p>
           
-          <Input
-            placeholder="cs_live_..."
-            value={sessionId}
-            onChange={(e) => setSessionId(e.target.value)}
-            disabled={loading}
-          />
-          
-          <Button 
-            onClick={handleCreatePaymentFromSession}
-            disabled={loading || !sessionId.trim()}
-            className="w-full"
-            variant="outline"
-          >
-            {loading ? 'Creating...' : 'Create Payment Record'}
-          </Button>
+          <div className="flex gap-2">
+            <Input
+              placeholder="cs_live_..."
+              value={sessionId}
+              onChange={(e) => setSessionId(e.target.value)}
+              disabled={loading}
+              className="flex-1"
+            />
+            <Button 
+              onClick={handleCreatePaymentFromSession}
+              disabled={loading || !sessionId.trim()}
+            >
+              {loading ? 'Creating...' : 'Fix Payment'}
+            </Button>
+          </div>
         </div>
 
         {result && (
-          <div className="p-3 bg-gray-50 rounded border text-sm">
+          <div className={`p-4 rounded-md text-sm font-mono whitespace-pre-wrap ${
+            result.includes('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 
+            result.includes('⚠️') ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+            'bg-red-50 text-red-700 border border-red-200'
+          }`}>
             {result}
           </div>
         )}

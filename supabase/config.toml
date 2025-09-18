@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.oauth-google-callback]
 verify_jwt = false
+
+[functions.payment-monitor]
+verify_jwt = true
