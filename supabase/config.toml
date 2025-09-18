@@ -1,13 +1,41 @@
 project_id = "ljtikbkilyeyuexzhaqd"
 
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://ljtikbkilyeyuexzhaqd.supabase.co"]
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+enable_signup = true
+
+[edge_functions]
+enabled = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.confirm-payment]
+verify_jwt = false
+
+[functions.payment-monitor]
+verify_jwt = false
+
+[functions.google-drive-sync-monitor]
+verify_jwt = false
+
 [functions.connect-google]
 verify_jwt = false
 
 [functions.oauth-google-callback]
 verify_jwt = false
-
-[functions.payment-monitor]
-verify_jwt = true
 
 [functions.google-drive-enhanced]
 verify_jwt = true

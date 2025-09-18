@@ -127,7 +127,14 @@ const AuthModal: React.FC = () => {
         navigate('/dashboard');
       } else {
         await signUpWithEmail(email, password, name);
-        navigate('/registration-success');
+        toast({
+          title: "Account created successfully!",
+          description: "Welcome to CareGrowth Assistant. Redirecting to your dashboard...",
+        });
+        // Auto-redirect to dashboard after successful signup
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
       }
     } catch (error: any) {
       console.error('Auth error:', error);

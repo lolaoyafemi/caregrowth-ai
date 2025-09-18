@@ -131,13 +131,13 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* Enhanced Features Section */}
+        {/* AI Solutions Section */}
         <section id="features" className="py-20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Three Tools, One Powerful Platform</h2>
+              <h2 className="text-3xl font-bold mb-4">AI Solutions</h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Stop juggling between different apps. We've built everything your agency needs into one seamless experience.
+                Three powerful AI tools working together to transform your agency operations.
               </p>
             </div>
 
@@ -152,36 +152,15 @@ const LandingPage = () => {
                     <path d="M8 7H8.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Content Creation Machine</h3>
+                <h3 className="text-xl font-semibold mb-3">Nora</h3>
                 <p className="text-gray-600 mb-4">
-                  Writer's block? Not anymore. Create scroll-stopping social media posts in seconds that actually sound like your brand.
+                  Nora is your content partner for social media post generation. It helps you generate posts that attract attention, connect with your audience, and keep your message consistent.
                 </p>
-                <ul className="mb-6 space-y-2 text-gray-600">
-                  <li className="flex items-start">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-500 mt-1 mr-2 flex-shrink-0">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Platform-specific formatting</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-500 mt-1 mr-2 flex-shrink-0">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Edit any section separately</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-500 mt-1 mr-2 flex-shrink-0">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>One-click export options</span>
-                  </li>
-                </ul>
-                <Link to="/dashboard/social-media" className="text-caregrowth-blue font-medium hover:underline inline-flex items-center">
-                  Start creating content
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="ml-1">
-                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                <p className="text-sm text-caregrowth-blue font-medium mb-6">
+                  What do you get? Fresh ideas and ready-to-share drafts in minutes.
+                </p>
+                <Link to="/dashboard/social-media">
+                  <Button className="w-full bg-caregrowth-blue">Create Your Next Post</Button>
                 </Link>
               </div>
 
@@ -194,36 +173,15 @@ const LandingPage = () => {
                     <path d="M7 15H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Document Search Wizard</h3>
+                <h3 className="text-xl font-semibold mb-3">Indexa</h3>
                 <p className="text-gray-600 mb-4">
-                  Stop wasting hours digging through files. Ask questions in plain English and get instant answers from your documents.
+                  Indexa is your intelligent document search tool. It connects to your Google Drive, indexes your files, and gives you instant answers with references. No more scrolling to search through documents.
                 </p>
-                <ul className="mb-6 space-y-2 text-gray-600">
-                  <li className="flex items-start">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-500 mt-1 mr-2 flex-shrink-0">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Instant PDF/Doc search</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-500 mt-1 mr-2 flex-shrink-0">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Highlighted source excerpts</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-500 mt-1 mr-2 flex-shrink-0">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Follow-up question support</span>
-                  </li>
-                </ul>
-                <Link to="/dashboard/document-search" className="text-caregrowth-green font-medium hover:underline inline-flex items-center">
-                  Search your documents
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="ml-1">
-                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                <p className="text-sm text-caregrowth-green font-medium mb-6">
+                  What do you get? Quick, accurate answers from the right page every time.
+                </p>
+                <Link to="/dashboard/document-search">
+                  <Button className="w-full bg-caregrowth-green">Analyze Documents</Button>
                 </Link>
               </div>
 
@@ -235,36 +193,15 @@ const LandingPage = () => {
                     <path d="M12 13.5C12 12.6716 12.6716 12 13.5 12C14.3284 12 15 11.3284 15 10.5C15 9.67157 14.3284 9 13.5 9H12C11.1716 9 10.5 9.67157 10.5 10.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Agency Growth Assistant</h3>
+                <h3 className="text-xl font-semibold mb-3">Jared</h3>
                 <p className="text-gray-600 mb-4">
-                  Get expert advice on marketing, hiring, compliance, and management without the consulting fees. Just ask and get actionable answers.
+                  Jared is your on-demand business assistant. It answers questions, explains strategies, and helps you work through challenges with clear guidance. Think of it as a reliable teammate available 24/7.
                 </p>
-                <ul className="mb-6 space-y-2 text-gray-600">
-                  <li className="flex items-start"> 
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-500 mt-1 mr-2 flex-shrink-0">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Expert-level advice</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-500 mt-1 mr-2 flex-shrink-0">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Step-by-step guidance</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-500 mt-1 mr-2 flex-shrink-0">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Save answers for reference</span>
-                  </li>
-                </ul>
-                <Link to="/dashboard/qa-assistant" className="text-caregrowth-blue font-medium hover:underline inline-flex items-center">
-                  Get expert advice
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="ml-1">
-                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                <p className="text-sm text-caregrowth-blue font-medium mb-6">
+                  What do you get? Instant support, clear direction, and actionable solutions.
+                </p>
+                <Link to="/dashboard/qa-assistant">
+                  <Button className="w-full bg-caregrowth-blue">Answer Questions</Button>
                 </Link>
               </div>
             </div>

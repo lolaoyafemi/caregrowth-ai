@@ -11,7 +11,7 @@ import { useCachedSearch } from '@/hooks/useCachedSearch';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { highlightKeywords } from '@/utils/highlightKeywords';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
-import { GoogleDriveConnection } from '@/components/drive/GoogleDriveConnection';
+import FolderUpload from '@/components/upload/FolderUpload';
 
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();

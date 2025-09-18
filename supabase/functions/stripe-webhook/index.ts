@@ -100,6 +100,29 @@ serve(async (req) => {
       const session = event.data.object;
       console.log('Processing completed checkout session:', session.id, 'mode:', session.mode);
 
+      // Implement idempotency check for duplicate prevention
+      const idempotencyKey = `${event.type}_${session.id}`;
+      const { data: existingEvent, error: eventError } = await supabase
+        .from('security_events')
+        .select('id')
+        .eq('event_type', 'stripe_event_processed')
+        .eq('event_data->idempotency_key', idempotencyKey)
+        .single();
+
+      if (existingEvent) {
+        console.log('Event already processed, ignoring duplicate:', idempotencyKey);
+        return new Response(JSON.stringify({ received: true, duplicate: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      // Log event processing to prevent duplicates
+      await supabase.from('security_events').insert({
+        event_type: 'stripe_event_processed',
+        event_data: { idempotency_key: idempotencyKey, stripe_event_id: event.id }
+      });
+
       // Handle one-time payments
       if (session.mode === 'payment') {
         console.log('Processing one-time payment session:', session.id);
