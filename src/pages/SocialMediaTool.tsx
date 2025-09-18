@@ -116,7 +116,7 @@ const SocialMediaTool = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('/payment', '_blank')
+          onClick: () => window.open('https://buy.stripe.com/your-stripe-link', '_blank')
         }
       });
       return;
@@ -216,7 +216,7 @@ const SocialMediaTool = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('/payment', '_blank')
+          onClick: () => window.open('https://buy.stripe.com/your-stripe-link', '_blank')
         }
       });
       return;
@@ -375,7 +375,7 @@ const SocialMediaTool = () => {
                     className="ml-2"
                     onClick={() => window.open('/payment', '_blank')}
                   >
-                    Buy Credits
+    window.open('https://buy.stripe.com/your-stripe-link', '_blank');
                   </Button>
                 )}
               </div>

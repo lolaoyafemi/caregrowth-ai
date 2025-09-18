@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Index from './pages/Index';
 import PaymentPage from './pages/PaymentPage';
-import StripePaymentPage from './pages/StripePaymentPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import HelpPage from './pages/HelpPage';
 import NotFound from './pages/NotFound';
@@ -62,7 +61,6 @@ const AppContent = () => {
           <Route path="/registration-success" element={<RegistrationSuccessPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/payment" element={<PaymentPage />} />
-          <Route path="/stripe-payment" element={<StripePaymentPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

@@ -227,7 +227,7 @@ const PaymentSuccessPage = () => {
                     Retry Confirmation
                   </Button>
                   <Button 
-                    onClick={() => navigate('/stripe-payment')}
+                    onClick={() => window.open('https://buy.stripe.com/your-stripe-link', '_blank')}
                     className="w-full"
                   >
                     Make New Payment

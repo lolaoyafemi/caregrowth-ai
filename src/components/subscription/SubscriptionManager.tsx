@@ -163,7 +163,7 @@ const SubscriptionManager = () => {
             <p className="text-muted-foreground mb-4">
               Subscribe to get monthly credits and access to all features.
             </p>
-            <Button onClick={() => window.location.href = '/stripe-payment'}>
+            <Button onClick={() => window.open('https://buy.stripe.com/your-stripe-link', '_blank')}>
               View Plans
             </Button>
           </div>

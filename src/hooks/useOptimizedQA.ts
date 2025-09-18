@@ -229,7 +229,7 @@ export const useOptimizedQA = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('/stripe-payment', '_blank')
+          onClick: () => window.open('https://buy.stripe.com/your-stripe-link', '_blank')
         }
       });
       return null;

@@ -29,7 +29,7 @@ export const showInsufficientCreditsNotification = (actionName: string) => {
         window.dispatchEvent(event);
         
         // Fallback to direct navigation
-        window.location.href = '/stripe-payment';
+        window.open('https://buy.stripe.com/your-stripe-link', '_blank');
       }
     }
   });
@@ -101,7 +101,7 @@ export const validateBulkCredits = (
       action: {
         label: 'Buy Credits',
         onClick: () => {
-          window.location.href = '/stripe-payment';
+          window.open('https://buy.stripe.com/your-stripe-link', '_blank');
         }
       }
     });
@@ -125,7 +125,7 @@ export const checkCreditExpiration = (expiresAt: string | null) => {
       action: {
         label: 'Buy Credits',
         onClick: () => {
-          window.location.href = '/stripe-payment';
+          window.open('https://buy.stripe.com/your-stripe-link', '_blank');
         }
       }
     });
@@ -136,7 +136,7 @@ export const checkCreditExpiration = (expiresAt: string | null) => {
       action: {
         label: 'Buy Credits',
         onClick: () => {
-          window.location.href = '/stripe-payment';
+          window.open('https://buy.stripe.com/your-stripe-link', '_blank');
         }
       }
     });
