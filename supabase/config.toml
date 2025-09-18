@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.payment-monitor]
 verify_jwt = true
+
+[functions.google-drive-enhanced]
+verify_jwt = true

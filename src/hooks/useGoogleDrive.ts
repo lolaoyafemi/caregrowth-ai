@@ -24,12 +24,11 @@ export const useGoogleDrive = () => {
   const listFiles = async (folderId?: string, query?: string, pageToken?: string): Promise<GoogleDriveResponse | null> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('google-drive-integration', {
-        body: {
-          action: 'listFiles',
-          folderId,
-          query,
-          pageToken
+      const { data, error } = await supabase.functions.invoke('google-drive-enhanced', {
+        body: { 
+          action: 'listFiles', 
+          folder_id: folderId, 
+          page_token: pageToken 
         }
       });
 
@@ -39,8 +38,15 @@ export const useGoogleDrive = () => {
         return null;
       }
 
-      setFiles(data.files || []);
-      return data;
+      if (data?.success) {
+        setFiles(data.files || []);
+        return {
+          files: data.files || [],
+          nextPageToken: data.nextPageToken
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error in listFiles:', error);
       toast.error('Failed to connect to Google Drive');
@@ -53,11 +59,11 @@ export const useGoogleDrive = () => {
   const listFolders = async (parentFolderId?: string, pageToken?: string): Promise<GoogleDriveResponse | null> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('google-drive-integration', {
-        body: {
-          action: 'listFolders',
-          folderId: parentFolderId,
-          pageToken
+      const { data, error } = await supabase.functions.invoke('google-drive-enhanced', {
+        body: { 
+          action: 'listFolders', 
+          folder_id: parentFolderId, 
+          page_token: pageToken 
         }
       });
 
@@ -67,8 +73,15 @@ export const useGoogleDrive = () => {
         return null;
       }
 
-      setFolders(data.files || []);
-      return data;
+      if (data?.success) {
+        setFolders(data.folders || []);
+        return {
+          files: data.folders || [],
+          nextPageToken: data.nextPageToken
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error in listFolders:', error);
       toast.error('Failed to connect to Google Drive');
@@ -81,10 +94,10 @@ export const useGoogleDrive = () => {
   const getFileContent = async (fileId: string): Promise<{ content: string; fileName: string; mimeType: string } | null> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('google-drive-integration', {
-        body: {
-          action: 'getFileContent',
-          fileId
+      const { data, error } = await supabase.functions.invoke('google-drive-enhanced', {
+        body: { 
+          action: 'getFileContent', 
+          file_id: fileId 
         }
       });
 
@@ -94,7 +107,15 @@ export const useGoogleDrive = () => {
         return null;
       }
 
-      return data;
+      if (data?.success) {
+        return {
+          content: data.content,
+          fileName: data.fileName,
+          mimeType: data.mimeType
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error in getFileContent:', error);
       toast.error('Failed to download file from Google Drive');
@@ -105,6 +126,7 @@ export const useGoogleDrive = () => {
   };
 
   const searchFiles = async (searchQuery: string, pageToken?: string): Promise<GoogleDriveResponse | null> => {
+    // Enhanced search - the backend now handles the document type filtering
     const query = `name contains '${searchQuery}' and (mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf' or mimeType='text/plain' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document')`;
     
     return listFiles(undefined, query, pageToken);

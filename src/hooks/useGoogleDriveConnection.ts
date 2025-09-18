@@ -141,10 +141,10 @@ export const useGoogleDriveConnection = () => {
 
     setLoadingFolders(true);
     try {
-      const { data, error } = await supabase.functions.invoke('google-drive-folders', {
+      const { data, error } = await supabase.functions.invoke('google-drive-enhanced', {
         body: {
           action: 'listFolders',
-          folderId: parentFolderId,
+          folder_id: parentFolderId,
         },
       });
 
@@ -156,7 +156,9 @@ export const useGoogleDriveConnection = () => {
         return;
       }
 
-      setFolders(data.folders || []);
+      if (data?.success) {
+        setFolders(data.folders || []);
+      }
     } catch (error) {
       console.error('Error listing folders:', error);
       toast.error('Failed to load folders from Google Drive');
@@ -169,23 +171,25 @@ export const useGoogleDriveConnection = () => {
     if (!connection) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('google-drive-folders', {
+      const { data, error } = await supabase.functions.invoke('google-drive-enhanced', {
         body: {
           action: 'selectFolder',
-          selectedFolderId: folderId,
+          folder_id: folderId,
           folderName,
         },
       });
 
       if (error) throw error;
 
-      setConnection(prev => prev ? {
-        ...prev,
-        selected_folder_id: folderId,
-        selected_folder_name: folderName,
-      } : null);
+      if (data?.success) {
+        setConnection(prev => prev ? {
+          ...prev,
+          selected_folder_id: folderId,
+          selected_folder_name: folderName,
+        } : null);
 
-      toast.success(`Selected folder: ${folderName}`);
+        toast.success(`Selected folder: ${folderName}`);
+      }
     } catch (error) {
       console.error('Error selecting folder:', error);
       toast.error('Failed to select folder');
