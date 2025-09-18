@@ -1,20 +1,27 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, ArrowLeft } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const PaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { user, session } = useAuth();
+  const navigate = useNavigate();
 
   const plans = [
     {
       id: 'professional',
       name: 'CareGrowth Assistant Credits',
       price: 49,
+      credits: 1000,
       description: 'Complete access to all CareGrowth Assistant features',
       features: [
         '1000 Social Media Posts',
@@ -32,12 +39,47 @@ const PaymentPage = () => {
     setSelectedPlan(planId);
   };
 
-  const handleCheckout = () => {
-    const baseUrl = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y';
-    const successUrl = `https://www.caregrowthassistant.com/payment-success?plan=${selectedPlan || 'professional'}`;
+  const handleCheckout = async () => {
+    if (!user || !session) {
+      toast.error("Please log in to continue with payment.");
+      navigate('/login');
+      return;
+    }
+
+    const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
+    if (!selectedPlanData) {
+      toast.error("Please select a plan before proceeding.");
+      return;
+    }
+
+    setLoading(true);
     
-    // Redirect directly to your live Stripe payment link with custom success URL
-    window.open(`${baseUrl}?success_url=${encodeURIComponent(successUrl)}`, '_blank');
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          planName: selectedPlanData.name,
+          amount: selectedPlanData.price,
+          email: user.email,
+          credits: selectedPlanData.credits
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Payment session creation failed:', error);
+      toast.error("Failed to create payment session. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -124,9 +166,19 @@ const PaymentPage = () => {
                     {selectedPlan === plan.id && (
                       <Button
                         onClick={handleCheckout}
+                        disabled={!user || !session || loading}
                         className="w-full bg-caregrowth-green hover:bg-green-700 text-white"
                       >
-                        Buy Credits Now
+                        {loading ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </div>
+                        ) : !user || !session ? (
+                          'Please Log In'
+                        ) : (
+                          'Buy Credits Now'
+                        )}
                       </Button>
                     )}
                   </div>
