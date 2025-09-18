@@ -33,7 +33,7 @@ const PaymentPage = () => {
   };
 
   const handleCheckout = () => {
-    const baseUrl = 'https://buy.stripe.com/your-stripe-link';
+    const baseUrl = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional';
     const successUrl = `${window.location.origin}/dashboard?payment=success`;
     
     // Redirect directly to your live Stripe payment link with custom success URL

@@ -116,7 +116,7 @@ const SocialMediaTool = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('https://buy.stripe.com/your-stripe-link', '_blank')
+          onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank')
         }
       });
       return;
@@ -216,7 +216,7 @@ const SocialMediaTool = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('https://buy.stripe.com/your-stripe-link', '_blank')
+          onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank')
         }
       });
       return;
@@ -375,7 +375,7 @@ const SocialMediaTool = () => {
                     className="ml-2"
                     onClick={() => window.open('/payment', '_blank')}
                   >
-    window.open('https://buy.stripe.com/your-stripe-link', '_blank');
+    window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank');
                   </Button>
                 )}
               </div>
