@@ -99,7 +99,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   };
 
   const handleBuyCredits = () => {
-    window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D', '_blank');
+    navigate('/stripe-payment');
   };
   
   return (

@@ -32,20 +32,8 @@ const PaymentSuccessPage = () => {
       console.log('Session ID from URL:', sessionId);
 
       if (!sessionId) {
-        const plan = searchParams.get('plan');
-        if (plan) {
-          console.log('No session_id but plan detected; relying on webhook to allocate credits. Redirecting to dashboard.');
-          toast.success('Payment received! Finalizing your account...');
-          setTimeout(() => {
-            refetch();
-            navigate('/dashboard');
-            window.location.reload();
-          }, 1500);
-          setLoading(false);
-          return;
-        }
         console.error('No session ID found in URL');
-        setError('No session ID found. Please contact support.');
+        setError("No session ID found. Please contact support.");
         setLoading(false);
         return;
       }
@@ -239,7 +227,7 @@ const PaymentSuccessPage = () => {
                     Retry Confirmation
                   </Button>
                   <Button 
-                    onClick={() => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D', '_blank')}
+                    onClick={() => navigate('/stripe-payment')}
                     className="w-full"
                   >
                     Make New Payment

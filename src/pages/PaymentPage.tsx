@@ -33,9 +33,11 @@ const PaymentPage = () => {
   };
 
   const handleCheckout = () => {
-    const baseUrl = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D';
-    // Open unified Stripe link (Stripe will redirect back with session_id)
-    window.open(baseUrl, '_blank');
+    const baseUrl = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y';
+    const successUrl = `https://www.caregrowthassistant.com/payment-success?plan=${selectedPlan || 'professional'}`;
+    
+    // Redirect directly to your live Stripe payment link with custom success URL
+    window.open(`${baseUrl}?success_url=${encodeURIComponent(successUrl)}`, '_blank');
   };
 
   return (

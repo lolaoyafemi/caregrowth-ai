@@ -163,7 +163,7 @@ const SubscriptionManager = () => {
             <p className="text-muted-foreground mb-4">
               Subscribe to get monthly credits and access to all features.
             </p>
-            <Button onClick={() => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D', '_blank')}>
+            <Button onClick={() => window.location.href = '/stripe-payment'}>
               View Plans
             </Button>
           </div>

@@ -58,31 +58,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('User data from public.users:', userData);
         // Use the actual role from database - validate it matches UserRole type
         const userRole = userData.role as 'super_admin' | 'agency_admin' | 'admin' | 'collaborator' | 'content_writer';
-
-        // Prefer the signup name over any external provider names (e.g., Stripe)
-        let displayName = userData.name || userEmail.split('@')[0] || '';
-        try {
-          const { data: authUserData } = await supabase.auth.getUser();
-          const signupName = (authUserData.user?.user_metadata as any)?.full_name as string | undefined;
-          if ((!userData.name || userData.name.trim() === '') && signupName && signupName.trim() !== '') {
-            // Persist the signup name to the public.users table (allowed by RLS)
-            const { error: nameUpdateError } = await supabase
-              .from('users')
-              .update({ name: signupName })
-              .eq('id', userId);
-            if (!nameUpdateError) {
-              displayName = signupName;
-            } else {
-              console.warn('Failed to persist signup name to users table:', nameUpdateError);
-            }
-          }
-        } catch (e) {
-          console.warn('Could not read auth user metadata for name preference:', e);
-        }
         
         setUserContext({
           id: userData.id,
-          name: displayName,
+          name: userData.name || userEmail.split('@')[0] || '',
           email: userData.email || userEmail,
           role: userRole,
           agencyId: undefined // Will be added when agencies are implemented
