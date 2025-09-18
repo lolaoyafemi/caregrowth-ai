@@ -12,7 +12,7 @@ import { useUserCredits } from '@/hooks/useUserCredits';
 import { highlightKeywords } from '@/utils/highlightKeywords';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
 import FolderUpload from '@/components/upload/FolderUpload';
-import { GoogleDriveConnection } from '@/components/drive/GoogleDriveConnection';
+import GoogleDriveFolderSync from '@/components/drive/GoogleDriveFolderSync';
 
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -560,7 +560,7 @@ const DocumentSearchTool = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Browse and select files directly from your Google Drive folders. No need to make documents public!
                 </p>
-                <GoogleDriveConnection />
+                <GoogleDriveFolderSync />
               </div>
             )}
 

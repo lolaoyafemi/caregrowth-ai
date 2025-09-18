@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
+import { useGoogleDriveSync } from '@/hooks/useGoogleDriveSync';
 import { toast } from 'sonner';
 
 interface SyncStatus {
@@ -40,6 +41,7 @@ interface DriveFile {
 const GoogleDriveFolderSync: React.FC = () => {
   const { connection, connecting, connectGoogleDrive, disconnectGoogleDrive, listFolders, selectFolder } = useGoogleDriveConnection();
   const { listFiles, getFileContent } = useGoogleDrive();
+  const { isRunning: isSyncRunning, triggerSync, scheduleSync } = useGoogleDriveSync();
   
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     isActive: false,
@@ -85,101 +87,56 @@ const GoogleDriveFolderSync: React.FC = () => {
     }
   }, [connection?.selected_folder_id, listFiles]);
 
-  // Sync all detected files
+  // Trigger backend sync process
   const syncFiles = useCallback(async () => {
-    if (driveFiles.length === 0) {
-      toast.info('No files to sync');
+    if (!connection?.selected_folder_id) {
+      toast.info('No folder selected for syncing');
       return;
     }
 
     setIsSyncing(true);
-    setSyncProgress(0);
     
-    let syncedCount = 0;
-    const errors: string[] = [];
-
     try {
-      for (let i = 0; i < driveFiles.length; i++) {
-        const file = driveFiles[i];
-        
-        try {
-          // Update file status to processing
-          setDriveFiles(prev => prev.map(f => 
-            f.id === file.id ? { ...f, status: 'processing' } : f
-          ));
-
-          // Get file content
-          const content = await getFileContent(file.id);
-          
-          if (content) {
-            // TODO: Process and embed document content
-            // This would typically involve:
-            // 1. Converting content to text if needed
-            // 2. Chunking the text
-            // 3. Creating embeddings
-            // 4. Storing in database
-            
-            setDriveFiles(prev => prev.map(f => 
-              f.id === file.id ? { ...f, status: 'synced' } : f
-            ));
-            
-            syncedCount++;
-          } else {
-            throw new Error('Failed to retrieve file content');
-          }
-        } catch (fileError) {
-          console.error(`Error syncing file ${file.name}:`, fileError);
-          errors.push(`${file.name}: ${fileError.message || 'Unknown error'}`);
-          
-          setDriveFiles(prev => prev.map(f => 
-            f.id === file.id ? { ...f, status: 'error' } : f
-          ));
-        }
-        
-        // Update progress
-        setSyncProgress(((i + 1) / driveFiles.length) * 100);
-      }
-
-      // Update sync status
-      setSyncStatus(prev => ({
-        ...prev,
-        lastSync: new Date(),
-        nextSync: new Date(Date.now() + 10 * 60 * 1000), // Next sync in 10 minutes
-        syncedFiles: syncedCount,
-        errors
-      }));
-
-      if (syncedCount > 0) {
-        toast.success(`Successfully synced ${syncedCount} files`);
-      }
+      const result = await triggerSync();
       
-      if (errors.length > 0) {
-        toast.error(`Failed to sync ${errors.length} files`);
-      }
+      if (result) {
+        setSyncStatus(prev => ({
+          ...prev,
+          lastSync: new Date(),
+          nextSync: new Date(Date.now() + 10 * 60 * 1000),
+          syncedFiles: result.files_processed,
+          errors: result.errors > 0 ? [`${result.errors} files failed to sync`] : []
+        }));
 
+        // Refresh file list after sync
+        await scanForPDFFiles();
+      }
     } catch (error) {
       console.error('Sync error:', error);
       toast.error('Sync process failed');
     } finally {
       setIsSyncing(false);
-      setSyncProgress(0);
     }
-  }, [driveFiles, getFileContent]);
+  }, [connection?.selected_folder_id, triggerSync, scanForPDFFiles]);
 
-  // Enable automatic sync (polling every 10 minutes)
-  const enableAutoSync = useCallback(() => {
+  // Enable automatic sync using the backend sync monitor
+  const enableAutoSync = useCallback(async () => {
     setSyncStatus(prev => ({ ...prev, isActive: true }));
+    await scheduleSync(10); // Schedule sync every 10 minutes
     
-    // Set up polling interval
-    const interval = setInterval(async () => {
-      if (connection?.selected_folder_id) {
-        await scanForPDFFiles();
-        await syncFiles();
-      }
-    }, 10 * 60 * 1000); // 10 minutes
-
-    return () => clearInterval(interval);
-  }, [connection?.selected_folder_id, scanForPDFFiles, syncFiles]);
+    // Run initial sync
+    const result = await triggerSync();
+    if (result) {
+      setSyncStatus(prev => ({
+        ...prev,
+        lastSync: new Date(),
+        nextSync: new Date(Date.now() + 10 * 60 * 1000),
+        totalFiles: prev.totalFiles,
+        syncedFiles: result.files_processed,
+        errors: result.errors > 0 ? [`${result.errors} files failed to sync`] : []
+      }));
+    }
+  }, [scheduleSync, triggerSync]);
 
   // Initial scan when folder is selected
   useEffect(() => {
@@ -270,8 +227,8 @@ const GoogleDriveFolderSync: React.FC = () => {
                 <Badge variant={syncStatus.isActive ? "default" : "secondary"}>
                   {syncStatus.isActive ? 'Active' : 'Inactive'}
                 </Badge>
-                {!syncStatus.isActive && (
-                  <Button size="sm" onClick={enableAutoSync}>
+                 {!syncStatus.isActive && (
+                  <Button size="sm" onClick={enableAutoSync} disabled={isSyncRunning}>
                     Enable Auto-Sync
                   </Button>
                 )}
@@ -311,13 +268,13 @@ const GoogleDriveFolderSync: React.FC = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={scanForPDFFiles} disabled={isSyncing}>
+              <Button onClick={scanForPDFFiles} disabled={isSyncing || isSyncRunning}>
                 <RefreshCwIcon className="h-4 w-4 mr-2" />
                 Scan Folder
               </Button>
-              <Button onClick={syncFiles} disabled={isSyncing || driveFiles.length === 0}>
+              <Button onClick={syncFiles} disabled={isSyncing || isSyncRunning}>
                 <RotateCcwIcon className="h-4 w-4 mr-2" />
-                Sync Now
+                {isSyncRunning ? 'Syncing...' : 'Sync Now'}
               </Button>
             </div>
           </CardContent>
