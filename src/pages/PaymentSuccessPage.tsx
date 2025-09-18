@@ -32,8 +32,20 @@ const PaymentSuccessPage = () => {
       console.log('Session ID from URL:', sessionId);
 
       if (!sessionId) {
+        const plan = searchParams.get('plan');
+        if (plan) {
+          console.log('No session_id but plan detected; relying on webhook to allocate credits. Redirecting to dashboard.');
+          toast.success('Payment received! Finalizing your account...');
+          setTimeout(() => {
+            refetch();
+            navigate('/dashboard');
+            window.location.reload();
+          }, 1500);
+          setLoading(false);
+          return;
+        }
         console.error('No session ID found in URL');
-        setError("No session ID found. Please contact support.");
+        setError('No session ID found. Please contact support.');
         setLoading(false);
         return;
       }
