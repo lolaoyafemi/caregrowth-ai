@@ -123,11 +123,60 @@ serve(async (req) => {
         event_data: { idempotency_key: idempotencyKey, stripe_event_id: event.id }
       });
 
-      // Handle one-time payments
-      if (session.mode === 'payment') {
-        console.log('Processing one-time payment session:', session.id);
+      // Handle one-time payments (Stripe Payment Link)
+      if (event.type === 'checkout.session.completed' && session.mode === 'payment') {
+        console.log('Processing one-time payment session (Payment Link):', session.id);
 
-        // Check if payment already processed (idempotency)
+        const customerEmail = session.customer_email || session.customer_details?.email;
+        if (!customerEmail) {
+          console.error('No customer email on session');
+          return new Response('Missing customer email', { status: 400 });
+        }
+
+        // Retrieve full session to access line items and price metadata (if available)
+        let fullSession: any = session;
+        try {
+          fullSession = await stripe.checkout.sessions.retrieve(session.id, { expand: ['line_items.data.price'] });
+        } catch (e) {
+          console.warn('Could not expand session line items, proceeding with base session:', e?.message);
+        }
+
+        const amountTotal = fullSession.amount_total ?? session.amount_total ?? 0; // in cents
+        const priceMetaCredits = Number(fullSession?.line_items?.data?.[0]?.price?.metadata?.credits || 0);
+        const metaCredits = Number(session?.metadata?.credits || 0);
+
+        // Determine credits granted
+        let creditsGranted = 0;
+        if (!isNaN(priceMetaCredits) && priceMetaCredits > 0) creditsGranted = priceMetaCredits;
+        else if (!isNaN(metaCredits) && metaCredits > 0) creditsGranted = metaCredits;
+        else {
+          const dollars = Math.round((amountTotal || 0)) / 100;
+          if (Math.round(dollars) === 49) creditsGranted = 1000; // default mapping
+          else creditsGranted = Math.max(1, Math.floor(dollars * 20)); // reasonable fallback
+        }
+
+        // Find user by email
+        let userId: string | null = null;
+        try {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('user_id')
+            .eq('email', customerEmail)
+            .single();
+          if (profile?.user_id) userId = profile.user_id;
+        } catch (_) {}
+
+        if (!userId) {
+          try {
+            const { data: { users } } = await supabase.auth.admin.listUsers();
+            const existingUser = users.find((u: any) => u.email === customerEmail);
+            if (existingUser) userId = existingUser.id;
+          } catch (error) {
+            console.warn('Could not list users:', error);
+          }
+        }
+
+        // Check for existing payment
         const { data: existingPayment, error: checkError } = await supabase
           .from('payments')
           .select('*')
@@ -136,73 +185,116 @@ serve(async (req) => {
 
         if (checkError && checkError.code !== 'PGRST116') {
           console.error('Error checking existing payment:', checkError);
-          return new Response("Failed to check payment status", { status: 500 });
+          return new Response('Failed to check payment status', { status: 500 });
         }
 
-        if (existingPayment?.status === 'completed') {
-          console.log('Payment already processed, skipping:', existingPayment.id);
+        let paymentRecord = existingPayment;
+        if (!paymentRecord) {
+          const { data: inserted, error: insertError } = await supabase
+            .from('payments')
+            .insert({
+              user_id: userId,
+              email: customerEmail,
+              amount: Math.round((amountTotal || 0) / 100),
+              credits_granted: creditsGranted,
+              stripe_session_id: session.id,
+              plan_name: 'CareGrowth Assistant Credits',
+              status: 'completed'
+            })
+            .select()
+            .single();
+          if (insertError) {
+            console.error('Error inserting payment:', insertError);
+            return new Response('Failed to record payment', { status: 500 });
+          }
+          paymentRecord = inserted;
+        } else if (paymentRecord.status !== 'completed') {
+          const { data: updated, error: updateError } = await supabase
+            .from('payments')
+            .update({
+              status: 'completed',
+              credits_granted: paymentRecord.credits_granted || creditsGranted,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', paymentRecord.id)
+            .select()
+            .single();
+          if (updateError) {
+            console.error('Error updating payment to completed:', updateError);
+            return new Response('Failed to update payment', { status: 500 });
+          }
+          paymentRecord = updated;
+        } else {
+          console.log('Payment already completed, skipping duplicate allocation:', paymentRecord.id);
           return new Response(JSON.stringify({ received: true, already_processed: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
           });
         }
 
-        // Update payment record to completed
-        const { data: payment, error: paymentError } = await supabase
-          .from('payments')
-          .update({ 
-            status: 'completed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('stripe_session_id', session.id)
-          .select()
-          .single();
+        // Allocate credits (create credit_purchases and update profile balance)
+        try {
+          const expiresAt = new Date();
+          expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-        if (paymentError) {
-          console.error('Error updating payment:', paymentError);
-          
-          // Log the failure for monitoring
-          await supabase.from('security_events').insert({
-            event_type: 'payment_processing_failure',
-            event_data: {
-              stripe_session_id: session.id,
-              error: paymentError.message,
-              stage: 'webhook_payment_update'
-            }
+          await supabase.from('credit_purchases').insert({
+            user_id: userId,
+            email: customerEmail,
+            credits_granted: creditsGranted,
+            expires_at: expiresAt.toISOString(),
+            source_type: 'purchase',
+            source_id: paymentRecord.id
           });
-          
-          return new Response("Failed to update payment", { status: 500 });
+
+          // Ensure profile exists and update balances
+          await supabase.from('user_profiles').upsert({
+            user_id: userId,
+            email: customerEmail,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id', ignoreDuplicates: false });
+
+          const { data: activeCredits } = await supabase.rpc('get_active_credits', { p_user_id: userId });
+          await supabase
+            .from('user_profiles')
+            .update({
+              credits: activeCredits ?? 0,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userId);
+
+          console.log('Credits allocated for payment link purchase:', { creditsGranted, userId });
+        } catch (allocError) {
+          console.error('Failed to allocate credits:', allocError);
+          await supabase.from('security_events').insert({
+            event_type: 'payment_allocation_failure',
+            event_data: { stripe_session_id: session.id, error: String(allocError) }
+          });
         }
 
-        console.log('Payment updated to completed:', payment.id);
-
-        // Send confirmation email for one-time purchase
+        // Send confirmation email (best-effort)
         try {
-          const emailResult = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-purchase-confirmation-email`, {
+          const emailResult = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-purchase-confirmation-email`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              email: payment.email,
+              email: customerEmail,
               name: session.customer_details?.name,
-              credits: payment.credits_granted,
-              planName: payment.plan_name,
-              amount: payment.amount,
+              credits: creditsGranted,
+              planName: 'CareGrowth Assistant Credits',
+              amount: Math.round((amountTotal || 0) / 100),
               isSubscription: false
             })
           });
-          
-          if (emailResult.ok) {
-            console.log('Purchase confirmation email sent');
-          }
+          if (emailResult.ok) console.log('Purchase confirmation email sent');
         } catch (emailError) {
           console.error('Failed to send email:', emailError);
         }
 
         return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
       }

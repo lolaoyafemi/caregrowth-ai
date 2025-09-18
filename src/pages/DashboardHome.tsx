@@ -148,11 +148,9 @@ const DashboardHome = () => {
               </div>
               <Progress value={getRemainingPercentage()} className="h-2 mb-4 bg-gray-100 [&>div]:bg-caregrowth-blue" />
               <div className="flex gap-2">
-                <Link to="/stripe-payment" className="flex-1">
-                  <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
-                    Buy More Credits
-                  </Button>
-                </Link>
+                <Button className="flex-1 w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200" onClick={() => window.location.href = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y'}>
+                  Buy More Credits
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 

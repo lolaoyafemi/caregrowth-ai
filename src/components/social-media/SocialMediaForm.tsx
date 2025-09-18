@@ -161,7 +161,7 @@ const SocialMediaForm: React.FC<SocialMediaFormProps> = ({
             )}
             {credits <= 0 && (
               <p className="text-sm text-red-600 mt-2 text-center">
-                You need credits to generate content. <a href="/stripe-payment" className="underline">Buy credits</a>
+                You need credits to generate content. <a href="https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y" target="_blank" rel="noopener noreferrer" className="underline">Buy credits</a>
               </p>
             )}
           </div>

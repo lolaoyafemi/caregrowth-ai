@@ -99,7 +99,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   };
 
   const handleBuyCredits = () => {
-    navigate('/stripe-payment');
+    window.location.href = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y';
   };
   
   return (
