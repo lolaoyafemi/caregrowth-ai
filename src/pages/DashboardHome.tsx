@@ -62,10 +62,9 @@ const DashboardHome = () => {
   // Handle payment success from Stripe redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
     const sessionId = urlParams.get('session_id');
     
-    if (paymentStatus === 'success' && sessionId) {
+    if (sessionId) {
       console.log('Payment success detected, confirming with session ID:', sessionId);
       
       const confirmPayment = async () => {
@@ -148,7 +147,7 @@ const DashboardHome = () => {
               </div>
               <Progress value={getRemainingPercentage()} className="h-2 mb-4 bg-gray-100 [&>div]:bg-caregrowth-blue" />
               <div className="flex gap-2">
-                <a href="https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional" target="_blank" rel="noopener noreferrer" className="flex-1">
+                <a href="https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D" target="_blank" rel="noopener noreferrer" className="flex-1">
                   <Button className="w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200">
                     Buy More Credits
                   </Button>

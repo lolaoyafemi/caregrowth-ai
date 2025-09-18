@@ -112,13 +112,13 @@ const SocialMediaTool = () => {
   const handleGenerate = async () => {
     // Check if user has credits first
     if (credits <= 0) {
-      toast.error("You don't have enough credits to generate content. Please purchase more credits to continue.", {
-        duration: 5000,
-        action: {
-          label: "Buy Credits",
-          onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank')
-        }
-      });
+          toast.error("You don't have enough credits to generate content. Please purchase more credits to continue.", {
+            duration: 5000,
+            action: {
+              label: "Buy Credits",
+              onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D', '_blank')
+            }
+          });
       return;
     }
 
@@ -216,7 +216,7 @@ const SocialMediaTool = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank')
+          onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D', '_blank')
         }
       });
       return;
@@ -375,7 +375,7 @@ const SocialMediaTool = () => {
                     className="ml-2"
                     onClick={() => window.open('/payment', '_blank')}
                   >
-    window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank');
+                    Buy Credits
                   </Button>
                 )}
               </div>

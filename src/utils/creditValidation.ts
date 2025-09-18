@@ -29,7 +29,7 @@ export const showInsufficientCreditsNotification = (actionName: string) => {
         window.dispatchEvent(event);
         
         // Fallback to direct navigation
-        window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank');
+        window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D', '_blank');
       }
     }
   });
@@ -101,7 +101,7 @@ export const validateBulkCredits = (
       action: {
         label: 'Buy Credits',
         onClick: () => {
-          window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank');
+          window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D', '_blank');
         }
       }
     });
@@ -125,7 +125,7 @@ export const checkCreditExpiration = (expiresAt: string | null) => {
       action: {
         label: 'Buy Credits',
         onClick: () => {
-          window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank');
+          window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D', '_blank');
         }
       }
     });
@@ -136,7 +136,7 @@ export const checkCreditExpiration = (expiresAt: string | null) => {
       action: {
         label: 'Buy Credits',
         onClick: () => {
-          window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fplan%3Dprofessional', '_blank');
+          window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y?success_url=https%3A%2F%2Fwww.caregrowthassistant.com%2Fpayment-success%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D', '_blank');
         }
       }
     });
