@@ -264,7 +264,7 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: `https://www.caregrowthassistant.com/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `https://www.caregrowthassistant.com/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `https://www.caregrowthassistant.com/payment-cancelled`,
       expires_at: Math.floor(Date.now() / 1000) + (30 * 60),
       payment_method_types: ['card'],

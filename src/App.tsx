@@ -62,6 +62,7 @@ const AppContent = () => {
           <Route path="/registration-success" element={<RegistrationSuccessPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
+          <Route path="/success" element={<PaymentSuccessPage />} />
           <Route path="/payment-cancelled" element={<PaymentCancelledPage />} />
           <Route path="/stripe-payment" element={<StripePaymentPage />} />
           {/* Legacy payment routes removed: unified Stripe Checkout flow in use */}

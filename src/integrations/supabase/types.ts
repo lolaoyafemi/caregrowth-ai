@@ -888,6 +888,7 @@ export type Database = {
           credits_expire_at: string | null
           differentiator: string | null
           email: string | null
+          full_name: string | null
           id: string
           ideal_client: string | null
           last_sign_in_at: string | null
@@ -915,6 +916,7 @@ export type Database = {
           credits_expire_at?: string | null
           differentiator?: string | null
           email?: string | null
+          full_name?: string | null
           id?: string
           ideal_client?: string | null
           last_sign_in_at?: string | null
@@ -942,6 +944,7 @@ export type Database = {
           credits_expire_at?: string | null
           differentiator?: string | null
           email?: string | null
+          full_name?: string | null
           id?: string
           ideal_client?: string | null
           last_sign_in_at?: string | null
