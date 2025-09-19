@@ -7,6 +7,7 @@ import HelpPage from './pages/HelpPage';
 import NotFound from './pages/NotFound';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardHome from './pages/DashboardHome';
 import SocialMediaTool from './pages/SocialMediaTool';
@@ -59,6 +60,7 @@ const AppContent = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registration-success" element={<RegistrationSuccessPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/payment-success" element={<PaymentSuccessPage />} />
           {/* Legacy payment routes removed: unified Payment Link flow in use */}
           <Route path="/help" element={<HelpPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
