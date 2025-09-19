@@ -15,7 +15,7 @@ serve(async (req: Request) => {
     }
 
     const url = new URL(req.url);
-    const redirectUri = `${url.origin}/oauth/google/callback`;
+    const redirectUri = `https://ljtikbkilyeyuexzhaqd.supabase.co/functions/v1/oauth-google-callback`;
     
     // Construct Google OAuth URL
     const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
