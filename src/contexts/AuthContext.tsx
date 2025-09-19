@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fallback to user role for security
       setUserContext({
         id: userId,
-        name: userEmail.split('@')[0] || '',
+         name: session?.user?.user_metadata?.full_name || '',
         email: userEmail,
         role: 'admin', // Temporarily keeping admin for existing users - will be changed to 'user' after migration
         agencyId: undefined
