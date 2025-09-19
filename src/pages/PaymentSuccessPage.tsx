@@ -32,8 +32,8 @@ const PaymentSuccessPage: React.FC = () => {
     try {
       console.log('Processing checkout session:', sessionId);
       
-      // Call the retrieve-checkout function
-      const { data, error } = await supabase.functions.invoke('retrieve-checkout', {
+      // Call the confirm-payment function
+      const { data, error } = await supabase.functions.invoke('confirm-payment', {
         body: { session_id: sessionId }
       });
 
@@ -49,7 +49,7 @@ const PaymentSuccessPage: React.FC = () => {
         setSuccess(true);
         toast({
           title: "Payment Successful!",
-          description: `${data.credits_allocated} credits have been added to your account.`,
+          description: `${data.total_credits} credits have been added to your account.`,
         });
       } else {
         console.error('Unexpected response:', data);
@@ -60,7 +60,7 @@ const PaymentSuccessPage: React.FC = () => {
         });
       }
     } catch (err) {
-      console.error('Error calling retrieve-checkout:', err);
+      console.error('Error calling confirm-payment:', err);
       toast({
         title: "Error",
         description: "There was an error processing your payment. Please contact support.",
