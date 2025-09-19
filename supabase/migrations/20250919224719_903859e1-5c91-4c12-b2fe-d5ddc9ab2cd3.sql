@@ -1,0 +1,25 @@
+-- Fix function search path issues
+ALTER FUNCTION public.trigger_set_timestamp() SET search_path = 'public';
+ALTER FUNCTION public.anonymize_old_financial_data() SET search_path = 'public';
+ALTER FUNCTION public.allocate_credits_after_payment() SET search_path = 'public';
+ALTER FUNCTION public.allocate_subscription_credits(uuid, integer) SET search_path = 'public';
+ALTER FUNCTION public.assign_user_role(uuid, text, text) SET search_path = 'public';
+ALTER FUNCTION public.cleanup_expired_sessions() SET search_path = 'public';
+ALTER FUNCTION public.expire_old_credits(uuid) SET search_path = 'public';
+ALTER FUNCTION public.deduct_credits_and_log(uuid, text, integer, text) SET search_path = 'public';
+ALTER FUNCTION public.deduct_credits_fifo(uuid, integer) SET search_path = 'public';
+ALTER FUNCTION public.encrypt_sensitive_data(text) SET search_path = 'public';
+ALTER FUNCTION public.get_active_credits(uuid) SET search_path = 'public';
+ALTER FUNCTION public.get_active_openai_key() SET search_path = 'public';
+ALTER FUNCTION public.get_sales_summary() SET search_path = 'public';
+ALTER FUNCTION public.handle_new_user() SET search_path = 'public';
+ALTER FUNCTION public.log_admin_action(text, text, text, jsonb, jsonb) SET search_path = 'public';
+ALTER FUNCTION public.log_openai_key_access() SET search_path = 'public';
+ALTER FUNCTION public.log_payment_modification() SET search_path = 'public';
+ALTER FUNCTION public.log_sales_data_modification() SET search_path = 'public';
+ALTER FUNCTION public.log_security_event(text, jsonb, uuid) SET search_path = 'public';
+ALTER FUNCTION public.sync_user_credits() SET search_path = 'public';
+ALTER FUNCTION public.sync_user_roles() SET search_path = 'public';
+ALTER FUNCTION public.validate_payment_access(uuid) SET search_path = 'public';
+ALTER FUNCTION public.sync_user_profile_on_insert() SET search_path = 'public';
+ALTER FUNCTION public.sync_user_data() SET search_path = 'public';
