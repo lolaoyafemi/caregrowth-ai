@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Default to user role for security (admins must be explicitly assigned)
         setUserContext({
           id: userId,
-          name: userData?.name || '',
+           name: userData?.name || session?.user?.user_metadata?.full_name || '', 
           email: userEmail,
           role: 'admin', // Temporarily keeping admin for existing users - will be changed to 'user' after migration
           agencyId: undefined
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUserContext({
           id: userData.id,
-          name: userData?.name || '',
+           name: userData?.name || session?.user?.user_metadata?.full_name || '', 
           email: userData.email || userEmail,
           role: userRole,
           agencyId: undefined // Will be added when agencies are implemented
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Default to user role for security (admins must be explicitly assigned)
         setUserContext({
           id: userId,
-          name: userData?.name || '',
+          name: userData?.name || session?.user?.user_metadata?.full_name || '', 
           email: userEmail,
           role: 'admin', // Temporarily keeping admin for existing users - will be changed to 'user' after migration
           agencyId: undefined
