@@ -102,7 +102,7 @@ serve(async (req) => {
 
       // Implement idempotency check for duplicate prevention
       const idempotencyKey = `${event.type}_${session.id}`;
-      const { data: existingEvent, error: eventError } = await supabase
+      const { data: existingEvent } = await supabase
         .from('security_events')
         .select('id')
         .eq('event_type', 'stripe_event_processed')
@@ -123,8 +123,34 @@ serve(async (req) => {
         event_data: { idempotency_key: idempotencyKey, stripe_event_id: event.id }
       });
 
-      // Handle one-time payments (Stripe Payment Link)
-      if (event.type === 'checkout.session.completed' && session.mode === 'payment') {
+      const customerEmail = session.customer_email || session.customer_details?.email;
+      if (!customerEmail) {
+        console.error('No customer email found in session');
+        return new Response('Missing customer email', { status: 400 });
+      }
+
+      // Find user by email
+      let userId: string | null = null;
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('user_id')
+          .eq('email', customerEmail)
+          .single();
+        if (profile?.user_id) userId = profile.user_id;
+      } catch (_) {
+        // Try auth.users if profile not found
+        try {
+          const { data: { users } } = await supabase.auth.admin.listUsers();
+          const existingUser = users.find((u: any) => u.email === customerEmail);
+          if (existingUser) userId = existingUser.id;
+        } catch (error) {
+          console.warn('Could not find user:', error);
+        }
+      }
+
+      // Handle one-time payments
+      if (session.mode === 'payment') {
         console.log('Processing one-time payment session (Payment Link):', session.id);
 
         const customerEmail = session.customer_email || session.customer_details?.email;
@@ -300,138 +326,130 @@ serve(async (req) => {
       }
 
       // Handle subscription sessions
-      if (session.mode !== 'subscription') {
-        console.log('Unknown session mode:', session.mode);
+      if (session.mode === 'subscription') {
+        console.log('Processing subscription checkout for:', customerEmail);
+
+        if (!session.customer || !session.subscription) {
+          console.error('Missing customer or subscription in session');
+          return new Response("Invalid subscription session", { status: 400 });
+        }
+
+        // Get subscription details from Stripe
+        const subscription = await stripe.subscriptions.retrieve(session.subscription, {
+          expand: ['items.data.price']
+        });
+        const priceId = subscription.items.data[0].price.id;
+        
+        // Determine plan details from metadata or price
+        const metadata = session.metadata || {};
+        const planName = metadata.plan_name || subscription.items.data[0].price.nickname || 'Subscription Plan';
+        let creditsPerCycle = parseInt(metadata.credits) || 0;
+        
+        // Fallback credit calculation if not in metadata
+        if (!creditsPerCycle) {
+          const unitAmount = subscription.items.data[0].price.unit_amount || 0;
+          creditsPerCycle = Math.floor(unitAmount / 100) * 20; // $1 = 20 credits default
+        }
+        
+        console.log('Subscription details:', { 
+          subscriptionId: subscription.id, 
+          planName, 
+          creditsPerCycle, 
+          priceId 
+        });
+
+        // Create or update subscription record
+        const { data: subscriptionData, error: subError } = await supabase
+          .from('subscriptions')
+          .upsert({
+            user_id: userId,
+            email: customerEmail,
+            stripe_customer_id: session.customer,
+            stripe_subscription_id: subscription.id,
+            stripe_price_id: priceId,
+            plan_name: planName,
+            credits_per_cycle: creditsPerCycle,
+            status: subscription.status,
+            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            updated_at: new Date().toISOString()
+          }, { 
+            onConflict: 'stripe_subscription_id',
+            ignoreDuplicates: false 
+          })
+          .select()
+          .single();
+
+        if (subError) {
+          console.error('Error creating subscription:', subError);
+          return new Response("Failed to create subscription", { status: 500 });
+        }
+
+        console.log('Subscription created/updated:', subscriptionData.id);
+
+        // Allocate initial credits
+        if (creditsPerCycle > 0) {
+          const expiresAt = new Date(subscription.current_period_end * 1000);
+          
+          await supabase.from('credit_purchases').insert({
+            user_id: userId,
+            email: customerEmail,
+            credits_granted: creditsPerCycle,
+            expires_at: expiresAt.toISOString(),
+            source_type: 'subscription',
+            source_id: subscriptionData.id
+          });
+
+          // Update user profile credits
+          const { data: activeCredits } = await supabase.rpc('get_active_credits', { p_user_id: userId });
+          await supabase
+            .from('user_profiles')
+            .upsert({
+              user_id: userId,
+              email: customerEmail,
+              subscription_id: subscriptionData.id,
+              plan_name: planName,
+              credits: activeCredits || 0,
+              status: 'active',
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id', ignoreDuplicates: false });
+
+          console.log('Initial subscription credits allocated:', creditsPerCycle);
+        }
+
+        // Send subscription confirmation email
+        try {
+          await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-purchase-confirmation-email`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: customerEmail,
+              name: session.customer_details?.name,
+              credits: creditsPerCycle,
+              planName: planName,
+              amount: subscription.items.data[0].price.unit_amount,
+              isSubscription: true
+            })
+          });
+          console.log('Subscription confirmation email sent');
+        } catch (emailError) {
+          console.error('Failed to send subscription email:', emailError);
+        }
+
         return new Response(JSON.stringify({ received: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
       }
 
-      // Get customer details
-      const customerEmail = session.customer_email || session.customer_details?.email;
-      const customerId = session.customer;
-      
-      if (!customerEmail || !customerId) {
-        console.error('Missing customer information');
-        return new Response("Missing customer information", { status: 400 });
-      }
-
-      console.log('Processing subscription for:', customerEmail);
-
-      // Get subscription from Stripe
-      const subscription = await stripe.subscriptions.retrieve(session.subscription);
-      const priceId = subscription.items.data[0].price.id;
-      const price = await stripe.prices.retrieve(priceId);
-      
-      // Determine plan details from metadata or amount
-      const metadata = session.metadata || {};
-      const planName = metadata.plan_name || 'Custom';
-      const creditsPerCycle = parseInt(metadata.credits) || Math.floor((price.unit_amount || 0) / 2);
-      
-      console.log('Subscription details:', { 
-        subscriptionId: subscription.id, 
-        planName, 
-        creditsPerCycle, 
-        priceId 
+      console.log('Unknown session mode:', session.mode);
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
       });
-
-      // Find user
-      let userId = null;
-      try {
-        const { data: { users } } = await supabase.auth.admin.listUsers();
-        const existingUser = users.find(user => user.email === customerEmail);
-        if (existingUser) {
-          userId = existingUser.id;
-        }
-      } catch (error) {
-        console.log('Could not query users:', error);
-      }
-
-      // Create or update subscription record
-      const { data: subscriptionData, error: subError } = await supabase
-        .from('subscriptions')
-        .upsert({
-          user_id: userId,
-          email: customerEmail,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscription.id,
-          stripe_price_id: priceId,
-          plan_name: planName,
-          credits_per_cycle: creditsPerCycle,
-          status: subscription.status,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        }, { 
-          onConflict: 'stripe_subscription_id',
-          ignoreDuplicates: false 
-        })
-        .select()
-        .single();
-
-      if (subError) {
-        console.error('Error creating subscription:', subError);
-        return new Response("Failed to create subscription", { status: 500 });
-      }
-
-      console.log('Subscription created:', subscriptionData.id);
-
-      // Allocate initial credits
-      const creditsAllocated = await supabase.rpc('allocate_subscription_credits', {
-        p_subscription_id: subscriptionData.id,
-        p_credits: creditsPerCycle
-      });
-
-      if (!creditsAllocated.data) {
-        console.error('Failed to allocate credits');
-      } else {
-        console.log('Initial credits allocated successfully');
-      }
-
-      // Update user profile with subscription reference
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: userId,
-          email: customerEmail,
-          subscription_id: subscriptionData.id,
-          plan_name: planName,
-          status: 'active',
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'email',
-          ignoreDuplicates: false
-        });
-
-      if (profileError) {
-        console.error('Error updating user profile:', profileError);
-      }
-
-      // Send subscription confirmation email
-      try {
-        const emailResult = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-purchase-confirmation-email`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: customerEmail,
-            name: session.customer_details?.name,
-            credits: creditsPerCycle,
-            planName: planName,
-            amount: price.unit_amount,
-            isSubscription: true
-          })
-        });
-        
-        if (emailResult.ok) {
-          console.log('Subscription confirmation email sent');
-        }
-      } catch (emailError) {
-        console.error('Failed to send email:', emailError);
-      }
     }
 
     // Handle subscription renewals
@@ -447,7 +465,8 @@ serve(async (req) => {
         });
       }
 
-      console.log('Processing subscription renewal:', invoice.subscription);
+      console.log('Processing subscription renewal for invoice:', invoice.id);
+      console.log('Subscription ID:', invoice.subscription);
 
       // Get subscription from database
       const { data: subscription, error: subError } = await supabase
@@ -457,23 +476,45 @@ serve(async (req) => {
         .single();
 
       if (subError || !subscription) {
-        console.error('Subscription not found:', subError);
+        console.error('Subscription not found for renewal:', subError);
         return new Response("Subscription not found", { status: 404 });
       }
 
-      // Allocate renewal credits
-      const creditsAllocated = await supabase.rpc('allocate_subscription_credits', {
-        p_subscription_id: subscription.id,
-        p_credits: subscription.credits_per_cycle
-      });
+      console.log('Found subscription for renewal:', subscription.id);
 
-      if (!creditsAllocated.data) {
-        console.error('Failed to allocate renewal credits');
-      } else {
+      // Allocate renewal credits
+      if (subscription.credits_per_cycle > 0) {
+        // Get updated subscription details from Stripe
+        const stripeSubscription = await stripe.subscriptions.retrieve(invoice.subscription);
+        const expiresAt = new Date(stripeSubscription.current_period_end * 1000);
+        
+        // Create credit purchase record for renewal
+        await supabase.from('credit_purchases').insert({
+          user_id: subscription.user_id,
+          email: subscription.email,
+          credits_granted: subscription.credits_per_cycle,
+          expires_at: expiresAt.toISOString(),
+          source_type: 'subscription',
+          source_id: subscription.id
+        });
+
+        // Update user profile with new active credits
+        const { data: activeCredits } = await supabase.rpc('get_active_credits', { 
+          p_user_id: subscription.user_id 
+        });
+        
+        await supabase
+          .from('user_profiles')
+          .update({
+            credits: activeCredits || 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', subscription.user_id);
+
         console.log('Renewal credits allocated:', subscription.credits_per_cycle);
       }
 
-      // Update subscription period
+      // Update subscription period and status
       const stripeSubscription = await stripe.subscriptions.retrieve(invoice.subscription);
       await supabase
         .from('subscriptions')
@@ -484,6 +525,13 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('id', subscription.id);
+
+      console.log('Subscription period updated for renewal');
+      
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
     // Handle subscription cancellations
