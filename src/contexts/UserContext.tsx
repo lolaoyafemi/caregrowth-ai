@@ -6,6 +6,7 @@ export type UserRole = 'super_admin' | 'agency_admin' | 'admin' | 'collaborator'
 export interface User {
   id: string;
   name: string;
+  full_name?: string;
   email: string;
   role: UserRole;
   agencyId?: string; // Only for agency users

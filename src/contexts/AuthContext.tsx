@@ -32,13 +32,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserFromPublicTable = async (userId: string, userEmail: string) => {
     try {
-      console.log('Fetching user data from public.users for:', userId);
+      console.log('Fetching user data from user_profiles for:', userId);
       
-      // Fetch user data from public.users table
+      // Fetch user data from user_profiles table
       const { data: userData, error } = await supabase
-        .from('users')
-        .select('id, name, email, role, plan, credits')
-        .eq('id', userId)
+        .from('user_profiles')
+        .select('user_id, full_name, email, role, credits')
+        .eq('user_id', userId)
         .maybeSingle();
 
       if (error) {
@@ -46,7 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Default to user role for security (admins must be explicitly assigned)
         setUserContext({
           id: userId,
-           name: userData?.name || session?.user?.user_metadata?.full_name || '', 
+          name: userData?.full_name || session?.user?.user_metadata?.full_name || userEmail.split('@')[0], 
+          full_name: userData?.full_name || session?.user?.user_metadata?.full_name,
           email: userEmail,
           role: 'admin', // Temporarily keeping admin for existing users - will be changed to 'user' after migration
           agencyId: undefined
@@ -60,8 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userRole = userData.role as 'super_admin' | 'agency_admin' | 'admin' | 'collaborator' | 'content_writer';
         
         setUserContext({
-          id: userData.id,
-           name: userData?.name || session?.user?.user_metadata?.full_name || '', 
+          id: userData.user_id,
+          name: userData?.full_name || session?.user?.user_metadata?.full_name || (userData.email || userEmail).split('@')[0], 
+          full_name: userData?.full_name || session?.user?.user_metadata?.full_name,
           email: userData.email || userEmail,
           role: userRole,
           agencyId: undefined // Will be added when agencies are implemented
@@ -71,7 +73,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Default to user role for security (admins must be explicitly assigned)
         setUserContext({
           id: userId,
-          name: userData?.name || session?.user?.user_metadata?.full_name || '', 
+          name: userData?.full_name || session?.user?.user_metadata?.full_name || userEmail.split('@')[0], 
+          full_name: userData?.full_name || session?.user?.user_metadata?.full_name,
           email: userEmail,
           role: 'admin', // Temporarily keeping admin for existing users - will be changed to 'user' after migration
           agencyId: undefined
@@ -82,7 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fallback to user role for security
       setUserContext({
         id: userId,
-         name: session?.user?.user_metadata?.full_name || '',
+        name: session?.user?.user_metadata?.full_name || userEmail.split('@')[0],
+        full_name: session?.user?.user_metadata?.full_name,
         email: userEmail,
         role: 'admin', // Temporarily keeping admin for existing users - will be changed to 'user' after migration
         agencyId: undefined
