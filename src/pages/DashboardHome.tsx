@@ -38,37 +38,21 @@ const DashboardHome = () => {
 
   // Handle session confirmation from Stripe redirect
   useEffect(() => {
-    const handleSessionConfirmation = async () => {
+    const handleSessionSuccess = () => {
       const sessionId = searchParams.get('session_id');
       if (sessionId) {
-        try {
-          // Confirm the session with Stripe
-          const { data, error } = await supabase.functions.invoke('confirm-subscription', {
-            body: { paymentIntentId: sessionId }
-          });
-
-          if (error) {
-            console.error('Session confirmation error:', error);
-            toast.error('Payment confirmation failed. Please contact support if you were charged.');
-            return;
-          }
-
-          // Show success message and refresh credits
-          toast.success('Payment successful! Your credits have been added.');
-          refetch();
-          refetchUsage();
-          
-          // Remove session_id from URL
-          const newUrl = window.location.pathname + window.location.search.replace(/[?&]session_id=[^&]*/, '').replace(/^&/, '?');
-          window.history.replaceState({}, '', newUrl);
-        } catch (error) {
-          console.error('Unexpected error during session confirmation:', error);
-          toast.error('Payment confirmation failed. Please contact support.');
-        }
+        // Show success message and refresh credits
+        toast.success('Payment successful! Your subscription is now active.');
+        refetch();
+        refetchUsage();
+        
+        // Remove session_id from URL
+        const newUrl = window.location.pathname + window.location.search.replace(/[?&]session_id=[^&]*/, '').replace(/^&/, '?');
+        window.history.replaceState({}, '', newUrl);
       }
     };
 
-    handleSessionConfirmation();
+    handleSessionSuccess();
   }, [searchParams, refetch, refetchUsage]);
 
   // Add animation effect when credits change
