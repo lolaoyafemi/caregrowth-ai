@@ -8,6 +8,7 @@ import NotFound from './pages/NotFound';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentCancelledPage from './pages/PaymentCancelledPage';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardHome from './pages/DashboardHome';
 import SocialMediaTool from './pages/SocialMediaTool';
@@ -61,6 +62,7 @@ const AppContent = () => {
           <Route path="/registration-success" element={<RegistrationSuccessPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
+          <Route path="/payment-cancelled" element={<PaymentCancelledPage />} />
           <Route path="/stripe-payment" element={<StripePaymentPage />} />
           {/* Legacy payment routes removed: unified Stripe Checkout flow in use */}
           <Route path="/help" element={<HelpPage />} />
