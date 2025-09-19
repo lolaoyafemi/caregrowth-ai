@@ -49,8 +49,8 @@ export const useGoogleDriveConnection = () => {
   const connectGoogleDrive = async () => {
     setConnecting(true);
     try {
-      // Redirect to Google OAuth
-      window.location.href = '/connect-google';
+      // Redirect to Google OAuth via Supabase edge function
+      window.location.href = 'https://ljtikbkilyeyuexzhaqd.supabase.co/functions/v1/connect-google';
     } catch (error) {
       console.error('Error connecting to Google Drive:', error);
       toast.error('Failed to connect to Google Drive');
