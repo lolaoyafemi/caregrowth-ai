@@ -29,7 +29,7 @@ export const showInsufficientCreditsNotification = (actionName: string) => {
         window.dispatchEvent(event);
         
         // Fallback to direct navigation
-        window.location.href = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y';
+        window.location.href = '/stripe-payment';
       }
     }
   });
@@ -101,7 +101,7 @@ export const validateBulkCredits = (
       action: {
         label: 'Buy Credits',
         onClick: () => {
-          window.location.href = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y';
+          window.location.href = '/stripe-payment';
         }
       }
     });
@@ -125,7 +125,7 @@ export const checkCreditExpiration = (expiresAt: string | null) => {
       action: {
         label: 'Buy Credits',
         onClick: () => {
-          window.location.href = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y';
+          window.location.href = '/stripe-payment';
         }
       }
     });
@@ -136,7 +136,7 @@ export const checkCreditExpiration = (expiresAt: string | null) => {
       action: {
         label: 'Buy Credits',
         onClick: () => {
-          window.location.href = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y';
+          window.location.href = '/stripe-payment';
         }
       }
     });

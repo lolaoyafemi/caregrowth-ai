@@ -116,7 +116,7 @@ const SocialMediaTool = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y', '_blank')
+          onClick: () => window.location.href = '/stripe-payment'
         }
       });
       return;
@@ -216,7 +216,7 @@ const SocialMediaTool = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y', '_blank')
+          onClick: () => window.location.href = '/stripe-payment'
         }
       });
       return;
@@ -373,7 +373,7 @@ const SocialMediaTool = () => {
                     variant="outline" 
                     size="sm" 
                     className="ml-2"
-                    onClick={() => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y', '_blank')}
+                    onClick={() => window.location.href = '/stripe-payment'}
                   >
                     Buy Credits
                   </Button>

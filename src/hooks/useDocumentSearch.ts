@@ -49,7 +49,7 @@ export const useDocumentSearch = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y', '_blank')
+          onClick: () => window.location.href = '/stripe-payment'
         }
       });
       return null;
@@ -130,7 +130,7 @@ export const useDocumentSearch = () => {
         duration: 5000,
         action: {
           label: "Buy Credits",
-          onClick: () => window.open('https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y', '_blank')
+          onClick: () => window.location.href = '/stripe-payment'
         }
       });
       return null;

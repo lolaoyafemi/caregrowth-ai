@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
@@ -32,11 +31,8 @@ const StripePaymentPage = () => {
         description: "Your payment has been cancelled. You can try again anytime.",
         variant: "default"
       });
-      // Redirect to payment selection page
-      navigate('/payment', { replace: true });
-      return;
     }
-  }, [searchParams, navigate, toast]);
+  }, [searchParams, toast]);
 
   const plans = [
     {
@@ -55,7 +51,6 @@ const StripePaymentPage = () => {
       popular: true
     }
   ];
-
 
   const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
 
@@ -105,11 +100,13 @@ const StripePaymentPage = () => {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('create-payment', {
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           planName: selectedPlanData.name,
+          plan: selectedPlanData.id,
           amount: selectedPlanData.price,
           email: user.email,
+          user_id: user.id,
           credits: selectedPlanData.credits,
           couponCode: couponCode.trim() || undefined
         }
@@ -137,22 +134,21 @@ const StripePaymentPage = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <main className="flex-grow py-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="mb-8">
-            <Link to="/payment" className="inline-flex items-center text-caregrowth-blue">
+            <Link to="/dashboard" className="inline-flex items-center text-caregrowth-blue">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Plans
+              Back to Dashboard
             </Link>
           </div>
 
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">Complete Your Purchase</h1>
-            <p className="text-xl text-gray-600">Secure payment processing</p>
+            <h1 className="text-4xl font-bold mb-4">Subscribe to CareGrowth Assistant</h1>
+            <p className="text-xl text-gray-600">Get monthly credits and access to all features</p>
             {user && (
               <p className="text-sm text-gray-500 mt-2">Logged in as: {user.email}</p>
             )}
@@ -163,7 +159,7 @@ const StripePaymentPage = () => {
           <div className="space-y-8">
               <div className="flex justify-center">
                 <div className="w-full max-w-lg">
-                  <h2 className="text-2xl font-bold mb-6 text-center">Your Credit Package</h2>
+                  <h2 className="text-2xl font-bold mb-6 text-center">Monthly Subscription</h2>
                   {plans.map(plan => (
                     <Card
                       key={plan.id}
@@ -200,7 +196,7 @@ const StripePaymentPage = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center justify-center">
                       <CreditCard className="w-5 h-5 mr-2" />
-                      Complete Purchase
+                      Complete Subscription
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 text-center">
@@ -208,10 +204,10 @@ const StripePaymentPage = () => {
                       <>
                         <div className="flex justify-between">
                           <span>{selectedPlanData.name}</span>
-                          <span className="font-bold">${selectedPlanData.price}</span>
+                          <span className="font-bold">${selectedPlanData.price}/month</span>
                         </div>
                         <div className="text-sm text-gray-600">
-                          {selectedPlanData.credits} credits - Monthly subscription
+                          {selectedPlanData.credits} credits per month - Recurring subscription
                         </div>
                       </>
                      )}

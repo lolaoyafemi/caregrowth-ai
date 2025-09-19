@@ -246,8 +246,9 @@ serve(async (req) => {
       console.log('Created new Stripe customer:', stripeCustomer.id);
     }
 
-    // Create recurring subscription session
-    const session = await stripe.checkout.sessions.create({
+    // Validate coupon if provided
+    const { couponCode } = requestBody;
+    let sessionData: any = {
       customer: stripeCustomer.id,
       client_reference_id: userId,
       metadata: {
@@ -263,8 +264,8 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: `${siteUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/stripe-payment`,
+      success_url: `https://www.caregrowthassistant.com/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://www.caregrowthassistant.com/stripe-payment`,
       expires_at: Math.floor(Date.now() / 1000) + (30 * 60),
       payment_method_types: ['card'],
       billing_address_collection: 'auto',
@@ -276,7 +277,28 @@ serve(async (req) => {
           plan_name: planName,
         }
       }
-    });
+    };
+
+    // Add coupon if provided
+    if (couponCode) {
+      try {
+        // Validate coupon exists and is valid
+        const coupon = await stripe.coupons.retrieve(couponCode);
+        if (coupon.valid) {
+          sessionData.discounts = [{
+            coupon: couponCode
+          }];
+          console.log('Applied coupon:', couponCode);
+        } else {
+          console.warn('Coupon is not valid:', couponCode);
+        }
+      } catch (couponError) {
+        console.warn('Coupon validation failed, proceeding without discount:', couponError.message);
+      }
+    }
+
+    // Create recurring subscription session
+    const session = await stripe.checkout.sessions.create(sessionData);
 
     console.log('Stripe checkout session created successfully:', session.id);
 

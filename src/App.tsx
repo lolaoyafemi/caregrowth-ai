@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Index from './pages/Index';
-// Removed legacy payment routes
+import StripePaymentPage from './pages/StripePaymentPage';
 import HelpPage from './pages/HelpPage';
 import NotFound from './pages/NotFound';
 import PrivacyPage from './pages/PrivacyPage';
@@ -61,7 +61,8 @@ const AppContent = () => {
           <Route path="/registration-success" element={<RegistrationSuccessPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
-          {/* Legacy payment routes removed: unified Payment Link flow in use */}
+          <Route path="/stripe-payment" element={<StripePaymentPage />} />
+          {/* Legacy payment routes removed: unified Stripe Checkout flow in use */}
           <Route path="/help" element={<HelpPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />

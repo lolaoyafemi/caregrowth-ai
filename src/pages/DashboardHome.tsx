@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Progress } from '@/components/ui/progress';
 import { 
   Tooltip,
@@ -25,6 +25,7 @@ const DashboardHome = () => {
   const { metrics: usageMetrics, loading: usageLoading, refetch: refetchUsage } = useUsageTracking();
   const [creditUpdateAnimation, setCreditUpdateAnimation] = useState(false);
   const [previousCredits, setPreviousCredits] = useState(credits);
+  const [searchParams] = useSearchParams();
   
   const isSuperAdmin = user?.role === 'super_admin';
   const isMainAdmin = user?.role === 'admin';
@@ -34,6 +35,41 @@ const DashboardHome = () => {
     refetch();
     refetchUsage();
   }, []);
+
+  // Handle session confirmation from Stripe redirect
+  useEffect(() => {
+    const handleSessionConfirmation = async () => {
+      const sessionId = searchParams.get('session_id');
+      if (sessionId) {
+        try {
+          // Confirm the session with Stripe
+          const { data, error } = await supabase.functions.invoke('confirm-subscription', {
+            body: { paymentIntentId: sessionId }
+          });
+
+          if (error) {
+            console.error('Session confirmation error:', error);
+            toast.error('Payment confirmation failed. Please contact support if you were charged.');
+            return;
+          }
+
+          // Show success message and refresh credits
+          toast.success('Payment successful! Your credits have been added.');
+          refetch();
+          refetchUsage();
+          
+          // Remove session_id from URL
+          const newUrl = window.location.pathname + window.location.search.replace(/[?&]session_id=[^&]*/, '').replace(/^&/, '?');
+          window.history.replaceState({}, '', newUrl);
+        } catch (error) {
+          console.error('Unexpected error during session confirmation:', error);
+          toast.error('Payment confirmation failed. Please contact support.');
+        }
+      }
+    };
+
+    handleSessionConfirmation();
+  }, [searchParams, refetch, refetchUsage]);
 
   // Add animation effect when credits change
   useEffect(() => {
@@ -148,7 +184,7 @@ const DashboardHome = () => {
               </div>
               <Progress value={getRemainingPercentage()} className="h-2 mb-4 bg-gray-100 [&>div]:bg-caregrowth-blue" />
               <div className="flex gap-2">
-                <Button className="flex-1 w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200" onClick={() => window.location.href = 'https://buy.stripe.com/3cI28sbNC05F3QCeXHbsc0y'}>
+                <Button className="flex-1 w-full bg-caregrowth-blue hover:bg-caregrowth-blue/90 transition-all duration-200" onClick={() => window.location.href = '/stripe-payment'}>
                   Buy More Credits
                 </Button>
                 <Button 
