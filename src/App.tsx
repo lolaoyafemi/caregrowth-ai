@@ -105,9 +105,7 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <UserProvider>
         <AuthProvider>
-          <SecurityProvider>
-            <AppContent />
-          </SecurityProvider>
+          <AppContent />
         </AuthProvider>
       </UserProvider>
     </QueryClientProvider>

@@ -29,7 +29,10 @@ interface SecurityProviderProps {
 export const SecurityProvider: React.FC<SecurityProviderProps> = ({ children }) => {
   const [isSecure, setIsSecure] = useState(true);
   const [securityLevel, setSecurityLevel] = useState<'low' | 'medium' | 'high'>('medium');
-  const { session, user } = useAuth();
+  
+  // Add null check for auth context
+  const authContext = useAuth();
+  const { session, user } = authContext || { session: null, user: null };
 
   // Monitor security events
   useEffect(() => {
