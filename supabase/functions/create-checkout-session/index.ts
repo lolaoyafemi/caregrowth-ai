@@ -265,10 +265,11 @@ serve(async (req) => {
         },
       ],
       success_url: `https://www.caregrowthassistant.com/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `https://www.caregrowthassistant.com/stripe-payment`,
+      cancel_url: `https://www.caregrowthassistant.com/payment-cancelled`,
       expires_at: Math.floor(Date.now() / 1000) + (30 * 60),
       payment_method_types: ['card'],
       billing_address_collection: 'auto',
+      allow_promotion_codes: true,
       subscription_data: {
         metadata: {
           user_id: userId,
