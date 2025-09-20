@@ -20,6 +20,12 @@ serve(async (req: Request) => {
     // Normalize client id to avoid leading/trailing spaces that break OAuth
     const clientId = GOOGLE_CLIENT_ID.trim();
 
+    // Derive return URL (prefer the page the user clicked from)
+    const referer = req.headers.get('referer') || '';
+    const origin = req.headers.get('origin') || '';
+    const returnTo = referer || origin || '';
+    const state = btoa(JSON.stringify({ returnTo, ts: Date.now() }));
+
     // Construct Google OAuth URL
     const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     googleAuthUrl.searchParams.set('client_id', clientId);
@@ -29,6 +35,7 @@ serve(async (req: Request) => {
     googleAuthUrl.searchParams.set('access_type', 'offline');
     googleAuthUrl.searchParams.set('prompt', 'consent');
     googleAuthUrl.searchParams.set('include_granted_scopes', 'true');
+    googleAuthUrl.searchParams.set('state', state);
 
     console.log('Redirecting to Google OAuth:', googleAuthUrl.toString());
 

@@ -92,8 +92,24 @@ serve(async (req: Request) => {
     // Store connection in Supabase (we'll need to handle auth context)
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     
-    // For now, redirect back with success and let the frontend handle storage
-    const redirectUrl = new URL('/');
+    // Determine where to send the user back (from state)
+    const state = url.searchParams.get('state');
+    let returnTo = '';
+    if (state) {
+      try {
+        const decoded = JSON.parse(atob(state));
+        if (decoded?.returnTo && typeof decoded.returnTo === 'string') {
+          returnTo = decoded.returnTo;
+        }
+      } catch (_) {
+        // ignore state parse errors
+      }
+    }
+
+    const fallback = 'https://ljtikbkilyeyuexzhaqd.supabase.co/';
+    const target = returnTo && /^https?:\/\//i.test(returnTo) ? returnTo : fallback;
+    const redirectUrl = new URL(target);
+
     redirectUrl.searchParams.set('google_success', 'true');
     redirectUrl.searchParams.set('access_token', tokens.access_token);
     redirectUrl.searchParams.set('refresh_token', tokens.refresh_token || '');
@@ -102,7 +118,7 @@ serve(async (req: Request) => {
     redirectUrl.searchParams.set('google_email', userInfo.email);
     redirectUrl.searchParams.set('scope', tokens.scope || '');
 
-    console.log('OAuth successful, redirecting with tokens');
+    console.log('OAuth successful, redirecting with tokens to', redirectUrl.origin);
 
     return new Response(null, {
       status: 302,
