@@ -42,3 +42,6 @@ verify_jwt = false
 
 [functions.google-drive-enhanced]
 verify_jwt = true
+
+[functions.google-drive-list-folders]
+verify_jwt = true

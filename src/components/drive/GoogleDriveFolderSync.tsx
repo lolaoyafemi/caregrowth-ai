@@ -56,6 +56,7 @@ const GoogleDriveFolderSync: React.FC = () => {
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
+  const [showFolderBrowser, setShowFolderBrowser] = useState(false);
 
   // Check for PDF files in the selected folder
   const scanForPDFFiles = useCallback(async () => {
@@ -210,14 +211,16 @@ const GoogleDriveFolderSync: React.FC = () => {
                         Selected Folder: {connection.selected_folder_name}
                       </span>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => {
-                      // Clear selected folder
-                      selectFolder('', '');
-                    }}>
+                    <Button variant="outline" size="sm" onClick={() => setShowFolderBrowser(true)}>
                       Change
                     </Button>
                   </div>
                 </div>
+                {showFolderBrowser && (
+                  <div className="mt-4">
+                    <GoogleDriveFolderBrowser onFolderSelected={() => { setShowFolderBrowser(false); refetch(); }} />
+                  </div>
+                )}
               ) : (
                 <div className="space-y-4">
                   <div className="p-6 text-center border-2 border-dashed border-gray-300 rounded-lg">

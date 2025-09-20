@@ -25,6 +25,7 @@ export const useGoogleDriveConnection = () => {
   const [connecting, setConnecting] = useState(false);
   const [folders, setFolders] = useState<GoogleFolder[]>([]);
   const [loadingFolders, setLoadingFolders] = useState(false);
+  const [folderError, setFolderError] = useState<string | null>(null);
 
   const fetchConnection = async () => {
     try {
@@ -173,55 +174,74 @@ export const useGoogleDriveConnection = () => {
       return;
     }
 
-    console.log(`Listing folders ${parentFolderId ? `in parent: ${parentFolderId}` : 'in root'}`);
-    
+    console.log(`Listing folders ${parentFolderId ? `in parent: ${parentFolderId}` : 'in My Drive (root)'}`);
+    setFolderError(null);
     setLoadingFolders(true);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         toast.error('Please log in to access folders');
-        setLoadingFolders(false);
         return;
       }
 
+      // Top-level: use lightweight dedicated function
+      if (!parentFolderId) {
+        const { data, error } = await supabase.functions.invoke('google-drive-list-folders', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: { scope: 'root' },
+        });
+
+        if (error) {
+          console.error('google-drive-list-folders error:', { status: error.status, message: error.message });
+          setFolderError(error.message || 'Unable to load folders');
+          toast.error('Unable to load folders. Please reconnect Google Drive.');
+          setFolders([]);
+          return;
+        }
+
+        if (data?.success) {
+          console.log(`Found ${data.folders?.length || 0} root folders`);
+          setFolders(data.folders || []);
+        } else {
+          const msg = data?.error || 'Unknown error loading folders';
+          console.error('google-drive-list-folders server error:', msg);
+          setFolderError(msg);
+          toast.error(msg);
+          setFolders([]);
+        }
+        return;
+      }
+
+      // Child folders: use enhanced function for deep navigation
       const { data, error } = await supabase.functions.invoke('google-drive-enhanced', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: {
-          action: 'listFolders',
-          folder_id: parentFolderId,
-        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { action: 'listFolders', folder_id: parentFolderId },
       });
 
       if (error) {
-        console.error('Edge function error:', error);
-        throw error;
-      }
-
-      console.log('List folders response:', data);
-
-      if (data?.reconnect_required) {
-        console.warn('Google Drive connection expired');
-        toast.error('Google Drive connection expired. Please reconnect.');
-        setConnection(null);
+        console.error('google-drive-enhanced listFolders error:', { status: error.status, message: error.message });
+        setFolderError(error.message || 'Unable to load folders');
+        toast.error('Unable to load folders.');
+        setFolders([]);
         return;
       }
 
       if (data?.success) {
-        console.log(`Found ${data.folders?.length || 0} folders`);
+        console.log(`Found ${data.folders?.length || 0} folders in parent ${parentFolderId}`);
         setFolders(data.folders || []);
-      } else if (data?.error) {
-        console.error('Server error:', data.error);
-        toast.error(data.error);
-        setFolders([]);
       } else {
-        console.warn('No success flag or error in response:', data);
+        const msg = data?.error || 'Unknown error loading folders';
+        console.error('google-drive-enhanced server error:', msg);
+        setFolderError(msg);
+        toast.error(msg);
         setFolders([]);
       }
-    } catch (error) {
-      console.error('Error listing folders:', error);
-      toast.error('Failed to load folders from Google Drive: ' + (error?.message || 'Unknown error'));
+    } catch (error: any) {
+      console.error('Error listing folders:', { message: error?.message, name: error?.name });
+      setFolderError(error?.message || 'Failed to load folders');
+      toast.error('Failed to load folders from Google Drive');
+      setFolders([]);
     } finally {
       setLoadingFolders(false);
     }
@@ -397,5 +417,6 @@ export const useGoogleDriveConnection = () => {
     listFolders,
     selectFolder,
     refetch: fetchConnection,
+    folderError,
   };
 };

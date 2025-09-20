@@ -19,6 +19,7 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
     loadingFolders,
     listFolders,
     selectFolder,
+    folderError,
   } = useGoogleDriveConnection();
 
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>();
@@ -154,15 +155,10 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
             )}
           </div>
 
-          {/* Current selection */}
-          {connection.selected_folder_name && (
-            <div className="bg-muted/50 rounded-lg p-3">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-green-600 border-green-200">
-                  Currently Selected
-                </Badge>
-                <span className="text-sm font-medium">{connection.selected_folder_name}</span>
-              </div>
+          {/* Error state */}
+          {folderError && (
+            <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
+              {folderError}
             </div>
           )}
 
@@ -175,7 +171,7 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
               </div>
             ) : folders.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
-                No folders found in this location
+                {folderError ? 'Unable to load folders' : 'No folders found in this location'}
               </div>
             ) : (
               <div className="divide-y">
