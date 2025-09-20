@@ -29,6 +29,7 @@ import { UserProvider } from './contexts/UserContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SecurityProvider } from './components/security/SecurityProvider';
 import { Toaster } from '@/components/ui/toaster';
+import GoogleOAuthCallbackListener from '@/components/drive/GoogleOAuthCallbackListener';
 
 // Create QueryClient instance
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const AppContent = () => {
     <BrowserRouter>
       <div className="min-h-screen bg-gray-50">
         <Toaster />
+        <GoogleOAuthCallbackListener />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<LoginPage />} />
