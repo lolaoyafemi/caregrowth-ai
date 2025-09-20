@@ -18,6 +18,7 @@ import {
 import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { useGoogleDriveSync } from '@/hooks/useGoogleDriveSync';
+import { GoogleDriveFolderBrowser } from '@/components/drive/GoogleDriveFolderBrowser';
 import { toast } from 'sonner';
 
 interface SyncStatus {
@@ -205,12 +206,17 @@ const GoogleDriveFolderSync: React.FC = () => {
               </div>
 
               {!connection.selected_folder_id && (
-                <Alert>
-                  <AlertCircleIcon className="h-4 w-4" />
-                  <AlertDescription>
-                    Please select a Google Drive folder to sync documents from.
-                  </AlertDescription>
-                </Alert>
+                <div className="space-y-4">
+                  <Alert>
+                    <AlertCircleIcon className="h-4 w-4" />
+                    <AlertDescription>
+                      Please select a Google Drive folder to sync documents from.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  {/* Add folder browser */}
+                  <GoogleDriveFolderBrowser />
+                </div>
               )}
             </div>
           )}
