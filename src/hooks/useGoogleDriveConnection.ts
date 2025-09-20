@@ -31,7 +31,7 @@ export const useGoogleDriveConnection = () => {
       const { data, error } = await supabase
         .from('google_connections')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching connection:', error);
@@ -49,6 +49,14 @@ export const useGoogleDriveConnection = () => {
   const connectGoogleDrive = async () => {
     setConnecting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.info('Please log in to connect Google Drive');
+        localStorage.setItem('pendingGoogleConnect', 'true');
+        const redirect = encodeURIComponent(window.location.href);
+        window.location.href = `/login?redirect=${redirect}`;
+        return;
+      }
       // Redirect to Google OAuth via Supabase edge function
       window.location.href = 'https://ljtikbkilyeyuexzhaqd.supabase.co/functions/v1/connect-google';
     } catch (error) {
@@ -72,7 +80,12 @@ export const useGoogleDriveConnection = () => {
       // Get current user's agency
       const { data: user } = await supabase.auth.getUser();
       console.log('storeConnection - Current user:', { hasUser: !!user.user, userId: user.user?.id });
-      if (!user.user) throw new Error('No authenticated user');
+      if (!user.user) {
+        console.warn('storeConnection - No authenticated user; deferring connection save until after login');
+        localStorage.setItem('pendingGoogleTokens', JSON.stringify(connectionData));
+        toast.info('Please log in to finish connecting Google Drive');
+        return;
+      }
 
       // Get or create agency for user
       console.log('storeConnection - Looking for existing agency...');
@@ -286,6 +299,28 @@ export const useGoogleDriveConnection = () => {
 
   useEffect(() => {
     fetchConnection();
+  }, []);
+
+  // After login, if OAuth tokens were captured before authentication, finalize connection
+  useEffect(() => {
+    const processPending = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const raw = localStorage.getItem('pendingGoogleTokens');
+        if (raw) {
+          const tokens = JSON.parse(raw);
+          await storeConnection(tokens);
+          localStorage.removeItem('pendingGoogleTokens');
+        }
+        if (localStorage.getItem('pendingGoogleConnect') === 'true') {
+          localStorage.removeItem('pendingGoogleConnect');
+        }
+      } catch (e) {
+        console.error('Error processing pending Google tokens:', e);
+      }
+    };
+    processPending();
   }, []);
 
   return {

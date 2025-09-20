@@ -66,6 +66,7 @@ export const GoogleDriveConnection: React.FC = () => {
               onClick={connectGoogleDrive} 
               disabled={connecting}
               className="w-full"
+              aria-label="Connect Google Drive"
             >
               {connecting ? (
                 <>

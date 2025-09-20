@@ -182,7 +182,7 @@ const GoogleDriveFolderSync: React.FC = () => {
             <div className="text-center py-8">
               <WifiOffIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600 mb-4">Connect your Google Drive to enable folder synchronization</p>
-              <Button onClick={connectGoogleDrive} disabled={connecting}>
+              <Button onClick={connectGoogleDrive} disabled={connecting} aria-label="Connect Google Drive">
                 <LinkIcon className="h-4 w-4 mr-2" />
                 {connecting ? 'Connecting...' : 'Connect Google Drive'}
               </Button>
