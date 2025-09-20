@@ -203,24 +203,26 @@ const GoogleDriveFolderSync: React.FC = () => {
 
               {/* Folder Selection Status */}
               {connection.selected_folder_id ? (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                      <span className="font-medium text-green-800">
-                        Selected Folder: {connection.selected_folder_name}
-                      </span>
+                <>
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                        <span className="font-medium text-green-800">
+                          Selected Folder: {connection.selected_folder_name}
+                        </span>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => setShowFolderBrowser(true)}>
+                        Change
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setShowFolderBrowser(true)}>
-                      Change
-                    </Button>
                   </div>
-                </div>
-                {showFolderBrowser && (
-                  <div className="mt-4">
-                    <GoogleDriveFolderBrowser onFolderSelected={() => { setShowFolderBrowser(false); refetch(); }} />
-                  </div>
-                )}
+                  {showFolderBrowser && (
+                    <div className="mt-4">
+                      <GoogleDriveFolderBrowser onFolderSelected={() => { setShowFolderBrowser(false); refetch(); }} />
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="space-y-4">
                   <div className="p-6 text-center border-2 border-dashed border-gray-300 rounded-lg">
