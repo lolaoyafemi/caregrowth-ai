@@ -31,7 +31,7 @@ serve(async (req: Request) => {
     googleAuthUrl.searchParams.set('client_id', clientId);
     googleAuthUrl.searchParams.set('redirect_uri', redirectUri);
     googleAuthUrl.searchParams.set('response_type', 'code');
-    googleAuthUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/drive.readonly profile email');
+    googleAuthUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.metadata.readonly profile email');
     googleAuthUrl.searchParams.set('access_type', 'offline');
     googleAuthUrl.searchParams.set('prompt', 'consent');
     googleAuthUrl.searchParams.set('include_granted_scopes', 'true');

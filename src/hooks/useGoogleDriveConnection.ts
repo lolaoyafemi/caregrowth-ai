@@ -168,46 +168,84 @@ export const useGoogleDriveConnection = () => {
   };
 
   const listFolders = async (parentFolderId?: string) => {
-    if (!connection) return;
+    if (!connection) {
+      console.error('No connection available for listing folders');
+      return;
+    }
 
+    console.log(`Listing folders ${parentFolderId ? `in parent: ${parentFolderId}` : 'in root'}`);
+    
     setLoadingFolders(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Please log in to access folders');
+        setLoadingFolders(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('google-drive-enhanced', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: {
           action: 'listFolders',
           folder_id: parentFolderId,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      console.log('List folders response:', data);
 
       if (data?.reconnect_required) {
+        console.warn('Google Drive connection expired');
         toast.error('Google Drive connection expired. Please reconnect.');
         setConnection(null);
         return;
       }
 
       if (data?.success) {
+        console.log(`Found ${data.folders?.length || 0} folders`);
         setFolders(data.folders || []);
       } else if (data?.error) {
+        console.error('Server error:', data.error);
         toast.error(data.error);
         setFolders([]);
       } else {
+        console.warn('No success flag or error in response:', data);
         setFolders([]);
       }
     } catch (error) {
       console.error('Error listing folders:', error);
-      toast.error('Failed to load folders from Google Drive');
+      toast.error('Failed to load folders from Google Drive: ' + (error?.message || 'Unknown error'));
     } finally {
       setLoadingFolders(false);
     }
   };
 
   const selectFolder = async (folderId: string, folderName: string) => {
-    if (!connection) return;
+    if (!connection) {
+      console.error('No connection available for folder selection');
+      return;
+    }
+
+    console.log(`Selecting folder: ${folderName} (${folderId})`);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Please log in to select a folder');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('google-drive-enhanced', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: {
           action: 'selectFolder',
           folder_id: folderId,
@@ -215,9 +253,15 @@ export const useGoogleDriveConnection = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      console.log('Select folder response:', data);
 
       if (data?.success) {
+        // Update local state
         setConnection(prev => prev ? {
           ...prev,
           selected_folder_id: folderId,
@@ -225,10 +269,17 @@ export const useGoogleDriveConnection = () => {
         } : null);
 
         toast.success(`Selected folder: ${folderName}`);
+        console.log(`Successfully selected folder: ${folderName}`);
+      } else if (data?.error) {
+        console.error('Server error:', data.error);
+        toast.error(data.error);
+      } else {
+        console.error('Unexpected response:', data);
+        toast.error('Unexpected response from server');
       }
     } catch (error) {
       console.error('Error selecting folder:', error);
-      toast.error('Failed to select folder');
+      toast.error('Failed to select folder: ' + (error?.message || 'Unknown error'));
     }
   };
 

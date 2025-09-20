@@ -76,7 +76,7 @@ serve(async (req: Request) => {
       .single();
 
     if (connectionError || !connection) {
-      console.error('No Google connection found:', connectionError);
+      console.error('No Google connection found for user:', user.id, connectionError);
       return new Response(
         JSON.stringify({ error: "No Google Drive connection found. Please connect your Google Drive first." }),
         { 
@@ -85,6 +85,8 @@ serve(async (req: Request) => {
         }
       );
     }
+
+    console.log(`Found Google connection for user ${user.id}: ${connection.google_email}`);
 
     let { access_token, refresh_token, expires_at } = connection;
 
@@ -277,8 +279,15 @@ async function handleListFolders(accessToken: string, parentFolderId?: string, p
 
     if (!driveRes.ok) {
       const errorText = await driveRes.text();
-      console.error('Drive API error:', errorText);
-      throw new Error("Failed to fetch Drive folders");
+      console.error(`Drive API folders error (${driveRes.status}):`, errorText);
+      
+      if (driveRes.status === 401) {
+        throw new Error("Google Drive access expired. Please reconnect.");
+      } else if (driveRes.status === 403) {
+        throw new Error("Insufficient Google Drive permissions. Please reconnect with proper permissions.");
+      } else {
+        throw new Error(`Failed to fetch Drive folders (${driveRes.status})`);
+      }
     }
 
     const folders: GoogleDriveResponse = await driveRes.json();

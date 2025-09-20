@@ -53,11 +53,37 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
   };
 
   const handleSelectFolder = async () => {
-    if (!currentFolderId) return;
+    if (!currentFolderId) {
+      console.error('GoogleDriveFolderBrowser: No folder ID available for selection');
+      toast.error('No folder selected');
+      return;
+    }
+    
     const currentFolder = folderPath[folderPath.length - 1];
-    if (currentFolder) {
+    if (!currentFolder) {
+      console.error('GoogleDriveFolderBrowser: No current folder in path');
+      toast.error('No folder selected');
+      return;
+    }
+
+    console.log('GoogleDriveFolderBrowser: Selecting folder:', {
+      id: currentFolder.id,
+      name: currentFolder.name,
+      path: folderPath
+    });
+    
+    try {
       await selectFolder(currentFolder.id, currentFolder.name);
-      onFolderSelected?.(currentFolder);
+      console.log('GoogleDriveFolderBrowser: Folder selection completed successfully');
+      
+      // Call the callback to refresh the parent component
+      if (onFolderSelected) {
+        console.log('GoogleDriveFolderBrowser: Calling onFolderSelected callback');
+        onFolderSelected(currentFolder);
+      }
+    } catch (error) {
+      console.error('GoogleDriveFolderBrowser: Error selecting folder:', error);
+      toast.error('Failed to select folder: ' + (error?.message || 'Unknown error'));
     }
   };
   if (!connection) {

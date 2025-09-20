@@ -175,7 +175,7 @@ const GoogleDriveFolderSync: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FolderIcon className="h-5 w-5" />
-            Google Drive Folder Sync
+            {connection?.selected_folder_name ? `Syncing: ${connection.selected_folder_name}` : 'Google Drive Folder Sync'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -193,29 +193,39 @@ const GoogleDriveFolderSync: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">{connection.google_email}</p>
-                  <p className="text-sm text-gray-600">
-                    {connection.selected_folder_name ? 
-                      `Syncing: ${connection.selected_folder_name}` : 
-                      'No folder selected'
-                    }
-                  </p>
+                  <p className="text-sm text-gray-600">Connected to Google Drive</p>
                 </div>
                 <Button variant="outline" onClick={disconnectGoogleDrive}>
                   Disconnect
                 </Button>
               </div>
 
-              {!connection.selected_folder_id && (
+              {/* Folder Selection Status */}
+              {connection.selected_folder_id ? (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                      <span className="font-medium text-green-800">
+                        Selected Folder: {connection.selected_folder_name}
+                      </span>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      // Clear selected folder
+                      selectFolder('', '');
+                    }}>
+                      Change
+                    </Button>
+                  </div>
+                </div>
+              ) : (
                 <div className="space-y-4">
-                  <Alert>
-                    <AlertCircleIcon className="h-4 w-4" />
-                    <AlertDescription>
-                      Please select a Google Drive folder to sync documents from.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  {/* Add folder browser */}
-                  <GoogleDriveFolderBrowser onFolderSelected={() => refetch()} />
+                  <div className="p-6 text-center border-2 border-dashed border-gray-300 rounded-lg">
+                    <FolderIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No folder selected</h3>
+                    <p className="text-gray-500 mb-4">Choose a Google Drive folder to sync your documents</p>
+                    <GoogleDriveFolderBrowser onFolderSelected={() => refetch()} />
+                  </div>
                 </div>
               )}
             </div>
