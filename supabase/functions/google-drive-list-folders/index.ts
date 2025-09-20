@@ -79,27 +79,65 @@ serve(async (req: Request) => {
       }
     }
 
-    // List top-level folders under My Drive root
-    const params = new URLSearchParams({
-      q: "mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false",
+    // List top-level folders under My Drive root with Shared Drives support
+    const baseParams = {
       fields: "files(id,name)",
       pageSize: '100',
-    });
+      includeItemsFromAllDrives: 'true',
+      supportsAllDrives: 'true',
+      spaces: 'drive',
+    } as const;
 
-    const driveRes = await fetch(`${GOOGLE_DRIVE_FILES_URL}?${params}`, {
+    // First attempt: only top-level folders under My Drive (root)
+    const rootParams = new URLSearchParams({
+      q: "mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false",
+      ...baseParams,
+    } as any);
+
+    let driveRes = await fetch(`${GOOGLE_DRIVE_FILES_URL}?${rootParams}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
+    // If the root query fails with auth/config issues, surface the right message
     if (!driveRes.ok) {
       const status = driveRes.status;
       const text = await driveRes.text();
-      console.error(`Drive list folders error (${status})`);
+      console.error(`Drive list folders error on root query (${status}) body=${text?.slice(0,200)}`);
       if (status === 401) return json({ error: 'Google session expired. Please reconnect.' }, 401);
-      if (status === 403) return json({ error: 'Google Drive API disabled for this project. Enable drive.googleapis.com and retry.' }, 403);
-      return json({ error: 'Failed to fetch Google Drive folders' }, 500);
+      if (status === 403) return json({ error: 'Google Drive API disabled or insufficient permissions. Enable drive.googleapis.com and ensure drive.readonly scope.' }, 403);
+      // For other errors, attempt a broader fallback query below
     }
 
-    const { files } = await driveRes.json();
+    let files: GoogleDriveFile[] = [];
+    if (driveRes.ok) {
+      const rootJson = await driveRes.json();
+      files = rootJson?.files || [];
+    }
+
+    // Fallback: if no folders found at My Drive root, try listing all visible folders
+    if (!files || files.length === 0) {
+      console.log('No folders at My Drive root. Trying fallback: all visible folders.');
+      const fallbackParams = new URLSearchParams({
+        q: "mimeType='application/vnd.google-apps.folder' and trashed=false",
+        ...baseParams,
+      } as any);
+      const fallbackRes = await fetch(`${GOOGLE_DRIVE_FILES_URL}?${fallbackParams}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (!fallbackRes.ok) {
+        const status = fallbackRes.status;
+        const text = await fallbackRes.text();
+        console.error(`Drive list folders error on fallback (${status}) body=${text?.slice(0,200)}`);
+        if (status === 401) return json({ error: 'Google session expired. Please reconnect.' }, 401);
+        if (status === 403) return json({ error: 'Google Drive API disabled or insufficient permissions. Enable drive.googleapis.com and ensure drive.readonly scope.' }, 403);
+        return json({ error: 'Failed to fetch Google Drive folders' }, 500);
+      }
+
+      const fbJson = await fallbackRes.json();
+      files = fbJson?.files || [];
+    }
+
     console.log(`Returning ${files.length} folders`);
     return json({ success: true, folders: files }, 200);
   } catch (e) {
