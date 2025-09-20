@@ -17,9 +17,12 @@ serve(async (req: Request) => {
     const url = new URL(req.url);
     const redirectUri = `https://ljtikbkilyeyuexzhaqd.supabase.co/functions/v1/oauth-google-callback`;
     
+    // Normalize client id to avoid leading/trailing spaces that break OAuth
+    const clientId = GOOGLE_CLIENT_ID.trim();
+
     // Construct Google OAuth URL
     const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-    googleAuthUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
+    googleAuthUrl.searchParams.set('client_id', clientId);
     googleAuthUrl.searchParams.set('redirect_uri', redirectUri);
     googleAuthUrl.searchParams.set('response_type', 'code');
     googleAuthUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/drive.readonly profile email');
