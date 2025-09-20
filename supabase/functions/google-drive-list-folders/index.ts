@@ -57,27 +57,7 @@ serve(async (req: Request) => {
     }
 
     let accessToken = connection.access_token;
-    const expiresAt = new Date(connection.expires_at);
-
-    if (!accessToken || expiresAt <= new Date()) {
-      console.log('Access token expired, refreshing... [token=***masked***]');
-      try {
-        const refreshed = await refreshAccessToken(connection.refresh_token);
-        accessToken = refreshed.access_token;
-
-        await supabase
-          .from('google_connections')
-          .update({
-            access_token: refreshed.access_token,
-            expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', connection.id);
-      } catch (e) {
-        console.error('Token refresh failed');
-        return json({ error: 'Failed to refresh Google Drive access. Please reconnect.' }, 401);
-      }
-    }
+    // Try with current access token first; refresh on 401 if needed
 
     // List top-level folders under My Drive root with Shared Drives support
     const baseParams = {
@@ -103,9 +83,40 @@ serve(async (req: Request) => {
       const status = driveRes.status;
       const text = await driveRes.text();
       console.error(`Drive list folders error on root query (${status}) body=${text?.slice(0,200)}`);
-      if (status === 401) return json({ error: 'Google session expired. Please reconnect.' }, 401);
-      if (status === 403) return json({ error: 'Google Drive API disabled or insufficient permissions. Enable drive.googleapis.com and ensure drive.readonly scope.' }, 403);
-      // For other errors, attempt a broader fallback query below
+      if (status === 401 && connection.refresh_token) {
+        console.log('Root query unauthorized. Refreshing access token and retrying...');
+        try {
+          const refreshed = await refreshAccessToken(connection.refresh_token);
+          accessToken = refreshed.access_token;
+          await supabase
+            .from('google_connections')
+            .update({
+              access_token: refreshed.access_token,
+              expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', connection.id);
+
+          // retry root query once
+          driveRes = await fetch(`${GOOGLE_DRIVE_FILES_URL}?${rootParams}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (!driveRes.ok) {
+            const retryStatus = driveRes.status;
+            const retryText = await driveRes.text();
+            console.error(`Retry after refresh failed (${retryStatus}) body=${retryText?.slice(0,200)}`);
+            if (retryStatus === 401) return json({ error: 'Google session expired. Please reconnect.' }, 401);
+            if (retryStatus === 403) return json({ error: 'Google Drive API disabled or insufficient permissions. Enable drive.googleapis.com and ensure drive.readonly scope.' }, 403);
+          }
+        } catch (e) {
+          console.error('Token refresh failed after 401 on root query');
+          return json({ error: 'Failed to refresh Google Drive access. Please reconnect.' }, 401);
+        }
+      } else {
+        if (status === 401) return json({ error: 'Google session expired. Please reconnect.' }, 401);
+        if (status === 403) return json({ error: 'Google Drive API disabled or insufficient permissions. Enable drive.googleapis.com and ensure drive.readonly scope.' }, 403);
+        // For other errors, attempt a broader fallback query below
+      }
     }
 
     let files: GoogleDriveFile[] = [];
@@ -121,7 +132,7 @@ serve(async (req: Request) => {
         q: "mimeType='application/vnd.google-apps.folder' and trashed=false",
         ...baseParams,
       } as any);
-      const fallbackRes = await fetch(`${GOOGLE_DRIVE_FILES_URL}?${fallbackParams}`, {
+      let fallbackRes = await fetch(`${GOOGLE_DRIVE_FILES_URL}?${fallbackParams}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
@@ -129,9 +140,41 @@ serve(async (req: Request) => {
         const status = fallbackRes.status;
         const text = await fallbackRes.text();
         console.error(`Drive list folders error on fallback (${status}) body=${text?.slice(0,200)}`);
-        if (status === 401) return json({ error: 'Google session expired. Please reconnect.' }, 401);
-        if (status === 403) return json({ error: 'Google Drive API disabled or insufficient permissions. Enable drive.googleapis.com and ensure drive.readonly scope.' }, 403);
-        return json({ error: 'Failed to fetch Google Drive folders' }, 500);
+        if (status === 401 && connection.refresh_token) {
+          console.log('Fallback query unauthorized. Refreshing token and retrying...');
+          try {
+            const refreshed = await refreshAccessToken(connection.refresh_token);
+            accessToken = refreshed.access_token;
+            await supabase
+              .from('google_connections')
+              .update({
+                access_token: refreshed.access_token,
+                expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', connection.id);
+
+            // retry fallback query once
+            fallbackRes = await fetch(`${GOOGLE_DRIVE_FILES_URL}?${fallbackParams}`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            if (!fallbackRes.ok) {
+              const rs = fallbackRes.status;
+              const rt = await fallbackRes.text();
+              console.error(`Retry fallback after refresh failed (${rs}) body=${rt?.slice(0,200)}`);
+              if (rs === 401) return json({ error: 'Google session expired. Please reconnect.' }, 401);
+              if (rs === 403) return json({ error: 'Google Drive API disabled or insufficient permissions. Enable drive.googleapis.com and ensure drive.readonly scope.' }, 403);
+              return json({ error: 'Failed to fetch Google Drive folders' }, 500);
+            }
+          } catch (e) {
+            console.error('Token refresh failed on fallback path');
+            return json({ error: 'Failed to refresh Google Drive access. Please reconnect.' }, 401);
+          }
+        } else {
+          if (status === 401) return json({ error: 'Google session expired. Please reconnect.' }, 401);
+          if (status === 403) return json({ error: 'Google Drive API disabled or insufficient permissions. Enable drive.googleapis.com and ensure drive.readonly scope.' }, 403);
+          return json({ error: 'Failed to fetch Google Drive folders' }, 500);
+        }
       }
 
       const fbJson = await fallbackRes.json();
