@@ -28,9 +28,16 @@ export const useGoogleDriveConnection = () => {
 
   const fetchConnection = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setConnection(null);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('google_connections')
         .select('*')
+        .eq('user_id', session.user.id)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
@@ -173,8 +180,8 @@ export const useGoogleDriveConnection = () => {
       });
 
       if (error) throw error;
-      
-      if (data.reconnect_required) {
+
+      if (data?.reconnect_required) {
         toast.error('Google Drive connection expired. Please reconnect.');
         setConnection(null);
         return;
@@ -182,6 +189,11 @@ export const useGoogleDriveConnection = () => {
 
       if (data?.success) {
         setFolders(data.folders || []);
+      } else if (data?.error) {
+        toast.error(data.error);
+        setFolders([]);
+      } else {
+        setFolders([]);
       }
     } catch (error) {
       console.error('Error listing folders:', error);
