@@ -40,7 +40,7 @@ interface DriveFile {
 }
 
 const GoogleDriveFolderSync: React.FC = () => {
-  const { connection, connecting, connectGoogleDrive, disconnectGoogleDrive, listFolders, selectFolder } = useGoogleDriveConnection();
+  const { connection, connecting, connectGoogleDrive, disconnectGoogleDrive, listFolders, selectFolder, refetch } = useGoogleDriveConnection();
   const { listFiles, getFileContent } = useGoogleDrive();
   const { isRunning: isSyncRunning, triggerSync, scheduleSync } = useGoogleDriveSync();
   
@@ -215,7 +215,7 @@ const GoogleDriveFolderSync: React.FC = () => {
                   </Alert>
                   
                   {/* Add folder browser */}
-                  <GoogleDriveFolderBrowser />
+                  <GoogleDriveFolderBrowser onFolderSelected={() => refetch()} />
                 </div>
               )}
             </div>

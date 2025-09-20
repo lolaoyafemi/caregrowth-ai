@@ -12,7 +12,7 @@ interface GoogleFolder {
   parents?: string[];
 }
 
-export const GoogleDriveFolderBrowser: React.FC = () => {
+export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { id: string; name: string }) => void }> = ({ onFolderSelected }) => {
   const {
     connection,
     folders,
@@ -54,13 +54,12 @@ export const GoogleDriveFolderBrowser: React.FC = () => {
 
   const handleSelectFolder = async () => {
     if (!currentFolderId) return;
-    
     const currentFolder = folderPath[folderPath.length - 1];
     if (currentFolder) {
       await selectFolder(currentFolder.id, currentFolder.name);
+      onFolderSelected?.(currentFolder);
     }
   };
-
   if (!connection) {
     return null;
   }
