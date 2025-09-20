@@ -211,41 +211,73 @@ export const useGoogleDriveConnection = () => {
   useEffect(() => {
     const handleOAuthCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
-      console.log('OAuth callback - Current URL params:', window.location.search);
-      console.log('OAuth callback - google_success param:', urlParams.get('google_success'));
+      const urlHash = new URLSearchParams(window.location.hash.slice(1));
       
-      if (urlParams.get('google_success') === 'true') {
-        console.log('OAuth callback - Processing successful Google auth');
+      console.log('OAuth callback - Full URL:', window.location.href);
+      console.log('OAuth callback - Search params:', window.location.search);
+      console.log('OAuth callback - Hash:', window.location.hash);
+      console.log('OAuth callback - URL params:', Array.from(urlParams.entries()));
+      console.log('OAuth callback - Hash params:', Array.from(urlHash.entries()));
+
+      // Check URL params first, then hash params (some OAuth flows use hash)
+      const getParam = (key: string) => urlParams.get(key) || urlHash.get(key);
+
+      if (getParam('google_success') === 'true') {
+        console.log('OAuth callback - Success detected, processing tokens...');
         const connectionData = {
-          access_token: urlParams.get('access_token') || '',
-          refresh_token: urlParams.get('refresh_token') || '',
-          expires_at: urlParams.get('expires_at') || '',
-          google_user_id: urlParams.get('google_user_id') || '',
-          google_email: urlParams.get('google_email') || '',
-          scope: urlParams.get('scope') || '',
+          access_token: getParam('access_token') || '',
+          refresh_token: getParam('refresh_token') || '',
+          expires_at: getParam('expires_at') || '',
+          google_user_id: getParam('google_user_id') || '',
+          google_email: getParam('google_email') || '',
+          scope: getParam('scope') || '',
         };
 
         console.log('OAuth callback - Connection data:', { 
           hasAccessToken: !!connectionData.access_token,
           email: connectionData.google_email,
-          userId: connectionData.google_user_id
+          userId: connectionData.google_user_id,
+          allData: connectionData
         });
 
-        if (connectionData.access_token) {
-          console.log('OAuth callback - Storing connection...');
-          await storeConnection(connectionData);
+        if (connectionData.access_token && connectionData.google_email) {
+          console.log('OAuth callback - Valid connection data, storing connection...');
+          try {
+            await storeConnection(connectionData);
+            console.log('OAuth callback - Connection stored successfully');
+            toast.success('Google Drive connected successfully!');
+          } catch (error) {
+            console.error('OAuth callback - Error storing connection:', error);
+            toast.error('Failed to store Google Drive connection');
+          }
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
         } else {
-          console.error('OAuth callback - No access token received');
+          console.error('OAuth callback - Missing required data:', {
+            hasAccessToken: !!connectionData.access_token,
+            hasEmail: !!connectionData.google_email
+          });
+          toast.error('Received incomplete Google Drive authorization data');
         }
-      } else if (urlParams.get('google_error')) {
-        console.error('OAuth callback - Google error:', urlParams.get('google_error'));
-        toast.error('Failed to connect to Google Drive: ' + urlParams.get('google_error'));
+      } else if (getParam('google_error')) {
+        const errorMsg = getParam('google_error');
+        console.error('OAuth callback - Google error:', errorMsg);
+        toast.error('Failed to connect to Google Drive: ' + errorMsg);
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (getParam('error')) {
+        const error = getParam('error');
+        const errorDescription = getParam('error_description');
+        console.error('OAuth callback - OAuth error:', { error, errorDescription });
+        toast.error('OAuth error: ' + (errorDescription || error));
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
       } else {
-        console.log('OAuth callback - No relevant params found');
+        console.log('OAuth callback - No OAuth-related parameters found');
+        const allParams = [...Array.from(urlParams.entries()), ...Array.from(urlHash.entries())];
+        if (allParams.length > 0) {
+          console.log('OAuth callback - Found other parameters:', allParams);
+        }
       }
     };
 
