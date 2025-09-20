@@ -67,18 +67,25 @@ export const useGoogleDriveConnection = () => {
     scope: string;
   }) => {
     try {
+      console.log('storeConnection - Starting to store connection for:', connectionData.google_email);
+      
       // Get current user's agency
       const { data: user } = await supabase.auth.getUser();
+      console.log('storeConnection - Current user:', { hasUser: !!user.user, userId: user.user?.id });
       if (!user.user) throw new Error('No authenticated user');
 
       // Get or create agency for user
+      console.log('storeConnection - Looking for existing agency...');
       let { data: agency, error: agencyError } = await supabase
         .from('agencies')
         .select('*')
         .eq('admin_user_id', user.user.id)
         .single();
 
+      console.log('storeConnection - Agency query result:', { agency: !!agency, agencyError });
+
       if (agencyError || !agency) {
+        console.log('storeConnection - Creating new agency...');
         // Create agency for user
         const { data: newAgency, error: createError } = await supabase
           .from('agencies')
@@ -89,10 +96,12 @@ export const useGoogleDriveConnection = () => {
           .select()
           .single();
 
+        console.log('storeConnection - Agency creation result:', { newAgency: !!newAgency, createError });
         if (createError) throw createError;
         agency = newAgency;
       }
 
+      console.log('storeConnection - Inserting Google connection...');
       const { error } = await supabase
         .from('google_connections')
         .upsert({
@@ -106,8 +115,10 @@ export const useGoogleDriveConnection = () => {
           scope: connectionData.scope,
         });
 
+      console.log('storeConnection - Google connection upsert result:', { error });
       if (error) throw error;
 
+      console.log('storeConnection - Connection stored successfully!');
       toast.success('Google Drive connected successfully!');
       await fetchConnection();
     } catch (error) {
@@ -200,8 +211,11 @@ export const useGoogleDriveConnection = () => {
   useEffect(() => {
     const handleOAuthCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
+      console.log('OAuth callback - Current URL params:', window.location.search);
+      console.log('OAuth callback - google_success param:', urlParams.get('google_success'));
       
       if (urlParams.get('google_success') === 'true') {
+        console.log('OAuth callback - Processing successful Google auth');
         const connectionData = {
           access_token: urlParams.get('access_token') || '',
           refresh_token: urlParams.get('refresh_token') || '',
@@ -211,15 +225,27 @@ export const useGoogleDriveConnection = () => {
           scope: urlParams.get('scope') || '',
         };
 
+        console.log('OAuth callback - Connection data:', { 
+          hasAccessToken: !!connectionData.access_token,
+          email: connectionData.google_email,
+          userId: connectionData.google_user_id
+        });
+
         if (connectionData.access_token) {
+          console.log('OAuth callback - Storing connection...');
           await storeConnection(connectionData);
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          console.error('OAuth callback - No access token received');
         }
       } else if (urlParams.get('google_error')) {
+        console.error('OAuth callback - Google error:', urlParams.get('google_error'));
         toast.error('Failed to connect to Google Drive: ' + urlParams.get('google_error'));
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        console.log('OAuth callback - No relevant params found');
       }
     };
 
