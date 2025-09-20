@@ -64,7 +64,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const { action, folder_id, file_id, page_token, export_format = 'text/plain' } = await req.json();
+    const { action, folder_id, file_id, page_token, export_format = 'text/plain', folder_name } = await req.json();
 
     console.log(`Processing Google Drive request: ${action} for user ${user.id}`);
 
@@ -155,7 +155,7 @@ serve(async (req: Request) => {
             }
           );
         }
-        return await handleSelectFolder(supabase, user.id, folder_id, connection.id);
+        return await handleSelectFolder(supabase, user.id, folder_id, folder_name || `Folder ${folder_id}`, connection.id);
       }
 
       default:
@@ -368,14 +368,14 @@ async function handleGetFileContent(accessToken: string, fileId: string, exportF
   }
 }
 
-async function handleSelectFolder(supabase: any, userId: string, folderId: string, connectionId: string): Promise<Response> {
+async function handleSelectFolder(supabase: any, userId: string, folderId: string, folderName: string, connectionId: string): Promise<Response> {
   try {
     // Update the selected folder in the connection
     const { error: updateError } = await supabase
       .from('google_connections')
       .update({
         selected_folder_id: folderId,
-        selected_folder_name: `Folder ${folderId}`, // You might want to fetch the actual folder name
+        selected_folder_name: folderName,
         updated_at: new Date().toISOString()
       })
       .eq('id', connectionId);
@@ -385,12 +385,13 @@ async function handleSelectFolder(supabase: any, userId: string, folderId: strin
       throw new Error('Failed to update selected folder');
     }
 
-    console.log(`Updated selected folder to ${folderId} for user ${userId}`);
+    console.log(`Updated selected folder to ${folderName} (${folderId}) for user ${userId}`);
 
     return new Response(JSON.stringify({ 
       success: true,
       message: 'Folder selected successfully',
-      selected_folder_id: folderId
+      selected_folder_id: folderId,
+      selected_folder_name: folderName
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

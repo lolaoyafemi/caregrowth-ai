@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
 import { GoogleDriveFolderBrowser } from './GoogleDriveFolderBrowser';
+import { GoogleDriveDocumentsList } from './GoogleDriveDocumentsList';
 import { CheckCircle, ExternalLink, Loader2, Plus, Unplug } from 'lucide-react';
 
 export const GoogleDriveConnection: React.FC = () => {
@@ -135,6 +136,8 @@ export const GoogleDriveConnection: React.FC = () => {
       </Card>
 
       <GoogleDriveFolderBrowser />
+      
+      <GoogleDriveDocumentsList />
     </div>
   );
 };

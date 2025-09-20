@@ -186,7 +186,7 @@ export const useGoogleDriveConnection = () => {
         body: {
           action: 'selectFolder',
           folder_id: folderId,
-          folderName,
+          folder_name: folderName,
         },
       });
 
