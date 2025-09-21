@@ -47,20 +47,44 @@ export const useGoogleDrive = () => {
           window.gapi.load('client', resolve);
         });
 
-        // Get access token from Supabase session
+        // Get access token from Supabase
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.provider_token) {
-          await window.gapi.client.init({
-            apiKey: '', // We'll use the access token directly
-          });
-          
-          window.gapi.client.setToken({
-            access_token: session.provider_token
-          });
 
-          await window.gapi.client.load('drive', 'v3');
-          setGapiReady(true);
+        await window.gapi.client.init({
+          apiKey: '', // We'll use the OAuth access token directly via setToken
+        });
+
+        let accessToken: string | null = null;
+
+        // Case 1: User authenticated via Google provider (provider_token present)
+        if (session?.provider_token) {
+          accessToken = session.provider_token;
         }
+
+        // Case 2: Read token from stored Google connection (separate Drive connect flow)
+        if (!accessToken && session?.user?.id) {
+          const { data: connection } = await supabase
+            .from('google_connections')
+            .select('access_token, expires_at')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          if (connection?.access_token) {
+            accessToken = connection.access_token as string;
+          }
+        }
+
+        if (!accessToken) {
+          console.warn('Google API init: No access token available');
+          setGapiReady(false);
+          return;
+        }
+
+        // Attach token to gapi client
+        window.gapi.client.setToken({ access_token: accessToken });
+
+        await window.gapi.client.load('drive', 'v3');
+        setGapiReady(true);
       } catch (error) {
         console.error('Failed to initialize Google API:', error);
         toast.error('Failed to initialize Google Drive API');

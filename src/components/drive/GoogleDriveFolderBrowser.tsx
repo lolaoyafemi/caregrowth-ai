@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { Folder, FolderOpen, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -15,26 +16,25 @@ interface GoogleFolder {
 export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { id: string; name: string }) => void }> = ({ onFolderSelected }) => {
   const {
     connection,
-    folders,
-    loadingFolders,
-    listFolders,
     selectFolder,
     folderError,
   } = useGoogleDriveConnection();
+
+  const { folders: driveFolders, listFolders: listDriveFolders, gapiReady, loading: driveLoading } = useGoogleDrive();
 
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>();
   const [folderPath, setFolderPath] = useState<Array<{id: string, name: string}>>([]);
 
   useEffect(() => {
-    if (connection) {
-      listFolders();
+    if (connection && gapiReady) {
+      listDriveFolders();
     }
-  }, [connection]);
+  }, [connection, gapiReady]);
 
   const handleFolderClick = (folder: GoogleFolder) => {
     setCurrentFolderId(folder.id);
     setFolderPath(prev => [...prev, { id: folder.id, name: folder.name }]);
-    listFolders(folder.id);
+    listDriveFolders(folder.id);
   };
 
   const handleBackClick = () => {
@@ -44,11 +44,11 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
       
       if (newPath.length === 0) {
         setCurrentFolderId(undefined);
-        listFolders();
+        listDriveFolders();
       } else {
         const parentFolder = newPath[newPath.length - 1];
         setCurrentFolderId(parentFolder.id);
-        listFolders(parentFolder.id);
+        listDriveFolders(parentFolder.id);
       }
     }
   };
@@ -112,7 +112,7 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
               onClick={() => {
                 setCurrentFolderId(undefined);
                 setFolderPath([]);
-                listFolders();
+                listDriveFolders();
               }}
               className="p-0 h-auto"
             >
@@ -128,7 +128,7 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
                     const newPath = folderPath.slice(0, index + 1);
                     setFolderPath(newPath);
                     setCurrentFolderId(folder.id);
-                    listFolders(folder.id);
+                    listDriveFolders(folder.id);
                   }}
                   className="p-0 h-auto"
                 >
@@ -156,7 +156,7 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
           </div>
 
           {/* Error state */}
-          {folderError && (
+          {(!gapiReady && folderError) && (
             <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
               {folderError}
             </div>
@@ -164,18 +164,18 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
 
           {/* Folders list */}
           <div className="border rounded-lg">
-            {loadingFolders ? (
+            {driveLoading ? (
               <div className="p-4 flex items-center justify-center">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 <span className="text-sm text-muted-foreground">Loading folders...</span>
               </div>
-            ) : folders.length === 0 ? (
+            ) : driveFolders.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
-                {folderError ? 'Unable to load folders' : 'No folders found in this location'}
+                {(!gapiReady && folderError) ? 'Unable to load folders' : 'No folders found in this location'}
               </div>
             ) : (
               <div className="divide-y">
-                {folders.map((folder) => (
+                {driveFolders.map((folder) => (
                   <div
                     key={folder.id}
                     className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer transition-colors"
