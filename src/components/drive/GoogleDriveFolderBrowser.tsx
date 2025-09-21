@@ -19,7 +19,9 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
     folders: driveFolders, 
     listFolders: listDriveFolders, 
     loading: driveLoading, 
-    gapiReady 
+    gapiReady,
+    needsReconnect,
+    reconnectGoogle,
   } = useGoogleDrive();
 
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>();
@@ -155,6 +157,15 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
               </Button>
             )}
           </div>
+
+          {needsReconnect && (
+            <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span>Google Drive session expired. Please reconnect.</span>
+                <Button variant="secondary" size="sm" onClick={reconnectGoogle}>Reconnect</Button>
+              </div>
+            </div>
+          )}
 
           {/* Error state */}
           {(!gapiReady && !driveLoading) && (

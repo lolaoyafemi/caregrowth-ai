@@ -27,6 +27,7 @@ export const useGoogleDrive = () => {
   const [files, setFiles] = useState<GoogleDriveFile[]>([]);
   const [folders, setFolders] = useState<GoogleDriveFile[]>([]);
   const [gapiReady, setGapiReady] = useState(false);
+  const [needsReconnect, setNeedsReconnect] = useState(false);
 
   useEffect(() => {
     const initializeGapi = async () => {
@@ -94,6 +95,29 @@ export const useGoogleDrive = () => {
     initializeGapi();
   }, []);
 
+  const refreshAccessToken = async (): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('google-drive-refresh-token');
+      if (error || !data?.success || !data?.access_token) {
+        console.warn('Token refresh failed', error || data);
+        setNeedsReconnect(true);
+        toast.error('Google Drive session expired. Please reconnect.');
+        return null;
+      }
+      // Attach refreshed token to gapi if available
+      if (window.gapi?.client && data.access_token) {
+        window.gapi.client.setToken({ access_token: data.access_token });
+      }
+      setNeedsReconnect(false);
+      return data.access_token as string;
+    } catch (e) {
+      console.error('Error refreshing access token:', e);
+      setNeedsReconnect(true);
+      toast.error('Failed to refresh Google Drive access. Please reconnect.');
+      return null;
+    }
+  };
+
   const listFiles = async (folderId?: string, query?: string, pageToken?: string): Promise<GoogleDriveResponse | null> => {
     setLoading(true);
     try {
@@ -135,27 +159,47 @@ export const useGoogleDrive = () => {
       // First try gapi if ready
       if (gapiReady && window.gapi?.client?.drive) {
         console.log('Using gapi for folder listing');
-        const query = parentFolderId 
+        const q = parentFolderId
           ? `mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`
           : `mimeType='application/vnd.google-apps.folder' and trashed=false`;
-
-        const response = await window.gapi.client.drive.files.list({
-          q: query,
-          corpora: "user",
-          fields: "files(id, name)",
+        
+        const listCall = async () => await window.gapi.client.drive.files.list({
+          q,
+          corpora: 'user',
+          fields: 'files(id, name)',
           includeItemsFromAllDrives: true,
           supportsAllDrives: true,
           pageSize: 100,
-          pageToken: pageToken
+          pageToken: pageToken,
         });
 
-        const folders = response.result.files || [];
-        setFolders(folders);
-        
-        return {
-          files: folders,
-          nextPageToken: response.result.nextPageToken
-        };
+        try {
+          const response = await listCall();
+          const folders = response.result.files || [];
+          setFolders(folders);
+          return { files: folders, nextPageToken: response.result.nextPageToken };
+        } catch (e: any) {
+          const status = e?.status || e?.result?.error?.code;
+          const message: string = e?.result?.error?.message || e?.message || '';
+          console.warn('gapi folder list error', status, message);
+          if (status === 401 || /invalid_token/i.test(message || '')) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+              try {
+                const retry = await listCall();
+                const folders = retry.result.files || [];
+                setFolders(folders);
+                return { files: folders, nextPageToken: retry.result.nextPageToken };
+              } catch (retryErr) {
+                console.error('Retry after refresh failed:', retryErr);
+              }
+            }
+            setNeedsReconnect(true);
+            return null;
+          }
+          toast.error('Failed to list Google Drive folders');
+          return null;
+        }
       }
 
       // Fallback to edge function
@@ -166,24 +210,32 @@ export const useGoogleDrive = () => {
         return null;
       }
 
-      const { data, error } = await supabase.functions.invoke('google-drive-list-folders', {
+      const invokeList = async () => await supabase.functions.invoke('google-drive-list-folders', {
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: { scope: parentFolderId || 'root' },
       });
 
+      let { data, error } = await invokeList();
       if (error) {
-        console.error('Edge function error:', error);
-        toast.error('Failed to list Google Drive folders');
-        return null;
+        const status = (error as any)?.status;
+        console.warn('Edge function error:', status, error);
+        if (status === 401) {
+          const refreshed = await refreshAccessToken();
+          if (refreshed) {
+            ({ data, error } = await invokeList());
+          } else {
+            return null;
+          }
+        } else {
+          toast.error('Failed to list Google Drive folders');
+          return null;
+        }
       }
 
       if (data?.success && data.folders) {
         const folders = data.folders;
         setFolders(folders);
-        return {
-          files: folders,
-          nextPageToken: undefined
-        };
+        return { files: folders, nextPageToken: undefined };
       }
 
       return null;
@@ -237,6 +289,12 @@ export const useGoogleDrive = () => {
     return listFiles(undefined, query, pageToken);
   };
 
+  const reconnectGoogle = () => {
+    const functionsBase = 'https://ljtikbkilyeyuexzhaqd.functions.supabase.co';
+    const target = `${functionsBase}/connect-google`;
+    window.location.href = target;
+  };
+
   return {
     loading,
     files,
@@ -245,6 +303,8 @@ export const useGoogleDrive = () => {
     listFolders,
     getFileContent,
     searchFiles,
-    gapiReady
+    gapiReady,
+    needsReconnect,
+    reconnectGoogle,
   };
 };
