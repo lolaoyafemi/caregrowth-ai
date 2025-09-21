@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
-import { useGoogleDrive } from '@/hooks/useGoogleDrive';
+
 import { Folder, FolderOpen, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,18 +18,19 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
     connection,
     selectFolder,
     folderError,
+    folders: driveFolders,
+    listFolders: listDriveFolders,
+    loadingFolders: driveLoading,
   } = useGoogleDriveConnection();
-
-  const { folders: driveFolders, listFolders: listDriveFolders, gapiReady, loading: driveLoading } = useGoogleDrive();
 
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>();
   const [folderPath, setFolderPath] = useState<Array<{id: string, name: string}>>([]);
 
   useEffect(() => {
-    if (connection && gapiReady) {
+    if (connection) {
       listDriveFolders();
     }
-  }, [connection, gapiReady]);
+  }, [connection]);
 
   const handleFolderClick = (folder: GoogleFolder) => {
     setCurrentFolderId(folder.id);
@@ -156,7 +157,7 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
           </div>
 
           {/* Error state */}
-          {(!gapiReady && folderError) && (
+          {folderError && (
             <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
               {folderError}
             </div>
@@ -171,7 +172,7 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
               </div>
             ) : driveFolders.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
-                {(!gapiReady && folderError) ? 'Unable to load folders' : 'No folders found in this location'}
+                {folderError ? 'Unable to load folders' : 'No folders found in this location'}
               </div>
             ) : (
               <div className="divide-y">
