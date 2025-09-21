@@ -53,9 +53,10 @@ export const useGoogleDrive = () => {
           discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
         });
 
-        // Get access token from Supabase
+        // Get and validate access token
         const { data: { session } } = await supabase.auth.getSession();
         let accessToken: string | null = null;
+        let tokenExpiry: string | null = null;
 
         // Case 1: User authenticated via Google provider (provider_token present)
         if (session?.provider_token) {
@@ -66,17 +67,38 @@ export const useGoogleDrive = () => {
         if (!accessToken && session?.user?.id) {
           const { data: connection } = await supabase
             .from('google_connections')
-            .select('access_token, expires_at')
+            .select('access_token, expires_at, refresh_token')
             .eq('user_id', session.user.id)
             .maybeSingle();
 
           if (connection?.access_token) {
             accessToken = connection.access_token as string;
+            tokenExpiry = connection.expires_at;
+          }
+        }
+
+        // Check if token is expired and refresh if needed
+        if (accessToken && tokenExpiry) {
+          const expiryTime = new Date(tokenExpiry).getTime();
+          const now = Date.now();
+          const buffer = 5 * 60 * 1000; // 5 minutes buffer
+          
+          if (expiryTime <= now + buffer) {
+            console.log('Access token expired or expiring soon, refreshing...');
+            const refreshedToken = await refreshAccessToken();
+            if (refreshedToken) {
+              accessToken = refreshedToken;
+            } else {
+              setNeedsReconnect(true);
+              setGapiReady(false);
+              return;
+            }
           }
         }
 
         if (!accessToken) {
           console.warn('Google API init: No access token available');
+          setNeedsReconnect(true);
           setGapiReady(false);
           return;
         }
@@ -84,11 +106,13 @@ export const useGoogleDrive = () => {
         // Attach token to gapi client
         window.gapi.client.setToken({ access_token: accessToken });
         setGapiReady(true);
+        setNeedsReconnect(false);
         console.log('Google Drive API initialized successfully');
       } catch (error) {
         console.error('Failed to initialize Google API:', error);
         toast.error('Failed to initialize Google Drive API');
         setGapiReady(false);
+        setNeedsReconnect(true);
       }
     };
 

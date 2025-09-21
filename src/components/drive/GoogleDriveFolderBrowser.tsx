@@ -161,16 +161,19 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
           {needsReconnect && (
             <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <span>Google Drive session expired. Please reconnect.</span>
+                <span>Google Drive access expired or unavailable. Please reconnect to continue.</span>
                 <Button variant="secondary" size="sm" onClick={reconnectGoogle}>Reconnect</Button>
               </div>
             </div>
           )}
 
-          {/* Error state */}
-          {(!gapiReady && !driveLoading) && (
-            <div className="p-3 rounded-lg border border-warning/30 bg-warning/5 text-sm text-warning">
-              Google Drive API initializing... Please wait.
+          {/* API initialization state */}
+          {(!gapiReady && !needsReconnect && !driveLoading) && (
+            <div className="p-3 rounded-lg border border-muted bg-muted/20 text-sm">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Initializing Google Drive API and validating access token...</span>
+              </div>
             </div>
           )}
 
