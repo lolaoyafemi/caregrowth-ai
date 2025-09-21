@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+declare global {
+  interface Window {
+    gapi: any;
+  }
+}
 
 export interface GoogleDriveFile {
   id: string;
@@ -20,6 +26,49 @@ export const useGoogleDrive = () => {
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<GoogleDriveFile[]>([]);
   const [folders, setFolders] = useState<GoogleDriveFile[]>([]);
+  const [gapiReady, setGapiReady] = useState(false);
+
+  useEffect(() => {
+    const initializeGapi = async () => {
+      try {
+        // Load Google API
+        if (!window.gapi) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://apis.google.com/js/api.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+
+        // Initialize gapi
+        await new Promise((resolve) => {
+          window.gapi.load('client', resolve);
+        });
+
+        // Get access token from Supabase session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.provider_token) {
+          await window.gapi.client.init({
+            apiKey: '', // We'll use the access token directly
+          });
+          
+          window.gapi.client.setToken({
+            access_token: session.provider_token
+          });
+
+          await window.gapi.client.load('drive', 'v3');
+          setGapiReady(true);
+        }
+      } catch (error) {
+        console.error('Failed to initialize Google API:', error);
+        toast.error('Failed to initialize Google Drive API');
+      }
+    };
+
+    initializeGapi();
+  }, []);
 
   const listFiles = async (folderId?: string, query?: string, pageToken?: string): Promise<GoogleDriveResponse | null> => {
     setLoading(true);
@@ -57,34 +106,36 @@ export const useGoogleDrive = () => {
   };
 
   const listFolders = async (parentFolderId?: string, pageToken?: string): Promise<GoogleDriveResponse | null> => {
+    if (!gapiReady || !window.gapi?.client?.drive) {
+      toast.error('Google Drive API not ready');
+      return null;
+    }
+
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('google-drive-enhanced', {
-        body: { 
-          action: 'listFolders', 
-          folder_id: parentFolderId, 
-          page_token: pageToken 
-        }
+      const query = parentFolderId 
+        ? `mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`
+        : `mimeType='application/vnd.google-apps.folder' and trashed=false`;
+
+      const response = await window.gapi.client.drive.files.list({
+        q: query,
+        fields: "files(id, name, parents)",
+        pageSize: 100,
+        pageToken: pageToken,
+        includeItemsFromAllDrives: true,
+        supportsAllDrives: true
       });
 
-      if (error) {
-        console.error('Error listing folders:', error);
-        toast.error('Failed to list Google Drive folders');
-        return null;
-      }
-
-      if (data?.success) {
-        setFolders(data.folders || []);
-        return {
-          files: data.folders || [],
-          nextPageToken: data.nextPageToken
-        };
-      }
-
-      return null;
+      const folders = response.result.files || [];
+      setFolders(folders);
+      
+      return {
+        files: folders,
+        nextPageToken: response.result.nextPageToken
+      };
     } catch (error) {
-      console.error('Error in listFolders:', error);
-      toast.error('Failed to connect to Google Drive');
+      console.error('Error listing folders:', error);
+      toast.error('Failed to list Google Drive folders');
       return null;
     } finally {
       setLoading(false);
@@ -139,6 +190,7 @@ export const useGoogleDrive = () => {
     listFiles,
     listFolders,
     getFileContent,
-    searchFiles
+    searchFiles,
+    gapiReady
   };
 };
