@@ -47,13 +47,13 @@ export const useGoogleDrive = () => {
           window.gapi.load('client', resolve);
         });
 
-        // Get access token from Supabase
-        const { data: { session } } = await supabase.auth.getSession();
-
+        // Initialize the client with discovery doc
         await window.gapi.client.init({
-          apiKey: '', // We'll use the OAuth access token directly via setToken
+          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
         });
 
+        // Get access token from Supabase
+        const { data: { session } } = await supabase.auth.getSession();
         let accessToken: string | null = null;
 
         // Case 1: User authenticated via Google provider (provider_token present)
@@ -82,12 +82,12 @@ export const useGoogleDrive = () => {
 
         // Attach token to gapi client
         window.gapi.client.setToken({ access_token: accessToken });
-
-        await window.gapi.client.load('drive', 'v3');
         setGapiReady(true);
+        console.log('Google Drive API initialized successfully');
       } catch (error) {
         console.error('Failed to initialize Google API:', error);
         toast.error('Failed to initialize Google Drive API');
+        setGapiReady(false);
       }
     };
 
@@ -130,33 +130,63 @@ export const useGoogleDrive = () => {
   };
 
   const listFolders = async (parentFolderId?: string, pageToken?: string): Promise<GoogleDriveResponse | null> => {
-    if (!gapiReady || !window.gapi?.client?.drive) {
-      toast.error('Google Drive API not ready');
-      return null;
-    }
-
     setLoading(true);
     try {
-      const query = parentFolderId 
-        ? `mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`
-        : `mimeType='application/vnd.google-apps.folder' and trashed=false`;
+      // First try gapi if ready
+      if (gapiReady && window.gapi?.client?.drive) {
+        console.log('Using gapi for folder listing');
+        const query = parentFolderId 
+          ? `mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`
+          : `mimeType='application/vnd.google-apps.folder' and trashed=false`;
 
-      const response = await window.gapi.client.drive.files.list({
-        q: query,
-        fields: "files(id, name, parents)",
-        pageSize: 100,
-        pageToken: pageToken,
-        includeItemsFromAllDrives: true,
-        supportsAllDrives: true
+        const response = await window.gapi.client.drive.files.list({
+          q: query,
+          corpora: "user",
+          fields: "files(id, name)",
+          includeItemsFromAllDrives: true,
+          supportsAllDrives: true,
+          pageSize: 100,
+          pageToken: pageToken
+        });
+
+        const folders = response.result.files || [];
+        setFolders(folders);
+        
+        return {
+          files: folders,
+          nextPageToken: response.result.nextPageToken
+        };
+      }
+
+      // Fallback to edge function
+      console.log('Using edge function fallback for folder listing');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Please log in to access folders');
+        return null;
+      }
+
+      const { data, error } = await supabase.functions.invoke('google-drive-list-folders', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { scope: parentFolderId || 'root' },
       });
 
-      const folders = response.result.files || [];
-      setFolders(folders);
-      
-      return {
-        files: folders,
-        nextPageToken: response.result.nextPageToken
-      };
+      if (error) {
+        console.error('Edge function error:', error);
+        toast.error('Failed to list Google Drive folders');
+        return null;
+      }
+
+      if (data?.success && data.folders) {
+        const folders = data.folders;
+        setFolders(folders);
+        return {
+          files: folders,
+          nextPageToken: undefined
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error listing folders:', error);
       toast.error('Failed to list Google Drive folders');

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useGoogleDriveConnection } from '@/hooks/useGoogleDriveConnection';
-
+import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { Folder, FolderOpen, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,23 +14,23 @@ interface GoogleFolder {
 }
 
 export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { id: string; name: string }) => void }> = ({ onFolderSelected }) => {
-  const {
-    connection,
-    selectFolder,
-    folderError,
-    folders: driveFolders,
-    listFolders: listDriveFolders,
-    loadingFolders: driveLoading,
-  } = useGoogleDriveConnection();
+  const { connection, selectFolder } = useGoogleDriveConnection();
+  const { 
+    folders: driveFolders, 
+    listFolders: listDriveFolders, 
+    loading: driveLoading, 
+    gapiReady 
+  } = useGoogleDrive();
 
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>();
   const [folderPath, setFolderPath] = useState<Array<{id: string, name: string}>>([]);
 
   useEffect(() => {
-    if (connection) {
+    if (connection && gapiReady) {
+      console.log('Connection and gapi ready, loading root folders');
       listDriveFolders();
     }
-  }, [connection]);
+  }, [connection, gapiReady]);
 
   const handleFolderClick = (folder: GoogleFolder) => {
     setCurrentFolderId(folder.id);
@@ -157,9 +157,9 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
           </div>
 
           {/* Error state */}
-          {folderError && (
-            <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
-              {folderError}
+          {(!gapiReady && !driveLoading) && (
+            <div className="p-3 rounded-lg border border-warning/30 bg-warning/5 text-sm text-warning">
+              Google Drive API initializing... Please wait.
             </div>
           )}
 
@@ -172,7 +172,7 @@ export const GoogleDriveFolderBrowser: React.FC<{ onFolderSelected?: (folder: { 
               </div>
             ) : driveFolders.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
-                {folderError ? 'Unable to load folders' : 'No folders found in this location'}
+                {!gapiReady ? 'Google Drive API loading...' : 'No folders found in this location'}
               </div>
             ) : (
               <div className="divide-y">
