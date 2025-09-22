@@ -48,12 +48,7 @@ export const useGoogleDrive = () => {
           window.gapi.load('client', resolve);
         });
 
-        // Initialize the client with discovery doc
-        await window.gapi.client.init({
-          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-        });
-
-        // Get and validate access token
+        // Get and validate access token BEFORE initializing gapi client
         const { data: { session } } = await supabase.auth.getSession();
         let accessToken: string | null = null;
         let tokenExpiry: string | null = null;
@@ -77,31 +72,32 @@ export const useGoogleDrive = () => {
           }
         }
 
-        // Check if token is expired and refresh if needed
-        if (accessToken && tokenExpiry) {
+        // Determine if we need a refresh (missing or expiring within 5 minutes)
+        const needsRefresh = (() => {
+          if (!accessToken) return true;
+          if (!tokenExpiry) return false;
           const expiryTime = new Date(tokenExpiry).getTime();
           const now = Date.now();
           const buffer = 5 * 60 * 1000; // 5 minutes buffer
-          
-          if (expiryTime <= now + buffer) {
-            console.log('Access token expired or expiring soon, refreshing...');
-            const refreshedToken = await refreshAccessToken();
-            if (refreshedToken) {
-              accessToken = refreshedToken;
-            } else {
-              setNeedsReconnect(true);
-              setGapiReady(false);
-              return;
-            }
+          return expiryTime <= now + buffer;
+        })();
+
+        if (needsRefresh) {
+          const refreshedToken = await refreshAccessToken();
+          if (refreshedToken) {
+            accessToken = refreshedToken;
+          } else {
+            console.warn('Google API init: No access token available after refresh');
+            setNeedsReconnect(true);
+            setGapiReady(false);
+            return;
           }
         }
 
-        if (!accessToken) {
-          console.warn('Google API init: No access token available');
-          setNeedsReconnect(true);
-          setGapiReady(false);
-          return;
-        }
+        // Initialize the client with discovery doc (after we have a valid token)
+        await window.gapi.client.init({
+          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+        });
 
         // Attach token to gapi client
         window.gapi.client.setToken({ access_token: accessToken });
@@ -121,7 +117,7 @@ export const useGoogleDrive = () => {
 
   const refreshAccessToken = async (): Promise<string | null> => {
     try {
-      const { data, error } = await supabase.functions.invoke('google-drive-refresh-token');
+      const { data, error } = await supabase.functions.invoke('refresh-google-token');
       if (error || !data?.success || !data?.access_token) {
         console.warn('Token refresh failed', error || data);
         setNeedsReconnect(true);
