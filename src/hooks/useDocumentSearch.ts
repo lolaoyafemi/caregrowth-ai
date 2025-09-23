@@ -140,9 +140,9 @@ export const useDocumentSearch = () => {
     setError(null);
 
     try {
-      console.log('Making API call to smart-document-search...');
+      console.log('Making API call to smart-document-search-v2...');
       // First, make the API call to avoid deducting credits if the search fails
-      const { data, error: functionError } = await supabase.functions.invoke('smart-document-search', {
+      const { data, error: functionError } = await supabase.functions.invoke('smart-document-search-v2', {
         body: {
           query: query.trim(),
           userId: user.id

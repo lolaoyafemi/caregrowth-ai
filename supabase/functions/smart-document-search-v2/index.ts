@@ -321,19 +321,13 @@ serve(async (req) => {
 
     console.log('Processing enhanced search query for user:', authenticatedUserId);
 
-    // Get user's documents from both personal and shared sources
-    console.log('Fetching user documents and shared documents...');
+    // Get user's personal documents only (no shared documents)
+    console.log('Fetching user personal documents only...');
     
-    const [userDocsResponse, sharedDocsResponse] = await Promise.all([
-      supabase
-        .from('google_documents')
-        .select('id, doc_title, doc_link')
-        .eq('user_id', authenticatedUserId),
-      supabase
-        .from('shared_documents')
-        .select('id, doc_title, file_name')
-        .eq('processing_status', 'completed')
-    ]);
+    const userDocsResponse = await supabase
+      .from('google_documents')
+      .select('id, doc_title, doc_link')
+      .eq('user_id', authenticatedUserId);
 
     if (userDocsResponse.error) {
       console.error('Error fetching user documents:', userDocsResponse.error);
@@ -345,17 +339,10 @@ serve(async (req) => {
       });
     }
 
-    if (sharedDocsResponse.error) {
-      console.error('Error fetching shared documents:', sharedDocsResponse.error);
-    }
-
     const userDocIds = (userDocsResponse.data || []).map(doc => doc.id);
-    const sharedDocIds = (sharedDocsResponse.data || []).map(doc => doc.id);
-    const allDocIds = [...userDocIds, ...sharedDocIds];
+    console.log(`Found ${userDocIds.length} personal documents`);
 
-    console.log(`Found ${userDocIds.length} personal documents and ${sharedDocIds.length} shared documents`);
-
-    if (allDocIds.length === 0) {
+    if (userDocIds.length === 0) {
       return new Response(JSON.stringify({ 
         answer: "I don't have access to any documents to search through. Please add some documents first.",
         sources: [],
@@ -369,11 +356,11 @@ serve(async (req) => {
     const questionEmbedding = await generateEmbedding(query);
 
     // Fetch document chunks with page numbers
-    console.log(`Fetching chunks from ${allDocIds.length} documents...`);
+    console.log(`Fetching chunks from ${userDocIds.length} documents...`);
     const { data: chunks, error: chunksError } = await supabase
       .from('document_chunks')
       .select('content, document_id, page_number, chunk_index, embedding')
-      .in('document_id', allDocIds);
+      .in('document_id', userDocIds);
 
     if (chunksError) {
       console.error('Error fetching chunks:', chunksError);
@@ -396,7 +383,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         answer: "I couldn't find any relevant information in the available documents to answer your question.",
         sources: [],
-        totalDocumentsSearched: allDocIds.length
+        totalDocumentsSearched: userDocIds.length
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -408,14 +395,9 @@ serve(async (req) => {
     // Prepare sources with document information
     const documentMap = new Map();
     
-    // Add user documents
+    // Add user documents only
     (userDocsResponse.data || []).forEach(doc => {
       documentMap.set(doc.id, { title: doc.doc_title || 'Untitled Document', url: doc.doc_link });
-    });
-    
-    // Add shared documents  
-    (sharedDocsResponse.data || []).forEach(doc => {
-      documentMap.set(doc.id, { title: doc.doc_title || doc.file_name || 'Untitled Document', url: null });
     });
 
     const sources = relevantChunks
@@ -436,13 +418,13 @@ serve(async (req) => {
       )
       .slice(0, 5);
 
-    console.log(`Enhanced search completed: ${sources.length} sources from ${allDocIds.length} documents`);
+    console.log(`Enhanced search completed: ${sources.length} sources from ${userDocIds.length} documents`);
 
     return new Response(JSON.stringify({
       answer,
       sources,
       tokensUsed,
-      totalDocumentsSearched: allDocIds.length
+      totalDocumentsSearched: userDocIds.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
