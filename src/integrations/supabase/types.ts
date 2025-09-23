@@ -221,6 +221,8 @@ export type Database = {
       document_chunks: {
         Row: {
           chunk_index: number | null
+          chunk_overlap_end: number | null
+          chunk_overlap_start: number | null
           content: string | null
           created_at: string | null
           document_id: string | null
@@ -228,9 +230,14 @@ export type Database = {
           id: string
           is_shared: boolean | null
           page_number: number | null
+          section_path: string | null
+          token_count: number | null
+          tsvector_content: unknown | null
         }
         Insert: {
           chunk_index?: number | null
+          chunk_overlap_end?: number | null
+          chunk_overlap_start?: number | null
           content?: string | null
           created_at?: string | null
           document_id?: string | null
@@ -238,9 +245,14 @@ export type Database = {
           id?: string
           is_shared?: boolean | null
           page_number?: number | null
+          section_path?: string | null
+          token_count?: number | null
+          tsvector_content?: unknown | null
         }
         Update: {
           chunk_index?: number | null
+          chunk_overlap_end?: number | null
+          chunk_overlap_start?: number | null
           content?: string | null
           created_at?: string | null
           document_id?: string | null
@@ -248,8 +260,65 @@ export type Database = {
           id?: string
           is_shared?: boolean | null
           page_number?: number | null
+          section_path?: string | null
+          token_count?: number | null
+          tsvector_content?: unknown | null
         }
         Relationships: []
+      }
+      documents: {
+        Row: {
+          created_at: string | null
+          google_doc_id: string | null
+          id: string
+          normalized_text: string
+          processing_status: string | null
+          raw_text: string
+          shared_doc_id: string | null
+          title: string | null
+          total_pages: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          google_doc_id?: string | null
+          id?: string
+          normalized_text: string
+          processing_status?: string | null
+          raw_text: string
+          shared_doc_id?: string | null
+          title?: string | null
+          total_pages?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          google_doc_id?: string | null
+          id?: string
+          normalized_text?: string
+          processing_status?: string | null
+          raw_text?: string
+          shared_doc_id?: string | null
+          title?: string | null
+          total_pages?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_google_doc_id_fkey"
+            columns: ["google_doc_id"]
+            isOneToOne: false
+            referencedRelation: "google_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_shared_doc_id_fkey"
+            columns: ["shared_doc_id"]
+            isOneToOne: false
+            referencedRelation: "shared_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       drive_tokens: {
         Row: {
@@ -281,6 +350,45 @@ export type Database = {
           scope?: string | null
           token_type?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      golden_tests: {
+        Row: {
+          created_at: string | null
+          expected_doc_id: string | null
+          expected_page_number: number | null
+          expected_substring: string
+          id: string
+          last_success: boolean | null
+          last_tested_at: string | null
+          notes: string | null
+          query_text: string
+          test_category: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expected_doc_id?: string | null
+          expected_page_number?: number | null
+          expected_substring: string
+          id?: string
+          last_success?: boolean | null
+          last_tested_at?: string | null
+          notes?: string | null
+          query_text: string
+          test_category?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expected_doc_id?: string | null
+          expected_page_number?: number | null
+          expected_substring?: string
+          id?: string
+          last_success?: boolean | null
+          last_tested_at?: string | null
+          notes?: string | null
+          query_text?: string
+          test_category?: string | null
         }
         Relationships: []
       }
