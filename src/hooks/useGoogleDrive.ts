@@ -58,12 +58,10 @@ export const useGoogleDrive = () => {
           accessToken = session.provider_token;
         }
 
-        // Case 2: Read token from stored Google tokens (separate Drive connect flow)
+        // Case 2: Use raw SQL query for drive_tokens (not in types yet)
         if (!accessToken && session?.user?.id) {
           const { data: tokens } = await supabase
-            .from('drive_tokens')
-            .select('access_token, expires_in, refresh_token, created_at')
-            .eq('user_id', session.user.id)
+            .rpc('get_user_drive_tokens', { user_id: session.user.id })
             .maybeSingle();
 
           if (tokens?.access_token) {

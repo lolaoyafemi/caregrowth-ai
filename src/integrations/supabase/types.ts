@@ -251,6 +251,39 @@ export type Database = {
         }
         Relationships: []
       }
+      drive_tokens: {
+        Row: {
+          access_token: string
+          created_at: string | null
+          expires_in: number | null
+          id: string
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_token: string
+          created_at?: string | null
+          expires_in?: number | null
+          id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string | null
+          expires_in?: number | null
+          id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       google_connections: {
         Row: {
           access_token: string
@@ -714,6 +747,48 @@ export type Database = {
           training_priority?: number | null
           updated_at?: string
           uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      shared_folders: {
+        Row: {
+          created_at: string
+          documents_count: number | null
+          error_message: string | null
+          folder_id: string
+          folder_name: string
+          folder_url: string
+          id: string
+          last_synced_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          documents_count?: number | null
+          error_message?: string | null
+          folder_id: string
+          folder_name: string
+          folder_url: string
+          id?: string
+          last_synced_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          documents_count?: number | null
+          error_message?: string | null
+          folder_id?: string
+          folder_name?: string
+          folder_url?: string
+          id?: string
+          last_synced_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
