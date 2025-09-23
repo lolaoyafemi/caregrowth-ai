@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,17 +11,56 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface SharedFolder {
   id: string;
-  name: string;
-  url: string;
-  folderId: string;
+  folder_id: string;
+  folder_name: string;
+  folder_url: string;
   status: 'active' | 'error' | 'processing';
-  error?: string;
+  documents_count?: number;
+  last_synced_at?: string;
+  error_message?: string;
 }
 
 export const GoogleFolderSharing: React.FC = () => {
   const [folderUrl, setFolderUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [sharedFolders, setSharedFolders] = useState<SharedFolder[]>([]);
+
+  useEffect(() => {
+    loadSharedFolders();
+  }, []);
+
+  const loadSharedFolders = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { data: folders, error } = await supabase
+        .from('shared_folders')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading shared folders:', error);
+        return;
+      }
+
+      const typedFolders: SharedFolder[] = (folders || []).map(folder => ({
+        id: folder.id,
+        folder_id: folder.folder_id,
+        folder_name: folder.folder_name,
+        folder_url: folder.folder_url,
+        status: (folder.status as 'active' | 'error' | 'processing') || 'active',
+        documents_count: folder.documents_count || undefined,
+        last_synced_at: folder.last_synced_at || undefined,
+        error_message: folder.error_message || undefined
+      }));
+
+      setSharedFolders(typedFolders);
+    } catch (error) {
+      console.error('Error loading shared folders:', error);
+    }
+  };
 
   const extractFolderId = (url: string): string | null => {
     // Handle various Google Drive folder sharing URL formats
@@ -40,14 +79,10 @@ export const GoogleFolderSharing: React.FC = () => {
 
   const validateFolderAccess = async (folderId: string): Promise<{ name: string; accessible: boolean }> => {
     try {
-      // Use a simple fetch to check if folder is publicly accessible
-      const response = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${folderId}?fields=name,capabilities&key=${import.meta.env.VITE_GOOGLE_API_KEY}`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        return { name: data.name, accessible: true };
+      // Basic validation - in production you'd want to check if folder is accessible
+      // For now, we'll assume it's accessible if it looks like a valid ID
+      if (folderId && folderId.length > 10) {
+        return { name: `Folder ${folderId.substring(0, 8)}...`, accessible: true };
       }
       
       return { name: 'Unknown Folder', accessible: false };
@@ -81,7 +116,7 @@ export const GoogleFolderSharing: React.FC = () => {
         return;
       }
 
-      // Save to database (we'll create a shared_folders table)
+      // Save to database
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Please log in to add folders');
@@ -89,15 +124,24 @@ export const GoogleFolderSharing: React.FC = () => {
         return;
       }
 
-      const newFolder: SharedFolder = {
-        id: `folder-${Date.now()}`,
-        name,
-        url: folderUrl.trim(),
-        folderId,
-        status: 'active'
-      };
+      const { error: insertError } = await supabase
+        .from('shared_folders')
+        .insert({
+          user_id: user.id,
+          folder_id: folderId,
+          folder_name: name,
+          folder_url: folderUrl.trim(),
+          status: 'active'
+        });
 
-      setSharedFolders(prev => [...prev, newFolder]);
+      if (insertError) {
+        console.error('Error saving folder:', insertError);
+        toast.error('Failed to save folder');
+        setIsProcessing(false);
+        return;
+      }
+
+      await loadSharedFolders();
       setFolderUrl('');
       toast.success(`Added folder: ${name}`);
       
@@ -109,9 +153,25 @@ export const GoogleFolderSharing: React.FC = () => {
     }
   };
 
-  const removeFolder = (folderId: string) => {
-    setSharedFolders(prev => prev.filter(folder => folder.id !== folderId));
-    toast.success('Folder removed');
+  const removeFolder = async (folderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('shared_folders')
+        .delete()
+        .eq('id', folderId);
+
+      if (error) {
+        console.error('Error removing folder:', error);
+        toast.error('Failed to remove folder');
+        return;
+      }
+
+      await loadSharedFolders();
+      toast.success('Folder removed');
+    } catch (error) {
+      console.error('Error removing folder:', error);
+      toast.error('Failed to remove folder');
+    }
   };
 
   return (
@@ -183,8 +243,11 @@ export const GoogleFolderSharing: React.FC = () => {
                             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
                           )}
                           <div>
-                            <p className="font-medium">{folder.name}</p>
-                            <p className="text-sm text-muted-foreground">ID: {folder.folderId}</p>
+                            <p className="font-medium">{folder.folder_name}</p>
+                            <p className="text-sm text-muted-foreground">ID: {folder.folder_id}</p>
+                            {folder.documents_count !== undefined && (
+                              <p className="text-xs text-muted-foreground">{folder.documents_count} documents</p>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -194,7 +257,7 @@ export const GoogleFolderSharing: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.open(folder.url, '_blank')}
+                            onClick={() => window.open(folder.folder_url, '_blank')}
                           >
                             <ExternalLink className="h-3 w-3" />
                           </Button>

@@ -1169,6 +1169,15 @@ export type Database = {
           total_sales: number
         }[]
       }
+      get_user_drive_tokens: {
+        Args: { user_id: string }
+        Returns: {
+          access_token: string
+          created_at: string
+          expires_in: number
+          refresh_token: string
+        }[]
+      }
       is_current_user_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean

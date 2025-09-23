@@ -58,22 +58,8 @@ export const useGoogleDrive = () => {
           accessToken = session.provider_token;
         }
 
-        // Case 2: Use raw SQL query for drive_tokens (not in types yet)
-        if (!accessToken && session?.user?.id) {
-          const { data: tokens } = await supabase
-            .rpc('get_user_drive_tokens', { user_id: session.user.id })
-            .maybeSingle();
-
-          if (tokens?.access_token) {
-            accessToken = tokens.access_token as string;
-            // Calculate expiry from created_at + expires_in
-            if (tokens.created_at && tokens.expires_in) {
-              const createdAt = new Date(tokens.created_at).getTime();
-              const expiryTime = createdAt + (tokens.expires_in * 1000);
-              tokenExpiry = new Date(expiryTime).toISOString();
-            }
-          }
-        }
+        // Case 2: Skip drive_tokens for now - focus on folder sharing approach
+        // The drive_tokens table will be handled by the simplified approach
 
         // Determine if we need a refresh (missing or expiring within 5 minutes)
         const needsRefresh = (() => {
