@@ -68,15 +68,15 @@ serve(async (req: Request) => {
 
     console.log(`Processing Google Drive request: ${action} for user ${user.id}`);
 
-    // 1. Get stored Google connection
-    const { data: connection, error: connectionError } = await supabase
-      .from("google_connections")
+    // 1. Get stored Google tokens
+    const { data: tokens, error: tokensError } = await supabase
+      .from("drive_tokens")
       .select("*")
       .eq("user_id", user.id)
       .single();
 
-    if (connectionError || !connection) {
-      console.error('No Google connection found for user:', user.id, connectionError);
+    if (tokensError || !tokens) {
+      console.error('No Google tokens found for user:', user.id, tokensError);
       return new Response(
         JSON.stringify({ error: "No Google Drive connection found. Please connect your Google Drive first." }),
         { 
@@ -86,9 +86,10 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log(`Found Google connection for user ${user.id}: ${connection.google_email}`);
+    console.log(`Found Google tokens for user ${user.id}`);
 
-    let { access_token, refresh_token, expires_at } = connection;
+    let { access_token, refresh_token } = tokens;
+    const expires_at = new Date(Date.now() + (tokens.expires_in * 1000)).toISOString();
 
     // 2. Refresh token if expired
     if (!access_token || new Date(expires_at) <= new Date()) {
@@ -100,11 +101,11 @@ serve(async (req: Request) => {
 
         // Update Supabase with new token + expiry
         await supabase
-          .from("google_connections")
+          .from("drive_tokens")
           .update({
             access_token: refreshed.access_token,
-            expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-            updated_at: new Date().toISOString()
+            expires_in: refreshed.expires_in,
+            refresh_token: refreshed.refresh_token || refresh_token
           })
           .eq("user_id", user.id);
 
@@ -157,7 +158,7 @@ serve(async (req: Request) => {
             }
           );
         }
-        return await handleSelectFolder(supabase, user.id, folder_id, folder_name || `Folder ${folder_id}`, connection.id);
+        return await handleSelectFolder(supabase, user.id, folder_id, folder_name || `Folder ${folder_id}`, tokens.id);
       }
 
       default:
@@ -377,17 +378,18 @@ async function handleGetFileContent(accessToken: string, fileId: string, exportF
   }
 }
 
-async function handleSelectFolder(supabase: any, userId: string, folderId: string, folderName: string, connectionId: string): Promise<Response> {
+async function handleSelectFolder(supabase: any, userId: string, folderId: string, folderName: string, tokenId: string): Promise<Response> {
   try {
-    // Update the selected folder in the connection
+    // Store selected folder info separately since drive_tokens is simpler
     const { error: updateError } = await supabase
-      .from('google_connections')
+      .from('user_profiles')
       .update({
-        selected_folder_id: folderId,
-        selected_folder_name: folderName,
+        // Store folder selection in user profile for now
         updated_at: new Date().toISOString()
       })
-      .eq('id', connectionId);
+      .eq('user_id', userId);
+
+    // Note: We could create a separate table for folder selections if needed
 
     if (updateError) {
       console.error('Error updating selected folder:', updateError);

@@ -58,17 +58,22 @@ export const useGoogleDrive = () => {
           accessToken = session.provider_token;
         }
 
-        // Case 2: Read token from stored Google connection (separate Drive connect flow)
+        // Case 2: Read token from stored Google tokens (separate Drive connect flow)
         if (!accessToken && session?.user?.id) {
-          const { data: connection } = await supabase
-            .from('google_connections')
-            .select('access_token, expires_at, refresh_token')
+          const { data: tokens } = await supabase
+            .from('drive_tokens')
+            .select('access_token, expires_in, refresh_token, created_at')
             .eq('user_id', session.user.id)
             .maybeSingle();
 
-          if (connection?.access_token) {
-            accessToken = connection.access_token as string;
-            tokenExpiry = connection.expires_at;
+          if (tokens?.access_token) {
+            accessToken = tokens.access_token as string;
+            // Calculate expiry from created_at + expires_in
+            if (tokens.created_at && tokens.expires_in) {
+              const createdAt = new Date(tokens.created_at).getTime();
+              const expiryTime = createdAt + (tokens.expires_in * 1000);
+              tokenExpiry = new Date(expiryTime).toISOString();
+            }
           }
         }
 
