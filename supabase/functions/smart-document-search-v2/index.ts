@@ -64,7 +64,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dotProduct / magnitude;
 }
 
-// Generate embedding for search query
+// Generate embedding for search query using text-embedding-3-large
 async function generateEmbedding(text: string): Promise<number[] | null> {
   if (!openAIApiKey) {
     console.warn('OpenAI API key not configured');
@@ -81,8 +81,9 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'text-embedding-3-small',
+        model: 'text-embedding-3-large',
         input: text,
+        dimensions: 1536 // Use standard dimensions for better compatibility
       }),
     });
 
@@ -93,7 +94,7 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
     }
 
     const data = await response.json();
-    console.log('Successfully generated query embedding');
+    console.log('Successfully generated query embedding with text-embedding-3-large');
     return data.data[0].embedding;
   } catch (error) {
     console.error('Error generating embedding:', error);
@@ -101,134 +102,272 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
   }
 }
 
-// Enhanced search with multiple strategies
+// Normalize text for better search
+function normalizeText(text: string): string {
+  return text
+    .replace(/[\r\n]+/g, ' ') // Replace line breaks with spaces
+    .replace(/\s+/g, ' ') // Collapse multiple spaces
+    .replace(/['']/g, "'") // Normalize apostrophes
+    .replace(/[""]/g, '"') // Normalize quotes
+    .trim();
+}
+
+// MMR (Maximal Marginal Relevance) for diversity
+function applyMMR(chunks: DocumentChunk[], lambda: number = 0.7, maxResults: number = 12): DocumentChunk[] {
+  if (chunks.length <= maxResults) return chunks;
+  
+  const selected: DocumentChunk[] = [];
+  const remaining = [...chunks];
+  
+  // Select the highest scoring chunk first
+  selected.push(remaining.shift()!);
+  
+  while (selected.length < maxResults && remaining.length > 0) {
+    let bestIndex = 0;
+    let bestScore = -Infinity;
+    
+    for (let i = 0; i < remaining.length; i++) {
+      const candidate = remaining[i];
+      const relevanceScore = candidate.similarity || 0;
+      
+      // Calculate diversity penalty (similarity to already selected chunks)
+      let maxSimilarity = 0;
+      for (const selectedChunk of selected) {
+        if (candidate.embedding && selectedChunk.embedding) {
+          const similarity = cosineSimilarity(candidate.embedding, selectedChunk.embedding);
+          maxSimilarity = Math.max(maxSimilarity, similarity);
+        }
+      }
+      
+      // MMR score: λ * relevance - (1-λ) * redundancy
+      const mmrScore = lambda * relevanceScore - (1 - lambda) * maxSimilarity;
+      
+      if (mmrScore > bestScore) {
+        bestScore = mmrScore;
+        bestIndex = i;
+      }
+    }
+    
+    selected.push(remaining.splice(bestIndex, 1)[0]);
+  }
+  
+  return selected;
+}
+
+// Hybrid search with dense + sparse retrieval
 async function findRelevantChunks(
   questionEmbedding: number[] | null, 
   chunks: DocumentChunk[], 
-  question: string
+  question: string,
+  supabase: any,
+  userDocIds: string[]
 ): Promise<DocumentChunk[]> {
   if (!chunks || chunks.length === 0) {
     console.log('No chunks available for search');
     return [];
   }
 
-  console.log(`Searching through ${chunks.length} chunks for relevant content`);
+  console.log(`Starting hybrid search through ${chunks.length} chunks`);
+  const normalizedQuery = normalizeText(question);
 
-  // Strategy 1: Embedding-based similarity search (preferred)
+  let denseResults: DocumentChunk[] = [];
+  let sparseResults: DocumentChunk[] = [];
+
+  // Strategy 1: Dense retrieval (vector similarity) - top 50 
   if (questionEmbedding && chunks.some(chunk => chunk.embedding && Array.isArray(chunk.embedding))) {
-    console.log('Using embedding-based similarity search');
+    console.log('Running dense retrieval (vector similarity)...');
     
-    const chunksWithScores = chunks
-      .filter(chunk => chunk.embedding && Array.isArray(chunk.embedding) && chunk.embedding.length > 0)
+    const chunksWithEmbeddings = chunks.filter(chunk => 
+      chunk.embedding && Array.isArray(chunk.embedding) && chunk.embedding.length > 0
+    );
+
+    denseResults = chunksWithEmbeddings
       .map(chunk => {
         const similarity = cosineSimilarity(questionEmbedding, chunk.embedding!);
-        console.log(`Chunk similarity: ${similarity.toFixed(4)} for content: "${chunk.content.substring(0, 100)}..." (Page ${chunk.page_number || 'N/A'})`);
         return {
           ...chunk,
           similarity,
-          searchMethod: 'embedding'
+          searchMethod: 'dense'
         };
       })
-      .sort((a, b) => b.similarity! - a.similarity!);
+      .sort((a, b) => b.similarity! - a.similarity!)
+      .slice(0, 50); // Top 50 for dense retrieval
 
-    if (chunksWithScores.length > 0) {
-      const topScore = chunksWithScores[0].similarity!;
-      const minThreshold = 0.15;
-      const adaptiveThreshold = Math.max(minThreshold, topScore * 0.5);
-      
-      let relevantChunks = chunksWithScores.filter(chunk => chunk.similarity! > adaptiveThreshold);
-      
-      if (relevantChunks.length === 0 && chunksWithScores.length > 0) {
-        relevantChunks = chunksWithScores.slice(0, 5);
-        console.log(`No chunks above threshold, taking top 5 chunks`);
-      } else {
-        console.log(`Found ${relevantChunks.length} chunks above adaptive threshold ${adaptiveThreshold.toFixed(3)}`);
-      }
-      
-      return relevantChunks.slice(0, 8); // Increased to 8 for better context
-    }
+    console.log(`Dense retrieval found ${denseResults.length} results, top score: ${denseResults[0]?.similarity?.toFixed(4) || 'N/A'}`);
   }
 
-  // Strategy 2: Keyword-based search (fallback)
-  console.log('Using keyword-based search as fallback');
-  const questionWords = question.toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
-    .split(/\s+/)
-    .filter(word => word.length > 2)
-    .slice(0, 10);
+  // Strategy 2: Sparse retrieval (full-text search) using Postgres
+  try {
+    console.log('Running sparse retrieval (full-text search)...');
+    
+    const { data: sparseChunks, error } = await supabase
+      .from('document_chunks')
+      .select('content, document_id, page_number, chunk_index, embedding, tsvector_content')
+      .in('document_id', userDocIds)
+      .textSearch('tsvector_content', normalizedQuery.split(' ').join(' | '), {
+        type: 'websearch'
+      })
+      .limit(30);
 
-  console.log('Searching for keywords:', questionWords);
-
-  const keywordMatches = chunks
-    .map(chunk => {
-      const content = chunk.content.toLowerCase();
-      const matches = questionWords.filter(word => content.includes(word));
-      const score = matches.length / Math.max(questionWords.length, 1);
-      
-      return {
+    if (!error && sparseChunks) {
+      sparseResults = sparseChunks.map((chunk: any) => ({
         ...chunk,
-        similarity: score,
-        searchMethod: 'keyword',
-        matchedWords: matches
-      };
-    })
-    .filter(chunk => chunk.similarity! > 0.1)
-    .sort((a, b) => b.similarity! - a.similarity!)
-    .slice(0, 8);
-
-  if (keywordMatches.length > 0) {
-    console.log(`Keyword search found ${keywordMatches.length} relevant chunks`);
-    return keywordMatches;
+        similarity: 0.8, // High base score for exact text matches
+        searchMethod: 'sparse'
+      }));
+      console.log(`Sparse retrieval found ${sparseResults.length} text matches`);
+    } else {
+      console.log('Sparse retrieval failed or returned no results:', error);
+    }
+  } catch (error) {
+    console.log('Sparse retrieval error:', error);
   }
 
-  // Strategy 3: If nothing else works, return first few chunks
-  console.log('No relevant chunks found, returning first 3 chunks as fallback');
-  return chunks.slice(0, 3).map(chunk => ({
-    ...chunk,
-    similarity: 0.1,
-    searchMethod: 'fallback'
-  }));
+  // Strategy 3: Keyword fallback if sparse search failed
+  if (sparseResults.length === 0) {
+    console.log('Using keyword-based search as sparse fallback');
+    const questionWords = normalizedQuery.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 2)
+      .slice(0, 15); // Increased for better coverage
+
+    const keywordMatches = chunks
+      .map(chunk => {
+        const content = normalizeText(chunk.content).toLowerCase();
+        const matches = questionWords.filter(word => content.includes(word));
+        const exactPhraseBonus = content.includes(normalizedQuery.toLowerCase()) ? 0.3 : 0;
+        const score = (matches.length / Math.max(questionWords.length, 1)) + exactPhraseBonus;
+        
+        return {
+          ...chunk,
+          similarity: score,
+          searchMethod: 'keyword',
+          matchedWords: matches
+        };
+      })
+      .filter(chunk => chunk.similarity! > 0.15)
+      .sort((a, b) => b.similarity! - a.similarity!)
+      .slice(0, 25);
+
+    sparseResults = keywordMatches;
+    console.log(`Keyword fallback found ${sparseResults.length} matches`);
+  }
+
+  // Strategy 4: Fusion scoring (combine dense + sparse)
+  console.log('Applying fusion scoring...');
+  const fusionResults = new Map<string, DocumentChunk>();
+  const denseWeight = 0.65;
+  const sparseWeight = 0.35;
+
+  // Add dense results
+  denseResults.forEach((chunk, index) => {
+    const key = `${chunk.document_id}_${chunk.chunk_index}`;
+    const normalizedScore = Math.max(0, chunk.similarity || 0);
+    fusionResults.set(key, {
+      ...chunk,
+      similarity: denseWeight * normalizedScore,
+      searchMethod: 'fusion'
+    });
+  });
+
+  // Merge sparse results
+  sparseResults.forEach(chunk => {
+    const key = `${chunk.document_id}_${chunk.chunk_index}`;
+    const existing = fusionResults.get(key);
+    const normalizedScore = Math.max(0, chunk.similarity || 0);
+    
+    if (existing) {
+      // Combine scores
+      existing.similarity = (existing.similarity || 0) + (sparseWeight * normalizedScore);
+      existing.searchMethod = 'hybrid';
+    } else {
+      // Add new sparse result
+      fusionResults.set(key, {
+        ...chunk,
+        similarity: sparseWeight * normalizedScore,
+        searchMethod: 'sparse-only'
+      });
+    }
+  });
+
+  // Sort by fused scores
+  let finalResults = Array.from(fusionResults.values())
+    .sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+
+  console.log(`Fusion scoring produced ${finalResults.length} results`);
+
+  // Strategy 5: Apply MMR for diversity
+  if (finalResults.length > 12) {
+    console.log('Applying MMR for result diversity...');
+    finalResults = applyMMR(finalResults, 0.7, 12);
+  }
+
+  // Minimum quality threshold
+  const qualityThreshold = 0.1;
+  finalResults = finalResults.filter(chunk => (chunk.similarity || 0) > qualityThreshold);
+
+  if (finalResults.length === 0) {
+    console.log('No results above quality threshold, returning top 3 chunks as fallback');
+    return chunks.slice(0, 3).map(chunk => ({
+      ...chunk,
+      similarity: 0.05,
+      searchMethod: 'fallback'
+    }));
+  }
+
+  console.log(`Final results: ${finalResults.length} chunks, methods used: ${[...new Set(finalResults.map(r => r.searchMethod))].join(', ')}`);
+  return finalResults.slice(0, 12);
 }
 
-// Generate AI answer from relevant chunks
+// Generate AI answer from relevant chunks with better context
 async function generateAnswer(question: string, relevantChunks: DocumentChunk[]): Promise<{ answer: string; tokensUsed?: number }> {
   if (!openAIApiKey) {
     throw new Error('OpenAI API key not configured');
   }
 
-  console.log(`Generating answer from ${relevantChunks.length} relevant chunks`);
+  console.log(`Generating answer from ${relevantChunks.length} relevant chunks using GPT-4o-mini`);
 
-  // Prepare context with page references
-  let context = "Based on these document excerpts with exact page references:\n\n";
+  // Group chunks by document and page for better context
+  const contextByDoc = new Map<string, { title: string; chunks: DocumentChunk[] }>();
   
-  const sources = new Map();
+  relevantChunks.forEach(chunk => {
+    if (!contextByDoc.has(chunk.document_id)) {
+      contextByDoc.set(chunk.document_id, { title: '', chunks: [] });
+    }
+    contextByDoc.get(chunk.document_id)!.chunks.push(chunk);
+  });
+
+  // Prepare enhanced context with document structure
+  let context = "Based on these document excerpts from your personal knowledge base:\n\n";
   
-  relevantChunks.forEach((chunk, index) => {
-    const pageRef = chunk.page_number ? ` (Page ${chunk.page_number})` : '';
-    const source = `Source ${index + 1}${pageRef}: ${chunk.content}\n\n`;
-    context += source;
+  let sourceIndex = 1;
+  contextByDoc.forEach((docData, docId) => {
+    const sortedChunks = docData.chunks.sort((a, b) => (a.page_number || 0) - (b.page_number || 0));
     
-    // Track document sources for later use
-    if (!sources.has(chunk.document_id)) {
-      sources.set(chunk.document_id, { page_numbers: new Set(), chunks: [] });
-    }
-    if (chunk.page_number) {
-      sources.get(chunk.document_id).page_numbers.add(chunk.page_number);
-    }
-    sources.get(chunk.document_id).chunks.push(chunk);
+    sortedChunks.forEach(chunk => {
+      const pageRef = chunk.page_number ? ` (Page ${chunk.page_number})` : '';
+      const sectionRef = chunk.section_path ? ` [${chunk.section_path}]` : '';
+      const methodInfo = chunk.searchMethod ? ` [${chunk.searchMethod}, score: ${(chunk.similarity || 0).toFixed(3)}]` : '';
+      
+      context += `Source ${sourceIndex}${pageRef}${sectionRef}${methodInfo}:\n${chunk.content}\n\n`;
+      sourceIndex++;
+    });
   });
 
   const prompt = `${context}
 
 Question: ${question}
 
-Instructions: 
-- Answer the question using ONLY the provided content above
-- Always cite specific page numbers when available (e.g., "According to page 5...")  
+Instructions for accurate answers:
+- Answer ONLY using the provided document excerpts above
+- ALWAYS cite specific page numbers when available (e.g., "According to page 5...")
+- Quote relevant text directly when it answers the question
 - If information spans multiple pages, mention all relevant page numbers
-- If the answer isn't in the provided content, say "I don't have information about this in the provided documents"
-- Be specific and detailed in your response
-- Quote relevant text when appropriate`;
+- If the answer requires information not in the provided excerpts, say "I don't have enough information in the provided documents to fully answer this question"
+- Be specific, detailed, and accurate
+- Highlight the exact phrases from the documents that support your answer
+- If you find conflicting information, mention it and cite the sources`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -242,15 +381,15 @@ Instructions:
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful AI assistant that answers questions based on document content with accurate page references.'
+            content: 'You are a precise AI assistant that answers questions based strictly on provided document content. Always cite page numbers and quote directly from the source material. Never make assumptions or add information not explicitly stated in the documents.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 1000,
-        temperature: 0.1
+        max_tokens: 1200, // Increased for more detailed responses
+        temperature: 0.1 // Low temperature for factual accuracy
       }),
     });
 
@@ -264,7 +403,7 @@ Instructions:
     const answer = data.choices[0].message.content;
     const tokensUsed = data.usage?.total_tokens;
 
-    console.log(`Generated answer (${tokensUsed} tokens): ${answer.substring(0, 200)}...`);
+    console.log(`Generated enhanced answer (${tokensUsed} tokens): ${answer.substring(0, 200)}...`);
     
     return { answer, tokensUsed };
   } catch (error) {
@@ -375,14 +514,15 @@ serve(async (req) => {
     const documentChunks = (chunks || []) as DocumentChunk[];
     console.log(`Retrieved ${documentChunks.length} chunks for search`);
 
-    // Find relevant chunks using enhanced search
-    const relevantChunks = await findRelevantChunks(questionEmbedding, documentChunks, query);
+    // Find relevant chunks using hybrid search
+    const relevantChunks = await findRelevantChunks(questionEmbedding, documentChunks, query, supabase, userDocIds);
     console.log(`Found ${relevantChunks.length} relevant chunks`);
 
     if (relevantChunks.length === 0) {
       return new Response(JSON.stringify({
-        answer: "I couldn't find any relevant information in the available documents to answer your question.",
+        answer: "No exact match found in your documents. This might be because the text uses different wording than your query, or the content hasn't been properly indexed yet.",
         sources: [],
+        searchSuggestion: "Try rephrasing your query with different keywords or check if your documents have been fully processed.",
         totalDocumentsSearched: userDocIds.length
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -401,24 +541,29 @@ serve(async (req) => {
     });
 
     const sources = relevantChunks
-      .map(chunk => {
+      .map((chunk, index) => {
         const docInfo = documentMap.get(chunk.document_id);
         return {
           documentTitle: docInfo?.title || 'Unknown Document',
           documentUrl: docInfo?.url || '',
-          relevantContent: chunk.content.substring(0, 300) + (chunk.content.length > 300 ? '...' : ''),
+          relevantContent: chunk.content.substring(0, 400) + (chunk.content.length > 400 ? '...' : ''),
           pageNumber: chunk.page_number,
-          confidence: chunk.similarity || 0
+          sectionPath: chunk.section_path,
+          confidence: Math.round((chunk.similarity || 0) * 100) / 100,
+          searchMethod: chunk.searchMethod,
+          rank: index + 1
         };
       })
       .filter((source, index, self) => 
         index === self.findIndex(s => 
-          s.documentTitle === source.documentTitle && s.pageNumber === source.pageNumber
+          s.documentTitle === source.documentTitle && 
+          s.pageNumber === source.pageNumber &&
+          s.relevantContent === source.relevantContent
         )
       )
-      .slice(0, 5);
+      .slice(0, 8); // Show more sources for transparency
 
-    console.log(`Enhanced search completed: ${sources.length} sources from ${userDocIds.length} documents`);
+    console.log(`Enhanced hybrid search completed: ${sources.length} sources from ${userDocIds.length} documents`);
 
     return new Response(JSON.stringify({
       answer,
