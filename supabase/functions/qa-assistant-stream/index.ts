@@ -52,6 +52,13 @@ serve(async (req) => {
 
     console.log('Streaming QA request:', { userId: user.id, question: question.substring(0, 100) });
 
+    // Get user's business profile for personalized context
+    const { data: userProfile } = await supabaseClient
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
     // Get shared knowledge base for context (super admin documents)
     const { data: sharedChunks } = await supabaseClient
       .from('document_chunks')
@@ -68,20 +75,44 @@ serve(async (req) => {
         .substring(0, 4000); // Increased context size
     }
 
+    // Build business context for personalized responses
+    let businessContext = '';
+    if (userProfile) {
+      businessContext = `
+BUSINESS CONTEXT:
+Business Name: ${userProfile.business_name || 'Your business'}
+Services: ${userProfile.services || userProfile.core_service || 'Home care services'}
+Location: ${userProfile.location || 'Your area'}
+Phone Number: ${userProfile.phone_number || 'Contact information'}
+Target Client: ${userProfile.ideal_client || 'Families needing care'}
+Main Offer: ${userProfile.main_offer || 'Professional home care'}
+Differentiator: ${userProfile.differentiator || 'Quality care services'}
+Big Promise: ${userProfile.big_promise || 'Exceptional care for loved ones'}
+Client Pain Points: ${Array.isArray(userProfile.pain_points) ? userProfile.pain_points.join(', ') : userProfile.pain_points || 'Finding reliable care'}
+Audience Problems: ${userProfile.audience_problem || 'Caregiving challenges'}
+Common Objections: ${Array.isArray(userProfile.objections) ? userProfile.objections.join(', ') : userProfile.objections || 'Cost and trust concerns'}
+Testimonial: ${userProfile.testimonial || 'Trusted by families in our community'}
+      `;
+    }
+
     // Build conversation context with enhanced system message
     const messages = [
       {
         role: 'system',
-        content: `You are Jared, a highly knowledgeable AI assistant for CareGrowthAI specializing in agency management, marketing, hiring, and compliance. You have access to comprehensive knowledge base materials.
+        content: `You are Jared, a highly knowledgeable AI assistant for CareGrowthAI specializing in agency management, marketing, hiring, and compliance. You have access to comprehensive knowledge base materials and the user's specific business information.
         
+        ${businessContext ? `${businessContext}\n\n` : ''}
         ${context ? `KNOWLEDGE BASE CONTEXT:\n${context}\n\n` : ''}
         
         INSTRUCTIONS:
-        - Use the knowledge base context above to provide accurate, detailed answers
+        - Use the business context above to provide personalized advice specific to their business
+        - Reference their business name, services, and specific challenges when relevant
+        - Use the knowledge base context to provide accurate, detailed answers
         - Reference specific pages when citing information (e.g., "According to page 5...")
-        - Provide actionable, practical advice for agency owners
+        - Provide actionable, practical advice tailored to their business model and target clients
         - Keep responses concise but comprehensive (200-400 words)
-        - If the knowledge base doesn't contain relevant information, use your general expertise
+        - When discussing marketing or operations, consider their specific differentiators and client pain points
+        - If addressing common objections, reference the ones specific to their business
         - Always be helpful and professional`
       },
       ...(conversationHistory || []).slice(-6), // Last 6 messages for context
