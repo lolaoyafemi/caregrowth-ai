@@ -52,22 +52,37 @@ serve(async (req) => {
 
     console.log('Streaming QA request:', { userId: user.id, question: question.substring(0, 100) });
 
-    // Get user documents for context
-    const { data: documents } = await supabaseClient
+    // Get shared knowledge base for context (super admin documents)
+    const { data: sharedChunks } = await supabaseClient
       .from('document_chunks')
-      .select('content, document_id')
-      .eq('user_id', user.id)
-      .limit(10);
+      .select('content, document_id, page_number')
+      .eq('is_shared', true)
+      .limit(15);
 
-    const context = documents?.map(doc => doc.content).join('\n\n') || '';
-    
-    // Build conversation context
+    // Build knowledge context from shared documents
+    let context = '';
+    if (sharedChunks && sharedChunks.length > 0) {
+      context = sharedChunks
+        .map(chunk => `Page ${chunk.page_number || 'N/A'}: ${chunk.content}`)
+        .join('\n\n')
+        .substring(0, 4000); // Increased context size
+    }
+
+    // Build conversation context with enhanced system message
     const messages = [
       {
         role: 'system',
-        content: `You are Jared, a helpful AI assistant for CareGrowthAI specializing in agency management, marketing, hiring, and compliance. 
-        ${context ? `Here's relevant context from the user's documents: ${context.substring(0, 2000)}` : ''}
-        Provide helpful, actionable advice. Keep responses conversational and under 300 words unless more detail is specifically requested.`
+        content: `You are Jared, a highly knowledgeable AI assistant for CareGrowthAI specializing in agency management, marketing, hiring, and compliance. You have access to comprehensive knowledge base materials.
+        
+        ${context ? `KNOWLEDGE BASE CONTEXT:\n${context}\n\n` : ''}
+        
+        INSTRUCTIONS:
+        - Use the knowledge base context above to provide accurate, detailed answers
+        - Reference specific pages when citing information (e.g., "According to page 5...")
+        - Provide actionable, practical advice for agency owners
+        - Keep responses concise but comprehensive (200-400 words)
+        - If the knowledge base doesn't contain relevant information, use your general expertise
+        - Always be helpful and professional`
       },
       ...(conversationHistory || []).slice(-6), // Last 6 messages for context
       { role: 'user', content: question }
@@ -84,8 +99,8 @@ serve(async (req) => {
         model: 'gpt-4o-mini',
         messages,
         stream: true,
-        max_tokens: 500,
-        temperature: 0.7,
+        max_tokens: 800, // Increased for more detailed responses
+        temperature: 0.3, // Lower temperature for more consistent, factual responses
       }),
     });
 

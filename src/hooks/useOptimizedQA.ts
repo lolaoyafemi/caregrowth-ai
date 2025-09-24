@@ -249,7 +249,7 @@ export const useOptimizedQA = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session?.access_token) throw new Error('No session');
 
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ljtikbkilyeyuexzhaqd.supabase.co';
+            const supabaseUrl = 'https://ljtikbkilyeyuexzhaqd.supabase.co';
             return fetch(
               `${supabaseUrl}/functions/v1/qa-assistant-stream`,
               {
