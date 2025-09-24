@@ -226,7 +226,7 @@ serve(async (req) => {
               event_data: {
                 file_name: file.name,
                 user_id: connection.user_id,
-                error: fileError.message,
+                error: (fileError as Error).message,
                 timestamp: new Date().toISOString()
               }
             });
@@ -249,7 +249,7 @@ serve(async (req) => {
           event_data: {
             connection_id: connection.id,
             user_id: connection.user_id,
-            error: connectionError.message,
+            error: (connectionError as Error).message,
             timestamp: new Date().toISOString()
           }
         });
@@ -281,7 +281,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Sync monitor error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

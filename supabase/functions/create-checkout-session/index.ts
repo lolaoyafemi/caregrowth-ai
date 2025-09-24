@@ -294,7 +294,7 @@ serve(async (req) => {
           console.warn('Coupon is not valid:', couponCode);
         }
       } catch (couponError) {
-        console.warn('Coupon validation failed, proceeding without discount:', couponError.message);
+        console.warn('Coupon validation failed, proceeding without discount:', (couponError as Error).message);
       }
     }
 
@@ -349,9 +349,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("=== CHECKOUT SESSION ERROR ===");
-    console.error("Error type:", error.constructor.name);
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
+    console.error("Error type:", (error as Error).constructor.name);
+    console.error("Error message:", (error as Error).message);
+    console.error("Error stack:", (error as Error).stack);
     
     let errorMessage = "An unexpected error occurred";
     if (error instanceof Error) {

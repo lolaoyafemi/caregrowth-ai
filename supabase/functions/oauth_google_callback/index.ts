@@ -93,7 +93,7 @@ serve(async (req) => {
   } catch (err) {
     console.error('OAuth Callback Error:', err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: (err as Error).message }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

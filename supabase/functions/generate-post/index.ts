@@ -34,6 +34,19 @@ serve(async (req) => {
     }
 
     const token = authHeader.substring(7);
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return new Response(JSON.stringify({
+        error: 'Server configuration error'
+      }), {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Verify the JWT token and get the user
@@ -58,7 +71,7 @@ serve(async (req) => {
     try {
       requestBody = await req.json();
     } catch (parseError) {
-      console.error('Failed to parse request body:', parseError.message);
+      console.error('Failed to parse request body:', (parseError as Error).message);
       return new Response(JSON.stringify({
         error: 'Invalid JSON in request body'
       }), {
@@ -106,7 +119,7 @@ serve(async (req) => {
       profile = await getUserProfile(supabase, authenticatedUserId);
       console.log('User profile loaded:', !!profile);
     } catch (profileError) {
-      console.error('Error loading user profile:', profileError.message);
+      console.error('Error loading user profile:', (profileError as Error).message);
       // Continue without profile - it's not critical for basic functionality
       profile = null;
     }
@@ -118,7 +131,7 @@ serve(async (req) => {
       businessContext = buildBusinessContext(profile, audience);
       console.log('Business context built for:', profile?.business_name || 'Unknown business');
     } catch (contextError) {
-      console.error('Error building business context:', contextError.message);
+      console.error('Error building business context:', (contextError as Error).message);
       // Provide minimal context as fallback
       businessContext = { business_name: 'Your Business', core_service: 'service' };
     }
@@ -136,7 +149,7 @@ serve(async (req) => {
         platform,
         audience: targetAudience,
         subject,
-        businessContext,
+        businessContext: typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext),
         openAIApiKey
       });
 
@@ -148,7 +161,7 @@ serve(async (req) => {
       contentSource = generatedContent.source || 'ai_generation';
     } catch (generationError) {
       console.error('❌ Content generation failed:', generationError);
-      throw new Error(`Content generation failed: ${generationError.message}`);
+      throw new Error(`Content generation failed: ${(generationError as Error).message}`);
     }
 
     // Apply additional personalization if we have business profile
@@ -165,7 +178,7 @@ serve(async (req) => {
     try {
       await logPostToHistory(supabase, authenticatedUserId, postType, tone, platform, targetAudience, finalPost);
     } catch (logError) {
-      console.error('Error logging post to history:', logError.message);
+      console.error('Error logging post to history:', (logError as Error).message);
       // Don't fail the entire request if logging fails
     }
 
@@ -193,7 +206,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-post function:', error);
     return new Response(JSON.stringify({
-      error: error.message
+      error: (error as Error).message
     }), {
       status: 500,
       headers: {

@@ -200,7 +200,7 @@ serve(async (req) => {
         try {
           fullSession = await stripe.checkout.sessions.retrieve(session.id, { expand: ['line_items.data.price'] });
         } catch (e) {
-          console.warn('Could not expand session line items, proceeding with base session:', e?.message);
+          console.warn('Could not expand session line items, proceeding with base session:', (e as Error)?.message);
         }
 
         const amountTotal = fullSession.amount_total ?? session.amount_total ?? 0; // in cents
@@ -821,7 +821,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Webhook error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

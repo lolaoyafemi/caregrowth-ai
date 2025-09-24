@@ -528,7 +528,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
       try {
         errorData = await response.json();
       } catch (jsonError) {
-        console.error('Failed to parse error response:', jsonError.message);
+        console.error('Failed to parse error response:', (jsonError as Error).message);
         throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
       }
       console.error('OpenAI API error:', errorData);
@@ -539,7 +539,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     try {
       data = await response.json();
     } catch (jsonError) {
-      console.error('Failed to parse OpenAI response:', jsonError.message);
+      console.error('Failed to parse OpenAI response:', (jsonError as Error).message);
       throw new Error('Invalid JSON response from OpenAI API');
     }
     

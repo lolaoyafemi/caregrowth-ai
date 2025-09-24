@@ -194,12 +194,8 @@ serve(async (req) => {
       sources: relevantChunks.length,
       debug: {
         documentsFound: userDocIds.length + sharedDocIds.length,
-        userDocuments: userDocIds.length,
-        sharedDocuments: sharedDocIds.length,
         chunksFound: allChunks.length,
         relevantChunks: relevantChunks.length,
-        userSourceChunks: relevantChunks.filter(c => !c.is_shared).length,
-        sharedSourceChunks: relevantChunks.filter(c => c.is_shared).length,
         searchMethod: relevantChunks[0]?.searchMethod || 'none',
         tokensUsed: tokensUsed,
         hasEmbedding: !!questionEmbedding
@@ -213,7 +209,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in qa-assistant function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'An error occurred processing your question'
+      error: (error as Error).message || 'An error occurred processing your question'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -70,7 +70,7 @@ serve(async (req) => {
     console.log('Selected prompt for regeneration:', selectedPrompt);
 
     // Enhanced function to parse arrays from prompt templates
-    const parsePromptArray = (text) => {
+    const parsePromptArray = (text: string): string[] => {
       if (!text || typeof text !== 'string') return [];
       
       try {
@@ -105,7 +105,7 @@ serve(async (req) => {
       });
 
       // Parse the appropriate section array
-      let sectionOptions = [];
+      let sectionOptions: string[] = [];
       
       if (section === 'hook') {
         sectionOptions = parsePromptArray(selectedPrompt.hook);
@@ -119,7 +119,7 @@ serve(async (req) => {
 
       if (sectionOptions.length > 0) {
         // Filter out the current content to avoid selecting the same option
-        const availableOptions = sectionOptions.filter(option => {
+        const availableOptions = sectionOptions.filter((option: string) => {
           const personalizedOption = personalizeText(option, profile);
           return personalizedOption !== currentContent;
         });
@@ -140,7 +140,7 @@ serve(async (req) => {
     }
 
     // Personalize text with business context
-    function personalizeText(text, profile) {
+    function personalizeText(text: string, profile: any): string {
       if (!profile || !text) return text;
       
       return text
@@ -168,7 +168,7 @@ serve(async (req) => {
     console.error('Error in regenerate-section function:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: (error as Error).message
     }), {
       status: 500,
       headers: {

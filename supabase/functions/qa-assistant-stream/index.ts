@@ -177,7 +177,7 @@ serve(async (req) => {
           console.error('Streaming error:', error);
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'error',
-            error: error.message
+            error: (error as Error).message
           })}\n\n`));
           controller.close();
         }
@@ -193,7 +193,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Edge function error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

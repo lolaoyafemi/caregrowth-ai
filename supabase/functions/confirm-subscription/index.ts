@@ -31,6 +31,15 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return new Response(JSON.stringify({ 
+        error: "Server configuration error" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false }
     });
@@ -216,11 +225,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("=== CONFIRM SUBSCRIPTION ERROR ===");
-    console.error("Error message:", error.message);
+    console.error("Error message:", (error as Error).message);
     
     return new Response(JSON.stringify({ 
       error: "Failed to confirm subscription",
-      details: error.message
+      details: (error as Error).message
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

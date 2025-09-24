@@ -247,7 +247,7 @@ async function handleListFiles(accessToken: string, folderId?: string, pageToken
   } catch (error) {
     console.error('Error listing files:', error);
     return new Response(
-      JSON.stringify({ error: `Failed to list files: ${error.message}` }),
+      JSON.stringify({ error: `Failed to list files: ${(error as Error).message}` }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -306,7 +306,7 @@ async function handleListFolders(accessToken: string, parentFolderId?: string, p
   } catch (error) {
     console.error('Error listing folders:', error);
     return new Response(
-      JSON.stringify({ error: `Failed to list folders: ${error.message}` }),
+      JSON.stringify({ error: `Failed to list folders: ${(error as Error).message}` }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -369,7 +369,7 @@ async function handleGetFileContent(accessToken: string, fileId: string, exportF
   } catch (error) {
     console.error('Error getting file content:', error);
     return new Response(
-      JSON.stringify({ error: `Failed to get file content: ${error.message}` }),
+      JSON.stringify({ error: `Failed to get file content: ${(error as Error).message}` }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -410,7 +410,7 @@ async function handleSelectFolder(supabase: any, userId: string, folderId: strin
   } catch (error) {
     console.error('Error selecting folder:', error);
     return new Response(
-      JSON.stringify({ error: `Failed to select folder: ${error.message}` }),
+      JSON.stringify({ error: `Failed to select folder: ${(error as Error).message}` }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

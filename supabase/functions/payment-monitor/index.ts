@@ -31,7 +31,7 @@ serve(async (req) => {
 
     if (error) {
       console.error('Error checking stuck payments:', error);
-      return new Response(JSON.stringify({ error: error.message }), {
+      return new Response(JSON.stringify({ error: error.message || 'Database error' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
@@ -70,7 +70,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Payment monitoring error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

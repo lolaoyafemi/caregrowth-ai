@@ -75,7 +75,7 @@ serve(async (req) => {
         }
       } catch (fetchError) {
         console.error('Error fetching Google Drive content:', fetchError);
-        throw new Error(`Failed to fetch content: ${fetchError.message}`);
+        throw new Error(`Failed to fetch content: ${(fetchError as Error).message}`);
       }
     }
 
@@ -148,7 +148,7 @@ serve(async (req) => {
         return { success: true, index };
       } catch (error) {
         console.error(`Error processing chunk ${index}:`, error);
-        return { success: false, index, error: error.message };
+        return { success: false, index, error: (error as Error).message };
       }
     });
 
@@ -187,7 +187,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: (error as Error).message
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

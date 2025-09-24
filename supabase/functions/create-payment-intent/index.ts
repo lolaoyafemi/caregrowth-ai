@@ -195,11 +195,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("=== CREATE PAYMENT INTENT ERROR ===");
-    console.error("Error message:", error.message);
+    console.error("Error message:", (error as Error).message);
     
     return new Response(JSON.stringify({ 
       error: "Failed to create payment intent",
-      details: error.message
+      details: (error as Error).message
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
