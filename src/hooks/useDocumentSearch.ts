@@ -118,12 +118,12 @@ export const useDocumentSearch = () => {
       return null;
     }
 
-    console.log('=== FAST SMART DOCUMENT SEARCH START ===');
+    console.log('=== SMART DOCUMENT SEARCH START ===');
     console.log('User:', user.id);
     console.log('Current credits:', credits);
     console.log('Query:', query.substring(0, 100) + '...');
 
-    // Check credits before proceeding (1 credit for fast search)
+    // Check credits before proceeding (1 credit for optimized search)
     if (credits < 1) {
       console.log('Insufficient credits for Smart Document Search');
       toast.error("You need at least 1 credit to use Smart Document Search. Please purchase more credits to continue.", {
@@ -140,17 +140,17 @@ export const useDocumentSearch = () => {
     setError(null);
 
     try {
-      console.log('Making API call to smart-document-search-fast...');
+      console.log('Making API call to smart-document-search-v2...');
       // First, make the API call to avoid deducting credits if the search fails
-      const { data, error: functionError } = await supabase.functions.invoke('smart-document-search-fast', {
+      const { data, error: functionError } = await supabase.functions.invoke('smart-document-search-v2', {
         body: {
           query: query.trim(),
           userId: user.id
         }
       });
 
-      console.log('fast-search response data:', data);
-      console.log('fast-search response error:', functionError);
+      console.log('smart-document-search response data:', data);
+      console.log('smart-document-search response error:', functionError);
 
       if (functionError) {
         throw new Error(functionError.message);
@@ -164,9 +164,9 @@ export const useDocumentSearch = () => {
       // Only deduct credits after successful search (reduced to 1 credit)
       const deductionResult = await deductCredits(
         user.id, 
-        'fast_document_search', 
+        'smart_document_search', 
         1, 
-        `Fast document search: ${query.substring(0, 50)}...`
+        `Smart document search: ${query.substring(0, 50)}...`
       );
 
       console.log('Deduction result:', deductionResult);
@@ -181,12 +181,12 @@ export const useDocumentSearch = () => {
       refetch();
       
       toast.success(`1 credit deducted. Remaining credits: ${deductionResult.remainingCredits}`);
-      console.log('=== FAST SMART DOCUMENT SEARCH END ===');
+      console.log('=== SMART DOCUMENT SEARCH END ===');
       return data as SmartSearchResult;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to perform smart search';
       setError(errorMessage);
-      console.error('Fast document search error:', err);
+      console.error('Smart document search error:', err);
       return null;
     } finally {
       setIsSearching(false);

@@ -110,7 +110,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
     "humorous": "Light, witty, playful, entertaining, relatable"
   };
 
-  const toneDescription = toneMap[tone.toLowerCase()] || "Clear and natural tone";
+  const toneDescription = (toneMap as any)[tone.toLowerCase()] || "Clear and natural tone";
 
   // Add randomization and variety to ensure unique content
   const currentTime = new Date().toISOString();
@@ -172,7 +172,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
       
       return selectedPrompt;
     } catch (error) {
-      console.error('Unexpected error in getRandomPromptByCategory:', error.message);
+      console.error('Unexpected error in getRandomPromptByCategory:', (error as Error).message);
       return null;
     }
   };
@@ -182,7 +182,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   try {
     randomPrompt = await getRandomPromptByCategory(postType);
   } catch (error) {
-    console.error('Error getting random prompt:', error.message);
+    console.error('Error getting random prompt:', (error as Error).message);
     throw new Error(`Failed to fetch prompt for category: ${postType}`);
   }
   
@@ -210,14 +210,14 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
           filteredSettings = getDefaultSettings(selectedModel);
         }
       } catch (parseError) {
-        console.warn('Failed to parse OpenAI settings JSON, using defaults:', parseError.message);
+        console.warn('Failed to parse OpenAI settings JSON, using defaults:', (parseError as Error).message);
         filteredSettings = getDefaultSettings(selectedModel);
       }
     } else {
       filteredSettings = getDefaultSettings(selectedModel);
     }
   } catch (error) {
-    console.error('Error processing OpenAI settings:', error.message);
+    console.error('Error processing OpenAI settings:', (error as Error).message);
     filteredSettings = getDefaultSettings(selectedModel);
   }
 
@@ -467,7 +467,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     }
   };
 
-  const selectedPrompt = contentPrompts[postType];
+  const selectedPrompt = (contentPrompts as any)[postType];
   
   if (!selectedPrompt) {
     console.error(`No content prompt found for postType: ${postType}. Available types:`, Object.keys(contentPrompts));
@@ -486,7 +486,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
       throw new Error('Model selection failed');
     }
     
-    if (!contentPrompts[postType]) {
+    if (!(contentPrompts as any)[postType]) {
       throw new Error(`Content prompt not found for post type: ${postType}`);
     }
     
@@ -495,11 +495,11 @@ CTA: [clear call-to-action - 1-2 sentences]`
       messages: [
         {
           role: 'system',
-          content: contentPrompts[postType].systemPrompt || 'You are a helpful assistant.'
+          content: (contentPrompts as any)[postType].systemPrompt || 'You are a helpful assistant.'
         },
         {
           role: 'user',
-          content: contentPrompts[postType].userPrompt || 'Generate social media content.'
+          content: (contentPrompts as any)[postType].userPrompt || 'Generate social media content.'
         }
       ],
       // Use filtered OpenAI settings
@@ -519,8 +519,8 @@ CTA: [clear call-to-action - 1-2 sentences]`
         body: JSON.stringify(requestBody)
       });
     } catch (fetchError) {
-      console.error('Network error calling OpenAI API:', fetchError.message);
-      throw new Error(`Network error: ${fetchError.message}`);
+      console.error('Network error calling OpenAI API:', (fetchError as Error).message);
+      throw new Error(`Network error: ${(fetchError as Error).message}`);
     }
 
     if (!response.ok) {

@@ -20,6 +20,7 @@ interface DocumentChunk {
   similarity?: number;
   searchMethod?: string;
   matchedWords?: string[];
+  section_path?: string;
 }
 
 interface SmartSearchResult {
@@ -64,7 +65,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dotProduct / magnitude;
 }
 
-// Generate embedding for search query using text-embedding-3-large
+// Generate embedding for search query using text-embedding-3-small for speed
 async function generateEmbedding(text: string): Promise<number[] | null> {
   if (!openAIApiKey) {
     console.warn('OpenAI API key not configured');
@@ -72,7 +73,7 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
   }
 
   try {
-    console.log(`Generating embedding for query: ${text.substring(0, 100)}...`);
+    console.log(`Generating optimized embedding for query: ${text.substring(0, 100)}...`);
     
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
@@ -81,9 +82,9 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'text-embedding-3-large',
+        model: 'text-embedding-3-small', // Faster model for speed
         input: text,
-        dimensions: 1536 // Use standard dimensions for better compatibility
+        dimensions: 512 // Reduced dimensions for speed
       }),
     });
 
@@ -94,7 +95,7 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
     }
 
     const data = await response.json();
-    console.log('Successfully generated query embedding with text-embedding-3-large');
+    console.log('Successfully generated optimized embedding');
     return data.data[0].embedding;
   } catch (error) {
     console.error('Error generating embedding:', error);
@@ -154,7 +155,7 @@ function applyMMR(chunks: DocumentChunk[], lambda: number = 0.7, maxResults: num
   return selected;
 }
 
-// Hybrid search with dense + sparse retrieval
+// Fast search with optimized retrieval strategy
 async function findRelevantChunks(
   questionEmbedding: number[] | null, 
   chunks: DocumentChunk[], 
@@ -167,157 +168,101 @@ async function findRelevantChunks(
     return [];
   }
 
-  console.log(`Starting hybrid search through ${chunks.length} chunks`);
+  console.log(`Starting optimized search through ${chunks.length} chunks`);
   const normalizedQuery = normalizeText(question);
 
-  let denseResults: DocumentChunk[] = [];
-  let sparseResults: DocumentChunk[] = [];
+  let results: DocumentChunk[] = [];
 
-  // Strategy 1: Dense retrieval (vector similarity) - top 50 
+  // Strategy 1: Vector similarity (optimized for speed)
   if (questionEmbedding && chunks.some(chunk => chunk.embedding && Array.isArray(chunk.embedding))) {
-    console.log('Running dense retrieval (vector similarity)...');
+    console.log('Running optimized vector search...');
     
     const chunksWithEmbeddings = chunks.filter(chunk => 
       chunk.embedding && Array.isArray(chunk.embedding) && chunk.embedding.length > 0
     );
 
-    denseResults = chunksWithEmbeddings
+    const vectorResults = chunksWithEmbeddings
       .map(chunk => {
         const similarity = cosineSimilarity(questionEmbedding, chunk.embedding!);
         return {
           ...chunk,
           similarity,
-          searchMethod: 'dense'
+          searchMethod: 'vector'
         };
       })
+      .filter(chunk => chunk.similarity! > 0.25) // Optimized threshold
       .sort((a, b) => b.similarity! - a.similarity!)
-      .slice(0, 50); // Top 50 for dense retrieval
+      .slice(0, 10); // Limit for speed
 
-    console.log(`Dense retrieval found ${denseResults.length} results, top score: ${denseResults[0]?.similarity?.toFixed(4) || 'N/A'}`);
+    results = vectorResults;
+    console.log(`Vector search found ${results.length} results`);
   }
 
-  // Strategy 2: Sparse retrieval (full-text search) using Postgres
-  try {
-    console.log('Running sparse retrieval (full-text search)...');
+  // Strategy 2: Fast text search fallback
+  if (results.length < 8) {
+    console.log('Running fast text search...');
     
-    const { data: sparseChunks, error } = await supabase
-      .from('document_chunks')
-      .select('content, document_id, page_number, chunk_index, embedding, tsvector_content')
-      .in('document_id', userDocIds)
-      .textSearch('tsvector_content', normalizedQuery.split(' ').join(' | '), {
-        type: 'websearch'
-      })
-      .limit(30);
+    try {
+      const { data: textResults, error } = await supabase
+        .from('document_chunks')
+        .select('content, document_id, page_number, chunk_index, embedding')
+        .in('document_id', userDocIds)
+        .textSearch('tsvector_content', normalizedQuery.split(' ').slice(0, 5).join(' | '))
+        .limit(8);
 
-    if (!error && sparseChunks) {
-      sparseResults = sparseChunks.map((chunk: any) => ({
-        ...chunk,
-        similarity: 0.8, // High base score for exact text matches
-        searchMethod: 'sparse'
-      }));
-      console.log(`Sparse retrieval found ${sparseResults.length} text matches`);
-    } else {
-      console.log('Sparse retrieval failed or returned no results:', error);
+      if (!error && textResults) {
+        const textChunks = textResults
+          .map((chunk: any) => ({
+            ...chunk,
+            similarity: 0.7, // High score for text matches
+            searchMethod: 'text'
+          }))
+          .filter((chunk: any) => 
+            !results.some(r => `${r.document_id}_${r.chunk_index}` === `${chunk.document_id}_${chunk.chunk_index}`)
+          );
+        
+        results = [...results, ...textChunks].slice(0, 10);
+        console.log(`Text search added ${textChunks.length} results`);
+      }
+    } catch (error) {
+      console.log('Text search failed:', error);
     }
-  } catch (error) {
-    console.log('Sparse retrieval error:', error);
   }
 
-  // Strategy 3: Keyword fallback if sparse search failed
-  if (sparseResults.length === 0) {
-    console.log('Using keyword-based search as sparse fallback');
+  // Strategy 3: Keyword fallback (if still not enough results)
+  if (results.length < 5) {
+    console.log('Running keyword fallback...');
     const questionWords = normalizedQuery.toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
       .filter(word => word.length > 2)
-      .slice(0, 15); // Increased for better coverage
+      .slice(0, 8);
 
     const keywordMatches = chunks
       .map(chunk => {
         const content = normalizeText(chunk.content).toLowerCase();
         const matches = questionWords.filter(word => content.includes(word));
-        const exactPhraseBonus = content.includes(normalizedQuery.toLowerCase()) ? 0.3 : 0;
-        const score = (matches.length / Math.max(questionWords.length, 1)) + exactPhraseBonus;
+        const score = matches.length / Math.max(questionWords.length, 1);
         
         return {
           ...chunk,
           similarity: score,
-          searchMethod: 'keyword',
-          matchedWords: matches
+          searchMethod: 'keyword'
         };
       })
-      .filter(chunk => chunk.similarity! > 0.15)
+      .filter(chunk => 
+        chunk.similarity! > 0.2 && 
+        !results.some(r => `${r.document_id}_${r.chunk_index}` === `${chunk.document_id}_${chunk.chunk_index}`)
+      )
       .sort((a, b) => b.similarity! - a.similarity!)
-      .slice(0, 25);
+      .slice(0, 5);
 
-    sparseResults = keywordMatches;
-    console.log(`Keyword fallback found ${sparseResults.length} matches`);
+    results = [...results, ...keywordMatches].slice(0, 10);
+    console.log(`Keyword search added ${keywordMatches.length} results`);
   }
 
-  // Strategy 4: Fusion scoring (combine dense + sparse)
-  console.log('Applying fusion scoring...');
-  const fusionResults = new Map<string, DocumentChunk>();
-  const denseWeight = 0.65;
-  const sparseWeight = 0.35;
-
-  // Add dense results
-  denseResults.forEach((chunk, index) => {
-    const key = `${chunk.document_id}_${chunk.chunk_index}`;
-    const normalizedScore = Math.max(0, chunk.similarity || 0);
-    fusionResults.set(key, {
-      ...chunk,
-      similarity: denseWeight * normalizedScore,
-      searchMethod: 'fusion'
-    });
-  });
-
-  // Merge sparse results
-  sparseResults.forEach(chunk => {
-    const key = `${chunk.document_id}_${chunk.chunk_index}`;
-    const existing = fusionResults.get(key);
-    const normalizedScore = Math.max(0, chunk.similarity || 0);
-    
-    if (existing) {
-      // Combine scores
-      existing.similarity = (existing.similarity || 0) + (sparseWeight * normalizedScore);
-      existing.searchMethod = 'hybrid';
-    } else {
-      // Add new sparse result
-      fusionResults.set(key, {
-        ...chunk,
-        similarity: sparseWeight * normalizedScore,
-        searchMethod: 'sparse-only'
-      });
-    }
-  });
-
-  // Sort by fused scores
-  let finalResults = Array.from(fusionResults.values())
-    .sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
-
-  console.log(`Fusion scoring produced ${finalResults.length} results`);
-
-  // Strategy 5: Apply MMR for diversity
-  if (finalResults.length > 12) {
-    console.log('Applying MMR for result diversity...');
-    finalResults = applyMMR(finalResults, 0.7, 12);
-  }
-
-  // Minimum quality threshold
-  const qualityThreshold = 0.1;
-  finalResults = finalResults.filter(chunk => (chunk.similarity || 0) > qualityThreshold);
-
-  if (finalResults.length === 0) {
-    console.log('No results above quality threshold, returning top 3 chunks as fallback');
-    return chunks.slice(0, 3).map(chunk => ({
-      ...chunk,
-      similarity: 0.05,
-      searchMethod: 'fallback'
-    }));
-  }
-
-  console.log(`Final results: ${finalResults.length} chunks, methods used: ${[...new Set(finalResults.map(r => r.searchMethod))].join(', ')}`);
-  return finalResults.slice(0, 12);
+  console.log(`Optimized search completed: ${results.length} chunks found`);
+  return results.slice(0, 8); // Final limit for speed
 }
 
 // Generate AI answer from relevant chunks with better context
@@ -388,8 +333,8 @@ Instructions for accurate answers:
             content: prompt
           }
         ],
-        max_tokens: 1200, // Increased for more detailed responses
-        temperature: 0.1 // Low temperature for factual accuracy
+        max_tokens: 600, // Optimized for speed and quality
+        temperature: 0.2 // Balanced for accuracy and efficiency
       }),
     });
 
@@ -577,7 +522,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in smart-document-search-v2:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'An error occurred processing your search'
+      error: (error as Error).message || 'An error occurred processing your search'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

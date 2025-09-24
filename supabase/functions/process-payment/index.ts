@@ -32,7 +32,7 @@ serve(async (req) => {
       throw new Error('Failed to fetch users');
     }
 
-    const user = userData.users.find(u => u.email === email);
+    const user = userData.users.find((u: any) => u.email === email);
     if (!user) {
       console.error('User not found for email:', email);
       throw new Error('User not found');

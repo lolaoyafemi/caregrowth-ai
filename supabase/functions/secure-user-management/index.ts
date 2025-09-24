@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { rateLimiters, applyRateLimit } from '../security/rate-limiter.ts';
 import { InputValidator, securitySchemas, validateRequest } from '../security/input-validator.ts';
 
@@ -22,7 +23,7 @@ const userManagementSchema = securitySchemas.adminAction.extend({
   targetUserId: securitySchemas.uuid.optional(),
   newRole: securitySchemas.userRole.optional(),
   userData: securitySchemas.textContent.optional(),
-  reason: securitySchemas.textContent.max(500).optional()
+  reason: z.string().max(500).optional()
 });
 
 async function logSecurityEvent(eventType: string, userId: string, details: any) {
@@ -106,7 +107,7 @@ serve(async (req) => {
     // Apply rate limiting
     const rateLimitResult = await applyRateLimit(req, rateLimiters.admin);
     if (!rateLimitResult.success) {
-      return rateLimitResult.response;
+      return (rateLimitResult as any).response;
     }
 
     // Validate super admin access

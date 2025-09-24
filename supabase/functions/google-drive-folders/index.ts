@@ -122,7 +122,7 @@ serve(async (req: Request) => {
         .from('google_connections')
         .update({
           selected_folder_id: selectedFolderId,
-          selected_folder_name: req.body?.folderName || 'Selected Folder',
+          selected_folder_name: (req.body as any)?.folderName || 'Selected Folder',
         })
         .eq('id', connection.id);
 

@@ -114,7 +114,7 @@ serve(async (req) => {
       console.error('Stripe billing portal error:', stripeError);
       
       // If billing portal is not configured, provide fallback
-      if (stripeError.message?.includes('not activated')) {
+      if ((stripeError as any).message?.includes('not activated')) {
         return new Response(JSON.stringify({ 
           error: "Billing portal not configured",
           message: "Please contact support to manage your subscription",
@@ -130,11 +130,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("=== CUSTOMER PORTAL ERROR ===");
-    console.error("Error message:", error.message);
+    console.error("Error message:", (error as Error).message);
     
     return new Response(JSON.stringify({ 
       error: "Failed to create customer portal session",
-      details: error.message
+      details: (error as Error).message
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
