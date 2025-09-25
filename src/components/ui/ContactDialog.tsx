@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Instagram, Twitter, Mail, MessageCircle } from 'lucide-react';
+import { Facebook, Mail, MessageCircle } from 'lucide-react';
 
 interface ContactDialogProps {
   children: React.ReactNode;
@@ -19,18 +19,11 @@ const ContactDialog = ({ children }: ContactDialogProps) => {
 
   const contactOptions = [
     {
-      platform: 'Instagram',
-      handle: '@caregrowth',
-      link: 'https://instagram.com/caregrowth',
-      icon: Instagram,
-      color: 'text-pink-600'
-    },
-    {
-      platform: 'Twitter',
-      handle: '@caregrowth',
-      link: 'https://twitter.com/caregrowth',
-      icon: Twitter,
-      color: 'text-blue-400'
+      platform: 'Facebook',
+      handle: 'CareGrowth AI',
+      link: 'https://www.facebook.com/share/14K2ppBpWoA/',
+      icon: Facebook,
+      color: 'text-blue-600'
     },
     {
       platform: 'WhatsApp',
@@ -41,8 +34,8 @@ const ContactDialog = ({ children }: ContactDialogProps) => {
     },
     {
       platform: 'Email',
-      handle: 'app@caregrowth.ai',
-      link: 'mailto:app@caregrowth.ai',
+      handle: 'support@caregrowthai.com',
+      link: 'mailto:support@caregrowthai.com',
       icon: Mail,
       color: 'text-gray-600'
     }
