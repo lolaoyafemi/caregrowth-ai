@@ -32,7 +32,7 @@ export class SearchService {
     return dotProduct / magnitude;
   }
 
-  // Enhanced search with multiple strategies
+  // Enhanced search with improved accuracy and relevance scoring
   async findRelevantChunks(questionEmbedding: number[] | null, chunks: DocumentChunk[], question: string): Promise<DocumentChunk[]> {
     if (!chunks || chunks.length === 0) {
       console.log('No chunks available for search');
@@ -40,68 +40,74 @@ export class SearchService {
     }
 
     console.log(`Searching through ${chunks.length} chunks for relevant content`);
+    const normalizedQuestion = this.normalizeText(question);
+    const queryWords = this.extractKeywords(normalizedQuestion);
 
-    // Strategy 1: Embedding-based similarity search (preferred)
+    // Strategy 1: Enhanced embedding-based search with improved scoring
     if (questionEmbedding && chunks.some(chunk => chunk.embedding && Array.isArray(chunk.embedding))) {
-      console.log('Using embedding-based similarity search');
+      console.log('Using enhanced embedding-based similarity search');
       
       const chunksWithScores = chunks
         .filter(chunk => chunk.embedding && Array.isArray(chunk.embedding) && chunk.embedding.length > 0)
         .map(chunk => {
-          const similarity = this.cosineSimilarity(questionEmbedding, chunk.embedding!);
-          console.log(`Chunk similarity: ${similarity.toFixed(4)} for content: "${chunk.content.substring(0, 100)}..."`);
+          const baseSimilarity = this.cosineSimilarity(questionEmbedding, chunk.embedding!);
+          
+          // Enhanced scoring with multiple factors
+          let enhancedScore = baseSimilarity;
+          
+          // Content relevance boost
+          const contentRelevance = this.calculateContentRelevance(chunk.content, queryWords);
+          enhancedScore += contentRelevance * 0.2;
+          
+          // Length penalty for very short or very long chunks
+          const lengthPenalty = this.calculateLengthPenalty(chunk.content);
+          enhancedScore *= lengthPenalty;
+          
+          console.log(`Chunk similarity: base=${baseSimilarity.toFixed(4)}, enhanced=${enhancedScore.toFixed(4)} for: "${chunk.content.substring(0, 80)}..."`);
+          
           return {
             ...chunk,
-            similarity,
-            searchMethod: 'embedding'
+            similarity: enhancedScore,
+            baseSimilarity,
+            contentRelevance,
+            searchMethod: 'enhanced_embedding'
           };
         })
         .sort((a, b) => b.similarity! - a.similarity!);
 
       if (chunksWithScores.length > 0) {
-        // Use a much lower threshold and adaptive approach
         const topScore = chunksWithScores[0].similarity!;
-        const minThreshold = 0.15; // Much lower base threshold
-        const adaptiveThreshold = Math.max(minThreshold, topScore * 0.5); // 50% of top score
+        console.log(`Top similarity score: ${topScore.toFixed(4)}`);
         
-        let relevantChunks = chunksWithScores.filter(chunk => chunk.similarity! > adaptiveThreshold);
+        // Improved threshold calculation
+        const qualityThreshold = Math.max(0.25, topScore * 0.6); // Higher base threshold
+        let relevantChunks = chunksWithScores.filter(chunk => chunk.similarity! >= qualityThreshold);
         
-        // If we still have no chunks, take the top 3 chunks regardless of score
-        if (relevantChunks.length === 0 && chunksWithScores.length > 0) {
-          relevantChunks = chunksWithScores.slice(0, 3);
-          console.log(`No chunks above threshold, taking top 3 chunks with scores: ${relevantChunks.map(c => c.similarity!.toFixed(4)).join(', ')}`);
+        // Only fall back to lower scores if we have very few results
+        if (relevantChunks.length < 2 && chunksWithScores.length > 0) {
+          const fallbackThreshold = Math.max(0.15, topScore * 0.4);
+          relevantChunks = chunksWithScores.filter(chunk => chunk.similarity! >= fallbackThreshold).slice(0, 4);
+          console.log(`Using fallback threshold ${fallbackThreshold.toFixed(3)}, found ${relevantChunks.length} chunks`);
         } else {
-          console.log(`Found ${relevantChunks.length} chunks above adaptive threshold ${adaptiveThreshold.toFixed(3)}`);
+          console.log(`Found ${relevantChunks.length} high-quality chunks above threshold ${qualityThreshold.toFixed(3)}`);
         }
         
-        return relevantChunks.slice(0, 5); // Limit to top 5
+        return relevantChunks.slice(0, 6); // Return top 6 for better context
       }
     }
 
-    // Strategy 2: Keyword-based search (fallback)
-    console.log('Using keyword-based search as fallback');
-    const questionWords = question.toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(word => word.length > 2) // Lower threshold for words
-      .slice(0, 10);
-
-    console.log('Searching for keywords:', questionWords);
-
+    // Strategy 2: Improved keyword-based search
+    console.log('Using improved keyword-based search as fallback');
     const keywordMatches = chunks
       .map(chunk => {
-        const content = chunk.content.toLowerCase();
-        const matches = questionWords.filter(word => content.includes(word));
-        const score = matches.length / Math.max(questionWords.length, 1);
-        
+        const score = this.calculateKeywordMatchScore(chunk.content, queryWords, normalizedQuestion);
         return {
           ...chunk,
           similarity: score,
-          searchMethod: 'keyword',
-          matchedWords: matches
+          searchMethod: 'keyword'
         };
       })
-      .filter(chunk => chunk.similarity! > 0.1) // Lower threshold for keyword matching
+      .filter(chunk => chunk.similarity! > 0.3) // Higher threshold for keyword matching
       .sort((a, b) => b.similarity! - a.similarity!)
       .slice(0, 5);
 
@@ -110,12 +116,72 @@ export class SearchService {
       return keywordMatches;
     }
 
-    // Strategy 3: If nothing else works, return first few chunks
-    console.log('No relevant chunks found, returning first 2 chunks as fallback');
-    return chunks.slice(0, 2).map(chunk => ({
-      ...chunk,
-      similarity: 0.1,
-      searchMethod: 'fallback'
-    }));
+    // Strategy 3: Return empty array instead of random chunks
+    console.log('No relevant chunks found with sufficient confidence');
+    return [];
+  }
+
+  private normalizeText(text: string): string {
+    return text.trim().toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ');
+  }
+
+  private extractKeywords(text: string): string[] {
+    const stopWords = new Set(['the', 'is', 'at', 'which', 'on', 'and', 'a', 'to', 'are', 'as', 'was', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'shall', 'of', 'in', 'for', 'with', 'by', 'from', 'about', 'an', 'or', 'but', 'if', 'then', 'than', 'when', 'where', 'how', 'what', 'who', 'why']);
+    
+    return text.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !stopWords.has(word))
+      .slice(0, 10);
+  }
+
+  private calculateContentRelevance(content: string, queryWords: string[]): number {
+    if (queryWords.length === 0) return 0;
+    
+    const contentLower = content.toLowerCase();
+    let totalRelevance = 0;
+    
+    queryWords.forEach(word => {
+      const wordCount = (contentLower.match(new RegExp(`\\b${word}\\b`, 'g')) || []).length;
+      if (wordCount > 0) {
+        // Give higher score for multiple occurrences, but with diminishing returns
+        totalRelevance += Math.min(wordCount * 0.3, 1.0);
+      }
+    });
+    
+    return Math.min(totalRelevance / queryWords.length, 1.0);
+  }
+
+  private calculateLengthPenalty(content: string): number {
+    const length = content.length;
+    if (length < 50) return 0.7; // Too short, likely not meaningful
+    if (length > 2000) return 0.9; // Very long, might be less focused
+    return 1.0; // Good length
+  }
+
+  private calculateKeywordMatchScore(content: string, queryWords: string[], originalQuery: string): number {
+    const contentLower = content.toLowerCase();
+    
+    // Check for exact phrase match first
+    if (originalQuery.length > 10 && contentLower.includes(originalQuery)) {
+      return 0.95;
+    }
+    
+    // Calculate individual word matches with position weighting
+    let score = 0;
+    let totalWords = queryWords.length;
+    
+    queryWords.forEach((word, index) => {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      const matches = contentLower.match(regex);
+      if (matches) {
+        // Give higher weight to words that appear earlier in the query
+        const positionWeight = 1 - (index * 0.1);
+        const wordScore = Math.min(matches.length * 0.2, 0.6) * positionWeight;
+        score += wordScore;
+      }
+    });
+    
+    return totalWords > 0 ? Math.min(score / totalWords, 1.0) : 0;
   }
 }

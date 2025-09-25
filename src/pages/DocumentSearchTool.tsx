@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { SearchIcon, LinkIcon, ExternalLinkIcon, Trash2Icon, LogOutIcon, UserIcon, FileTextIcon, BookOpenIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoogleDocuments } from '@/hooks/useGoogleDocuments';
-import { useCachedSearch } from '@/hooks/useCachedSearch';
+import { useEnhancedSearch } from '@/hooks/useEnhancedSearch';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { highlightKeywords } from '@/utils/highlightKeywords';
 import GoogleSignIn from '@/components/auth/GoogleSignIn';
@@ -17,7 +17,7 @@ import GoogleDriveFolderSync from '@/components/drive/GoogleDriveFolderSync';
 const DocumentSearchTool = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { documents, loading: docsLoading, addDocument, deleteDocument } = useGoogleDocuments();
-  const { smartSearch, basicSearch, isSearching, error: searchError, metrics, getCacheStats } = useCachedSearch();
+  const { smartSearch, basicSearch, isSearching, error: searchError } = useEnhancedSearch();
   const { credits, loading: creditsLoading } = useUserCredits();
   
   const [query, setQuery] = useState('');

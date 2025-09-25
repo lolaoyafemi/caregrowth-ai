@@ -162,7 +162,80 @@ function applyMMR(chunks: DocumentChunk[], lambda: number = 0.7, maxResults: num
   return selected;
 }
 
-// Enhanced intelligent search with multi-layered approach
+// Enhanced search utility functions for improved accuracy
+function extractKeywords(text: string): string[] {
+  const stopWords = new Set([
+    'the', 'is', 'at', 'which', 'on', 'and', 'a', 'to', 'are', 'as', 'was', 'were', 
+    'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 
+    'could', 'should', 'may', 'might', 'must', 'can', 'shall', 'of', 'in', 'for', 
+    'with', 'by', 'from', 'about', 'an', 'or', 'but', 'if', 'then', 'than', 
+    'when', 'where', 'how', 'what', 'who', 'why', 'this', 'that', 'these', 'those'
+  ]);
+  
+  return text.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !stopWords.has(word))
+    .slice(0, 8); // Limit to most important keywords
+}
+
+function calculateContentRelevance(content: string, queryKeywords: string[]): number {
+  if (queryKeywords.length === 0) return 0;
+  
+  const contentLower = content.toLowerCase();
+  let relevanceScore = 0;
+  
+  queryKeywords.forEach((keyword, index) => {
+    // Create regex for whole word matching
+    const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    const matches = contentLower.match(regex);
+    
+    if (matches) {
+      // Weight earlier keywords more heavily
+      const positionWeight = 1 - (index * 0.1);
+      // Diminishing returns for multiple occurrences
+      const occurrenceScore = Math.min(matches.length * 0.25, 0.8);
+      relevanceScore += occurrenceScore * positionWeight;
+    }
+  });
+  
+  return Math.min(relevanceScore / queryKeywords.length, 1.0);
+}
+
+function calculatePhraseBonus(content: string, normalizedQuery: string): number {
+  const contentLower = content.toLowerCase();
+  
+  // Check for exact phrase match
+  if (normalizedQuery.length > 10 && contentLower.includes(normalizedQuery)) {
+    return 0.2; // Strong bonus for exact phrase
+  }
+  
+  // Check for partial phrase matches (3+ consecutive words)
+  const queryWords = normalizedQuery.split(/\s+/);
+  if (queryWords.length >= 3) {
+    for (let i = 0; i <= queryWords.length - 3; i++) {
+      const phrase = queryWords.slice(i, i + 3).join(' ');
+      if (contentLower.includes(phrase)) {
+        return 0.1; // Moderate bonus for partial phrase
+      }
+    }
+  }
+  
+  return 0;
+}
+
+function calculateLengthQuality(content: string): number {
+  const length = content.length;
+  
+  // Optimal length range for document chunks
+  if (length < 100) return 0.8; // Too short, might lack context
+  if (length > 1500) return 0.9; // Very long, might be less focused
+  if (length >= 200 && length <= 800) return 1.0; // Ideal length
+  
+  return 0.95; // Good length
+}
+
+// Precision-focused intelligent search with quality filtering
 async function findRelevantChunks(
   questionEmbedding: number[] | null, 
   chunks: DocumentChunk[], 
@@ -175,14 +248,15 @@ async function findRelevantChunks(
     return [];
   }
 
-  console.log(`Starting enhanced intelligent search through ${chunks.length} chunks`);
+  console.log(`Starting precision-focused search through ${chunks.length} chunks`);
   const normalizedQuery = normalizeText(question);
+  const queryKeywords = extractKeywords(normalizedQuery);
 
   let results: DocumentChunk[] = [];
 
-  // Strategy 1: Enhanced vector similarity with adaptive thresholds
+  // Strategy 1: High-precision vector similarity search
   if (questionEmbedding && chunks.some(chunk => chunk.embedding && Array.isArray(chunk.embedding))) {
-    console.log('Running enhanced vector search with adaptive scoring...');
+    console.log('Running high-precision vector search...');
     
     const chunksWithEmbeddings = chunks.filter(chunk => 
       chunk.embedding && Array.isArray(chunk.embedding) && chunk.embedding.length > 0
@@ -190,105 +264,109 @@ async function findRelevantChunks(
 
     const vectorResults = chunksWithEmbeddings
       .map(chunk => {
-        const similarity = cosineSimilarity(questionEmbedding, chunk.embedding!);
+        const baseSimilarity = cosineSimilarity(questionEmbedding, chunk.embedding!);
         
-        // Enhanced scoring with context boosting
-        let boostedScore = similarity;
+        // Multi-factor scoring for higher accuracy
+        let qualityScore = baseSimilarity;
         
-        // Boost score if chunk contains exact query terms
-        const queryTerms = normalizedQuery.toLowerCase().split(/\s+/).filter(term => term.length > 3);
-        const contentLower = chunk.content.toLowerCase();
-        const exactMatches = queryTerms.filter(term => contentLower.includes(term)).length;
-        const matchBoost = (exactMatches / Math.max(queryTerms.length, 1)) * 0.1;
-        boostedScore += matchBoost;
+        // Content relevance factor
+        const contentRelevance = calculateContentRelevance(chunk.content, queryKeywords);
+        qualityScore += contentRelevance * 0.15;
         
-        // Boost score for chunks with page numbers (more structured content)
-        if (chunk.page_number) {
-          boostedScore += 0.05;
-        }
+        // Exact phrase bonus
+        const phraseBonus = calculatePhraseBonus(chunk.content, normalizedQuery);
+        qualityScore += phraseBonus;
+        
+        // Length quality factor
+        const lengthFactor = calculateLengthQuality(chunk.content);
+        qualityScore *= lengthFactor;
         
         return {
           ...chunk,
-          similarity: boostedScore,
-          originalSimilarity: similarity,
-          searchMethod: 'enhanced_vector',
-          exactMatches,
-          matchBoost
+          similarity: qualityScore,
+          baseSimilarity,
+          contentRelevance,
+          phraseBonus,
+          lengthFactor,
+          searchMethod: 'precision_vector'
+        } as DocumentChunk & { 
+          similarity: number; 
+          baseSimilarity: number; 
+          contentRelevance: number; 
+          phraseBonus: number; 
+          lengthFactor: number; 
+          searchMethod: string; 
         };
       })
-      .filter(chunk => chunk.similarity! > 0.15) // Lower threshold with boosting
+      .filter(chunk => {
+        // Higher quality threshold
+        const hasGoodSimilarity = chunk.similarity! > 0.3;
+        const hasContentRelevance = chunk.contentRelevance! > 0.2;
+        return hasGoodSimilarity || hasContentRelevance;
+      })
       .sort((a, b) => b.similarity! - a.similarity!)
-      .slice(0, 15); // More results for better selection
+      .slice(0, 12);
 
     results = vectorResults;
-    console.log(`Enhanced vector search found ${results.length} results with boosted scoring`);
+    console.log(`Precision vector search found ${results.length} high-quality results`);
+    
+    // Log top results for debugging
+    results.slice(0, 3).forEach((chunk, idx) => {
+      console.log(`Top result ${idx + 1}: similarity=${chunk.similarity!.toFixed(3)}, relevance=${(chunk as any).contentRelevance?.toFixed(3) || '0.000'}`);
+    });
   }
 
-  // Strategy 2: Fast text search fallback
-  if (results.length < 8) {
-    console.log('Running fast text search...');
+  // Strategy 2: High-quality text search (only if vector search insufficient)
+  if (results.length < 6) {
+    console.log('Running supplementary text search...');
     
     try {
+      // Use better text search query
+      const searchTerms = queryKeywords.slice(0, 4).join(' | ');
       const { data: textResults, error } = await supabase
         .from('document_chunks')
         .select('content, document_id, page_number, chunk_index, embedding')
         .in('document_id', userDocIds)
-        .textSearch('tsvector_content', normalizedQuery.split(' ').slice(0, 5).join(' | '))
-        .limit(8);
+        .textSearch('tsvector_content', searchTerms)
+        .limit(6);
 
-      if (!error && textResults) {
-        const textChunks = textResults
+      if (!error && textResults && textResults.length > 0) {
+        const filteredTextChunks = textResults
+          .filter((chunk: any) => {
+            // Avoid duplicates
+            const isDuplicate = results.some(r => 
+              `${r.document_id}_${r.chunk_index}` === `${chunk.document_id}_${chunk.chunk_index}`
+            );
+            
+            // Quality check for text results
+            const hasGoodContent = chunk.content && chunk.content.length > 100;
+            const hasRelevantKeywords = queryKeywords.some((keyword: string) => 
+              chunk.content.toLowerCase().includes(keyword.toLowerCase())
+            );
+            
+            return !isDuplicate && hasGoodContent && hasRelevantKeywords;
+          })
           .map((chunk: any) => ({
             ...chunk,
-            similarity: 0.7, // High score for text matches
+            similarity: 0.6, // Good score for text matches
             searchMethod: 'text'
-          }))
-          .filter((chunk: any) => 
-            !results.some(r => `${r.document_id}_${r.chunk_index}` === `${chunk.document_id}_${chunk.chunk_index}`)
-          );
+          }));
         
-        results = [...results, ...textChunks].slice(0, 10);
-        console.log(`Text search added ${textChunks.length} results`);
+        results = [...results, ...filteredTextChunks].slice(0, 10);
+        console.log(`Text search added ${filteredTextChunks.length} quality results`);
       }
     } catch (error) {
       console.log('Text search failed:', error);
     }
   }
 
-  // Strategy 3: Keyword fallback (if still not enough results)
-  if (results.length < 5) {
-    console.log('Running keyword fallback...');
-    const questionWords = normalizedQuery.toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(word => word.length > 2)
-      .slice(0, 8);
+  // Only return results if they meet quality standards
+  const finalResults = results
+    .filter(chunk => chunk.similarity! > 0.25) // Quality threshold
+    .slice(0, 8);
 
-    const keywordMatches = chunks
-      .map(chunk => {
-        const content = normalizeText(chunk.content).toLowerCase();
-        const matches = questionWords.filter(word => content.includes(word));
-        const score = matches.length / Math.max(questionWords.length, 1);
-        
-        return {
-          ...chunk,
-          similarity: score,
-          searchMethod: 'keyword'
-        };
-      })
-      .filter(chunk => 
-        chunk.similarity! > 0.2 && 
-        !results.some(r => `${r.document_id}_${r.chunk_index}` === `${chunk.document_id}_${chunk.chunk_index}`)
-      )
-      .sort((a, b) => b.similarity! - a.similarity!)
-      .slice(0, 5);
-
-    results = [...results, ...keywordMatches].slice(0, 10);
-    console.log(`Keyword search added ${keywordMatches.length} results`);
-  }
-
-  console.log(`Optimized search completed: ${results.length} chunks found`);
-  return results.slice(0, 8); // Final limit for speed
+  console.log(`Final high-quality results: ${finalResults.length} chunks`);
+  return finalResults;
 }
 
 // Generate enhanced AI answer with page verification
