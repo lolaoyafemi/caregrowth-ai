@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Facebook, Mail, MessageCircle } from 'lucide-react';
+import { Facebook, Mail } from 'lucide-react';
 
 interface ContactDialogProps {
   children: React.ReactNode;
@@ -17,29 +17,22 @@ interface ContactDialogProps {
 const ContactDialog = ({ children }: ContactDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const contactOptions = [
+  const contactOptions = useMemo(() => [
     {
       platform: 'Facebook',
       handle: 'CareGrowth AI',
       link: 'https://www.facebook.com/share/14K2ppBpWoA/',
       icon: Facebook,
-      color: 'text-blue-600'
-    },
-    {
-      platform: 'WhatsApp',
-      handle: '+2348068920166',
-      link: 'https://wa.me/2348068920166',
-      icon: MessageCircle,
-      color: 'text-green-600'
+      color: 'text-primary'
     },
     {
       platform: 'Email',
       handle: 'support@caregrowthai.com',
       link: 'mailto:support@caregrowthai.com',
       icon: Mail,
-      color: 'text-gray-600'
+      color: 'text-muted-foreground'
     }
-  ];
+  ], []);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -62,14 +55,14 @@ const ContactDialog = ({ children }: ContactDialogProps) => {
                 href={option.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 rounded-lg border hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-4 p-4 rounded-lg border hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <div className={`${option.color}`}>
-                  <IconComponent />
+                <div className={option.color}>
+                  <IconComponent size={20} />
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900">{option.platform}</div>
-                  <div className="text-sm text-gray-600">{option.handle}</div>
+                  <div className="font-medium text-foreground">{option.platform}</div>
+                  <div className="text-sm text-muted-foreground">{option.handle}</div>
                 </div>
               </a>
             );
