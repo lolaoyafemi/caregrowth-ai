@@ -26,18 +26,22 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: '#1939B7',
-					foreground: '#FFFFFF'
+					DEFAULT: 'hsl(222.2 47.4% 11.2%)',
+					foreground: 'hsl(210 40% 98%)',
+					50: 'hsl(222.2 47.4% 95%)',
+					100: 'hsl(222.2 47.4% 85%)',
+					500: 'hsl(222.2 47.4% 11.2%)',
+					900: 'hsl(222.2 47.4% 5%)'
 				},
 				secondary: {
-					DEFAULT: '#519F10',
-					foreground: '#FFFFFF'
+					DEFAULT: 'hsl(210 40% 96%)',
+					foreground: 'hsl(222.2 84% 4.9%)'
 				},
 				caregrowth: {
-					blue: '#1939B7',
-					green: '#519F10',
-					lightblue: '#E6EBFA',
-					lightgreen: '#EAF5E5'
+					blue: 'hsl(222.2 47.4% 11.2%)',
+					green: 'hsl(104 71% 34%)',
+					lightblue: 'hsl(222.2 47.4% 95%)',
+					lightgreen: 'hsl(104 71% 94%)'
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',

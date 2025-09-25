@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, memo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from './UserContext';
+import { logger } from '@/lib/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -30,9 +31,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [initializing, setInitializing] = useState(true);
   const { setUser: setUserContext } = useUser();
 
-  const fetchUserFromPublicTable = async (userId: string, userEmail: string) => {
+  const fetchUserFromPublicTable = useCallback(async (userId: string, userEmail: string) => {
     try {
-      console.log('Fetching user data from user_profiles for:', userId);
+      logger.debug('Fetching user data from user_profiles', { userId });
       
       // Fetch user data from user_profiles table
       const { data: userData, error } = await supabase
@@ -42,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching user data:', error);
+        logger.warn('Error fetching user data, using defaults', { error: error.message });
         // Default to user role for security (admins must be explicitly assigned)
         setUserContext({
           id: userId,
@@ -56,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (userData) {
-        console.log('User data from public.users:', userData);
+        logger.debug('User data loaded successfully', { userId: userData.user_id });
         // Use the actual role from database - validate it matches UserRole type
         const userRole = userData.role as 'super_admin' | 'agency_admin' | 'admin' | 'collaborator' | 'content_writer';
         
@@ -69,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           agencyId: undefined // Will be added when agencies are implemented
         });
       } else {
-        console.log('No user data found in public.users, user may not be created yet');
+        logger.info('No user data found, creating default profile');
         // Default to user role for security (admins must be explicitly assigned)
         setUserContext({
           id: userId,
@@ -81,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
     } catch (error) {
-      console.error('Error in fetchUserFromPublicTable:', error);
+      logger.error('Failed to fetch user profile', { error, userId });
       // Fallback to user role for security
       setUserContext({
         id: userId,
@@ -92,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         agencyId: undefined
       });
     }
-  };
+  }, [session, setUserContext]);
 
   useEffect(() => {
     let mounted = true;
@@ -100,11 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for existing session first (synchronously if possible)
     const initializeAuth = async () => {
       try {
-        console.log('Initializing auth...');
+        logger.debug('Initializing authentication');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error);
+          logger.error('Failed to get session', error);
           if (mounted) {
             setLoading(false);
             setInitializing(false);
@@ -112,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        console.log('Initial session check:', session?.user?.email);
+        logger.debug('Session check completed', { hasUser: !!session?.user });
         
         if (!mounted) return;
         
@@ -132,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         setInitializing(false);
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        logger.error('Authentication initialization failed', error);
         if (mounted) {
           setLoading(false);
           setInitializing(false);
@@ -145,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('Auth state changed:', event, session?.user?.email);
+        logger.debug('Auth state changed', { event, hasUser: !!session?.user });
         setSession(session);
         setUser(session?.user ?? null);
         
