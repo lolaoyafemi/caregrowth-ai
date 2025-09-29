@@ -39,7 +39,7 @@ const StripePaymentPage = () => {
       id: 'professional',
       name: 'CareGrowth Assistant Credits',
       price: 49,
-      credits: 1000,
+      credits: 3000,
       features: [
         '1000 Social Media Posts', 
         'Unlimited Documents', 
