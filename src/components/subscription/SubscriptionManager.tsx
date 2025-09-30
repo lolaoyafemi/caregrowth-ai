@@ -95,6 +95,20 @@ const SubscriptionManager = () => {
     );
   }
 
+  const getStatusColor = (status: string, cancelAtPeriodEnd: boolean) => {
+  if (cancelAtPeriodEnd) return 'destructive';
+  if (status === 'active') return 'default';
+  if (status === 'past_due') return 'destructive';
+  return 'secondary';
+};
+
+const getStatusText = (status: string, cancelAtPeriodEnd: boolean) => {
+  if (cancelAtPeriodEnd) return 'Canceling';
+  if (status === 'active') return 'Active';
+  if (status === 'past_due') return 'Past Due';
+  return status.replace('_', ' ').toUpperCase();
+};
+
   return (
     <Card>
       <CardHeader>
