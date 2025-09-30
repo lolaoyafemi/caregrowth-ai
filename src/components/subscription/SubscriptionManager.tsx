@@ -217,49 +217,7 @@ const SubscriptionManager = () => {
         )}
 
            
-          {showTransactions && (
-            <div className="bg-muted/30 rounded-lg p-4 mt-4">
-              <h4 className="font-semibold mb-3 flex items-center">
-                <DollarSign className="h-4 w-4 mr-2" />
-                Recent Transactions
-              </h4>
-              {transactions.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {transactions.slice(0, 10).map((transaction) => (
-                    <div key={transaction.id} className="flex justify-between items-center py-2 px-3 bg-background rounded border">
-                      <div>
-                        <div className="text-sm font-medium">
-                          {transaction.type === 'purchase' ? 'Credit Purchase' : 'Credit Usage'}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(transaction.timestamp).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-sm font-medium ${
-                          transaction.type === 'purchase' ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {transaction.type === 'purchase' ? '+' : ''}{transaction.amount} credits
-                        </div>
-                        <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
-                          {transaction.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No transactions found</p>
-              )}
-            </div>
-          )}
-        </div>
+      
       </CardContent>
     </Card>
   );
