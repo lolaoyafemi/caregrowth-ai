@@ -271,16 +271,7 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
               </li>
             ))}
           </ul>
-           <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={createPaymentIntent}
-                  disabled={!couponCode.trim() || loading}
-                  className="px-4"
-                >
-                  Apply
-                </Button>
+      
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -298,7 +289,7 @@ const PaymentForm: React.FC<EmbeddedPaymentFormProps> = ({ plan, onSuccess, onCa
                     setCouponCode(e.target.value);
                     setCouponError('');
                   }}
-                  placeholder="Enter coupon code"
+                  placeholder="Do you have Coupon Code"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
                 <Button
