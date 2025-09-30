@@ -196,7 +196,7 @@ const StripePaymentPage = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center justify-center">
                       <CreditCard className="w-5 h-5 mr-2" />
-                      Complete Subscription
+                      To Complete Subscription
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 text-center">
@@ -212,7 +212,7 @@ const StripePaymentPage = () => {
                       </>
                      )}
                     
-                    <div className="space-y-4 mt-6">
+             <div className="space-y-4 mt-6">
                       <div>
                         <label htmlFor="coupon" className="block text-sm font-medium text-gray-700 mb-2">
                           Coupon Code (Optional)
