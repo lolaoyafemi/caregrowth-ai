@@ -21,7 +21,7 @@ export const uuidSchema = z.string().uuid('Invalid UUID format');
 export const creditsSchema = z.number()
   .int('Credits must be a whole number')
   .min(0, 'Credits cannot be negative')
-  .max(1000000, 'Credits amount too large');
+  .max(9000, 'Credits amount too large');
 
 // Input sanitization utilities
 export const sanitizeString = (input: string): string => {
