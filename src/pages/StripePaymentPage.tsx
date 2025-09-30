@@ -41,7 +41,7 @@ const StripePaymentPage = () => {
       price: 49,
       credits: 3000,
       features: [
-        '1000 Social Media Posts', 
+        '3000 Social Media Posts', 
         'Unlimited Documents', 
         'Unlimited Q&A Queries', 
         'Priority Support', 
