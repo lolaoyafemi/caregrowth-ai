@@ -216,7 +216,7 @@ const SubscriptionManager = () => {
           </div>
         )}
 
-        <div className="pt-4 border-t space-y-3">
+        {/*       <div className="pt-4 border-t space-y-3">
           <Button 
             onClick={handleManageSubscription}
             disabled={managingSubscription}
@@ -294,5 +294,5 @@ const SubscriptionManager = () => {
     </Card>
   );
 };
-
+*/}
 export default SubscriptionManager;
