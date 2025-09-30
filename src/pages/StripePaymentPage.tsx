@@ -14,7 +14,6 @@ import { supabase } from '@/integrations/supabase/client';
 const StripePaymentPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('professional');
   const [loading, setLoading] = useState(false);
-  const [couponCode, setCouponCode] = useState('');
   
   const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -107,8 +106,7 @@ const StripePaymentPage = () => {
           amount: selectedPlanData.price,
           email: user.email,
           user_id: user.id,
-          credits: selectedPlanData.credits,
-          couponCode: couponCode.trim() || undefined
+          credits: selectedPlanData.credits
         }
       });
 
@@ -212,25 +210,7 @@ const StripePaymentPage = () => {
                       </>
                      )}
                     
-             <div className="space-y-4 mt-6">
-                      <div>
-                        <label htmlFor="coupon" className="block text-sm font-medium text-gray-700 mb-2">
-                          Coupon Code (Optional)
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            id="coupon"
-                            type="text"
-                            value={couponCode}
-                            onChange={(e) => setCouponCode(e.target.value)}
-                            placeholder="Enter coupon code"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-caregrowth-blue focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button 
+                    <Button
                       onClick={handleSubscribe}
                       disabled={!selectedPlanData || !user || !session || loading}
                       className="w-full bg-caregrowth-blue hover:bg-blue-700 text-white py-4 text-lg transition-colors disabled:opacity-50"
