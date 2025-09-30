@@ -390,7 +390,8 @@ serve(async (req) => {
         // Fallback credit calculation if not in metadata
         if (!creditsPerCycle) {
           const unitAmount = subscription.items.data[0].price.unit_amount || 0;
-          creditsPerCycle = Math.floor(unitAmount / 100) * 20; // $1 = 20 credits default
+          if (unitAmount === 4900) creditsPerCycle = 3000; // $49 subscription = 3000 credits
+          else creditsPerCycle = Math.floor(unitAmount / 100) * 20; // fallback mapping
         }
         
         console.log('=== SUBSCRIPTION DETAILS ===');
@@ -440,96 +441,9 @@ serve(async (req) => {
         console.log('SUCCESS: Subscription record created/updated');
         console.log('Subscription DB ID:', subscriptionData.id);
 
-        // Allocate initial credits
-        if (creditsPerCycle > 0) {
-          console.log('=== ALLOCATING INITIAL CREDITS ===');
-          console.log('Credits to allocate:', creditsPerCycle);
-          console.log('User ID:', userId);
-          console.log('Email:', customerEmail);
-          
-          const expiresAt = new Date(subscription.current_period_end * 1000);
-          console.log('Credits expire at:', expiresAt.toISOString());
-          
-          try {
-            console.log('Inserting credit purchase record...');
-            const { data: creditPurchase, error: creditError } = await supabase.from('credit_purchases').insert({
-              user_id: userId,
-              email: customerEmail,
-              credits_granted: creditsPerCycle,
-              expires_at: expiresAt.toISOString(),
-              source_type: 'subscription',
-              source_id: subscriptionData.id
-            })
-            .select()
-            .single();
-
-            if (creditError) {
-              console.error('ERROR: Failed to insert credit purchase');
-              console.error('Error details:', creditError);
-              throw new Error(`Credit purchase insertion failed: ${creditError.message}`);
-            }
-
-            console.log('SUCCESS: Credit purchase record created');
-            console.log('Credit purchase ID:', creditPurchase?.id);
-
-            // Update user profile credits
-            console.log('Calculating total active credits...');
-            const { data: activeCredits, error: activeCreditsError } = await supabase.rpc('get_active_credits', { p_user_id: userId });
-            
-            if (activeCreditsError) {
-              console.error('ERROR: Failed to calculate active credits');
-              console.error('Error details:', activeCreditsError);
-            } else {
-              console.log('Total active credits calculated:', activeCredits);
-            }
-
-            console.log('Updating user profile...');
-            const { data: profileUpdate, error: profileError } = await supabase
-              .from('user_profiles')
-              .upsert({
-                user_id: userId,
-                email: customerEmail,
-                subscription_id: subscriptionData.id,
-                plan_name: planName,
-                credits: activeCredits || 0,
-                status: 'active',
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'user_id', ignoreDuplicates: false })
-              .select();
-
-            if (profileError) {
-              console.error('ERROR: Failed to update user profile');
-              console.error('Error details:', profileError);
-              throw new Error(`Profile update failed: ${profileError.message}`);
-            }
-
-            console.log('SUCCESS: User profile updated');
-            console.log('Profile update result:', profileUpdate);
-            console.log('=== CREDIT ALLOCATION COMPLETE ===');
-            console.log('Initial subscription credits allocated:', creditsPerCycle);
-
-          } catch (allocError) {
-            console.error('CRITICAL ERROR: Credit allocation failed');
-            console.error('Error details:', allocError);
-            console.error('Session ID:', session.id);
-            console.error('User ID:', userId);
-            console.error('Credits to allocate:', creditsPerCycle);
-            
-            // Log failure event
-            await supabase.from('security_events').insert({
-              event_type: 'subscription_credit_allocation_failure',
-              event_data: { 
-                stripe_session_id: session.id,
-                stripe_subscription_id: subscription.id,
-                user_id: userId,
-                credits_per_cycle: creditsPerCycle,
-                error: String(allocError)
-              }
-            });
-          }
-        } else {
-          console.log('No credits to allocate (creditsPerCycle = 0)');
-        }
+        // IMPORTANT: Do not allocate initial credits on checkout.session.completed.
+        // Credits will be allocated on invoice.payment_succeeded to ensure idempotency and avoid duplicates.
+        console.log('Skipping initial credit allocation on checkout.session.completed; will allocate on invoice.payment_succeeded.');
 
         // Send subscription confirmation email
         try {

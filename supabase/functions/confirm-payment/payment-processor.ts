@@ -51,7 +51,7 @@ export class PaymentProcessor {
         paymentRecordExists = false;
       }
 
-      // If no payment record exists, process directly from Stripe session
+      // If no payment record exists, do NOT allocate credits for subscriptions here (webhook handles it)
       if (!paymentRecordExists || !paymentRecord) {
         logStep('Processing payment without existing record');
         
@@ -64,6 +64,16 @@ export class PaymentProcessor {
           currentCredits = 0;
         }
         
+        // For subscription checkouts, avoid double-crediting; webhook handles allocation
+        if ((session as any).mode === 'subscription') {
+          logStep('Subscription detected; skipping direct credit allocation to avoid duplicates', { sessionMode: (session as any).mode });
+          return {
+            success: true,
+            message: 'Payment confirmed via webhook',
+            total_credits: currentCredits
+          };
+        }
+
         // Extract payment details from Stripe session
         const amountTotal = session.amount_total || 0;
         let creditsGranted = 0;
@@ -83,7 +93,6 @@ export class PaymentProcessor {
           planName = 'Enterprise';
           creditsGranted = 500;
         } else if (amountTotal > 0) {
-          // Dynamic mapping for other amounts
           creditsGranted = Math.max(1, Math.floor(amountTotal / 2));
           planName = 'Custom';
         } else {
@@ -97,11 +106,11 @@ export class PaymentProcessor {
           amountTotal 
         });
 
-        // Add credits directly
+        // Add credits directly for one-time payments
         try {
           await this.databaseService.addCreditsDirectly(
             customerEmail, 
-            sessionId, 
+            null, 
             creditsGranted, 
             planName
           );
@@ -149,36 +158,18 @@ export class PaymentProcessor {
         throw new Error('Invalid credits amount in payment record');
       }
 
-      // Calculate total credits including the current payment
-      let existingCredits = 0;
+      // Do NOT allocate again here to avoid duplicate credits.
+      let currentCredits = 0;
       try {
-        existingCredits = await this.databaseService.calculateTotalCredits(customerEmail);
+        currentCredits = await this.databaseService.calculateTotalCredits(customerEmail);
       } catch (error) {
-        logStep('Error calculating existing credits, using 0', { error: error instanceof Error ? error.message : 'Unknown error' });
-        existingCredits = 0;
+        logStep('Error calculating current credits, using 0', { error: error instanceof Error ? error.message : 'Unknown error' });
+        currentCredits = 0;
       }
 
-      const totalCredits = existingCredits + paymentRecord.credits_granted;
-
-      logStep('Calculated total credits', { 
-        existing: existingCredits, 
-        new: paymentRecord.credits_granted, 
-        total: totalCredits 
+      logStep('Skipping credit allocation in confirm-payment for pending record; webhook should have allocated already', {
+        paymentId: paymentRecord.id,
       });
-
-      // Update or create user profile
-      const businessName = session.customer_details?.name || null;
-      try {
-        await this.databaseService.upsertUserProfile(
-          customerEmail, 
-          paymentRecord, 
-          totalCredits, 
-          businessName
-        );
-      } catch (error) {
-        logStep('Error upserting user profile', { error: error instanceof Error ? error.message : 'Unknown error' });
-        // Don't fail the entire process if profile update fails
-      }
 
       // Mark payment as completed
       try {
@@ -188,12 +179,12 @@ export class PaymentProcessor {
         throw new Error(`Failed to mark payment as completed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
 
-      logStep('Payment confirmation completed successfully', { sessionId, totalCredits });
+      logStep('Payment confirmation completed successfully', { sessionId, totalCredits: currentCredits });
 
       return {
         success: true,
-        message: 'Payment confirmed and credits added successfully',
-        total_credits: totalCredits
+        message: 'Payment confirmed',
+        total_credits: currentCredits
       };
 
     } catch (error) {
