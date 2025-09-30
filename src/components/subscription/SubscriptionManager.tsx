@@ -217,4 +217,5 @@ const SubscriptionManager = () => {
         )}
 
          
+};
 export default SubscriptionManager;
