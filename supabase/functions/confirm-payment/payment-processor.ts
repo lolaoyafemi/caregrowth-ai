@@ -70,7 +70,10 @@ export class PaymentProcessor {
         let planName = 'Unknown';
 
         // Map amount to credits (amounts are in cents)
-        if (amountTotal === 100) { // $1
+        if (amountTotal === 4900) { // $49 - Main subscription plan
+          planName = 'CareGrowth Assistant Credits';
+          creditsGranted = 3000;
+        } else if (amountTotal === 100) { // $1
           planName = 'Starter';
           creditsGranted = 50;
         } else if (amountTotal === 200) { // $2

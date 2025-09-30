@@ -213,7 +213,7 @@ serve(async (req) => {
         else if (!isNaN(metaCredits) && metaCredits > 0) creditsGranted = metaCredits;
         else {
           const dollars = Math.round((amountTotal || 0)) / 100;
-          if (Math.round(dollars) === 49) creditsGranted = 1000; // default mapping
+          if (Math.round(dollars) === 49) creditsGranted = 3000; // $49 subscription = 3000 credits
           else creditsGranted = Math.max(1, Math.floor(dollars * 20)); // reasonable fallback
         }
 
