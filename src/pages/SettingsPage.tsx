@@ -14,7 +14,7 @@ import AccountSettings from '@/components/settings/AccountSettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import TeamPermissionsSection from '@/components/settings/TeamPermissionsSection';
 import TokenLimitsSection from '@/components/settings/TokenLimitsSection';
-{/*import SubscriptionManager from '@/components/subscription/SubscriptionManager';*/}
+
 
 const SettingsPage = () => {
   const { user } = useUser();
