@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
+import { Settings, CreditCard, Calendar, AlertTriangle, History, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useCreditTransactions } from '@/hooks/useCreditTransactions';
@@ -20,7 +20,8 @@ interface Subscription {
 const SubscriptionManager = () => {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [managingSubscription, setManagingSubscription] = useState(false);
+  const [showTransactions, setShowTransactions] = useState(false);
   
   const { user, session } = useAuth();
   const { toast } = useToast();
@@ -56,6 +57,82 @@ const SubscriptionManager = () => {
     }
   };
 
+  const handleManageSubscription = async () => {
+    if (!user || !session) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to manage your subscription.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setManagingSubscription(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to open customer portal');
+      }
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else if (data?.fallback_url) {
+        // Handle case where billing portal is not configured
+        toast({
+          title: "Portal Unavailable",
+          description: data.message || "Please contact support to manage your subscription.",
+          variant: "default"
+        });
+        // Optionally redirect to payment page
+        window.open(data.fallback_url, '_blank');
+      } else if (data?.error === "Billing portal not configured") {
+        toast({
+          title: "Portal Configuration Required",
+          description: "The billing portal needs to be set up. Please contact support.",
+          variant: "default"
+        });
+      } else {
+        throw new Error('No portal URL returned');
+      }
+    } catch (error) {
+      console.error('Portal error:', error);
+      toast({
+        title: "Portal Error",
+        description: error instanceof Error ? error.message : "Failed to open customer portal",
+        variant: "destructive"
+      });
+    } finally {
+      setManagingSubscription(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusColor = (status: string, cancelAtPeriodEnd: boolean) => {
+    if (cancelAtPeriodEnd) return 'destructive';
+    if (status === 'active') return 'default';
+    if (status === 'past_due') return 'destructive';
+    return 'secondary';
+  };
+
+  const getStatusText = (status: string, cancelAtPeriodEnd: boolean) => {
+    if (cancelAtPeriodEnd) return 'Canceling';
+    if (status === 'active') return 'Active';
+    if (status === 'past_due') return 'Past Due';
+    return status.replace('_', ' ').toUpperCase();
+  };
 
   if (loading) {
     return (
@@ -94,20 +171,6 @@ const SubscriptionManager = () => {
       </Card>
     );
   }
-
-  const getStatusColor = (status: string, cancelAtPeriodEnd: boolean) => {
-  if (cancelAtPeriodEnd) return 'destructive';
-  if (status === 'active') return 'default';
-  if (status === 'past_due') return 'destructive';
-  return 'secondary';
-};
-
-const getStatusText = (status: string, cancelAtPeriodEnd: boolean) => {
-  if (cancelAtPeriodEnd) return 'Canceling';
-  if (status === 'active') return 'Active';
-  if (status === 'past_due') return 'Past Due';
-  return status.replace('_', ' ').toUpperCase();
-};
 
   return (
     <Card>
@@ -153,8 +216,80 @@ const getStatusText = (status: string, cancelAtPeriodEnd: boolean) => {
           </div>
         )}
 
-           
-      
+           <div className="pt-4 border-t space-y-3">
+          <Button 
+            onClick={handleManageSubscription}
+            disabled={managingSubscription}
+            className="w-full"
+          >
+            {managingSubscription ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Opening Portal...
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Subscription
+              </div>
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            Update payment method, change plan, or cancel subscription
+          </p>
+          
+          <Button 
+            variant="outline"
+            onClick={() => setShowTransactions(!showTransactions)}
+            className="w-full"
+          >
+            <History className="h-4 w-4 mr-2" />
+            {showTransactions ? 'Hide' : 'View'} Transaction History
+          </Button>
+          
+          {showTransactions && (
+            <div className="bg-muted/30 rounded-lg p-4 mt-4">
+              <h4 className="font-semibold mb-3 flex items-center">
+                <DollarSign className="h-4 w-4 mr-2" />
+                Recent Transactions
+              </h4>
+              {transactions.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {transactions.slice(0, 10).map((transaction) => (
+                    <div key={transaction.id} className="flex justify-between items-center py-2 px-3 bg-background rounded border">
+                      <div>
+                        <div className="text-sm font-medium">
+                          {transaction.type === 'purchase' ? 'Credit Purchase' : 'Credit Usage'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(transaction.timestamp).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-sm font-medium ${
+                          transaction.type === 'purchase' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {transaction.type === 'purchase' ? '+' : ''}{transaction.amount} credits
+                        </div>
+                        <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                          {transaction.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No transactions found</p>
+              )}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
