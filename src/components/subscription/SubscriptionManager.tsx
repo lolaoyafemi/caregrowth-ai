@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, CreditCard, Calendar, AlertTriangle, History, DollarSign } from 'lucide-react';
+import { Settings, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useCreditTransactions } from '@/hooks/useCreditTransactions';
@@ -20,8 +20,7 @@ interface Subscription {
 const SubscriptionManager = () => {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
-  const [managingSubscription, setManagingSubscription] = useState(false);
-  const [showTransactions, setShowTransactions] = useState(false);
+
   
   const { user, session } = useAuth();
   const { toast } = useToast();
@@ -57,15 +56,7 @@ const SubscriptionManager = () => {
     }
   };
 
-  const handleManageSubscription = async () => {
-    if (!user || !session) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to manage your subscription.",
-        variant: "destructive"
-      });
-      return;
-    }
+ 
 
     setManagingSubscription(true);
 
