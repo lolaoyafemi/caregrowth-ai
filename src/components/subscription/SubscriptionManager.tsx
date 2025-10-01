@@ -3,10 +3,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, CreditCard, Calendar, AlertTriangle, History, DollarSign } from 'lucide-react';
+import { Settings, CreditCard, Calendar, AlertTriangle, History, DollarSign, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useCreditTransactions } from '@/hooks/useCreditTransactions';
+
+interface StripeTransaction {
+  id: string;
+  date: string;
+  amount: number;
+  status: string;
+  receipt_url: string | null;
+  invoice_pdf: string | null;
+}
 
 interface Subscription {
   id: string;
@@ -22,10 +30,11 @@ const SubscriptionManager = () => {
   const [loading, setLoading] = useState(true);
   const [managingSubscription, setManagingSubscription] = useState(false);
   const [showTransactions, setShowTransactions] = useState(false);
+  const [stripeTransactions, setStripeTransactions] = useState<StripeTransaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
   
   const { user, session } = useAuth();
   const { toast } = useToast();
-  const { transactions } = useCreditTransactions();
 
   useEffect(() => {
     if (user) {
@@ -83,13 +92,11 @@ const SubscriptionManager = () => {
       if (data?.url) {
         window.open(data.url, '_blank');
       } else if (data?.fallback_url) {
-        // Handle case where billing portal is not configured
         toast({
           title: "Portal Unavailable",
           description: data.message || "Please contact support to manage your subscription.",
           variant: "default"
         });
-        // Optionally redirect to payment page
         window.open(data.fallback_url, '_blank');
       } else if (data?.error === "Billing portal not configured") {
         toast({
@@ -109,6 +116,43 @@ const SubscriptionManager = () => {
       });
     } finally {
       setManagingSubscription(false);
+    }
+  };
+
+  const fetchStripeTransactions = async () => {
+    if (!session) return;
+    
+    setLoadingTransactions(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-transactions', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch transactions');
+      }
+
+      setStripeTransactions(data?.transactions || []);
+    } catch (error) {
+      console.error('Transaction fetch error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load transaction history",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+
+  const handleToggleTransactions = async () => {
+    const newState = !showTransactions;
+    setShowTransactions(newState);
+    
+    if (newState && stripeTransactions.length === 0) {
+      await fetchStripeTransactions();
     }
   };
 
@@ -240,52 +284,75 @@ const SubscriptionManager = () => {
           
           <Button 
             variant="outline"
-            onClick={() => setShowTransactions(!showTransactions)}
+            onClick={handleToggleTransactions}
+            disabled={loadingTransactions}
             className="w-full"
           >
-            <History className="h-4 w-4 mr-2" />
-            {showTransactions ? 'Hide' : 'View'} Transaction History
+            {loadingTransactions ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                Loading...
+              </div>
+            ) : (
+              <>
+                <History className="h-4 w-4 mr-2" />
+                {showTransactions ? 'Hide' : 'View'} Payment History
+              </>
+            )}
           </Button>
           
           {showTransactions && (
             <div className="bg-muted/30 rounded-lg p-4 mt-4">
               <h4 className="font-semibold mb-3 flex items-center">
                 <DollarSign className="h-4 w-4 mr-2" />
-                Recent Transactions
+                Stripe Payment History
               </h4>
-              {transactions.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {transactions.slice(0, 10).map((transaction) => (
-                    <div key={transaction.id} className="flex justify-between items-center py-2 px-3 bg-background rounded border">
-                      <div>
+              {stripeTransactions.length > 0 ? (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {stripeTransactions.map((transaction) => (
+                    <div key={transaction.id} className="flex justify-between items-center py-3 px-3 bg-background rounded border">
+                      <div className="flex-1">
                         <div className="text-sm font-medium">
-                          {transaction.type === 'purchase' ? 'Credit Purchase' : 'Credit Usage'}
+                          Payment
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {new Date(transaction.timestamp).toLocaleDateString('en-US', {
+                          {new Date(transaction.date).toLocaleDateString('en-US', {
                             year: 'numeric',
-                            month: 'short',
+                            month: 'long',
                             day: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit'
                           })}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className={`text-sm font-medium ${
-                          transaction.type === 'purchase' ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {transaction.type === 'purchase' ? '+' : ''}{transaction.amount} credits
+                      <div className="text-right flex items-center gap-3">
+                        <div>
+                          <div className="text-sm font-medium">
+                            ${(transaction.amount / 100).toFixed(2)}
+                          </div>
+                          <Badge 
+                            variant={transaction.status === 'paid' ? 'default' : 'secondary'} 
+                            className="text-xs"
+                          >
+                            {transaction.status}
+                          </Badge>
                         </div>
-                        <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
-                          {transaction.status}
-                        </Badge>
+                        {transaction.receipt_url && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(transaction.receipt_url!, '_blank')}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No transactions found</p>
+                <p className="text-sm text-muted-foreground">No payment history found</p>
               )}
             </div>
           )}

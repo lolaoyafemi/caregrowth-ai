@@ -38,14 +38,7 @@ const NotificationSettings = () => {
             </div>
             <Switch defaultChecked />
           </div>
-          {/*<div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">New Team Member Notifications</p>
-              <p className="text-sm text-gray-500">Receive alerts when new users join</p>
-            </div>
-            <Switch defaultChecked={isAgencyAdmin || isSuperAdmin} />
-          </div>
-        </div>*/}
+        </div>
         <Button className="mt-6 transition-all duration-200 hover:shadow">Save Preferences</Button>
       </CardContent>
     </Card>
