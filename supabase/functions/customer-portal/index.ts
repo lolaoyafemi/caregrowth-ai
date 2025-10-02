@@ -142,7 +142,12 @@ serve(async (req) => {
       const msg: string = raw?.message || raw?.raw?.message || 'Unknown error';
 
       // Friendly fallbacks for common cases
-      if (msg.includes('not activated') || raw?.code === 'billing_portal_feature_disabled') {
+      if (
+        msg.includes('not activated') ||
+        msg.includes('No configuration provided') ||
+        msg.includes('default configuration') ||
+        raw?.code === 'billing_portal_feature_disabled'
+      ) {
         return new Response(JSON.stringify({ 
           error: 'Billing portal not configured',
           message: 'Please contact support to manage your subscription',
