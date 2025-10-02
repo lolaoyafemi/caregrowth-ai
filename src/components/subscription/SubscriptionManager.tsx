@@ -67,21 +67,19 @@ const SubscriptionManager = () => {
   };
 
   const handleManageSubscription = async () => {
-    if (!user || !session) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to manage your subscription.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setManagingSubscription(true);
 
     try {
+      // Get the current session
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !currentSession) {
+        throw new Error('Please log in to manage your subscription');
+      }
+
       const { data, error } = await supabase.functions.invoke('customer-portal', {
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${currentSession.access_token}`,
         }
       });
 
