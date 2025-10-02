@@ -74,24 +74,50 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Find customer
-    const customers = await stripe.customers.list({
-      email: user.email,
-      limit: 1
-    });
+    // Resolve Stripe customer ID: prefer DB subscription record, fallback to email lookup
+    let customerId: string | null = null;
 
-    if (customers.data.length === 0) {
-      console.error("No Stripe customer found for user:", user.email);
-      return new Response(JSON.stringify({ 
-        error: "No subscription found for this user" 
+    // Try to get from our subscriptions table
+    const { data: subRecord, error: subErr } = await supabase
+      .from('subscriptions')
+      .select('stripe_customer_id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (subErr) {
+      console.warn('Subscription lookup error:', subErr);
+    }
+
+    if (subRecord?.stripe_customer_id) {
+      customerId = subRecord.stripe_customer_id;
+      console.log('Customer ID from DB:', customerId);
+    } else {
+      console.log('No DB customer id; falling back to email search in Stripe');
+      const customers = await stripe.customers.list({ email: user.email || undefined, limit: 1 });
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        console.log('Customer ID from Stripe email lookup:', customerId);
+      }
+    }
+
+    if (!customerId) {
+      console.error('No Stripe customer found for user:', user.email);
+      const origin = req.headers.get('origin') || Deno.env.get('PROJECT_URL') || 'https://www.spicymessaging.com';
+      return new Response(JSON.stringify({
+        error: 'No subscription found for this user',
+        message: 'We could not locate your billing profile. Please contact support or re-initiate checkout.',
+        fallback_url: `${origin}/stripe-payment`
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       });
     }
 
-    const customer = customers.data[0];
-    console.log('Found Stripe customer:', customer.id);
+    const customer = { id: customerId } as const;
+    console.log('Resolved Stripe customer:', customer.id);
 
     // Create billing portal session
     const origin = req.headers.get("origin") || "https://www.spicymessaging.com";
@@ -112,15 +138,28 @@ serve(async (req) => {
       });
     } catch (stripeError) {
       console.error('Stripe billing portal error:', stripeError);
-      
-      // If billing portal is not configured, provide fallback
-      if ((stripeError as any).message?.includes('not activated')) {
+      const raw: any = stripeError as any;
+      const msg: string = raw?.message || raw?.raw?.message || 'Unknown error';
+
+      // Friendly fallbacks for common cases
+      if (msg.includes('not activated') || raw?.code === 'billing_portal_feature_disabled') {
         return new Response(JSON.stringify({ 
-          error: "Billing portal not configured",
-          message: "Please contact support to manage your subscription",
+          error: 'Billing portal not configured',
+          message: 'Please contact support to manage your subscription',
           fallback_url: `${origin}/stripe-payment`
         }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      if (msg.includes('No such customer') || raw?.code === 'resource_missing') {
+        return new Response(JSON.stringify({ 
+          error: 'Customer not found',
+          message: 'We could not locate your billing profile in Stripe. Please contact support or re-initiate checkout.',
+          fallback_url: `${origin}/stripe-payment`
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
       }
