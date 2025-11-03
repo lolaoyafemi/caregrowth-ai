@@ -419,16 +419,37 @@ async function generateAnswer(question: string, relevantChunks: DocumentChunk[])
 
 Question: ${question}
 
-CRITICAL INSTRUCTIONS for maximum accuracy:
-- Base your answer EXCLUSIVELY on the provided document excerpts above
-- ALWAYS cite specific page numbers when available (e.g., "On page 5, it states...")
-- Quote the exact text that supports your answer
-- When referencing multiple pages, list all page numbers in order
-- Pay special attention to the confidence scores - prioritize information from higher confidence sources
-- If the answer spans multiple pages, clearly indicate which information comes from which page
-- If you cannot find the specific information in the provided excerpts, clearly state this
-- Be precise about page references - double-check that page numbers match the content you're citing
-- Structure your answer to clearly separate information from different pages`;
+CRITICAL INSTRUCTIONS for maximum accuracy and page-specific summaries:
+1. ANSWER FORMAT:
+   - Start with a concise direct answer to the question
+   - Then provide detailed information organized by page number
+   
+2. PAGE REFERENCES (MANDATORY):
+   - ALWAYS cite specific page numbers: "On page 5, it states..."
+   - For each page mentioned, provide a brief summary of what that page contains
+   - Quote the exact text that supports your answer
+   - List all relevant pages in order
+   
+3. PAGE SUMMARIES:
+   - For each page you reference, include: "📄 Page X Summary: [brief description of what's on that page]"
+   - Make it easy for users to know exactly what they'll find on each page
+   
+4. ACCURACY:
+   - Base your answer EXCLUSIVELY on the provided excerpts
+   - Prioritize information from higher confidence sources
+   - If information spans multiple pages, clearly separate each page's content
+   - Never guess page numbers - only cite pages explicitly shown above
+   - If you can't find specific information, clearly state this
+
+5. STRUCTURE:
+   Example format:
+   "[Direct answer to question]
+   
+   📄 Page 3 Summary: Contains information about [topic]
+   On page 3, it states: '[exact quote]'
+   
+   📄 Page 7 Summary: Provides details on [topic]  
+   On page 7, you'll find: '[exact quote]'"`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -438,19 +459,19 @@ CRITICAL INSTRUCTIONS for maximum accuracy:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o', // Higher quality model for better accuracy
+        model: 'gpt-5-2025-08-07', // GPT-5 for superior reasoning and accuracy
         messages: [
           {
             role: 'system',
-            content: 'You are an expert document analyst with exceptional precision in citing sources and page numbers. Your primary goal is to provide accurate, well-sourced answers with perfect page number citations. Always double-check that page numbers correspond to the content you are referencing. Never guess or approximate page numbers.'
+            content: 'You are an expert document analyst with exceptional precision in citing sources and page numbers. Your primary goal is to provide accurate, well-sourced answers with perfect page number citations and helpful page summaries. For each page you reference, provide a brief summary of what that page contains so users know exactly where to look. Always double-check that page numbers correspond to the content you are referencing. Never guess or approximate page numbers. Format page summaries with the 📄 emoji for visual clarity.'
           },
           {
             role: 'user',
             content: enhancedPrompt
           }
         ],
-        max_tokens: 800, // More tokens for detailed, well-cited answers
-        temperature: 0.1 // Very low temperature for maximum accuracy
+        max_completion_tokens: 1000 // GPT-5 uses max_completion_tokens instead of max_tokens
+        // Note: temperature not supported in GPT-5, defaults to 1.0
       }),
     });
 
@@ -467,7 +488,7 @@ CRITICAL INSTRUCTIONS for maximum accuracy:
     // Calculate page accuracy confidence based on available page references
     const pageAccuracy = pageReferences.length > 0 ? 0.95 : 0.7;
 
-    console.log(`Generated enhanced answer with ${pageReferences.length} page references (${tokensUsed} tokens)`);
+    console.log(`Generated GPT-5 enhanced answer with ${pageReferences.length} page references (${tokensUsed} tokens)`);
     
     return { answer, tokensUsed, pageAccuracy };
   } catch (error) {
@@ -515,7 +536,7 @@ Respond with:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini-2025-08-07', // GPT-5 Mini for efficient verification
         messages: [
           {
             role: 'system',
@@ -526,8 +547,8 @@ Respond with:
             content: verificationPrompt
           }
         ],
-        max_tokens: 300,
-        temperature: 0.0
+        max_completion_tokens: 300
+        // Note: temperature not supported in GPT-5 models
       }),
     });
 
@@ -722,9 +743,11 @@ serve(async (req) => {
       corrections: verification.corrections,
       searchQuality: {
         embeddingModel: 'text-embedding-3-large',
-        answerModel: 'gpt-4o',
+        answerModel: 'gpt-5-2025-08-07',
+        verificationModel: 'gpt-5-mini-2025-08-07',
         pageVerification: true,
-        enhancedScoring: true
+        enhancedScoring: true,
+        pageSummaries: true
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
