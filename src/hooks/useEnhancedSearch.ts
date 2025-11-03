@@ -64,7 +64,7 @@ export const useEnhancedSearch = () => {
       console.log('Starting enhanced smart search', { queryLength: query.length });
 
       const { data, error: searchError } = await supabase.functions.invoke('smart-document-search-v2', {
-        body: { question: query.trim() }
+        body: { query: query.trim() }
       });
 
       if (searchError) {
