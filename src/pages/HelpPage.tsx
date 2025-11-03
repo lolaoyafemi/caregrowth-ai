@@ -666,17 +666,11 @@ const RegularUserHelpPage = () => {
           <p className="text-sm text-gray-600">
             For urgent matters or complex issues, you can reach out to our support team directly:
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild variant="outline" className="flex-1">
+          <div>
+            <Button asChild variant="outline" className="w-full sm:w-auto">
               <a href="mailto:admin@caregrowth.com">
                 <MessageSquare size={16} className="mr-2" />
                 Email Support
-              </a>
-            </Button>
-            <Button asChild variant="outline" className="flex-1">
-              <a href="https://wa.me/2348068920166" target="_blank" rel="noopener noreferrer">
-                <MessageSquare size={16} className="mr-2" />
-                WhatsApp Chat
               </a>
             </Button>
           </div>
