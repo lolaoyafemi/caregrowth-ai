@@ -16,7 +16,8 @@ import {
   Coins,
   ChevronRight,
   Zap,
-  BookOpen
+  BookOpen,
+  CalendarDays
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '../../contexts/UserContext';
@@ -435,7 +436,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
 
           {showCollaboratorItems && (
             <NavLink
-              to="/dashboard/document-search"
+              to="/dashboard/content-calendar"
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
@@ -444,8 +445,8 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 collapsed && "justify-center"
               )}
             >
-              <FileText size={20} />
-              {!collapsed && <span>Indexa</span>}
+              <CalendarDays size={20} />
+              {!collapsed && <span>Content Calendar</span>}
             </NavLink>
           )}
 

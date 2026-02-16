@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Coins, HelpCircle, FileText, MessageCircle, Zap } from 'lucide-react';
+import { Coins, HelpCircle, FileText, MessageCircle, Zap, CalendarDays } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { useUsageTracking } from '@/hooks/useUsageTracking';
@@ -121,7 +121,9 @@ const DashboardHome = () => {
     <div className="p-6">
       <div className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome to CareGrowth Assistant</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {user?.full_name ? `I've missed you, ${user.full_name.split(' ')[0]}. Let's create momentum in your business today.` : 'Welcome to CareGrowth Assistant'}
+          </h1>
           <p className="text-gray-600 mt-2">Your AI-powered agency growth assistant</p>
         </div>
         
@@ -220,15 +222,15 @@ const DashboardHome = () => {
         <Card className="transition-transform duration-200 hover:scale-[1.02] hover:shadow-md">
           <CardHeader>
             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-caregrowth-lightgreen mb-4">
-              <FileText className="h-6 w-6 text-caregrowth-green" />
+              <CalendarDays className="h-6 w-6 text-caregrowth-green" />
             </div>
-            <CardTitle>Indexa</CardTitle>
-            <CardDescription>Extract insights and analyze data from your agency documents</CardDescription>
+            <CardTitle>Content Calendar</CardTitle>
+            <CardDescription>Schedule and auto-publish posts across your social platforms</CardDescription>
           </CardHeader>
           <CardContent>
-            <Link to="/dashboard/document-search">
+            <Link to="/dashboard/content-calendar">
               <Button className="w-full bg-caregrowth-green hover:bg-caregrowth-green/90 transition-all duration-200">
-                Analyze Documents
+                Plan Your Content
               </Button>
             </Link>
           </CardContent>
