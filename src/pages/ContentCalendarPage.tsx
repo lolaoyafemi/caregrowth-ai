@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { 
   CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, 
   Edit2, RotateCcw, Facebook, Instagram, Linkedin, Twitter,
-  Loader2, Link2, AlertCircle
+  Loader2, Link2, AlertCircle, GripVertical
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -57,6 +57,7 @@ const ContentCalendarPage = () => {
   const [loading, setLoading] = useState(true);
   const [calendarView, setCalendarView] = useState<'week' | 'month'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [generateOpen, setGenerateOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [editPost, setEditPost] = useState<ScheduledPost | null>(null);
@@ -66,6 +67,7 @@ const ContentCalendarPage = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [generationMessage, setGenerationMessage] = useState('');
   const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
   const { credits, refetch: refetchCredits } = useUserCredits();
 
   const fetchConnectedAccounts = useCallback(async () => {
@@ -179,7 +181,6 @@ const ContentCalendarPage = () => {
         }
       }
 
-      // Batch insert and get inserted rows back
       if (postsToCreate.length > 0) {
         const { data: inserted, error: insertError } = await supabase
           .from('scheduled_posts')
@@ -188,7 +189,6 @@ const ContentCalendarPage = () => {
 
         if (insertError) throw insertError;
 
-        // Immediately add to local state
         if (inserted) {
           setPosts(prev => [...prev, ...(inserted as ScheduledPost[])].sort(
             (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
@@ -196,7 +196,6 @@ const ContentCalendarPage = () => {
         }
       }
 
-      // Deduct credits
       await supabase.rpc('deduct_credits_fifo', {
         p_user_id: userId,
         p_credits_to_deduct: postsToCreate.filter(p => p.status === 'scheduled').length,
@@ -236,7 +235,55 @@ const ContentCalendarPage = () => {
     );
   };
 
-  // Calendar helpers
+  const handleDragStart = (e: React.DragEvent, postId: string) => {
+    e.dataTransfer.setData('text/plain', postId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, dayKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverDay(dayKey);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverDay(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetDay: Date) => {
+    e.preventDefault();
+    setDragOverDay(null);
+    const postId = e.dataTransfer.getData('text/plain');
+    if (!postId) return;
+
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    // Keep the original time, just change the date
+    const originalDate = new Date(post.scheduled_at);
+    const newDate = new Date(targetDay);
+    newDate.setHours(originalDate.getHours(), originalDate.getMinutes(), 0, 0);
+
+    // Optimistic update
+    setPosts(prev => prev.map(p =>
+      p.id === postId ? { ...p, scheduled_at: newDate.toISOString() } : p
+    ).sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()));
+
+    try {
+      const { error } = await supabase
+        .from('scheduled_posts')
+        .update({ scheduled_at: newDate.toISOString() })
+        .eq('id', postId);
+
+      if (error) throw error;
+      toast.success(`Post moved to ${format(newDate, 'MMM d')}.`);
+    } catch (err: any) {
+      // Revert on failure
+      fetchPosts();
+      toast.error('Could not reschedule: ' + err.message);
+    }
+  };
+
   const getPostsForDay = (date: Date) => posts.filter(p => isSameDay(new Date(p.scheduled_at), date));
   
   const getWeekDays = () => {
@@ -260,10 +307,14 @@ const ContentCalendarPage = () => {
     }
   };
 
-  // Queue data
-  const todayPosts = posts.filter(p => isToday(new Date(p.scheduled_at)));
-  const tomorrowPosts = posts.filter(p => isTomorrow(new Date(p.scheduled_at)));
-  const thisWeekPosts = posts.filter(p => isThisWeek(new Date(p.scheduled_at), { weekStartsOn: 1 }) && !isToday(new Date(p.scheduled_at)) && !isTomorrow(new Date(p.scheduled_at)));
+  const selectedDayPosts = posts.filter(p => isSameDay(new Date(p.scheduled_at), selectedDay));
+  const nextDayPosts = posts.filter(p => isSameDay(new Date(p.scheduled_at), addDays(selectedDay, 1)));
+  const restOfWeekPosts = posts.filter(p => {
+    const d = new Date(p.scheduled_at);
+    const weekStart = startOfWeek(selectedDay, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(selectedDay, { weekStartsOn: 1 });
+    return d >= weekStart && d <= weekEnd && !isSameDay(d, selectedDay) && !isSameDay(d, addDays(selectedDay, 1));
+  });
 
   const PlatformIcon = ({ platform, size = 14 }: { platform: string; size?: number }) => {
     const config = PLATFORM_CONFIG[platform as keyof typeof PLATFORM_CONFIG];
@@ -272,7 +323,6 @@ const ContentCalendarPage = () => {
     return <Icon size={size} />;
   };
 
-  // Queue PostCard: icon + date/time + first 1-2 lines truncated
   const QueuePostCard = ({ post }: { post: ScheduledPost }) => {
     const statusConfig = STATUS_CONFIG[post.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
     return (
@@ -311,11 +361,13 @@ const ContentCalendarPage = () => {
 
   const calDays = calendarView === 'week' ? getWeekDays() : getMonthDays();
 
-  // Filter calendar icons to only connected platforms
   const getConnectedPostsForDay = (date: Date) => {
     const dayPosts = getPostsForDay(date);
     return dayPosts.filter(p => connectedPlatforms.includes(p.platform));
   };
+
+  const selectedDayLabel = isToday(selectedDay) ? 'Today' : isTomorrow(selectedDay) ? 'Tomorrow' : format(selectedDay, 'EEE, MMM d');
+  const nextDayLabel = isToday(addDays(selectedDay, 1)) ? 'Today' : isTomorrow(addDays(selectedDay, 1)) ? 'Tomorrow' : format(addDays(selectedDay, 1), 'EEE, MMM d');
 
   return (
     <div className="p-6">
@@ -327,7 +379,6 @@ const ContentCalendarPage = () => {
         </p>
       </div>
 
-      {/* Analytics */}
       <CalendarAnalytics posts={posts} />
 
       <div className="flex flex-wrap gap-3 mb-6">
@@ -434,16 +485,25 @@ const ContentCalendarPage = () => {
                     <ChevronRight size={16} />
                   </Button>
                 </div>
-                <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as 'week' | 'month')}>
-                  <TabsList className="h-8">
-                    <TabsTrigger value="week" className="text-xs px-3 h-7">Week</TabsTrigger>
-                    <TabsTrigger value="month" className="text-xs px-3 h-7">Month</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()); }}
+                  >
+                    Today
+                  </Button>
+                  <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as 'week' | 'month')}>
+                    <TabsList className="h-8">
+                      <TabsTrigger value="week" className="text-xs px-3 h-7">Week</TabsTrigger>
+                      <TabsTrigger value="month" className="text-xs px-3 h-7">Month</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              {/* Day Headers */}
               <div className="grid grid-cols-7 gap-1 mb-1">
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
                   <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
@@ -451,7 +511,6 @@ const ContentCalendarPage = () => {
                   </div>
                 ))}
               </div>
-              {/* Calendar Grid — icons only */}
               <div className={cn(
                 "grid grid-cols-7 gap-1",
                 calendarView === 'week' ? 'grid-rows-1' : ''
@@ -459,7 +518,10 @@ const ContentCalendarPage = () => {
                 {calDays.map((day, i) => {
                   const dayPosts = getConnectedPostsForDay(day);
                   const isCurrentMonth = isSameMonth(day, currentDate);
-                  // Group unique platforms for icon display
+                  const dayKey = format(day, 'yyyy-MM-dd');
+                  const isSelected = isSameDay(day, selectedDay);
+                  const isDragOver = dragOverDay === dayKey;
+
                   const platformCounts = dayPosts.reduce<Record<string, number>>((acc, p) => {
                     acc[p.platform] = (acc[p.platform] || 0) + 1;
                     return acc;
@@ -469,34 +531,53 @@ const ContentCalendarPage = () => {
                     <div
                       key={i}
                       className={cn(
-                        "border rounded-lg p-1.5 transition-colors cursor-pointer",
+                        "border rounded-lg p-1.5 transition-all cursor-pointer relative",
                         calendarView === 'week' ? 'min-h-[120px]' : 'min-h-[80px]',
-                        isToday(day) ? 'border-caregrowth-blue bg-blue-50/50' : 'border-border',
-                        !isCurrentMonth && calendarView === 'month' && 'opacity-40'
+                        isSelected
+                          ? 'border-caregrowth-blue ring-2 ring-caregrowth-blue/30 bg-blue-50/70'
+                          : isToday(day)
+                            ? 'border-caregrowth-blue/50 bg-blue-50/30'
+                            : 'border-border hover:border-muted-foreground/30',
+                        !isCurrentMonth && calendarView === 'month' && 'opacity-40',
+                        isDragOver && 'ring-2 ring-primary/50 bg-primary/5 border-primary'
                       )}
-                      onClick={() => {
-                        if (dayPosts.length > 0) {
-                          setDrawerPost(dayPosts[0]);
-                        }
-                      }}
+                      onClick={() => setSelectedDay(day)}
+                      onDragOver={(e) => handleDragOver(e, dayKey)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, day)}
                     >
                       <div className={cn(
-                        "text-xs font-medium mb-1 px-0.5",
-                        isToday(day) ? 'text-caregrowth-blue' : 'text-muted-foreground'
+                        "text-xs font-medium mb-1 px-0.5 flex items-center gap-1",
+                        isSelected ? 'text-caregrowth-blue font-bold' : isToday(day) ? 'text-caregrowth-blue' : 'text-muted-foreground'
                       )}>
-                        {format(day, 'd')}
+                        <span className={cn(
+                          "w-5 h-5 flex items-center justify-center rounded-full text-[11px]",
+                          isToday(day) && !isSelected && 'bg-caregrowth-blue text-white',
+                          isSelected && 'bg-caregrowth-blue text-white'
+                        )}>
+                          {format(day, 'd')}
+                        </span>
                       </div>
-                      {/* Platform icons only */}
+                      {/* Draggable platform icons */}
                       <div className="flex flex-wrap gap-1 mt-0.5">
-                        {Object.entries(platformCounts).map(([platform, count]) => {
-                          const config = PLATFORM_CONFIG[platform as keyof typeof PLATFORM_CONFIG];
+                        {dayPosts.map((post) => {
+                          const config = PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG];
                           if (!config) return null;
                           const Icon = config.icon;
                           return (
                             <div
-                              key={platform}
-                              className={cn("w-5 h-5 rounded flex items-center justify-center text-white", config.color)}
-                              title={`${config.label} (${count})`}
+                              key={post.id}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, post.id)}
+                              className={cn(
+                                "w-5 h-5 rounded flex items-center justify-center text-white cursor-grab active:cursor-grabbing hover:scale-110 transition-transform",
+                                config.color
+                              )}
+                              title={`${config.label} — drag to reschedule`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrawerPost(post);
+                              }}
                             >
                               <Icon size={11} />
                             </div>
@@ -507,51 +588,57 @@ const ContentCalendarPage = () => {
                   );
                 })}
               </div>
+              <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
+                <GripVertical size={10} /> Drag icons between days to reschedule · Click a day to view its queue
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Queue Panel */}
+        {/* Queue Panel — aligned to selectedDay */}
         <div className="xl:col-span-1 space-y-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <CalendarDays size={16} /> Queue
               </CardTitle>
+              <p className="text-[10px] text-muted-foreground">
+                Showing posts for {format(selectedDay, 'MMM d, yyyy')}
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Today */}
+              {/* Selected Day */}
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Today</h4>
-                {todayPosts.length === 0 ? (
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{selectedDayLabel}</h4>
+                {selectedDayPosts.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Nothing scheduled</p>
                 ) : (
                   <div className="space-y-2">
-                    {todayPosts.map(post => <QueuePostCard key={post.id} post={post} />)}
+                    {selectedDayPosts.map(post => <QueuePostCard key={post.id} post={post} />)}
                   </div>
                 )}
               </div>
-              {/* Tomorrow */}
+              {/* Next Day */}
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Tomorrow</h4>
-                {tomorrowPosts.length === 0 ? (
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{nextDayLabel}</h4>
+                {nextDayPosts.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Nothing scheduled</p>
                 ) : (
                   <div className="space-y-2">
-                    {tomorrowPosts.map(post => <QueuePostCard key={post.id} post={post} />)}
+                    {nextDayPosts.map(post => <QueuePostCard key={post.id} post={post} />)}
                   </div>
                 )}
               </div>
-              {/* This Week */}
+              {/* Rest of Week */}
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">This Week</h4>
-                {thisWeekPosts.length === 0 ? (
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Rest of Week</h4>
+                {restOfWeekPosts.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Nothing else this week</p>
                 ) : (
                   <div className="space-y-2">
-                    {thisWeekPosts.slice(0, 5).map(post => <QueuePostCard key={post.id} post={post} />)}
-                    {thisWeekPosts.length > 5 && (
-                      <p className="text-xs text-muted-foreground text-center">+{thisWeekPosts.length - 5} more</p>
+                    {restOfWeekPosts.slice(0, 5).map(post => <QueuePostCard key={post.id} post={post} />)}
+                    {restOfWeekPosts.length > 5 && (
+                      <p className="text-xs text-muted-foreground text-center">+{restOfWeekPosts.length - 5} more</p>
                     )}
                   </div>
                 )}
@@ -561,7 +648,7 @@ const ContentCalendarPage = () => {
         </div>
       </div>
 
-      {/* Side Drawer for calendar tile click — shows all posts for that day */}
+      {/* Side Drawer for post detail */}
       <Sheet open={!!drawerPost} onOpenChange={(open) => !open && setDrawerPost(null)}>
         <SheetContent className="sm:max-w-md overflow-y-auto">
           <SheetHeader>
@@ -602,7 +689,6 @@ const ContentCalendarPage = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Edit Post Dialog */}
       {editPost && (
         <EditPostDialog
           post={editPost}
