@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,7 @@ import { toast } from 'sonner';
 import { 
   CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, 
   Edit2, RotateCcw, Facebook, Instagram, Linkedin, Twitter,
-  Loader2, Link2, CheckCircle2, XCircle, AlertCircle
+  Loader2, Link2, AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -59,11 +60,23 @@ const ContentCalendarPage = () => {
   const [generateOpen, setGenerateOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [editPost, setEditPost] = useState<ScheduledPost | null>(null);
+  const [drawerPost, setDrawerPost] = useState<ScheduledPost | null>(null);
   const [generating, setGenerating] = useState(false);
   const [selectedDays, setSelectedDays] = useState<string>('7');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [generationMessage, setGenerationMessage] = useState('');
+  const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
   const { credits, refetch: refetchCredits } = useUserCredits();
+
+  const fetchConnectedAccounts = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('connected_accounts')
+        .select('platform, is_connected')
+        .eq('is_connected', true);
+      setConnectedPlatforms((data || []).map((a: any) => a.platform));
+    } catch {}
+  }, []);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -83,7 +96,8 @@ const ContentCalendarPage = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, [fetchPosts]);
+    fetchConnectedAccounts();
+  }, [fetchPosts, fetchConnectedAccounts]);
 
   const handleGenerate = async () => {
     if (selectedPlatforms.length === 0) {
@@ -118,7 +132,6 @@ const ContentCalendarPage = () => {
       const userId = userData?.user?.id;
       if (!userId) throw new Error('Not authenticated');
 
-      // Fetch user's prompts for variety
       const categories = ['attract', 'connect', 'transact'];
       const tones = ['professional', 'conversational', 'enthusiastic', 'authoritative', 'humorous'];
 
@@ -126,7 +139,7 @@ const ContentCalendarPage = () => {
 
       for (let day = 0; day < days; day++) {
         const scheduledDate = addDays(new Date(), day + 1);
-        scheduledDate.setHours(10, 0, 0, 0); // Default 10 AM
+        scheduledDate.setHours(10, 0, 0, 0);
 
         for (const platform of selectedPlatforms) {
           const category = categories[day % categories.length];
@@ -134,14 +147,7 @@ const ContentCalendarPage = () => {
 
           try {
             const { data, error } = await supabase.functions.invoke('generate-post', {
-              body: {
-                userId,
-                postType: category,
-                tone,
-                platform,
-                audience: '',
-                subject: '',
-              }
+              body: { userId, postType: category, tone, platform, audience: '', subject: '' }
             });
 
             if (error) throw error;
@@ -160,7 +166,6 @@ const ContentCalendarPage = () => {
             });
           } catch (genErr) {
             console.error(`Failed to generate for ${platform} day ${day + 1}:`, genErr);
-            // Still create a placeholder
             postsToCreate.push({
               user_id: userId,
               platform,
@@ -174,25 +179,32 @@ const ContentCalendarPage = () => {
         }
       }
 
-      // Batch insert all posts
+      // Batch insert and get inserted rows back
       if (postsToCreate.length > 0) {
-        const { error: insertError } = await supabase
+        const { data: inserted, error: insertError } = await supabase
           .from('scheduled_posts')
-          .insert(postsToCreate);
+          .insert(postsToCreate)
+          .select();
 
         if (insertError) throw insertError;
+
+        // Immediately add to local state
+        if (inserted) {
+          setPosts(prev => [...prev, ...(inserted as ScheduledPost[])].sort(
+            (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+          ));
+        }
       }
 
       // Deduct credits
-      const { data: creditResult } = await supabase.rpc('deduct_credits_fifo', {
+      await supabase.rpc('deduct_credits_fifo', {
         p_user_id: userId,
         p_credits_to_deduct: postsToCreate.filter(p => p.status === 'scheduled').length,
       });
 
       refetchCredits();
-      await fetchPosts();
       setGenerateOpen(false);
-      toast.success(`${postsToCreate.length} posts created and scheduled. Your calendar is ready!`);
+      toast.success(`All set. Your next ${days} days are ready.`);
     } catch (err: any) {
       console.error('Generation error:', err);
       toast.error(`Something went wrong: ${err.message}`);
@@ -260,39 +272,33 @@ const ContentCalendarPage = () => {
     return <Icon size={size} />;
   };
 
-  const PostCard = ({ post, compact = false }: { post: ScheduledPost; compact?: boolean }) => {
+  // Queue PostCard: icon + date/time + first 1-2 lines truncated
+  const QueuePostCard = ({ post }: { post: ScheduledPost }) => {
     const statusConfig = STATUS_CONFIG[post.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
     return (
-      <div className={cn(
-        "border rounded-lg p-3 bg-card hover:shadow-sm transition-shadow cursor-pointer",
-        compact ? "p-2" : "p-3"
-      )} onClick={() => setEditPost(post)}>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <div className={cn("w-5 h-5 rounded flex items-center justify-center text-white", PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG]?.color || 'bg-gray-500')}>
-              <PlatformIcon platform={post.platform} size={12} />
-            </div>
-            <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", statusConfig.className)}>
-              {statusConfig.label}
-            </Badge>
+      <div
+        className="border rounded-lg p-2.5 bg-card hover:shadow-sm transition-shadow cursor-pointer"
+        onClick={() => setEditPost(post)}
+      >
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className={cn("w-5 h-5 rounded flex items-center justify-center text-white shrink-0", PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG]?.color || 'bg-gray-500')}>
+            <PlatformIcon platform={post.platform} size={12} />
           </div>
-          <div className="flex items-center gap-1">
-            {post.status === 'failed' && (
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); handleRetry(post); }}>
-                <RotateCcw size={12} />
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setEditPost(post); }}>
-              <Edit2 size={12} />
+          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", statusConfig.className)}>
+            {statusConfig.label}
+          </Badge>
+          {post.status === 'failed' && (
+            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-auto" onClick={(e) => { e.stopPropagation(); handleRetry(post); }}>
+              <RotateCcw size={11} />
             </Button>
-          </div>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground line-clamp-1">
+        <p className="text-xs text-foreground line-clamp-2 leading-relaxed">
           {post.content}
         </p>
         <div className="flex items-center gap-1 mt-1.5 text-[10px] text-muted-foreground">
           <Clock size={10} />
-          {format(new Date(post.scheduled_at), 'h:mm a')}
+          {format(new Date(post.scheduled_at), 'MMM d, h:mm a')}
         </div>
         {post.status === 'failed' && post.error_message && (
           <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
@@ -303,7 +309,13 @@ const ContentCalendarPage = () => {
     );
   };
 
-  const days = calendarView === 'week' ? getWeekDays() : getMonthDays();
+  const calDays = calendarView === 'week' ? getWeekDays() : getMonthDays();
+
+  // Filter calendar icons to only connected platforms
+  const getConnectedPostsForDay = (date: Date) => {
+    const dayPosts = getPostsForDay(date);
+    return dayPosts.filter(p => connectedPlatforms.includes(p.platform));
+  };
 
   return (
     <div className="p-6">
@@ -387,7 +399,7 @@ const ContentCalendarPage = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
+        <Dialog open={connectOpen} onOpenChange={(open) => { setConnectOpen(open); if (!open) fetchConnectedAccounts(); }}>
           <DialogTrigger asChild>
             <Button variant="outline" className="gap-2">
               <Link2 size={16} /> Connect Accounts
@@ -439,50 +451,57 @@ const ContentCalendarPage = () => {
                   </div>
                 ))}
               </div>
-              {/* Calendar Grid */}
+              {/* Calendar Grid — icons only */}
               <div className={cn(
                 "grid grid-cols-7 gap-1",
                 calendarView === 'week' ? 'grid-rows-1' : ''
               )}>
-                {days.map((day, i) => {
-                  const dayPosts = getPostsForDay(day);
+                {calDays.map((day, i) => {
+                  const dayPosts = getConnectedPostsForDay(day);
                   const isCurrentMonth = isSameMonth(day, currentDate);
+                  // Group unique platforms for icon display
+                  const platformCounts = dayPosts.reduce<Record<string, number>>((acc, p) => {
+                    acc[p.platform] = (acc[p.platform] || 0) + 1;
+                    return acc;
+                  }, {});
+
                   return (
                     <div
                       key={i}
                       className={cn(
-                        "border rounded-lg p-1.5 transition-colors",
-                        calendarView === 'week' ? 'min-h-[200px]' : 'min-h-[100px]',
+                        "border rounded-lg p-1.5 transition-colors cursor-pointer",
+                        calendarView === 'week' ? 'min-h-[120px]' : 'min-h-[80px]',
                         isToday(day) ? 'border-caregrowth-blue bg-blue-50/50' : 'border-border',
                         !isCurrentMonth && calendarView === 'month' && 'opacity-40'
                       )}
+                      onClick={() => {
+                        if (dayPosts.length > 0) {
+                          setDrawerPost(dayPosts[0]);
+                        }
+                      }}
                     >
                       <div className={cn(
-                        "text-xs font-medium mb-1 px-1",
+                        "text-xs font-medium mb-1 px-0.5",
                         isToday(day) ? 'text-caregrowth-blue' : 'text-muted-foreground'
                       )}>
                         {format(day, 'd')}
                       </div>
-                      <div className="space-y-1">
-                        {dayPosts.slice(0, calendarView === 'week' ? 5 : 2).map(post => (
-                          <div
-                            key={post.id}
-                            onClick={() => setEditPost(post)}
-                            className={cn(
-                              "text-[10px] px-1.5 py-0.5 rounded cursor-pointer truncate flex items-center gap-1",
-                              post.status === 'published' ? 'bg-emerald-100 text-emerald-700' :
-                              post.status === 'failed' ? 'bg-red-100 text-red-700' :
-                              'bg-amber-50 text-amber-700'
-                            )}
-                          >
-                            <PlatformIcon platform={post.platform} size={10} />
-                          </div>
-                        ))}
-                        {dayPosts.length > (calendarView === 'week' ? 5 : 2) && (
-                          <p className="text-[10px] text-muted-foreground text-center">
-                            +{dayPosts.length - (calendarView === 'week' ? 5 : 2)} more
-                          </p>
-                        )}
+                      {/* Platform icons only */}
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {Object.entries(platformCounts).map(([platform, count]) => {
+                          const config = PLATFORM_CONFIG[platform as keyof typeof PLATFORM_CONFIG];
+                          if (!config) return null;
+                          const Icon = config.icon;
+                          return (
+                            <div
+                              key={platform}
+                              className={cn("w-5 h-5 rounded flex items-center justify-center text-white", config.color)}
+                              title={`${config.label} (${count})`}
+                            >
+                              <Icon size={11} />
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -508,7 +527,7 @@ const ContentCalendarPage = () => {
                   <p className="text-xs text-muted-foreground italic">Nothing scheduled</p>
                 ) : (
                   <div className="space-y-2">
-                    {todayPosts.map(post => <PostCard key={post.id} post={post} compact />)}
+                    {todayPosts.map(post => <QueuePostCard key={post.id} post={post} />)}
                   </div>
                 )}
               </div>
@@ -519,7 +538,7 @@ const ContentCalendarPage = () => {
                   <p className="text-xs text-muted-foreground italic">Nothing scheduled</p>
                 ) : (
                   <div className="space-y-2">
-                    {tomorrowPosts.map(post => <PostCard key={post.id} post={post} compact />)}
+                    {tomorrowPosts.map(post => <QueuePostCard key={post.id} post={post} />)}
                   </div>
                 )}
               </div>
@@ -530,7 +549,7 @@ const ContentCalendarPage = () => {
                   <p className="text-xs text-muted-foreground italic">Nothing else this week</p>
                 ) : (
                   <div className="space-y-2">
-                    {thisWeekPosts.slice(0, 5).map(post => <PostCard key={post.id} post={post} compact />)}
+                    {thisWeekPosts.slice(0, 5).map(post => <QueuePostCard key={post.id} post={post} />)}
                     {thisWeekPosts.length > 5 && (
                       <p className="text-xs text-muted-foreground text-center">+{thisWeekPosts.length - 5} more</p>
                     )}
@@ -541,6 +560,47 @@ const ContentCalendarPage = () => {
           </Card>
         </div>
       </div>
+
+      {/* Side Drawer for calendar tile click — shows all posts for that day */}
+      <Sheet open={!!drawerPost} onOpenChange={(open) => !open && setDrawerPost(null)}>
+        <SheetContent className="sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
+              {drawerPost && format(new Date(drawerPost.scheduled_at), 'EEEE, MMMM d')}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-3">
+            {drawerPost && getPostsForDay(new Date(drawerPost.scheduled_at)).map(post => {
+              const statusCfg = STATUS_CONFIG[post.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
+              return (
+                <div key={post.id} className="border rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className={cn("w-6 h-6 rounded flex items-center justify-center text-white", PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG]?.color || 'bg-gray-500')}>
+                      <PlatformIcon platform={post.platform} size={14} />
+                    </div>
+                    <span className="text-sm font-medium capitalize">{post.platform}</span>
+                    <Badge variant="outline" className={cn("text-xs ml-auto", statusCfg.className)}>
+                      {statusCfg.label}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{post.content}</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><Clock size={12} /> {format(new Date(post.scheduled_at), 'h:mm a')}</span>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setDrawerPost(null); setEditPost(post); }}>
+                      <Edit2 size={12} /> Edit
+                    </Button>
+                  </div>
+                  {post.status === 'failed' && post.error_message && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle size={12} /> {post.error_message}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Edit Post Dialog */}
       {editPost && (
