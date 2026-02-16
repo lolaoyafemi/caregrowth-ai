@@ -45,3 +45,6 @@ verify_jwt = true
 
 [functions.google-drive-list-folders]
 verify_jwt = true
+
+[functions.auto-publish]
+verify_jwt = false
