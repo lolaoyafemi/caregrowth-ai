@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addDays, addMonths, subMonths, isSameDay, isSameMonth, isToday, isTomorrow, isThisWeek, addWeeks, subWeeks } from 'date-fns';
 import ConnectAccountsPanel from '@/components/calendar/ConnectAccountsPanel';
 import EditPostDialog from '@/components/calendar/EditPostDialog';
+import CalendarAnalytics from '@/components/calendar/CalendarAnalytics';
 
 const PLATFORM_CONFIG = {
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-blue-600' },
@@ -286,7 +287,7 @@ const ContentCalendarPage = () => {
             </Button>
           </div>
         </div>
-        <p className={cn("text-xs text-muted-foreground line-clamp-2", compact && "line-clamp-1")}>
+        <p className="text-xs text-muted-foreground line-clamp-1">
           {post.content}
         </p>
         <div className="flex items-center gap-1 mt-1.5 text-[10px] text-muted-foreground">
@@ -313,6 +314,9 @@ const ContentCalendarPage = () => {
           Plan, schedule, and auto-publish your social media content across platforms. Let's keep your audience engaged consistently.
         </p>
       </div>
+
+      {/* Analytics */}
+      <CalendarAnalytics posts={posts} />
 
       <div className="flex flex-wrap gap-3 mb-6">
         <Dialog open={generateOpen} onOpenChange={setGenerateOpen}>
@@ -472,7 +476,6 @@ const ContentCalendarPage = () => {
                             )}
                           >
                             <PlatformIcon platform={post.platform} size={10} />
-                            <span className="truncate">{post.content.substring(0, 30)}</span>
                           </div>
                         ))}
                         {dayPosts.length > (calendarView === 'week' ? 5 : 2) && (
