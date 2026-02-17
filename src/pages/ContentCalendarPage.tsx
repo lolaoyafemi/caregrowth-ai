@@ -17,7 +17,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { cn } from '@/lib/utils';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addDays, addMonths, subMonths, isSameDay, isSameMonth, isToday, isTomorrow, isThisWeek, addWeeks, subWeeks } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addDays, addMonths, subMonths, isSameDay, isSameMonth, isToday, isTomorrow, addWeeks, subWeeks } from 'date-fns';
 import ConnectAccountsPanel from '@/components/calendar/ConnectAccountsPanel';
 import EditPostDialog from '@/components/calendar/EditPostDialog';
 import CalendarAnalytics from '@/components/calendar/CalendarAnalytics';
@@ -37,39 +37,37 @@ const STATUS_CONFIG = {
   draft: { label: 'Draft', className: 'bg-gray-100 text-gray-800 border-gray-200' },
 };
 
-interface ScheduledPost {
+interface ContentPost {
   id: string;
   platform: string;
   content: string;
-  hook: string | null;
-  body: string | null;
-  cta: string | null;
+  image_url: string | null;
   scheduled_at: string;
   status: string;
-  error_message: string | null;
-  prompt_category: string | null;
-  tone: string | null;
-  audience: string | null;
-  published_at: string | null;
+  error_message?: string | null;
+  source: 'content_posts' | 'scheduled_posts';
+  batch_id?: string | null;
 }
 
 const ContentCalendarPage = () => {
-  const [posts, setPosts] = useState<ScheduledPost[]>([]);
+  const [posts, setPosts] = useState<ContentPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [calendarView, setCalendarView] = useState<'week' | 'month'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [generateOpen, setGenerateOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
-  const [editPost, setEditPost] = useState<ScheduledPost | null>(null);
-  const [drawerPost, setDrawerPost] = useState<ScheduledPost | null>(null);
-  const [previewPost, setPreviewPost] = useState<ScheduledPost | null>(null);
+  const [editPost, setEditPost] = useState<ContentPost | null>(null);
+  const [drawerPost, setDrawerPost] = useState<ContentPost | null>(null);
+  const [previewPost, setPreviewPost] = useState<ContentPost | null>(null);
   const [generating, setGenerating] = useState(false);
   const [selectedDays, setSelectedDays] = useState<string>('7');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [generationMessage, setGenerationMessage] = useState('');
   const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+  const [businessName, setBusinessName] = useState('Your Business');
+  const [profileInitial, setProfileInitial] = useState('B');
   const { credits, refetch: refetchCredits } = useUserCredits();
 
   const fetchConnectedAccounts = useCallback(async () => {
@@ -82,15 +80,64 @@ const ContentCalendarPage = () => {
     } catch {}
   }, []);
 
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user?.id) return;
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('business_name, full_name')
+        .eq('user_id', userData.user.id)
+        .maybeSingle();
+      if (profile) {
+        const name = profile.business_name || profile.full_name || 'Your Business';
+        setBusinessName(name);
+        setProfileInitial(name.charAt(0).toUpperCase());
+      }
+    } catch {}
+  }, []);
+
   const fetchPosts = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('scheduled_posts')
-        .select('*')
-        .order('scheduled_at', { ascending: true });
+      // Fetch from both tables and merge
+      const [cpRes, spRes] = await Promise.all([
+        supabase
+          .from('content_posts')
+          .select('*')
+          .order('scheduled_at', { ascending: true }),
+        supabase
+          .from('scheduled_posts')
+          .select('*')
+          .order('scheduled_at', { ascending: true }),
+      ]);
 
-      if (error) throw error;
-      setPosts((data as ScheduledPost[]) || []);
+      const contentPosts: ContentPost[] = (cpRes.data || []).map((p: any) => ({
+        id: p.id,
+        platform: p.platform,
+        content: p.post_body,
+        image_url: p.image_url || null,
+        scheduled_at: p.scheduled_at,
+        status: p.status,
+        error_message: null,
+        source: 'content_posts' as const,
+        batch_id: p.batch_id,
+      }));
+
+      const scheduledPosts: ContentPost[] = (spRes.data || []).map((p: any) => ({
+        id: p.id,
+        platform: p.platform,
+        content: p.content,
+        image_url: p.image_url || null,
+        scheduled_at: p.scheduled_at,
+        status: p.status,
+        error_message: p.error_message,
+        source: 'scheduled_posts' as const,
+      }));
+
+      const all = [...contentPosts, ...scheduledPosts].sort(
+        (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+      );
+      setPosts(all);
     } catch (err: any) {
       console.error('Error fetching posts:', err);
     } finally {
@@ -101,7 +148,8 @@ const ContentCalendarPage = () => {
   useEffect(() => {
     fetchPosts();
     fetchConnectedAccounts();
-  }, [fetchPosts, fetchConnectedAccounts]);
+    fetchUserProfile();
+  }, [fetchPosts, fetchConnectedAccounts, fetchUserProfile]);
 
   const handleGenerate = async () => {
     if (selectedPlatforms.length === 0) {
@@ -136,14 +184,29 @@ const ContentCalendarPage = () => {
       const userId = userData?.user?.id;
       if (!userId) throw new Error('Not authenticated');
 
+      // 1. Create content_batch record
+      const { data: batchData, error: batchError } = await supabase
+        .from('content_batches')
+        .insert({
+          user_id: userId,
+          days,
+          platforms: selectedPlatforms,
+          created_by: userId,
+        })
+        .select()
+        .single();
+
+      if (batchError) throw batchError;
+      const batchId = batchData.id;
+
       const categories = ['attract', 'connect', 'transact'];
       const tones = ['professional', 'conversational', 'enthusiastic', 'authoritative', 'humorous'];
 
-      const postsToCreate: any[] = [];
+      const postsToInsert: any[] = [];
 
       for (let day = 0; day < days; day++) {
         const scheduledDate = addDays(new Date(), day + 1);
-        scheduledDate.setHours(10, 0, 0, 0);
+        scheduledDate.setHours(9, 0, 0, 0); // Default 9 AM
 
         for (const platform of selectedPlatforms) {
           const category = categories[day % categories.length];
@@ -156,43 +219,52 @@ const ContentCalendarPage = () => {
 
             if (error) throw error;
 
-            postsToCreate.push({
+            const postBody = data?.post || `${data?.hook || ''}\n\n${data?.body || ''}\n\n${data?.cta || ''}`.trim();
+
+            postsToInsert.push({
               user_id: userId,
+              batch_id: batchId,
               platform,
-              content: data?.post || `${data?.hook || ''} ${data?.body || ''} ${data?.cta || ''}`,
-              hook: data?.hook || null,
-              body: data?.body || null,
-              cta: data?.cta || null,
+              post_body: postBody,
               scheduled_at: scheduledDate.toISOString(),
               status: 'scheduled',
-              prompt_category: category,
-              tone,
             });
           } catch (genErr) {
             console.error(`Failed to generate for ${platform} day ${day + 1}:`, genErr);
-            postsToCreate.push({
+            postsToInsert.push({
               user_id: userId,
+              batch_id: batchId,
               platform,
-              content: `[Content pending — generation will retry]`,
+              post_body: `[Content pending — generation will retry]`,
               scheduled_at: scheduledDate.toISOString(),
               status: 'draft',
-              prompt_category: category,
-              tone,
             });
           }
         }
       }
 
-      if (postsToCreate.length > 0) {
+      if (postsToInsert.length > 0) {
         const { data: inserted, error: insertError } = await supabase
-          .from('scheduled_posts')
-          .insert(postsToCreate)
+          .from('content_posts')
+          .insert(postsToInsert)
           .select();
 
         if (insertError) throw insertError;
 
         if (inserted) {
-          setPosts(prev => [...prev, ...(inserted as ScheduledPost[])].sort(
+          const newPosts: ContentPost[] = inserted.map((p: any) => ({
+            id: p.id,
+            platform: p.platform,
+            content: p.post_body,
+            image_url: p.image_url || null,
+            scheduled_at: p.scheduled_at,
+            status: p.status,
+            error_message: null,
+            source: 'content_posts' as const,
+            batch_id: p.batch_id,
+          }));
+
+          setPosts(prev => [...prev, ...newPosts].sort(
             (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
           ));
         }
@@ -200,7 +272,7 @@ const ContentCalendarPage = () => {
 
       await supabase.rpc('deduct_credits_fifo', {
         p_user_id: userId,
-        p_credits_to_deduct: postsToCreate.filter(p => p.status === 'scheduled').length,
+        p_credits_to_deduct: postsToInsert.filter(p => p.status === 'scheduled').length,
       });
 
       refetchCredits();
@@ -216,11 +288,12 @@ const ContentCalendarPage = () => {
     }
   };
 
-  const handleRetry = async (post: ScheduledPost) => {
+  const handleRetry = async (post: ContentPost) => {
     try {
+      const table = post.source === 'content_posts' ? 'content_posts' : 'scheduled_posts';
       const { error } = await supabase
-        .from('scheduled_posts')
-        .update({ status: 'scheduled', error_message: null })
+        .from(table)
+        .update({ status: 'scheduled' })
         .eq('id', post.id);
 
       if (error) throw error;
@@ -261,7 +334,6 @@ const ContentCalendarPage = () => {
     const post = posts.find(p => p.id === postId);
     if (!post) return;
 
-    // Keep the original time, just change the date
     const originalDate = new Date(post.scheduled_at);
     const newDate = new Date(targetDay);
     newDate.setHours(originalDate.getHours(), originalDate.getMinutes(), 0, 0);
@@ -272,15 +344,15 @@ const ContentCalendarPage = () => {
     ).sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()));
 
     try {
+      const table = post.source === 'content_posts' ? 'content_posts' : 'scheduled_posts';
       const { error } = await supabase
-        .from('scheduled_posts')
+        .from(table)
         .update({ scheduled_at: newDate.toISOString() })
         .eq('id', postId);
 
       if (error) throw error;
       toast.success(`Post moved to ${format(newDate, 'MMM d')}.`);
     } catch (err: any) {
-      // Revert on failure
       fetchPosts();
       toast.error('Could not reschedule: ' + err.message);
     }
@@ -325,7 +397,7 @@ const ContentCalendarPage = () => {
     return <Icon size={size} />;
   };
 
-  const QueuePostCard = ({ post }: { post: ScheduledPost }) => {
+  const QueuePostCard = ({ post }: { post: ContentPost }) => {
     const statusConfig = STATUS_CONFIG[post.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
     return (
       <div
@@ -345,6 +417,9 @@ const ContentCalendarPage = () => {
             </Button>
           )}
         </div>
+        {post.image_url && (
+          <img src={post.image_url} alt="" className="w-full h-16 object-cover rounded mb-1.5" />
+        )}
         <p className="text-xs text-foreground line-clamp-2 leading-relaxed">
           {post.content}
         </p>
@@ -370,6 +445,8 @@ const ContentCalendarPage = () => {
 
   const selectedDayLabel = isToday(selectedDay) ? 'Today' : isTomorrow(selectedDay) ? 'Tomorrow' : format(selectedDay, 'EEE, MMM d');
   const nextDayLabel = isToday(addDays(selectedDay, 1)) ? 'Today' : isTomorrow(addDays(selectedDay, 1)) ? 'Tomorrow' : format(addDays(selectedDay, 1), 'EEE, MMM d');
+
+  const businessHandle = businessName.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
   return (
     <div className="p-6">
@@ -524,11 +601,6 @@ const ContentCalendarPage = () => {
                   const isSelected = isSameDay(day, selectedDay);
                   const isDragOver = dragOverDay === dayKey;
 
-                  const platformCounts = dayPosts.reduce<Record<string, number>>((acc, p) => {
-                    acc[p.platform] = (acc[p.platform] || 0) + 1;
-                    return acc;
-                  }, {});
-
                   return (
                     <div
                       key={i}
@@ -560,7 +632,6 @@ const ContentCalendarPage = () => {
                           {format(day, 'd')}
                         </span>
                       </div>
-                      {/* Draggable platform icons */}
                       <div className="flex flex-wrap gap-1 mt-0.5">
                         {dayPosts.map((post) => {
                           const config = PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG];
@@ -597,7 +668,7 @@ const ContentCalendarPage = () => {
           </Card>
         </div>
 
-        {/* Queue Panel — aligned to selectedDay */}
+        {/* Queue Panel */}
         <div className="xl:col-span-1 space-y-4">
           <Card>
             <CardHeader className="pb-2">
@@ -609,7 +680,6 @@ const ContentCalendarPage = () => {
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Selected Day */}
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{selectedDayLabel}</h4>
                 {selectedDayPosts.length === 0 ? (
@@ -620,7 +690,6 @@ const ContentCalendarPage = () => {
                   </div>
                 )}
               </div>
-              {/* Next Day */}
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{nextDayLabel}</h4>
                 {nextDayPosts.length === 0 ? (
@@ -631,7 +700,6 @@ const ContentCalendarPage = () => {
                   </div>
                 )}
               </div>
-              {/* Rest of Week */}
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Rest of Week</h4>
                 {restOfWeekPosts.length === 0 ? (
@@ -650,7 +718,7 @@ const ContentCalendarPage = () => {
         </div>
       </div>
 
-      {/* Side Drawer for post detail */}
+      {/* Side Drawer */}
       <Sheet open={!!drawerPost} onOpenChange={(open) => !open && setDrawerPost(null)}>
         <SheetContent className="sm:max-w-md overflow-y-auto">
           <SheetHeader>
@@ -672,6 +740,9 @@ const ContentCalendarPage = () => {
                       {statusCfg.label}
                     </Badge>
                   </div>
+                  {post.image_url && (
+                    <img src={post.image_url} alt="" className="w-full max-h-40 object-cover rounded-lg" />
+                  )}
                   <p className="text-sm text-foreground whitespace-pre-wrap">{post.content}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="flex items-center gap-1"><Clock size={12} /> {format(new Date(post.scheduled_at), 'h:mm a')}</span>
@@ -679,11 +750,6 @@ const ContentCalendarPage = () => {
                       <Edit2 size={12} /> Edit
                     </Button>
                   </div>
-                  {post.status === 'failed' && post.error_message && (
-                    <p className="text-xs text-destructive flex items-center gap-1">
-                      <AlertCircle size={12} /> {post.error_message}
-                    </p>
-                  )}
                 </div>
               );
             })}
@@ -693,10 +759,20 @@ const ContentCalendarPage = () => {
 
       {editPost && (
         <EditPostDialog
-          post={editPost}
+          post={{
+            id: editPost.id,
+            platform: editPost.platform,
+            content: editPost.content,
+            scheduled_at: editPost.scheduled_at,
+            status: editPost.status,
+            error_message: editPost.error_message || null,
+            image_url: editPost.image_url,
+          }}
           open={!!editPost}
           onOpenChange={(open) => !open && setEditPost(null)}
           onSaved={() => { setEditPost(null); fetchPosts(); }}
+          tableName={editPost.source === 'content_posts' ? 'content_posts' : 'scheduled_posts'}
+          contentField={editPost.source === 'content_posts' ? 'post_body' : 'content'}
         />
       )}
 
@@ -705,6 +781,9 @@ const ContentCalendarPage = () => {
         open={!!previewPost}
         onOpenChange={(open) => !open && setPreviewPost(null)}
         onEdit={() => { const p = previewPost; setPreviewPost(null); setEditPost(p); }}
+        businessName={businessName}
+        businessHandle={businessHandle}
+        profileInitial={profileInitial}
       />
     </div>
   );
