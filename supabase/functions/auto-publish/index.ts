@@ -4,6 +4,8 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const LINKEDIN_CLIENT_ID = Deno.env.get('LINKEDIN_CLIENT_ID')!;
+const LINKEDIN_CLIENT_SECRET = Deno.env.get('LINKEDIN_CLIENT_SECRET')!;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -47,15 +49,17 @@ serve(async (req) => {
           continue;
         }
 
+        // Auto-refresh token if expired
+        const freshAccount = await ensureFreshToken(supabase, account);
+
         let platformPostId: string | null = null;
 
         switch (post.platform) {
           case 'linkedin': {
-            platformPostId = await publishToLinkedIn(account, post);
+            platformPostId = await publishToLinkedIn(freshAccount, post);
             break;
           }
           default: {
-            // Placeholder for other platforms
             console.log(`Publishing to ${post.platform}: ${post.post_body.substring(0, 50)}...`);
             break;
           }
@@ -101,10 +105,76 @@ serve(async (req) => {
   }
 });
 
+/**
+ * Check if the access token is expired (or about to expire within 5 min).
+ * If so, use the refresh_token to get a new access_token from LinkedIn.
+ * Updates the DB and returns the account with a fresh token.
+ */
+async function ensureFreshToken(supabase: any, account: any): Promise<any> {
+  if (!account.token_expires_at || !account.refresh_token) {
+    return account; // No expiry info or no refresh token — use as-is
+  }
+
+  const expiresAt = new Date(account.token_expires_at).getTime();
+  const bufferMs = 5 * 60 * 1000; // 5 minutes buffer
+
+  if (Date.now() < expiresAt - bufferMs) {
+    return account; // Token still valid
+  }
+
+  console.log(`Token expired for account ${account.id}, refreshing...`);
+
+  if (account.platform === 'linkedin') {
+    const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: account.refresh_token,
+        client_id: LINKEDIN_CLIENT_ID,
+        client_secret: LINKEDIN_CLIENT_SECRET,
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error('LinkedIn token refresh failed:', errText);
+      throw new Error(`Token refresh failed: ${errText}`);
+    }
+
+    const tokenData = await tokenRes.json();
+    const newAccessToken = tokenData.access_token;
+    const newExpiresIn = tokenData.expires_in || 3600;
+    const newRefreshToken = tokenData.refresh_token || account.refresh_token;
+    const newExpiresAt = new Date(Date.now() + newExpiresIn * 1000).toISOString();
+
+    await supabase
+      .from('connected_accounts')
+      .update({
+        access_token: newAccessToken,
+        refresh_token: newRefreshToken,
+        token_expires_at: newExpiresAt,
+        error_message: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', account.id);
+
+    console.log(`Token refreshed successfully for account ${account.id}`);
+
+    return {
+      ...account,
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
+      token_expires_at: newExpiresAt,
+    };
+  }
+
+  return account;
+}
+
 async function publishToLinkedIn(account: any, post: any): Promise<string | null> {
   const personUrn = `urn:li:person:${account.platform_account_id}`;
 
-  // Build the share content
   const shareBody: any = {
     author: personUrn,
     lifecycleState: 'PUBLISHED',
@@ -119,10 +189,8 @@ async function publishToLinkedIn(account: any, post: any): Promise<string | null
     },
   };
 
-  // If there's an image, we need to upload it first
   if (post.image_url) {
     try {
-      // Register upload
       const registerRes = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
         method: 'POST',
         headers: {
@@ -147,11 +215,9 @@ async function publishToLinkedIn(account: any, post: any): Promise<string | null
         const asset = registerData.value?.asset;
 
         if (uploadUrl && asset) {
-          // Download image
           const imageRes = await fetch(post.image_url);
           const imageBlob = await imageRes.blob();
 
-          // Upload to LinkedIn
           await fetch(uploadUrl, {
             method: 'PUT',
             headers: {

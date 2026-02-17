@@ -27,7 +27,7 @@ serve(async (req) => {
 
     switch (platform) {
       case 'linkedin': {
-        const scopes = 'openid profile w_member_social';
+        const scopes = 'openid profile email w_member_social';
         authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${encodeURIComponent(state)}&scope=${encodeURIComponent(scopes)}`;
         break;
       }
