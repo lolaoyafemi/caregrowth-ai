@@ -83,9 +83,12 @@ export type Database = {
           account_name: string | null
           connected_at: string | null
           created_at: string
+          error_message: string | null
           id: string
           is_connected: boolean
           platform: string
+          platform_account_id: string | null
+          platform_account_name: string | null
           refresh_token: string | null
           token_expires_at: string | null
           updated_at: string
@@ -96,9 +99,12 @@ export type Database = {
           account_name?: string | null
           connected_at?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           is_connected?: boolean
           platform: string
+          platform_account_id?: string | null
+          platform_account_name?: string | null
           refresh_token?: string | null
           token_expires_at?: string | null
           updated_at?: string
@@ -109,9 +115,12 @@ export type Database = {
           account_name?: string | null
           connected_at?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           is_connected?: boolean
           platform?: string
+          platform_account_id?: string | null
+          platform_account_name?: string | null
           refresh_token?: string | null
           token_expires_at?: string | null
           updated_at?: string
@@ -150,10 +159,13 @@ export type Database = {
         Row: {
           batch_id: string | null
           created_at: string
+          error_message: string | null
           id: string
           image_url: string | null
           platform: string
+          platform_post_id: string | null
           post_body: string
+          published_at: string | null
           scheduled_at: string
           status: string
           updated_at: string
@@ -162,10 +174,13 @@ export type Database = {
         Insert: {
           batch_id?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           image_url?: string | null
           platform: string
+          platform_post_id?: string | null
           post_body: string
+          published_at?: string | null
           scheduled_at: string
           status?: string
           updated_at?: string
@@ -174,10 +189,13 @@ export type Database = {
         Update: {
           batch_id?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           image_url?: string | null
           platform?: string
+          platform_post_id?: string | null
           post_body?: string
+          published_at?: string | null
           scheduled_at?: string
           status?: string
           updated_at?: string
