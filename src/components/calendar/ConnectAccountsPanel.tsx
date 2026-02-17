@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Facebook, Instagram, Linkedin, Twitter, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Twitter, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'react-router-dom';
 
 interface ConnectedAccount {
   id: string;
@@ -12,30 +13,52 @@ interface ConnectedAccount {
   account_name: string | null;
   is_connected: boolean;
   connected_at: string | null;
+  platform_account_name: string | null;
+  token_expires_at: string | null;
+  error_message: string | null;
 }
 
 const PLATFORMS = [
-  { key: 'facebook', label: 'Facebook', icon: Facebook, color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200' },
-  { key: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-600', bgColor: 'bg-pink-50 border-pink-200' },
-  { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200' },
-  { key: 'x', label: 'X (Twitter)', icon: Twitter, color: 'text-gray-900', bgColor: 'bg-gray-50 border-gray-200' },
+  { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200', supported: true },
+  { key: 'facebook', label: 'Facebook', icon: Facebook, color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200', supported: false },
+  { key: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-600', bgColor: 'bg-pink-50 border-pink-200', supported: false },
+  { key: 'x', label: 'X (Twitter)', icon: Twitter, color: 'text-gray-900', bgColor: 'bg-gray-50 border-gray-200', supported: false },
 ];
 
 const ConnectAccountsPanel = () => {
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     fetchAccounts();
   }, []);
+
+  // Handle OAuth redirect results
+  useEffect(() => {
+    const success = searchParams.get('oauth_success');
+    const error = searchParams.get('oauth_error');
+
+    if (success) {
+      toast.success(`${success.charAt(0).toUpperCase() + success.slice(1)} connected successfully!`);
+      searchParams.delete('oauth_success');
+      setSearchParams(searchParams, { replace: true });
+      fetchAccounts();
+    }
+    if (error) {
+      toast.error(`OAuth error: ${error.replace(/_/g, ' ')}`);
+      searchParams.delete('oauth_error');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   const fetchAccounts = async () => {
     try {
       const { data, error } = await supabase
         .from('connected_accounts')
         .select('*');
-      
+
       if (error) throw error;
       setAccounts((data as ConnectedAccount[]) || []);
     } catch (err) {
@@ -52,33 +75,18 @@ const ConnectAccountsPanel = () => {
       const userId = userData?.user?.id;
       if (!userId) throw new Error('Not authenticated');
 
-      // Check if account record exists
-      const existing = accounts.find(a => a.platform === platform);
+      const { data, error } = await supabase.functions.invoke('social-oauth-start', {
+        body: { platform, user_id: userId },
+      });
 
-      if (existing) {
-        const { error } = await supabase
-          .from('connected_accounts')
-          .update({ is_connected: true, connected_at: new Date().toISOString(), account_name: `${platform} account` })
-          .eq('id', existing.id);
-        if (error) throw error;
+      if (error) throw error;
+      if (data?.auth_url) {
+        window.location.href = data.auth_url;
       } else {
-        const { error } = await supabase
-          .from('connected_accounts')
-          .insert({
-            user_id: userId,
-            platform,
-            is_connected: true,
-            connected_at: new Date().toISOString(),
-            account_name: `${platform} account`,
-          });
-        if (error) throw error;
+        throw new Error('No authorization URL returned');
       }
-
-      toast.success(`${platform.charAt(0).toUpperCase() + platform.slice(1)} connected. You're all set!`);
-      fetchAccounts();
     } catch (err: any) {
       toast.error('Connection failed: ' + err.message);
-    } finally {
       setConnecting(null);
     }
   };
@@ -90,7 +98,14 @@ const ConnectAccountsPanel = () => {
 
       const { error } = await supabase
         .from('connected_accounts')
-        .update({ is_connected: false, access_token: null, refresh_token: null })
+        .update({
+          is_connected: false,
+          access_token: null,
+          refresh_token: null,
+          platform_account_id: null,
+          platform_account_name: null,
+          token_expires_at: null,
+        })
         .eq('id', account.id);
 
       if (error) throw error;
@@ -99,6 +114,11 @@ const ConnectAccountsPanel = () => {
     } catch (err: any) {
       toast.error('Failed to disconnect: ' + err.message);
     }
+  };
+
+  const isTokenExpired = (expiresAt: string | null) => {
+    if (!expiresAt) return false;
+    return new Date(expiresAt) < new Date();
   };
 
   if (loading) {
@@ -110,9 +130,11 @@ const ConnectAccountsPanel = () => {
       <p className="text-sm text-muted-foreground mb-4">
         Connect your social accounts to enable auto-publishing. Your tokens are stored securely.
       </p>
-      {PLATFORMS.map(({ key, label, icon: Icon, color, bgColor }) => {
+      {PLATFORMS.map(({ key, label, icon: Icon, color, bgColor, supported }) => {
         const account = accounts.find(a => a.platform === key);
         const connected = account?.is_connected || false;
+        const expired = isTokenExpired(account?.token_expires_at || null);
+        const displayName = account?.platform_account_name || account?.account_name || null;
 
         return (
           <div key={key} className={cn("flex items-center justify-between p-4 border rounded-lg", bgColor)}>
@@ -120,13 +142,21 @@ const ConnectAccountsPanel = () => {
               <Icon className={cn("h-6 w-6", color)} />
               <div>
                 <p className="text-sm font-medium">{label}</p>
-                {connected && account?.account_name && (
-                  <p className="text-xs text-muted-foreground">{account.account_name}</p>
+                {connected && displayName && (
+                  <p className="text-xs text-muted-foreground">{displayName}</p>
+                )}
+                {connected && expired && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle size={10} /> Token expired — reconnect
+                  </p>
+                )}
+                {!supported && (
+                  <p className="text-xs text-muted-foreground italic">Coming soon</p>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {connected ? (
+              {connected && !expired ? (
                 <>
                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1">
                     <CheckCircle2 size={12} /> Connected
@@ -140,20 +170,17 @@ const ConnectAccountsPanel = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleConnect(key)}
-                  disabled={connecting === key}
+                  disabled={connecting === key || !supported}
                   className="gap-1"
                 >
                   {connecting === key ? <Loader2 size={14} className="animate-spin" /> : null}
-                  Connect
+                  {connected && expired ? 'Reconnect' : 'Connect'}
                 </Button>
               )}
             </div>
           </div>
         );
       })}
-      <p className="text-xs text-muted-foreground mt-4 italic">
-        Full OAuth integration coming soon. For now, connections are saved as placeholders to enable scheduling.
-      </p>
     </div>
   );
 };

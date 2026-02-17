@@ -48,3 +48,9 @@ verify_jwt = true
 
 [functions.auto-publish]
 verify_jwt = false
+
+[functions.social-oauth-start]
+verify_jwt = false
+
+[functions.social-oauth-callback]
+verify_jwt = false
