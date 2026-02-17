@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { Facebook, Instagram, Linkedin, Twitter, Trash2 } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Twitter, Trash2, ImagePlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PLATFORM_ICONS: Record<string, any> = {
@@ -27,30 +27,92 @@ interface EditPostDialogProps {
     scheduled_at: string;
     status: string;
     error_message: string | null;
+    image_url?: string | null;
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
+  tableName?: 'scheduled_posts' | 'content_posts';
+  contentField?: 'content' | 'post_body';
 }
 
-const EditPostDialog: React.FC<EditPostDialogProps> = ({ post, open, onOpenChange, onSaved }) => {
+const EditPostDialog: React.FC<EditPostDialogProps> = ({
+  post,
+  open,
+  onOpenChange,
+  onSaved,
+  tableName = 'scheduled_posts',
+  contentField = 'content',
+}) => {
   const [content, setContent] = useState(post.content);
   const [scheduledAt, setScheduledAt] = useState(format(new Date(post.scheduled_at), "yyyy-MM-dd'T'HH:mm"));
   const [status, setStatus] = useState(post.status);
+  const [imageUrl, setImageUrl] = useState<string | null>(post.image_url || null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const Icon = PLATFORM_ICONS[post.platform] || Facebook;
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be under 5MB.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) throw new Error('Not authenticated');
+
+      const ext = file.name.split('.').pop();
+      const filePath = `${userId}/${post.id}-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('post-images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('post-images')
+        .getPublicUrl(filePath);
+
+      setImageUrl(urlData.publicUrl);
+      toast.success('Image uploaded.');
+    } catch (err: any) {
+      toast.error('Upload failed: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setImageUrl(null);
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      const updateData: Record<string, any> = {
+        [contentField]: content,
+        scheduled_at: new Date(scheduledAt).toISOString(),
+        status,
+        image_url: imageUrl,
+      };
+
       const { error } = await supabase
-        .from('scheduled_posts')
-        .update({
-          content,
-          scheduled_at: new Date(scheduledAt).toISOString(),
-          status,
-        })
+        .from(tableName)
+        .update(updateData)
         .eq('id', post.id);
 
       if (error) throw error;
@@ -66,7 +128,7 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({ post, open, onOpenChang
   const handleDelete = async () => {
     try {
       const { error } = await supabase
-        .from('scheduled_posts')
+        .from(tableName)
         .delete()
         .eq('id', post.id);
 
@@ -102,6 +164,46 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({ post, open, onOpenChang
               className="mt-1"
             />
           </div>
+
+          {/* Image upload */}
+          <div>
+            <Label className="text-sm">Image (optional)</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+            {imageUrl ? (
+              <div className="mt-1 relative group">
+                <img
+                  src={imageUrl}
+                  alt="Post image"
+                  className="w-full max-h-48 object-cover rounded-lg border"
+                />
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={removeImage}
+                >
+                  <X size={14} />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="mt-1 w-full gap-2 text-muted-foreground"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                <ImagePlus size={16} />
+                {uploading ? 'Uploading…' : 'Attach Image'}
+              </Button>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-sm">Scheduled Date & Time</Label>

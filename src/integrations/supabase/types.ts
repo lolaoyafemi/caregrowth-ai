@@ -119,6 +119,80 @@ export type Database = {
         }
         Relationships: []
       }
+      content_batches: {
+        Row: {
+          created_at: string
+          created_by: string
+          days: number
+          id: string
+          platforms: string[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          days: number
+          id?: string
+          platforms: string[]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          days?: number
+          id?: string
+          platforms?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      content_posts: {
+        Row: {
+          batch_id: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          platform: string
+          post_body: string
+          scheduled_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          platform: string
+          post_body: string
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          platform?: string
+          post_body?: string
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_posts_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "content_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_inventory: {
         Row: {
           available_balance: number | null
@@ -832,6 +906,7 @@ export type Database = {
           error_message: string | null
           hook: string | null
           id: string
+          image_url: string | null
           platform: string
           prompt_category: string | null
           published_at: string | null
@@ -850,6 +925,7 @@ export type Database = {
           error_message?: string | null
           hook?: string | null
           id?: string
+          image_url?: string | null
           platform: string
           prompt_category?: string | null
           published_at?: string | null
@@ -868,6 +944,7 @@ export type Database = {
           error_message?: string | null
           hook?: string | null
           id?: string
+          image_url?: string | null
           platform?: string
           prompt_category?: string | null
           published_at?: string | null
