@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { Facebook, Instagram, Linkedin, Twitter, Trash2, ImagePlus, X } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Twitter, Trash2, ImagePlus, X, RefreshCw, ChevronDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PLATFORM_ICONS: Record<string, any> = {
@@ -32,8 +33,6 @@ interface EditPostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
-  tableName?: 'scheduled_posts' | 'content_posts';
-  contentField?: 'content' | 'post_body';
 }
 
 const EditPostDialog: React.FC<EditPostDialogProps> = ({
@@ -41,18 +40,45 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
   open,
   onOpenChange,
   onSaved,
-  tableName = 'scheduled_posts',
-  contentField = 'content',
 }) => {
   const [content, setContent] = useState(post.content);
   const [scheduledAt, setScheduledAt] = useState(format(new Date(post.scheduled_at), "yyyy-MM-dd'T'HH:mm"));
   const [status, setStatus] = useState(post.status);
   const [imageUrl, setImageUrl] = useState<string | null>(post.image_url || null);
   const [uploading, setUploading] = useState(false);
+  const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const Icon = PLATFORM_ICONS[post.platform] || Facebook;
+
+  const handleRegenerateImage = async () => {
+    setRegeneratingImage(true);
+    try {
+      // Extract hook from content (first line or first sentence)
+      const hookLine = content.split('\n')[0].substring(0, 100);
+
+      const { data, error } = await supabase.functions.invoke('generate-post-image', {
+        body: {
+          hook_line: hookLine,
+          business_name: '',
+          post_id: post.id,
+          platform: post.platform,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.image_url) {
+        setImageUrl(data.image_url);
+        toast.success('Image regenerated.');
+      }
+    } catch (err: any) {
+      toast.error('Failed to regenerate image: ' + err.message);
+    } finally {
+      setRegeneratingImage(false);
+    }
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,7 +114,7 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
         .getPublicUrl(filePath);
 
       setImageUrl(urlData.publicUrl);
-      toast.success('Image uploaded.');
+      toast.success('Image replaced.');
     } catch (err: any) {
       toast.error('Upload failed: ' + err.message);
     } finally {
@@ -104,18 +130,46 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
     setSaving(true);
     try {
       const updateData: Record<string, any> = {
-        [contentField]: content,
+        post_body: content,
         scheduled_at: new Date(scheduledAt).toISOString(),
         status,
         image_url: imageUrl,
       };
 
       const { error } = await supabase
-        .from(tableName)
+        .from('content_posts')
         .update(updateData)
         .eq('id', post.id);
 
       if (error) throw error;
+
+      // Track reschedule for smart scheduling
+      const originalTime = format(new Date(post.scheduled_at), 'HH:mm');
+      const newTime = scheduledAt.split('T')[1];
+      if (originalTime !== newTime) {
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user?.id) {
+            // Increment reschedule count
+            await supabase
+              .from('user_profiles')
+              .update({
+                reschedule_count: (await supabase
+                  .from('user_profiles')
+                  .select('reschedule_count')
+                  .eq('user_id', userData.user.id)
+                  .single()
+                  .then(r => (r.data?.reschedule_count || 0) + 1)),
+                preferred_post_time: newTime + ':00',
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              })
+              .eq('user_id', userData.user.id);
+          }
+        } catch {
+          // Non-critical, don't block save
+        }
+      }
+
       toast.success('Post updated.');
       onSaved();
     } catch (err: any) {
@@ -128,7 +182,7 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
   const handleDelete = async () => {
     try {
       const { error } = await supabase
-        .from(tableName)
+        .from('content_posts')
         .delete()
         .eq('id', post.id);
 
@@ -165,16 +219,9 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
             />
           </div>
 
-          {/* Image upload */}
+          {/* Image section */}
           <div>
-            <Label className="text-sm">Image (optional)</Label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-            />
+            <Label className="text-sm">Image</Label>
             {imageUrl ? (
               <div className="mt-1 relative group">
                 <img
@@ -192,16 +239,49 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
                 </Button>
               </div>
             ) : (
+              <p className="text-xs text-muted-foreground mt-1 italic">No image attached</p>
+            )}
+            <div className="flex gap-2 mt-2">
               <Button
                 variant="outline"
-                className="mt-1 w-full gap-2 text-muted-foreground"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={handleRegenerateImage}
+                disabled={regeneratingImage}
               >
-                <ImagePlus size={16} />
-                {uploading ? 'Uploading…' : 'Attach Image'}
+                {regeneratingImage ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                {regeneratingImage ? 'Generating…' : 'Regenerate Image'}
               </Button>
-            )}
+            </div>
+
+            {/* Advanced: Replace Image */}
+            <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-2">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 h-6 px-1">
+                  <ChevronDown size={12} className={cn("transition-transform", advancedOpen && "rotate-180")} />
+                  Advanced: Replace Image
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-1 w-full gap-2 text-muted-foreground text-xs"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <ImagePlus size={14} />
+                  {uploading ? 'Uploading…' : 'Upload Custom Image'}
+                </Button>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

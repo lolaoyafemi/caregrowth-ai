@@ -45,7 +45,6 @@ interface ContentPost {
   scheduled_at: string;
   status: string;
   error_message?: string | null;
-  source: 'content_posts' | 'scheduled_posts';
   batch_id?: string | null;
 }
 
@@ -97,21 +96,17 @@ const ContentCalendarPage = () => {
     } catch {}
   }, []);
 
+  // SINGLE SOURCE OF TRUTH: Only read from content_posts
   const fetchPosts = useCallback(async () => {
     try {
-      // Fetch from both tables and merge
-      const [cpRes, spRes] = await Promise.all([
-        supabase
-          .from('content_posts')
-          .select('*')
-          .order('scheduled_at', { ascending: true }),
-        supabase
-          .from('scheduled_posts')
-          .select('*')
-          .order('scheduled_at', { ascending: true }),
-      ]);
+      const { data, error } = await supabase
+        .from('content_posts')
+        .select('*')
+        .order('scheduled_at', { ascending: true });
 
-      const contentPosts: ContentPost[] = (cpRes.data || []).map((p: any) => ({
+      if (error) throw error;
+
+      const mapped: ContentPost[] = (data || []).map((p: any) => ({
         id: p.id,
         platform: p.platform,
         content: p.post_body,
@@ -119,25 +114,10 @@ const ContentCalendarPage = () => {
         scheduled_at: p.scheduled_at,
         status: p.status,
         error_message: null,
-        source: 'content_posts' as const,
         batch_id: p.batch_id,
       }));
 
-      const scheduledPosts: ContentPost[] = (spRes.data || []).map((p: any) => ({
-        id: p.id,
-        platform: p.platform,
-        content: p.content,
-        image_url: p.image_url || null,
-        scheduled_at: p.scheduled_at,
-        status: p.status,
-        error_message: p.error_message,
-        source: 'scheduled_posts' as const,
-      }));
-
-      const all = [...contentPosts, ...scheduledPosts].sort(
-        (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
-      );
-      setPosts(all);
+      setPosts(mapped);
     } catch (err: any) {
       console.error('Error fetching posts:', err);
     } finally {
@@ -161,7 +141,7 @@ const ContentCalendarPage = () => {
     const totalPosts = days * selectedPlatforms.length;
     
     if (credits < totalPosts) {
-      toast.error(`You need ${totalPosts} credits to generate ${totalPosts} posts. You have ${credits}.`);
+      toast.error(`You need ${totalPosts} credits. You have ${credits}.`);
       return;
     }
 
@@ -171,6 +151,7 @@ const ContentCalendarPage = () => {
       "Crafting your content with care…",
       "Almost there — putting the finishing touches on your posts…",
       "Your calendar is filling up nicely…",
+      "Generating branded images for each post…",
     ];
     let msgIndex = 0;
     setGenerationMessage(messages[0]);
@@ -183,6 +164,17 @@ const ContentCalendarPage = () => {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
       if (!userId) throw new Error('Not authenticated');
+
+      // Get user's preferred time
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('preferred_post_time, timezone, reschedule_count, business_name')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const preferredTime = profileData?.preferred_post_time || '09:00:00';
+      const [prefHour, prefMin] = preferredTime.split(':').map(Number);
+      const userBusinessName = profileData?.business_name || businessName;
 
       // 1. Create content_batch record
       const { data: batchData, error: batchError } = await supabase
@@ -206,7 +198,7 @@ const ContentCalendarPage = () => {
 
       for (let day = 0; day < days; day++) {
         const scheduledDate = addDays(new Date(), day + 1);
-        scheduledDate.setHours(9, 0, 0, 0); // Default 9 AM
+        scheduledDate.setHours(prefHour, prefMin, 0, 0);
 
         for (const platform of selectedPlatforms) {
           const category = categories[day % categories.length];
@@ -228,6 +220,7 @@ const ContentCalendarPage = () => {
               post_body: postBody,
               scheduled_at: scheduledDate.toISOString(),
               status: 'scheduled',
+              hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
             });
           } catch (genErr) {
             console.error(`Failed to generate for ${platform} day ${day + 1}:`, genErr);
@@ -238,19 +231,23 @@ const ContentCalendarPage = () => {
               post_body: `[Content pending — generation will retry]`,
               scheduled_at: scheduledDate.toISOString(),
               status: 'draft',
+              hook_line: '',
             });
           }
         }
       }
 
       if (postsToInsert.length > 0) {
+        // Insert posts (strip hook_line before insert since it's not a DB column)
+        const dbPosts = postsToInsert.map(({ hook_line, ...rest }) => rest);
         const { data: inserted, error: insertError } = await supabase
           .from('content_posts')
-          .insert(postsToInsert)
+          .insert(dbPosts)
           .select();
 
         if (insertError) throw insertError;
 
+        // Generate images for each post in background
         if (inserted) {
           const newPosts: ContentPost[] = inserted.map((p: any) => ({
             id: p.id,
@@ -260,13 +257,35 @@ const ContentCalendarPage = () => {
             scheduled_at: p.scheduled_at,
             status: p.status,
             error_message: null,
-            source: 'content_posts' as const,
             batch_id: p.batch_id,
           }));
 
           setPosts(prev => [...prev, ...newPosts].sort(
             (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
           ));
+
+          // Fire-and-forget image generation for each post
+          for (let i = 0; i < inserted.length; i++) {
+            const p = inserted[i];
+            const hookLine = postsToInsert[i]?.hook_line || p.post_body.split('\n')[0]?.substring(0, 100) || 'Your Post';
+
+            supabase.functions.invoke('generate-post-image', {
+              body: {
+                hook_line: hookLine,
+                business_name: userBusinessName,
+                post_id: p.id,
+                platform: p.platform,
+              },
+            }).then(({ data: imgData }) => {
+              if (imgData?.image_url) {
+                setPosts(prev => prev.map(post =>
+                  post.id === p.id ? { ...post, image_url: imgData.image_url } : post
+                ));
+              }
+            }).catch(err => {
+              console.error(`Image gen failed for post ${p.id}:`, err);
+            });
+          }
         }
       }
 
@@ -290,9 +309,8 @@ const ContentCalendarPage = () => {
 
   const handleRetry = async (post: ContentPost) => {
     try {
-      const table = post.source === 'content_posts' ? 'content_posts' : 'scheduled_posts';
       const { error } = await supabase
-        .from(table)
+        .from('content_posts')
         .update({ status: 'scheduled' })
         .eq('id', post.id);
 
@@ -344,13 +362,43 @@ const ContentCalendarPage = () => {
     ).sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()));
 
     try {
-      const table = post.source === 'content_posts' ? 'content_posts' : 'scheduled_posts';
       const { error } = await supabase
-        .from(table)
+        .from('content_posts')
         .update({ scheduled_at: newDate.toISOString() })
         .eq('id', postId);
 
       if (error) throw error;
+
+      // Track reschedule for smart scheduling
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user?.id) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('reschedule_count')
+            .eq('user_id', userData.user.id)
+            .single();
+
+          const newCount = (profile?.reschedule_count || 0) + 1;
+          if (newCount >= 3) {
+            // Learn preferred time after 3+ reschedules
+            await supabase
+              .from('user_profiles')
+              .update({
+                reschedule_count: newCount,
+                preferred_post_time: format(newDate, 'HH:mm:ss'),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              })
+              .eq('user_id', userData.user.id);
+          } else {
+            await supabase
+              .from('user_profiles')
+              .update({ reschedule_count: newCount })
+              .eq('user_id', userData.user.id);
+          }
+        }
+      } catch {}
+
       toast.success(`Post moved to ${format(newDate, 'MMM d')}.`);
     } catch (err: any) {
       fetchPosts();
@@ -437,11 +485,6 @@ const ContentCalendarPage = () => {
   };
 
   const calDays = calendarView === 'week' ? getWeekDays() : getMonthDays();
-
-  const getConnectedPostsForDay = (date: Date) => {
-    const dayPosts = getPostsForDay(date);
-    return dayPosts.filter(p => connectedPlatforms.includes(p.platform));
-  };
 
   const selectedDayLabel = isToday(selectedDay) ? 'Today' : isTomorrow(selectedDay) ? 'Tomorrow' : format(selectedDay, 'EEE, MMM d');
   const nextDayLabel = isToday(addDays(selectedDay, 1)) ? 'Today' : isTomorrow(addDays(selectedDay, 1)) ? 'Tomorrow' : format(addDays(selectedDay, 1), 'EEE, MMM d');
@@ -595,7 +638,7 @@ const ContentCalendarPage = () => {
                 calendarView === 'week' ? 'grid-rows-1' : ''
               )}>
                 {calDays.map((day, i) => {
-                  const dayPosts = getConnectedPostsForDay(day);
+                  const dayPosts = getPostsForDay(day);
                   const isCurrentMonth = isSameMonth(day, currentDate);
                   const dayKey = format(day, 'yyyy-MM-dd');
                   const isSelected = isSameDay(day, selectedDay);
@@ -771,8 +814,6 @@ const ContentCalendarPage = () => {
           open={!!editPost}
           onOpenChange={(open) => !open && setEditPost(null)}
           onSaved={() => { setEditPost(null); fetchPosts(); }}
-          tableName={editPost.source === 'content_posts' ? 'content_posts' : 'scheduled_posts'}
-          contentField={editPost.source === 'content_posts' ? 'post_body' : 'content'}
         />
       )}
 

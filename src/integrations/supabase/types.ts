@@ -1257,11 +1257,14 @@ export type Database = {
           pain_points: string[] | null
           phone_number: string | null
           plan_name: string | null
+          preferred_post_time: string | null
+          reschedule_count: number | null
           role: string | null
           services: string | null
           status: string | null
           subscription_id: string | null
           testimonial: string | null
+          timezone: string | null
           updated_at: string
           user_id: string
         }
@@ -1285,11 +1288,14 @@ export type Database = {
           pain_points?: string[] | null
           phone_number?: string | null
           plan_name?: string | null
+          preferred_post_time?: string | null
+          reschedule_count?: number | null
           role?: string | null
           services?: string | null
           status?: string | null
           subscription_id?: string | null
           testimonial?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1313,11 +1319,14 @@ export type Database = {
           pain_points?: string[] | null
           phone_number?: string | null
           plan_name?: string | null
+          preferred_post_time?: string | null
+          reschedule_count?: number | null
           role?: string | null
           services?: string | null
           status?: string | null
           subscription_id?: string | null
           testimonial?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string
         }
