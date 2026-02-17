@@ -21,6 +21,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInte
 import ConnectAccountsPanel from '@/components/calendar/ConnectAccountsPanel';
 import EditPostDialog from '@/components/calendar/EditPostDialog';
 import CalendarAnalytics from '@/components/calendar/CalendarAnalytics';
+import PlatformPreview from '@/components/calendar/PlatformPreview';
 
 const PLATFORM_CONFIG = {
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-blue-600' },
@@ -62,6 +63,7 @@ const ContentCalendarPage = () => {
   const [connectOpen, setConnectOpen] = useState(false);
   const [editPost, setEditPost] = useState<ScheduledPost | null>(null);
   const [drawerPost, setDrawerPost] = useState<ScheduledPost | null>(null);
+  const [previewPost, setPreviewPost] = useState<ScheduledPost | null>(null);
   const [generating, setGenerating] = useState(false);
   const [selectedDays, setSelectedDays] = useState<string>('7');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
@@ -576,7 +578,7 @@ const ContentCalendarPage = () => {
                               title={`${config.label} — drag to reschedule`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setDrawerPost(post);
+                                setPreviewPost(post);
                               }}
                             >
                               <Icon size={11} />
@@ -697,6 +699,13 @@ const ContentCalendarPage = () => {
           onSaved={() => { setEditPost(null); fetchPosts(); }}
         />
       )}
+
+      <PlatformPreview
+        post={previewPost}
+        open={!!previewPost}
+        onOpenChange={(open) => !open && setPreviewPost(null)}
+        onEdit={() => { const p = previewPost; setPreviewPost(null); setEditPost(p); }}
+      />
     </div>
   );
 };
