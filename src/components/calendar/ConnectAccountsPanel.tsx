@@ -20,9 +20,9 @@ interface ConnectedAccount {
 
 const PLATFORMS = [
   { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200', supported: true },
+  { key: 'x', label: 'X (Twitter)', icon: Twitter, color: 'text-gray-900', bgColor: 'bg-gray-50 border-gray-200', supported: true },
   { key: 'facebook', label: 'Facebook', icon: Facebook, color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200', supported: false },
   { key: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-600', bgColor: 'bg-pink-50 border-pink-200', supported: false },
-  { key: 'x', label: 'X (Twitter)', icon: Twitter, color: 'text-gray-900', bgColor: 'bg-gray-50 border-gray-200', supported: false },
 ];
 
 const ConnectAccountsPanel = () => {

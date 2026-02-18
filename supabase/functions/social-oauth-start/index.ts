@@ -2,9 +2,25 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from '../_shared/cors.ts';
 
 const LINKEDIN_CLIENT_ID = Deno.env.get('LINKEDIN_CLIENT_ID')!;
+const X_CLIENT_ID = Deno.env.get('X_CLIENT_ID')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/social-oauth-callback`;
+
+// Simple base64url encoding for PKCE
+function base64url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let str = '';
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function generatePKCE() {
+  const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)).buffer);
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  const challenge = base64url(digest);
+  return { verifier, challenge };
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -22,13 +38,20 @@ serve(async (req) => {
     }
 
     let authUrl: string;
-    // state encodes platform + user_id so callback knows who initiated
-    const state = btoa(JSON.stringify({ platform, user_id }));
 
     switch (platform) {
       case 'linkedin': {
+        const state = btoa(JSON.stringify({ platform, user_id }));
         const scopes = 'openid profile email w_member_social';
         authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${encodeURIComponent(state)}&scope=${encodeURIComponent(scopes)}`;
+        break;
+      }
+      case 'x': {
+        const { verifier, challenge } = await generatePKCE();
+        // Encode verifier in state so callback can use it
+        const state = btoa(JSON.stringify({ platform, user_id, code_verifier: verifier }));
+        const scopes = 'tweet.write users.read offline.access';
+        authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${encodeURIComponent(X_CLIENT_ID)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}&state=${encodeURIComponent(state)}&code_challenge=${encodeURIComponent(challenge)}&code_challenge_method=S256`;
         break;
       }
       default:

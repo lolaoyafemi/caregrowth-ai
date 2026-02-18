@@ -6,6 +6,9 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const LINKEDIN_CLIENT_ID = Deno.env.get('LINKEDIN_CLIENT_ID')!;
 const LINKEDIN_CLIENT_SECRET = Deno.env.get('LINKEDIN_CLIENT_SECRET')!;
+const X_CLIENT_ID = Deno.env.get('X_CLIENT_ID') || '';
+const X_CLIENT_SECRET = Deno.env.get('X_CLIENT_SECRET') || '';
+const X_PUBLISHING_ENABLED = Deno.env.get('X_PUBLISHING_ENABLED') === 'true';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,6 +30,20 @@ serve(async (req) => {
 
     for (const post of (duePosts || [])) {
       try {
+        // Check X publishing gate early
+        if (post.platform === 'x' && !X_PUBLISHING_ENABLED) {
+          await supabase
+            .from('content_posts')
+            .update({
+              status: 'skipped',
+              error_message: 'X publishing disabled',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', post.id);
+          results.push({ id: post.id, status: 'skipped', reason: 'X disabled' });
+          continue;
+        }
+
         const { data: account } = await supabase
           .from('connected_accounts')
           .select('*')
@@ -44,25 +61,23 @@ serve(async (req) => {
               updated_at: new Date().toISOString(),
             })
             .eq('id', post.id);
-
           results.push({ id: post.id, status: 'failed', reason: 'no_account' });
           continue;
         }
 
-        // Auto-refresh token if expired
         const freshAccount = await ensureFreshToken(supabase, account);
-
         let platformPostId: string | null = null;
 
         switch (post.platform) {
-          case 'linkedin': {
+          case 'linkedin':
             platformPostId = await publishToLinkedIn(freshAccount, post);
             break;
-          }
-          default: {
+          case 'x':
+            platformPostId = await publishToX(freshAccount, post);
+            break;
+          default:
             console.log(`Publishing to ${post.platform}: ${post.post_body.substring(0, 50)}...`);
             break;
-          }
         }
 
         await supabase
@@ -79,7 +94,6 @@ serve(async (req) => {
         results.push({ id: post.id, status: 'published', platform_post_id: platformPostId });
       } catch (postError) {
         console.error(`Error publishing post ${post.id}:`, postError);
-
         await supabase
           .from('content_posts')
           .update({
@@ -88,7 +102,6 @@ serve(async (req) => {
             updated_at: new Date().toISOString(),
           })
           .eq('id', post.id);
-
         results.push({ id: post.id, status: 'failed', error: (postError as Error).message });
       }
     }
@@ -105,24 +118,23 @@ serve(async (req) => {
   }
 });
 
-/**
- * Check if the access token is expired (or about to expire within 5 min).
- * If so, use the refresh_token to get a new access_token from LinkedIn.
- * Updates the DB and returns the account with a fresh token.
- */
 async function ensureFreshToken(supabase: any, account: any): Promise<any> {
   if (!account.token_expires_at || !account.refresh_token) {
-    return account; // No expiry info or no refresh token — use as-is
+    return account;
   }
 
   const expiresAt = new Date(account.token_expires_at).getTime();
-  const bufferMs = 5 * 60 * 1000; // 5 minutes buffer
+  const bufferMs = 5 * 60 * 1000;
 
   if (Date.now() < expiresAt - bufferMs) {
-    return account; // Token still valid
+    return account;
   }
 
-  console.log(`Token expired for account ${account.id}, refreshing...`);
+  console.log(`Token expired for account ${account.id} (${account.platform}), refreshing...`);
+
+  let newAccessToken: string;
+  let newRefreshToken: string;
+  let newExpiresIn: number;
 
   if (account.platform === 'linkedin') {
     const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -143,33 +155,77 @@ async function ensureFreshToken(supabase: any, account: any): Promise<any> {
     }
 
     const tokenData = await tokenRes.json();
-    const newAccessToken = tokenData.access_token;
-    const newExpiresIn = tokenData.expires_in || 3600;
-    const newRefreshToken = tokenData.refresh_token || account.refresh_token;
-    const newExpiresAt = new Date(Date.now() + newExpiresIn * 1000).toISOString();
+    newAccessToken = tokenData.access_token;
+    newExpiresIn = tokenData.expires_in || 3600;
+    newRefreshToken = tokenData.refresh_token || account.refresh_token;
+  } else if (account.platform === 'x') {
+    const basicAuth = btoa(`${X_CLIENT_ID}:${X_CLIENT_SECRET}`);
+    const tokenRes = await fetch('https://api.x.com/2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${basicAuth}`,
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: account.refresh_token,
+      }),
+    });
 
-    await supabase
-      .from('connected_accounts')
-      .update({
-        access_token: newAccessToken,
-        refresh_token: newRefreshToken,
-        token_expires_at: newExpiresAt,
-        error_message: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', account.id);
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error('X token refresh failed:', errText);
+      throw new Error(`X token refresh failed: ${errText}`);
+    }
 
-    console.log(`Token refreshed successfully for account ${account.id}`);
+    const tokenData = await tokenRes.json();
+    newAccessToken = tokenData.access_token;
+    newExpiresIn = tokenData.expires_in || 7200;
+    newRefreshToken = tokenData.refresh_token || account.refresh_token;
+  } else {
+    return account;
+  }
 
-    return {
-      ...account,
+  const newExpiresAt = new Date(Date.now() + newExpiresIn * 1000).toISOString();
+
+  await supabase
+    .from('connected_accounts')
+    .update({
       access_token: newAccessToken,
       refresh_token: newRefreshToken,
       token_expires_at: newExpiresAt,
-    };
+      error_message: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', account.id);
+
+  console.log(`Token refreshed successfully for account ${account.id}`);
+
+  return {
+    ...account,
+    access_token: newAccessToken,
+    refresh_token: newRefreshToken,
+    token_expires_at: newExpiresAt,
+  };
+}
+
+async function publishToX(account: any, post: any): Promise<string | null> {
+  const res = await fetch('https://api.x.com/2/tweets', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${account.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ text: post.post_body }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`X API error (${res.status}): ${errText}`);
   }
 
-  return account;
+  const data = await res.json();
+  return data.data?.id || null;
 }
 
 async function publishToLinkedIn(account: any, post: any): Promise<string | null> {
