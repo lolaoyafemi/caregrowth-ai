@@ -1,13 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 
 const LINKEDIN_CLIENT_ID = Deno.env.get('LINKEDIN_CLIENT_ID')!;
 const X_CLIENT_ID = Deno.env.get('X_CLIENT_ID')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/social-oauth-callback`;
 
-// Simple base64url encoding for PKCE
 function base64url(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let str = '';
@@ -20,6 +21,33 @@ async function generatePKCE() {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
   const challenge = base64url(digest);
   return { verifier, challenge };
+}
+
+async function isUserPaidOrAdmin(supabase: any, userId: string): Promise<{ allowed: boolean; reason?: string }> {
+  // Check if user is admin (bypass subscription check)
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'agency_admin') {
+    return { allowed: true };
+  }
+
+  // Check for active subscription
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('id, status')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  if (subscription) {
+    return { allowed: true };
+  }
+
+  return { allowed: false, reason: 'Active subscription required to connect accounts.' };
 }
 
 serve(async (req) => {
@@ -37,6 +65,17 @@ serve(async (req) => {
       });
     }
 
+    // Check subscription status server-side
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const { allowed, reason } = await isUserPaidOrAdmin(supabase, user_id);
+
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: reason }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     let authUrl: string;
 
     switch (platform) {
@@ -48,7 +87,6 @@ serve(async (req) => {
       }
       case 'x': {
         const { verifier, challenge } = await generatePKCE();
-        // Encode verifier in state so callback can use it
         const state = btoa(JSON.stringify({ platform, user_id, code_verifier: verifier }));
         const scopes = 'tweet.write users.read offline.access';
         authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${encodeURIComponent(X_CLIENT_ID)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}&state=${encodeURIComponent(state)}&code_challenge=${encodeURIComponent(challenge)}&code_challenge_method=S256`;

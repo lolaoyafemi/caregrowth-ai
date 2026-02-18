@@ -30,7 +30,22 @@ serve(async (req) => {
 
     for (const post of (duePosts || [])) {
       try {
-        // Check X publishing gate early
+        // Check subscription status for the post owner
+        const isAllowed = await checkUserCanPublish(supabase, post.user_id);
+        if (!isAllowed) {
+          await supabase
+            .from('content_posts')
+            .update({
+              status: 'skipped',
+              error_message: 'Subscription inactive',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', post.id);
+          results.push({ id: post.id, status: 'skipped', reason: 'Subscription inactive' });
+          continue;
+        }
+
+        // Check X publishing gate
         if (post.platform === 'x' && !X_PUBLISHING_ENABLED) {
           await supabase
             .from('content_posts')
@@ -117,6 +132,29 @@ serve(async (req) => {
     });
   }
 });
+
+async function checkUserCanPublish(supabase: any, userId: string): Promise<boolean> {
+  // Admins can always publish
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'agency_admin') {
+    return true;
+  }
+
+  // Check for active subscription
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('id, status')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  return !!subscription;
+}
 
 async function ensureFreshToken(supabase: any, account: any): Promise<any> {
   if (!account.token_expires_at || !account.refresh_token) {

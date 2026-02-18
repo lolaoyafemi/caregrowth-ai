@@ -41,6 +41,12 @@ serve(async (req) => {
     const { platform, user_id } = state;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Verify subscription status before saving connection
+    const isPaidOrAdmin = await checkPaidOrAdmin(supabase, user_id);
+    if (!isPaidOrAdmin) {
+      return redirectToApp('/content-calendar?oauth_error=subscription_required');
+    }
+
     switch (platform) {
       case 'linkedin': {
         await handleLinkedIn(supabase, code, user_id);
@@ -191,6 +197,27 @@ async function upsertAccount(supabase: any, userId: string, platform: string, da
         connected_at: new Date().toISOString(),
       });
   }
+}
+
+async function checkPaidOrAdmin(supabase: any, userId: string): Promise<boolean> {
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'agency_admin') {
+    return true;
+  }
+
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('id, status')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  return !!subscription;
 }
 
 function redirectToApp(path: string): Response {
