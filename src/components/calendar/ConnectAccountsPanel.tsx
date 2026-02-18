@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Facebook, Instagram, Linkedin, Twitter, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Twitter, CheckCircle2, Loader2, AlertCircle, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
@@ -30,12 +30,15 @@ const ConnectAccountsPanel = () => {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
 
   useEffect(() => {
     fetchAccounts();
+    checkSubscriptionStatus();
   }, []);
 
-  // Handle OAuth redirect results
   useEffect(() => {
     const success = searchParams.get('oauth_success');
     const error = searchParams.get('oauth_error');
@@ -47,11 +50,50 @@ const ConnectAccountsPanel = () => {
       fetchAccounts();
     }
     if (error) {
-      toast.error(`OAuth error: ${error.replace(/_/g, ' ')}`);
+      const message = error === 'subscription_required'
+        ? 'An active subscription is required to connect accounts.'
+        : `OAuth error: ${error.replace(/_/g, ' ')}`;
+      toast.error(message);
       searchParams.delete('oauth_error');
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams]);
+
+  const checkSubscriptionStatus = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) return;
+
+      // Check role
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'agency_admin') {
+        setIsAdmin(true);
+        setHasActiveSubscription(true);
+        setSubscriptionChecked(true);
+        return;
+      }
+
+      // Check subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('id, status')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      setHasActiveSubscription(!!subscription);
+    } catch (err) {
+      console.error('Error checking subscription:', err);
+    } finally {
+      setSubscriptionChecked(true);
+    }
+  };
 
   const fetchAccounts = async () => {
     try {
@@ -79,7 +121,20 @@ const ConnectAccountsPanel = () => {
         body: { platform, user_id: userId },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a 403 subscription error
+        if (error.message?.includes('403') || error.message?.includes('subscription')) {
+          toast.error('An active subscription is required to connect accounts.');
+          setConnecting(null);
+          return;
+        }
+        throw error;
+      }
+      if (data?.error) {
+        toast.error(data.error);
+        setConnecting(null);
+        return;
+      }
       if (data?.auth_url) {
         window.location.href = data.auth_url;
       } else {
@@ -121,7 +176,10 @@ const ConnectAccountsPanel = () => {
     return new Date(expiresAt) < new Date();
   };
 
-  if (loading) {
+  const canConnect = hasActiveSubscription || isAdmin;
+  const postingPaused = !hasActiveSubscription && !isAdmin;
+
+  if (loading || !subscriptionChecked) {
     return <div className="flex justify-center py-8"><Loader2 className="animate-spin text-muted-foreground" /></div>;
   }
 
@@ -130,6 +188,14 @@ const ConnectAccountsPanel = () => {
       <p className="text-sm text-muted-foreground mb-4">
         Connect your social accounts to enable auto-publishing. Your tokens are stored securely.
       </p>
+
+      {!canConnect && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm mb-4">
+          <Lock size={16} className="shrink-0" />
+          <span>Connect accounts is available on a paid plan.</span>
+        </div>
+      )}
+
       {PLATFORMS.map(({ key, label, icon: Icon, color, bgColor, supported }) => {
         const account = accounts.find(a => a.platform === key);
         const connected = account?.is_connected || false;
@@ -145,7 +211,12 @@ const ConnectAccountsPanel = () => {
                 {connected && displayName && (
                   <p className="text-xs text-muted-foreground">{displayName}</p>
                 )}
-                {connected && expired && (
+                {connected && postingPaused && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertCircle size={10} /> Posting paused — subscription inactive
+                  </p>
+                )}
+                {connected && expired && !postingPaused && (
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <AlertCircle size={10} /> Token expired — reconnect
                   </p>
@@ -170,7 +241,7 @@ const ConnectAccountsPanel = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleConnect(key)}
-                  disabled={connecting === key || !supported}
+                  disabled={connecting === key || !supported || !canConnect}
                   className="gap-1"
                 >
                   {connecting === key ? <Loader2 size={14} className="animate-spin" /> : null}
