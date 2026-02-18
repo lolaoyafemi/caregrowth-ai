@@ -10,6 +10,9 @@ interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, fullName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithFacebook: () => Promise<void>;
+  signInWithTwitter: () => Promise<void>;
+  signInWithLinkedIn: () => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -179,6 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [setUserContext, initializing]);
 
   const signInWithEmail = async (email: string, password: string) => {
+    localStorage.setItem('last_signin_method', 'email');
     console.log('Attempting sign in with:', email);
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -234,15 +238,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithGoogle = async () => {
+    localStorage.setItem('last_signin_method', 'google');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         scopes: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.metadata.readonly',
-        redirectTo: window.location.href
+        redirectTo: window.location.origin + '/dashboard'
       }
     });
     if (error) {
       console.error('Google sign in error:', error);
+      throw error;
+    }
+  };
+
+  const signInWithFacebook = async () => {
+    localStorage.setItem('last_signin_method', 'facebook');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: {
+        redirectTo: window.location.origin + '/dashboard'
+      }
+    });
+    if (error) {
+      console.error('Facebook sign in error:', error);
+      throw error;
+    }
+  };
+
+  const signInWithTwitter = async () => {
+    localStorage.setItem('last_signin_method', 'twitter');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'twitter',
+      options: {
+        redirectTo: window.location.origin + '/dashboard'
+      }
+    });
+    if (error) {
+      console.error('Twitter/X sign in error:', error);
+      throw error;
+    }
+  };
+
+  const signInWithLinkedIn = async () => {
+    localStorage.setItem('last_signin_method', 'linkedin_oidc');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'linkedin_oidc',
+      options: {
+        redirectTo: window.location.origin + '/dashboard'
+      }
+    });
+    if (error) {
+      console.error('LinkedIn sign in error:', error);
       throw error;
     }
   };
@@ -259,6 +306,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInWithEmail,
     signUpWithEmail,
     signInWithGoogle,
+    signInWithFacebook,
+    signInWithTwitter,
+    signInWithLinkedIn,
     signOut,
     loading
   };
