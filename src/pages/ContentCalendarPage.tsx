@@ -34,6 +34,7 @@ const STATUS_CONFIG = {
   scheduled: { label: 'Scheduled', className: 'bg-amber-100 text-amber-800 border-amber-200' },
   published: { label: 'Published', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
   failed: { label: 'Failed', className: 'bg-red-100 text-red-800 border-red-200' },
+  skipped: { label: 'Skipped', className: 'bg-orange-100 text-orange-800 border-orange-200' },
   draft: { label: 'Draft', className: 'bg-gray-100 text-gray-800 border-gray-200' },
 };
 
@@ -113,7 +114,7 @@ const ContentCalendarPage = () => {
         image_url: p.image_url || null,
         scheduled_at: p.scheduled_at,
         status: p.status,
-        error_message: null,
+        error_message: p.error_message || null,
         batch_id: p.batch_id,
       }));
 
@@ -464,6 +465,11 @@ const ContentCalendarPage = () => {
               <RotateCcw size={11} />
             </Button>
           )}
+          {post.status === 'skipped' && (
+            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-auto" onClick={(e) => { e.stopPropagation(); handleRetry(post); }} title="Retry publishing">
+              <RotateCcw size={11} />
+            </Button>
+          )}
         </div>
         {post.image_url && (
           <img src={post.image_url} alt="" className="w-full h-16 object-cover rounded mb-1.5" />
@@ -477,6 +483,11 @@ const ContentCalendarPage = () => {
         </div>
         {post.status === 'failed' && post.error_message && (
           <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
+            <AlertCircle size={10} /> {post.error_message}
+          </p>
+        )}
+        {post.status === 'skipped' && post.error_message && (
+          <p className="text-[10px] text-orange-600 mt-1 flex items-center gap-1">
             <AlertCircle size={10} /> {post.error_message}
           </p>
         )}
