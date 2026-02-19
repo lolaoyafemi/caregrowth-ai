@@ -219,22 +219,7 @@ const DashboardHome = () => {
           </CardContent>
         </Card>
 
-        <Card className="transition-transform duration-200 hover:scale-[1.02] hover:shadow-md">
-          <CardHeader>
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-caregrowth-lightgreen mb-4">
-              <CalendarDays className="h-6 w-6 text-caregrowth-green" />
-            </div>
-            <CardTitle>Content Calendar</CardTitle>
-            <CardDescription>Schedule and auto-publish posts across your social platforms</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link to="/dashboard/content-calendar">
-              <Button className="w-full bg-caregrowth-green hover:bg-caregrowth-green/90 transition-all duration-200">
-                Plan Your Content
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        {/* Content Calendar hidden - being built as standalone app */}
 
         <Card className="transition-transform duration-200 hover:scale-[1.02] hover:shadow-md">
           <CardHeader>

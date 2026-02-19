@@ -123,7 +123,7 @@ const AppContent = memo(() => {
               }>
                 <Route index element={<DashboardHome />} />
                 <Route path="social-media" element={<SocialMediaTool />} />
-                <Route path="content-calendar" element={<ContentCalendarPage />} />
+                {/* Content Calendar hidden - being built as standalone app */}
                 <Route path="qa-assistant" element={<QAAssistantTool />} />
                 <Route path="prompts" element={<PromptsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
