@@ -434,7 +434,21 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             </NavLink>
           )}
 
-          {/* Content Calendar hidden - being built as standalone app */}
+          {showContentWriterItems && (
+            <NavLink
+              to="/dashboard/content-calendar"
+              className={({ isActive }) => cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+                isActive 
+                  ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                  : "text-gray-700 hover:bg-gray-100",
+                collapsed && "justify-center"
+              )}
+            >
+              <CalendarDays size={20} />
+              {!collapsed && <span>Content Calendar</span>}
+            </NavLink>
+          )}
 
           {showCollaboratorItems && (
             <NavLink
