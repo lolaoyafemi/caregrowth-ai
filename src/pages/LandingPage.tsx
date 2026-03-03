@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { Play } from 'lucide-react';
-import { motion, useInView } from 'framer-motion';
+import { Play, ArrowRight } from 'lucide-react';
+import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 
 const FadeInSection = ({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => {
   const ref = useRef(null);
@@ -25,6 +25,10 @@ const FadeInSection = ({ children, className = '', delay = 0 }: { children: Reac
 
 const LandingPage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.95]);
 
   const handleVideoPlay = () => setIsPlaying(true);
 
@@ -42,19 +46,26 @@ const LandingPage = () => {
   );
   
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-caregrowth-blue scroll-smooth">
       <Header />
       
       <main className="flex-grow">
-        {/* Hero — Cinematic full-bleed, Maybach edition */}
-        <section className="relative min-h-screen flex items-center bg-caregrowth-blue overflow-hidden">
+        {/* Hero — Cinematic full-bleed with parallax */}
+        <motion.section
+          ref={heroRef}
+          style={{ opacity: heroOpacity, scale: heroScale }}
+          className="relative min-h-screen flex items-center bg-caregrowth-blue overflow-hidden"
+        >
+          {/* Animated gradient orbs */}
+          <div className="absolute top-1/4 -left-32 w-96 h-96 bg-caregrowth-green/10 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-white/5 rounded-full blur-[120px]" />
+          
           {/* Subtle grid overlay */}
           <div className="absolute inset-0 opacity-[0.03]" style={{
             backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)',
             backgroundSize: '80px 80px'
           }} />
           
-          {/* Gradient accent line at top */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
           
           <div className="container mx-auto px-5 sm:px-6 lg:px-12 relative z-10">
@@ -65,25 +76,31 @@ const LandingPage = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
               >
-                <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/50 mb-6 sm:mb-8">
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/50 mb-6 sm:mb-8"
+                >
                   AI-Powered Growth Platform
-                </p>
+                </motion.p>
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 sm:mb-8 text-white leading-[1.05] tracking-tight">
                   Supercharge Your Agency's Growth
                 </h1>
-                <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-white/70 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-white/60 leading-relaxed max-w-xl mx-auto lg:mx-0">
                   Say goodbye to content blocks and tedious document searches. CareGrowth Assistant is your team's AI co-pilot for creating killer content, finding answers fast, and scaling your agency without the headaches.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center lg:justify-start">
                   <Link to="/login" className="w-full sm:w-auto">
-                    <Button size="lg" className="w-full sm:w-auto bg-white text-caregrowth-blue hover:bg-blue-50 hover:text-caregrowth-blue rounded-none px-10 h-14 text-sm tracking-widest font-semibold transition-all duration-300">
+                    <Button size="lg" className="w-full sm:w-auto bg-white text-caregrowth-blue hover:bg-white/90 rounded-none px-10 h-14 text-sm tracking-widest font-semibold transition-all duration-300 group">
                       I'm Ready Now
+                      <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
                   <Button 
                     size="lg" 
                     variant="outline" 
-                    className="w-full sm:w-auto border-white/30 text-white bg-transparent hover:bg-white/10 rounded-none px-10 h-14 text-sm tracking-widest font-semibold transition-all duration-300"
+                    className="w-full sm:w-auto border-white/20 text-white bg-white/5 hover:bg-white/10 rounded-none px-10 h-14 text-sm tracking-widest font-semibold transition-all duration-300 backdrop-blur-sm"
                     onClick={() => scrollToSection('features')}
                   >
                     See Features
@@ -98,43 +115,47 @@ const LandingPage = () => {
                 transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="relative">
-                  <div className="absolute -inset-4 bg-white/5 blur-3xl rounded-lg" />
-                  <div className="relative glass-card-dark rounded-sm overflow-hidden">
+                  <div className="absolute -inset-4 bg-caregrowth-green/10 blur-3xl rounded-lg" />
+                  <div className="relative glass-card-dark rounded-sm overflow-hidden border border-white/10">
                     <img 
                       src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
                       alt="CareGrowth Assistant Dashboard" 
-                      className="w-full opacity-90"
+                      className="w-full opacity-80"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-caregrowth-blue/60 to-transparent" />
                   </div>
                 </div>
               </motion.div>
             </div>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
-        </section>
+          {/* Smooth gradient transition instead of harsh white line */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[hsl(222.2,47.4%,8%)] to-transparent" />
+        </motion.section>
 
-        {/* Explainer Video Section */}
-        <section id="video" className="py-20 sm:py-28 lg:py-32 bg-white">
+        {/* Explainer Video Section — Dark bg */}
+        <section id="video" className="py-20 sm:py-28 lg:py-32 bg-[hsl(222.2,47.4%,8%)] relative">
           <div className="container mx-auto px-5 sm:px-6 lg:px-12">
             <FadeInSection className="text-center mb-12 sm:mb-16">
-              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">Platform Overview</p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight">See CareGrowth Assistant in Action</h2>
-              <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/30 mb-4">Platform Overview</p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight text-white">See CareGrowth Assistant in Action</h2>
+              <p className="text-base sm:text-lg text-white/50 max-w-2xl mx-auto">
                 Watch how our platform transforms your workflow in under 3 minutes
               </p>
             </FadeInSection>
             
             <FadeInSection className="max-w-5xl mx-auto" delay={0.15}>
-              <div className="relative aspect-video bg-gray-100 rounded-sm overflow-hidden shadow-2xl shadow-gray-200/50">
+              <div className="relative aspect-video bg-white/5 rounded-sm overflow-hidden shadow-2xl shadow-black/30 border border-white/10">
                 {!isPlaying ? (
                   <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <button 
-                      className="bg-caregrowth-blue rounded-full p-5 sm:p-6 cursor-pointer hover:scale-110 transition-transform duration-500 shadow-2xl"
+                    <motion.button 
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-caregrowth-green rounded-full p-5 sm:p-6 cursor-pointer shadow-2xl shadow-caregrowth-green/30"
                       onClick={handleVideoPlay}
                     >
                       <Play className="h-8 w-8 sm:h-10 sm:w-10 text-white ml-1" />
-                    </button>
+                    </motion.button>
                   </div>
                 ) : null}
                 
@@ -151,21 +172,21 @@ const LandingPage = () => {
                   <img 
                     src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
                     alt="Video thumbnail" 
-                    className="w-full h-full object-cover opacity-80"
+                    className="w-full h-full object-cover opacity-60"
                   />
                 )}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-px mt-12 sm:mt-16 bg-gray-200 rounded-sm overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-px mt-12 sm:mt-16 bg-white/10 rounded-sm overflow-hidden">
                 {[
-                  { title: 'Quick Setup', desc: 'Get started in minutes with our intuitive dashboard and pre-built templates', accent: 'border-caregrowth-blue' },
+                  { title: 'Quick Setup', desc: 'Get started in minutes with our intuitive dashboard and pre-built templates', accent: 'border-caregrowth-green' },
                   { title: 'Smart Results', desc: 'Our AI delivers agency-specific answers tailored to your business needs', accent: 'border-caregrowth-green' },
-                  { title: 'Simple Sharing', desc: 'Export content or share insights with your team in just one click', accent: 'border-caregrowth-blue' },
+                  { title: 'Simple Sharing', desc: 'Export content or share insights with your team in just one click', accent: 'border-white/20' },
                 ].map((card, i) => (
                   <FadeInSection key={card.title} delay={i * 0.1}>
-                    <div className={`bg-white p-6 sm:p-8 border-t-2 ${card.accent} h-full`}>
-                      <h3 className="font-semibold mb-2 tracking-wide text-sm sm:text-base">{card.title}</h3>
-                      <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">{card.desc}</p>
+                    <div className={`bg-white/[0.04] backdrop-blur-sm p-6 sm:p-8 border-t-2 ${card.accent} h-full hover:bg-white/[0.07] transition-colors duration-300`}>
+                      <h3 className="font-semibold mb-2 tracking-wide text-sm sm:text-base text-white">{card.title}</h3>
+                      <p className="text-white/40 text-xs sm:text-sm leading-relaxed">{card.desc}</p>
                     </div>
                   </FadeInSection>
                 ))}
@@ -174,25 +195,28 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* Divider */}
-        <div className="luxury-line mx-auto max-w-md" />
+        {/* Divider — glowing line */}
+        <div className="h-px bg-gradient-to-r from-transparent via-caregrowth-green/30 to-transparent" />
 
-        {/* AI Solutions Section */}
-        <section id="features" className="py-20 sm:py-28 lg:py-32 bg-white">
-          <div className="container mx-auto px-5 sm:px-6 lg:px-12">
+        {/* AI Solutions Section — Dark bg */}
+        <section id="features" className="py-20 sm:py-28 lg:py-32 bg-caregrowth-blue relative overflow-hidden">
+          {/* Background accent */}
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-caregrowth-green/5 rounded-full blur-[150px]" />
+          
+          <div className="container mx-auto px-5 sm:px-6 lg:px-12 relative z-10">
             <FadeInSection className="text-center mb-14 sm:mb-20">
-              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">The Suite</p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight">AI Solutions</h2>
-              <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/30 mb-4">The Suite</p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight text-white">AI Solutions</h2>
+              <p className="text-base sm:text-lg text-white/50 max-w-2xl mx-auto">
                 Three powerful AI tools working together to transform your agency operations.
               </p>
             </FadeInSection>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-gray-200 rounded-sm overflow-hidden mb-20 sm:mb-32">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/10 rounded-sm overflow-hidden mb-20 sm:mb-32">
               {[
                 {
                   icon: (
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-caregrowth-blue">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-caregrowth-green">
                       <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M7 10H9V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M15 10H17L15 13.5H17V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -203,10 +227,10 @@ const LandingPage = () => {
                   name: 'Nora',
                   desc: 'Nora is your content partner for social media post generation. It helps you generate posts that attract attention, connect with your audience, and keep your message consistent.',
                   value: 'What do you get? Fresh ideas and ready-to-share drafts in minutes.',
-                  valueColor: 'text-caregrowth-blue',
+                  valueColor: 'text-caregrowth-green',
                   link: '/dashboard/social-media',
                   cta: 'Create Your Next Post',
-                  bgColor: 'bg-caregrowth-blue'
+                  bgColor: 'bg-caregrowth-green'
                 },
                 {
                   icon: (
@@ -227,7 +251,7 @@ const LandingPage = () => {
                 },
                 {
                   icon: (
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-caregrowth-blue">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-caregrowth-green">
                       <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M12 17V17.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M12 13.5C12 12.6716 12.6716 12 13.5 12C14.3284 12 15 11.3284 15 10.5C15 9.67157 14.3284 9 13.5 9H12C11.1716 9 10.5 9.67157 10.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -236,26 +260,26 @@ const LandingPage = () => {
                   name: 'Jared',
                   desc: 'Jared is your on-demand business assistant. It answers questions, explains strategies, and helps you work through challenges with clear guidance. Think of it as a reliable teammate available 24/7.',
                   value: 'What do you get? Instant support, clear direction, and actionable solutions.',
-                  valueColor: 'text-caregrowth-blue',
+                  valueColor: 'text-caregrowth-green',
                   link: '/dashboard/qa-assistant',
                   cta: 'Answer Questions',
-                  bgColor: 'bg-caregrowth-blue'
+                  bgColor: 'bg-caregrowth-green'
                 }
               ].map((tool, i) => (
                 <FadeInSection key={tool.name} delay={i * 0.12}>
-                  <div className="bg-white p-7 sm:p-10 h-full flex flex-col group">
+                  <div className="bg-white/[0.04] p-7 sm:p-10 h-full flex flex-col group hover:bg-white/[0.07] transition-all duration-500">
                     <div className="mb-6 sm:mb-8 transition-transform duration-500 group-hover:scale-110 inline-flex">
                       {tool.icon}
                     </div>
-                    <h3 className="text-xl sm:text-2xl font-bold mb-3 tracking-tight">{tool.name}</h3>
-                    <p className="text-gray-500 text-xs sm:text-sm leading-relaxed mb-4 flex-1">
+                    <h3 className="text-xl sm:text-2xl font-bold mb-3 tracking-tight text-white">{tool.name}</h3>
+                    <p className="text-white/40 text-xs sm:text-sm leading-relaxed mb-4 flex-1">
                       {tool.desc}
                     </p>
                     <p className={`text-xs sm:text-sm font-medium mb-6 sm:mb-8 ${tool.valueColor}`}>
                       {tool.value}
                     </p>
                     <Link to={tool.link}>
-                      <Button className={`w-full ${tool.bgColor} rounded-none h-11 sm:h-12 text-xs sm:text-sm tracking-widest font-semibold transition-all duration-300 hover:opacity-90`}>
+                      <Button className={`w-full ${tool.bgColor} rounded-none h-11 sm:h-12 text-xs sm:text-sm tracking-widest font-semibold transition-all duration-300 hover:opacity-90 text-white`}>
                         {tool.cta}
                       </Button>
                     </Link>
@@ -268,18 +292,19 @@ const LandingPage = () => {
             <div className="space-y-20 sm:space-y-32">
               <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
                 <FadeInSection className="lg:w-1/2 w-full">
-                  <div className="relative overflow-hidden rounded-sm">
+                  <div className="relative overflow-hidden rounded-sm border border-white/10">
                     <img 
                       src="https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
                       alt="Social Media Generator" 
-                      className="w-full transition-transform duration-700 hover:scale-105"
+                      className="w-full transition-transform duration-700 hover:scale-105 opacity-80"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-caregrowth-blue/40 to-transparent" />
                   </div>
                 </FadeInSection>
                 <FadeInSection className="lg:w-1/2 text-center lg:text-left" delay={0.15}>
-                  <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">Content Engine</p>
-                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 tracking-tight">Create Engaging Content In Seconds</h3>
-                  <p className="text-base sm:text-lg text-gray-500 mb-6 sm:mb-8 leading-relaxed">
+                  <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/30 mb-4">Content Engine</p>
+                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 tracking-tight text-white">Create Engaging Content In Seconds</h3>
+                  <p className="text-base sm:text-lg text-white/50 mb-6 sm:mb-8 leading-relaxed">
                     Enter your industry, target audience, and tone - then watch as our AI crafts perfect posts for Facebook, Instagram, and LinkedIn that actually sound like you wrote them.
                   </p>
                   <ul className="space-y-3 sm:space-y-4 text-left max-w-md mx-auto lg:mx-0">
@@ -288,7 +313,7 @@ const LandingPage = () => {
                       'Customize hooks, body text, and CTAs separately',
                       'Save templates for your repeat clients and offers'
                     ].map((item) => (
-                      <li key={item} className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
+                      <li key={item} className="flex items-center gap-3 text-xs sm:text-sm text-white/60">
                         <CheckIcon />
                         <span>{item}</span>
                       </li>
@@ -299,18 +324,19 @@ const LandingPage = () => {
               
               <div className="flex flex-col lg:flex-row-reverse items-center gap-10 lg:gap-16">
                 <FadeInSection className="lg:w-1/2 w-full">
-                  <div className="relative overflow-hidden rounded-sm">
+                  <div className="relative overflow-hidden rounded-sm border border-white/10">
                     <img 
                       src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
                       alt="Document Search" 
-                      className="w-full transition-transform duration-700 hover:scale-105"
+                      className="w-full transition-transform duration-700 hover:scale-105 opacity-80"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-caregrowth-blue/40 to-transparent" />
                   </div>
                 </FadeInSection>
                 <FadeInSection className="lg:w-1/2 text-center lg:text-left" delay={0.15}>
-                  <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">Knowledge Intelligence</p>
-                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 tracking-tight">Unlock The Knowledge Buried In Your Files</h3>
-                  <p className="text-base sm:text-lg text-gray-500 mb-6 sm:mb-8 leading-relaxed">
+                  <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/30 mb-4">Knowledge Intelligence</p>
+                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 tracking-tight text-white">Unlock The Knowledge Buried In Your Files</h3>
+                  <p className="text-base sm:text-lg text-white/50 mb-6 sm:mb-8 leading-relaxed">
                     Upload your documents once, then ask questions in plain English. Our AI reads through everything and delivers precise answers with highlighted source sections.
                   </p>
                   <ul className="space-y-3 sm:space-y-4 text-left max-w-md mx-auto lg:mx-0">
@@ -319,7 +345,7 @@ const LandingPage = () => {
                       'Get answers from hundreds of pages in seconds',
                       'Ask follow-up questions for deeper understanding'
                     ].map((item) => (
-                      <li key={item} className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
+                      <li key={item} className="flex items-center gap-3 text-xs sm:text-sm text-white/60">
                         <CheckIcon />
                         <span>{item}</span>
                       </li>
@@ -331,32 +357,32 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* How It Works */}
-        <section id="how-it-works" className="py-20 sm:py-28 lg:py-32 bg-gray-50">
+        {/* How It Works — Slightly lighter dark */}
+        <section id="how-it-works" className="py-20 sm:py-28 lg:py-32 bg-[hsl(222.2,47.4%,8%)] relative">
           <div className="container mx-auto px-5 sm:px-6 lg:px-12">
             <FadeInSection className="text-center mb-14 sm:mb-20">
-              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">The Process</p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight">Get Started in Three Simple Steps</h2>
-              <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/30 mb-4">The Process</p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight text-white">Get Started in Three Simple Steps</h2>
+              <p className="text-base sm:text-lg text-white/50 max-w-2xl mx-auto">
                 We've eliminated the complexity so you can focus on growing your agency
               </p>
             </FadeInSection>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 sm:gap-16 relative">
               {/* Connecting line */}
-              <div className="hidden md:block absolute top-12 left-[16.67%] right-[16.67%] h-px bg-gray-300" />
+              <div className="hidden md:block absolute top-12 left-[16.67%] right-[16.67%] h-px bg-white/10" />
               
               {[
-                { num: '01', title: 'Choose Your Tool', desc: 'Log in and select which part of your workflow you need help with today', bg: 'bg-caregrowth-blue' },
-                { num: '02', title: 'Answer a Few Questions', desc: 'Tell us about your specific needs with our simple guided inputs', bg: 'bg-caregrowth-green' },
-                { num: '03', title: 'Get Instant Results', desc: 'Review your AI-generated content, search results, or expert advice', bg: 'bg-caregrowth-blue' },
+                { num: '01', title: 'Choose Your Tool', desc: 'Log in and select which part of your workflow you need help with today', bg: 'bg-caregrowth-green' },
+                { num: '02', title: 'Answer a Few Questions', desc: 'Tell us about your specific needs with our simple guided inputs', bg: 'bg-caregrowth-green/80' },
+                { num: '03', title: 'Get Instant Results', desc: 'Review your AI-generated content, search results, or expert advice', bg: 'bg-caregrowth-green' },
               ].map((step, i) => (
                 <FadeInSection key={step.num} delay={i * 0.12} className="text-center relative">
-                  <div className={`${step.bg} h-20 w-20 sm:h-24 sm:w-24 rounded-full flex items-center justify-center text-white mx-auto mb-6 sm:mb-8 relative z-10`}>
+                  <div className={`${step.bg} h-20 w-20 sm:h-24 sm:w-24 rounded-full flex items-center justify-center text-white mx-auto mb-6 sm:mb-8 relative z-10 shadow-lg shadow-caregrowth-green/20`}>
                     <span className="text-xl sm:text-2xl font-light tracking-wider">{step.num}</span>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 tracking-tight">{step.title}</h3>
-                  <p className="text-gray-500 text-xs sm:text-sm leading-relaxed max-w-xs mx-auto">
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 tracking-tight text-white">{step.title}</h3>
+                  <p className="text-white/40 text-xs sm:text-sm leading-relaxed max-w-xs mx-auto">
                     {step.desc}
                   </p>
                 </FadeInSection>
@@ -365,31 +391,33 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* Pricing Section */}
-        <section id="pricing" className="py-20 sm:py-28 lg:py-32 bg-white">
-          <div className="container mx-auto px-5 sm:px-6 lg:px-12">
+        {/* Pricing Section — Dark */}
+        <section id="pricing" className="py-20 sm:py-28 lg:py-32 bg-caregrowth-blue relative overflow-hidden">
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-caregrowth-green/5 rounded-full blur-[150px]" />
+          
+          <div className="container mx-auto px-5 sm:px-6 lg:px-12 relative z-10">
             <FadeInSection className="text-center mb-14 sm:mb-20">
-              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">Investment</p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight">Simple, Transparent Pricing</h2>
-              <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/30 mb-4">Investment</p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight text-white">Simple, Transparent Pricing</h2>
+              <p className="text-base sm:text-lg text-white/50 max-w-2xl mx-auto">
                 Choose the credit package that fits your agency's needs
               </p>
             </FadeInSection>
 
             <FadeInSection className="flex justify-center max-w-lg mx-auto" delay={0.15}>
-              <div className="w-full border border-gray-200 rounded-sm overflow-hidden shadow-xl shadow-gray-100/50">
-                <div className="bg-caregrowth-blue text-white text-center py-3">
+              <div className="w-full border border-white/10 rounded-sm overflow-hidden shadow-2xl shadow-black/30 bg-white/[0.04] backdrop-blur-sm">
+                <div className="bg-caregrowth-green text-white text-center py-3">
                   <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em]">COMPLETE SOLUTION</p>
                 </div>
                 <div className="p-7 sm:p-10">
-                  <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center tracking-tight">CareGrowth Assistant Credits</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center tracking-tight text-white">CareGrowth Assistant Credits</h3>
                   <div className="mb-2 text-center">
-                    <span className="text-5xl sm:text-6xl font-light tracking-tight">$49</span>
-                    <span className="text-gray-400 ml-1">/month</span>
+                    <span className="text-5xl sm:text-6xl font-light tracking-tight text-white">$49</span>
+                    <span className="text-white/40 ml-1">/month</span>
                   </div>
-                  <p className="text-center text-xs sm:text-sm text-gray-400 mb-8 sm:mb-10">Monthly subscription</p>
+                  <p className="text-center text-xs sm:text-sm text-white/30 mb-8 sm:mb-10">Monthly subscription</p>
                   
-                  <div className="luxury-line mb-8 sm:mb-10" />
+                  <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8 sm:mb-10" />
                   
                   <ul className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                     {[
@@ -402,12 +430,12 @@ const LandingPage = () => {
                     ].map((feature) => (
                       <li key={feature} className="flex items-center gap-3">
                         <CheckIcon />
-                        <span className="text-xs sm:text-sm text-gray-700">{feature}</span>
+                        <span className="text-xs sm:text-sm text-white/70">{feature}</span>
                       </li>
                     ))}
                   </ul>
                   <Link to="/login">
-                    <Button className="w-full bg-caregrowth-blue rounded-none h-12 sm:h-14 text-xs sm:text-sm tracking-widest font-semibold transition-all duration-300 hover:opacity-90">
+                    <Button className="w-full bg-caregrowth-green rounded-none h-12 sm:h-14 text-xs sm:text-sm tracking-widest font-semibold transition-all duration-300 hover:opacity-90 text-white">
                       Get Started Now
                     </Button>
                   </Link>
@@ -417,26 +445,27 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-20 sm:py-28 lg:py-32 bg-caregrowth-blue text-white relative overflow-hidden">
+        {/* CTA Section — Green accent */}
+        <section className="py-20 sm:py-28 lg:py-32 bg-[hsl(222.2,47.4%,8%)] text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.03]" style={{
             backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)',
             backgroundSize: '60px 60px'
           }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-caregrowth-green/10 rounded-full blur-[150px]" />
           
           <div className="container mx-auto px-5 sm:px-6 lg:px-12 text-center relative z-10">
             <FadeInSection>
-              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/40 mb-4 sm:mb-6">Start Today</p>
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/30 mb-4 sm:mb-6">Start Today</p>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 tracking-tight">Ready to Grow Faster with Less Effort?</h2>
-              <p className="text-base sm:text-lg mb-10 sm:mb-12 max-w-2xl mx-auto text-white/70 leading-relaxed">
+              <p className="text-base sm:text-lg mb-10 sm:mb-12 max-w-2xl mx-auto text-white/50 leading-relaxed">
                 Join hundreds of agencies already using CareGrowth Assistant to create better content, access knowledge faster, and make smarter business decisions.
               </p>
               <Link to="/login">
-                <Button size="lg" className="bg-white text-caregrowth-blue hover:bg-blue-50 rounded-none px-10 sm:px-12 h-12 sm:h-14 text-xs sm:text-sm tracking-widest font-semibold transition-all duration-300">
+                <Button size="lg" className="bg-caregrowth-green text-white hover:bg-caregrowth-green/90 rounded-none px-10 sm:px-12 h-12 sm:h-14 text-xs sm:text-sm tracking-widest font-semibold transition-all duration-300 shadow-lg shadow-caregrowth-green/20">
                   I'm Ready Now
                 </Button>
               </Link>
-              <p className="mt-5 sm:mt-6 text-white/40 text-xs sm:text-sm tracking-wider">No credit card required. Cancel anytime.</p>
+              <p className="mt-5 sm:mt-6 text-white/30 text-xs sm:text-sm tracking-wider">No credit card required. Cancel anytime.</p>
             </FadeInSection>
           </div>
         </section>
