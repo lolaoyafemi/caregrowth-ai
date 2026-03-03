@@ -230,14 +230,14 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
               id="intensity"
               icon={Zap}
               title="Intensity Mode"
-              description="Ongoing visibility stacking. Build presence consistently over time."
+              description="Write at least one post a day on your preferred platform"
               color="blue"
             />
             <ModeCard
               id="intention"
               icon={Target}
               title="Intention Based Mode"
-              description="Event-driven, product-driven bursts. Deploy with intent."
+              description="Is there any special event or day coming up? Use this."
               color="orange"
             />
           </div>
