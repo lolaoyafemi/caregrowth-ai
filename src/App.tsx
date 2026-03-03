@@ -19,12 +19,8 @@ const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
 const PaymentCancelledPage = lazy(() => import('./pages/PaymentCancelledPage'));
 const DashboardLayout = lazy(() => import('./components/dashboard/DashboardLayout'));
 const DashboardHome = lazy(() => import('./pages/DashboardHome'));
-const NoraLayout = lazy(() => import('./components/nora/NoraLayout'));
 const SocialMediaTool = lazy(() => import('./pages/SocialMediaTool'));
 const ContentCalendarPage = lazy(() => import('./pages/ContentCalendarPage'));
-const NoraSavedPosts = lazy(() => import('./pages/nora/NoraSavedPosts'));
-const NoraPostHistory = lazy(() => import('./pages/nora/NoraPostHistory'));
-const NoraAdminSettings = lazy(() => import('./pages/nora/NoraAdminSettings'));
 const QAAssistantTool = lazy(() => import('./pages/QAAssistantTool'));
 const PromptsPage = lazy(() => import('./pages/PromptsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
@@ -126,14 +122,7 @@ const AppContent = memo(() => {
                 </ErrorBoundary>
               }>
                 <Route index element={<DashboardHome />} />
-                <Route path="social-media" element={<NoraLayout />}>
-                  <Route index element={<SocialMediaTool />} />
-                  <Route path="calendar" element={<ContentCalendarPage />} />
-                  <Route path="saved" element={<NoraSavedPosts />} />
-                  <Route path="history" element={<NoraPostHistory />} />
-                  <Route path="prompts" element={<PromptsPage />} />
-                  <Route path="admin" element={<NoraAdminSettings />} />
-                </Route>
+                <Route path="social-media" element={<SocialMediaTool />} />
                 <Route path="content-calendar" element={<ContentCalendarPage />} />
                 <Route path="qa-assistant" element={<QAAssistantTool />} />
                 <Route path="prompts" element={<PromptsPage />} />

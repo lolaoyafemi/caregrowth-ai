@@ -17,7 +17,7 @@ import {
   ChevronRight,
   Zap,
   BookOpen,
-  
+  CalendarDays
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '../../contexts/UserContext';
@@ -417,9 +417,10 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             </NavLink>
           )}
 
+          {/* Only show Prompts Library to super admins */}
           {showSuperAdminItems && (
             <NavLink
-              to="/dashboard/social-media/prompts"
+              to="/dashboard/prompts"
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive 
@@ -430,6 +431,22 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             >
               <FileText size={20} />
               {!collapsed && <span>Prompts Library</span>}
+            </NavLink>
+          )}
+
+          {showContentWriterItems && (
+            <NavLink
+              to="/dashboard/content-calendar"
+              className={({ isActive }) => cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+                isActive 
+                  ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                  : "text-gray-700 hover:bg-gray-100",
+                collapsed && "justify-center"
+              )}
+            >
+              <CalendarDays size={20} />
+              {!collapsed && <span>Content Calendar</span>}
             </NavLink>
           )}
 
