@@ -44,10 +44,10 @@ const Header = () => {
           : 'bg-transparent'
       }`}
     >
-      <div className="container mx-auto px-6 lg:px-12">
-        <div className="flex justify-between items-center h-20">
+      <div className="container mx-auto px-5 sm:px-6 lg:px-12">
+        <div className="flex justify-between items-center h-16 sm:h-20">
           <Link to="/" className="flex items-center gap-3">
-            <h1 className={`text-lg font-semibold tracking-[0.08em] transition-colors duration-500 ${
+            <h1 className={`text-base sm:text-lg font-semibold tracking-[0.08em] transition-colors duration-500 ${
               scrolled ? 'text-gray-900' : 'text-white'
             }`}>
               CareGrowth Assistant
@@ -98,7 +98,7 @@ const Header = () => {
             className={`lg:hidden p-2 transition-colors ${scrolled ? 'text-gray-900' : 'text-white'}`}
             onClick={() => setMobileOpen(!mobileOpen)}
           >
-            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
@@ -112,14 +112,14 @@ const Header = () => {
             exit={{ opacity: 0, height: 0 }}
             className="lg:hidden bg-white border-t border-gray-100 overflow-hidden"
           >
-            <nav className="flex flex-col px-6 py-6 gap-4">
-              <button onClick={() => scrollToSection('features')} className="text-left text-sm text-gray-700 hover:text-gray-900 py-2">Features</button>
-              <button onClick={() => scrollToSection('video')} className="text-left text-sm text-gray-700 hover:text-gray-900 py-2">How it Works</button>
-              <button onClick={() => scrollToSection('pricing')} className="text-left text-sm text-gray-700 hover:text-gray-900 py-2">Pricing</button>
-              <SupportDialog><button className="text-left text-sm text-gray-700 hover:text-gray-900 py-2">Support</button></SupportDialog>
-              <ContactDialog><button className="text-left text-sm text-gray-700 hover:text-gray-900 py-2">Contact</button></ContactDialog>
-              <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
-                <Button className="w-full mt-2 bg-caregrowth-blue rounded-none">Dashboard</Button>
+            <nav className="flex flex-col items-center px-6 py-6 gap-4">
+              <button onClick={() => scrollToSection('features')} className="text-sm text-gray-700 hover:text-gray-900 py-2">Features</button>
+              <button onClick={() => scrollToSection('video')} className="text-sm text-gray-700 hover:text-gray-900 py-2">How it Works</button>
+              <button onClick={() => scrollToSection('pricing')} className="text-sm text-gray-700 hover:text-gray-900 py-2">Pricing</button>
+              <SupportDialog><button className="text-sm text-gray-700 hover:text-gray-900 py-2">Support</button></SupportDialog>
+              <ContactDialog><button className="text-sm text-gray-700 hover:text-gray-900 py-2">Contact</button></ContactDialog>
+              <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="w-full max-w-xs mt-2">
+                <Button className="w-full bg-caregrowth-blue rounded-none">Dashboard</Button>
               </Link>
             </nav>
           </motion.div>
