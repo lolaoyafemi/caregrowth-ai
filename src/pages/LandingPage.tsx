@@ -46,7 +46,7 @@ const LandingPage = () => {
       <Header />
       
       <main className="flex-grow">
-        {/* Hero — Cinematic full-bleed */}
+        {/* Hero — Cinematic full-bleed, Maybach edition */}
         <section className="relative min-h-screen flex items-center bg-caregrowth-blue overflow-hidden">
           {/* Subtle grid overlay */}
           <div className="absolute inset-0 opacity-[0.03]" style={{
@@ -57,33 +57,33 @@ const LandingPage = () => {
           {/* Gradient accent line at top */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
           
-          <div className="container mx-auto px-6 lg:px-12 relative z-10">
-            <div className="flex flex-col lg:flex-row items-center gap-16 pt-24 pb-12">
+          <div className="container mx-auto px-5 sm:px-6 lg:px-12 relative z-10">
+            <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16 pt-28 sm:pt-24 pb-12">
               <motion.div 
-                className="lg:w-1/2"
+                className="lg:w-1/2 text-center lg:text-left"
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
               >
-                <p className="text-luxury-spacing text-[11px] tracking-[0.3em] text-white/50 mb-8">
+                <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/50 mb-6 sm:mb-8">
                   AI-Powered Growth Platform
                 </p>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 text-white leading-[1.05] tracking-tight">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 sm:mb-8 text-white leading-[1.05] tracking-tight">
                   Supercharge Your Agency's Growth
                 </h1>
-                <p className="text-lg md:text-xl mb-10 text-white/70 leading-relaxed max-w-xl">
+                <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-white/70 leading-relaxed max-w-xl mx-auto lg:mx-0">
                   Say goodbye to content blocks and tedious document searches. CareGrowth Assistant is your team's AI co-pilot for creating killer content, finding answers fast, and scaling your agency without the headaches.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link to="/login">
-                    <Button size="lg" className="bg-white text-caregrowth-blue hover:bg-blue-50 hover:text-caregrowth-blue rounded-none px-10 h-14 text-sm tracking-widest font-semibold transition-all duration-300">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center lg:justify-start">
+                  <Link to="/login" className="w-full sm:w-auto">
+                    <Button size="lg" className="w-full sm:w-auto bg-white text-caregrowth-blue hover:bg-blue-50 hover:text-caregrowth-blue rounded-none px-10 h-14 text-sm tracking-widest font-semibold transition-all duration-300">
                       I'm Ready Now
                     </Button>
                   </Link>
                   <Button 
                     size="lg" 
                     variant="outline" 
-                    className="border-white/30 text-white bg-transparent hover:bg-white/10 rounded-none px-10 h-14 text-sm tracking-widest font-semibold transition-all duration-300"
+                    className="w-full sm:w-auto border-white/30 text-white bg-transparent hover:bg-white/10 rounded-none px-10 h-14 text-sm tracking-widest font-semibold transition-all duration-300"
                     onClick={() => scrollToSection('features')}
                   >
                     See Features
@@ -92,13 +92,12 @@ const LandingPage = () => {
               </motion.div>
 
               <motion.div 
-                className="lg:w-1/2"
+                className="lg:w-1/2 w-full"
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="relative">
-                  {/* Glow behind image */}
                   <div className="absolute -inset-4 bg-white/5 blur-3xl rounded-lg" />
                   <div className="relative glass-card-dark rounded-sm overflow-hidden">
                     <img 
@@ -112,17 +111,16 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Bottom gradient fade */}
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
         </section>
 
         {/* Explainer Video Section */}
-        <section id="video" className="py-32 bg-white">
-          <div className="container mx-auto px-6 lg:px-12">
-            <FadeInSection className="text-center mb-16">
-              <p className="text-luxury-spacing text-[11px] tracking-[0.3em] text-gray-400 mb-4">Platform Overview</p>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">See CareGrowth Assistant in Action</h2>
-              <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+        <section id="video" className="py-20 sm:py-28 lg:py-32 bg-white">
+          <div className="container mx-auto px-5 sm:px-6 lg:px-12">
+            <FadeInSection className="text-center mb-12 sm:mb-16">
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">Platform Overview</p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight">See CareGrowth Assistant in Action</h2>
+              <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
                 Watch how our platform transforms your workflow in under 3 minutes
               </p>
             </FadeInSection>
@@ -132,10 +130,10 @@ const LandingPage = () => {
                 {!isPlaying ? (
                   <div className="absolute inset-0 flex items-center justify-center z-10">
                     <button 
-                      className="bg-caregrowth-blue rounded-full p-6 cursor-pointer hover:scale-110 transition-transform duration-500 shadow-2xl"
+                      className="bg-caregrowth-blue rounded-full p-5 sm:p-6 cursor-pointer hover:scale-110 transition-transform duration-500 shadow-2xl"
                       onClick={handleVideoPlay}
                     >
-                      <Play className="h-10 w-10 text-white ml-1" />
+                      <Play className="h-8 w-8 sm:h-10 sm:w-10 text-white ml-1" />
                     </button>
                   </div>
                 ) : null}
@@ -158,16 +156,16 @@ const LandingPage = () => {
                 )}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-px mt-16 bg-gray-200 rounded-sm overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-px mt-12 sm:mt-16 bg-gray-200 rounded-sm overflow-hidden">
                 {[
                   { title: 'Quick Setup', desc: 'Get started in minutes with our intuitive dashboard and pre-built templates', accent: 'border-caregrowth-blue' },
                   { title: 'Smart Results', desc: 'Our AI delivers agency-specific answers tailored to your business needs', accent: 'border-caregrowth-green' },
                   { title: 'Simple Sharing', desc: 'Export content or share insights with your team in just one click', accent: 'border-caregrowth-blue' },
                 ].map((card, i) => (
                   <FadeInSection key={card.title} delay={i * 0.1}>
-                    <div className={`bg-white p-8 border-t-2 ${card.accent} h-full`}>
-                      <h3 className="font-semibold mb-2 tracking-wide">{card.title}</h3>
-                      <p className="text-gray-500 text-sm leading-relaxed">{card.desc}</p>
+                    <div className={`bg-white p-6 sm:p-8 border-t-2 ${card.accent} h-full`}>
+                      <h3 className="font-semibold mb-2 tracking-wide text-sm sm:text-base">{card.title}</h3>
+                      <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">{card.desc}</p>
                     </div>
                   </FadeInSection>
                 ))}
@@ -180,17 +178,17 @@ const LandingPage = () => {
         <div className="luxury-line mx-auto max-w-md" />
 
         {/* AI Solutions Section */}
-        <section id="features" className="py-32 bg-white">
-          <div className="container mx-auto px-6 lg:px-12">
-            <FadeInSection className="text-center mb-20">
-              <p className="text-luxury-spacing text-[11px] tracking-[0.3em] text-gray-400 mb-4">The Suite</p>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">AI Solutions</h2>
-              <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+        <section id="features" className="py-20 sm:py-28 lg:py-32 bg-white">
+          <div className="container mx-auto px-5 sm:px-6 lg:px-12">
+            <FadeInSection className="text-center mb-14 sm:mb-20">
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">The Suite</p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight">AI Solutions</h2>
+              <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
                 Three powerful AI tools working together to transform your agency operations.
               </p>
             </FadeInSection>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-gray-200 rounded-sm overflow-hidden mb-32">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-gray-200 rounded-sm overflow-hidden mb-20 sm:mb-32">
               {[
                 {
                   icon: (
@@ -245,19 +243,19 @@ const LandingPage = () => {
                 }
               ].map((tool, i) => (
                 <FadeInSection key={tool.name} delay={i * 0.12}>
-                  <div className="bg-white p-10 h-full flex flex-col group">
-                    <div className="mb-8 transition-transform duration-500 group-hover:scale-110 inline-flex">
+                  <div className="bg-white p-7 sm:p-10 h-full flex flex-col group">
+                    <div className="mb-6 sm:mb-8 transition-transform duration-500 group-hover:scale-110 inline-flex">
                       {tool.icon}
                     </div>
-                    <h3 className="text-2xl font-bold mb-3 tracking-tight">{tool.name}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed mb-4 flex-1">
+                    <h3 className="text-xl sm:text-2xl font-bold mb-3 tracking-tight">{tool.name}</h3>
+                    <p className="text-gray-500 text-xs sm:text-sm leading-relaxed mb-4 flex-1">
                       {tool.desc}
                     </p>
-                    <p className={`text-sm font-medium mb-8 ${tool.valueColor}`}>
+                    <p className={`text-xs sm:text-sm font-medium mb-6 sm:mb-8 ${tool.valueColor}`}>
                       {tool.value}
                     </p>
                     <Link to={tool.link}>
-                      <Button className={`w-full ${tool.bgColor} rounded-none h-12 text-sm tracking-widest font-semibold transition-all duration-300 hover:opacity-90`}>
+                      <Button className={`w-full ${tool.bgColor} rounded-none h-11 sm:h-12 text-xs sm:text-sm tracking-widest font-semibold transition-all duration-300 hover:opacity-90`}>
                         {tool.cta}
                       </Button>
                     </Link>
@@ -267,9 +265,9 @@ const LandingPage = () => {
             </div>
 
             {/* Feature Showcase — Editorial layout */}
-            <div className="space-y-32">
-              <div className="flex flex-col lg:flex-row items-center gap-16">
-                <FadeInSection className="lg:w-1/2">
+            <div className="space-y-20 sm:space-y-32">
+              <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+                <FadeInSection className="lg:w-1/2 w-full">
                   <div className="relative overflow-hidden rounded-sm">
                     <img 
                       src="https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
@@ -278,19 +276,19 @@ const LandingPage = () => {
                     />
                   </div>
                 </FadeInSection>
-                <FadeInSection className="lg:w-1/2" delay={0.15}>
-                  <p className="text-luxury-spacing text-[11px] tracking-[0.3em] text-gray-400 mb-4">Content Engine</p>
-                  <h3 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight">Create Engaging Content In Seconds</h3>
-                  <p className="text-lg text-gray-500 mb-8 leading-relaxed">
+                <FadeInSection className="lg:w-1/2 text-center lg:text-left" delay={0.15}>
+                  <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">Content Engine</p>
+                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 tracking-tight">Create Engaging Content In Seconds</h3>
+                  <p className="text-base sm:text-lg text-gray-500 mb-6 sm:mb-8 leading-relaxed">
                     Enter your industry, target audience, and tone - then watch as our AI crafts perfect posts for Facebook, Instagram, and LinkedIn that actually sound like you wrote them.
                   </p>
-                  <ul className="space-y-4">
+                  <ul className="space-y-3 sm:space-y-4 text-left max-w-md mx-auto lg:mx-0">
                     {[
                       'Generate 5 unique posts in under 30 seconds',
                       'Customize hooks, body text, and CTAs separately',
                       'Save templates for your repeat clients and offers'
                     ].map((item) => (
-                      <li key={item} className="flex items-center gap-3 text-sm text-gray-600">
+                      <li key={item} className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
                         <CheckIcon />
                         <span>{item}</span>
                       </li>
@@ -299,8 +297,8 @@ const LandingPage = () => {
                 </FadeInSection>
               </div>
               
-              <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
-                <FadeInSection className="lg:w-1/2">
+              <div className="flex flex-col lg:flex-row-reverse items-center gap-10 lg:gap-16">
+                <FadeInSection className="lg:w-1/2 w-full">
                   <div className="relative overflow-hidden rounded-sm">
                     <img 
                       src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80" 
@@ -309,19 +307,19 @@ const LandingPage = () => {
                     />
                   </div>
                 </FadeInSection>
-                <FadeInSection className="lg:w-1/2" delay={0.15}>
-                  <p className="text-luxury-spacing text-[11px] tracking-[0.3em] text-gray-400 mb-4">Knowledge Intelligence</p>
-                  <h3 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight">Unlock The Knowledge Buried In Your Files</h3>
-                  <p className="text-lg text-gray-500 mb-8 leading-relaxed">
+                <FadeInSection className="lg:w-1/2 text-center lg:text-left" delay={0.15}>
+                  <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">Knowledge Intelligence</p>
+                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 tracking-tight">Unlock The Knowledge Buried In Your Files</h3>
+                  <p className="text-base sm:text-lg text-gray-500 mb-6 sm:mb-8 leading-relaxed">
                     Upload your documents once, then ask questions in plain English. Our AI reads through everything and delivers precise answers with highlighted source sections.
                   </p>
-                  <ul className="space-y-4">
+                  <ul className="space-y-3 sm:space-y-4 text-left max-w-md mx-auto lg:mx-0">
                     {[
                       'Search across PDFs, Word docs, and Google Drive files',
                       'Get answers from hundreds of pages in seconds',
                       'Ask follow-up questions for deeper understanding'
                     ].map((item) => (
-                      <li key={item} className="flex items-center gap-3 text-sm text-gray-600">
+                      <li key={item} className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
                         <CheckIcon />
                         <span>{item}</span>
                       </li>
@@ -334,17 +332,17 @@ const LandingPage = () => {
         </section>
 
         {/* How It Works */}
-        <section id="how-it-works" className="py-32 bg-gray-50">
-          <div className="container mx-auto px-6 lg:px-12">
-            <FadeInSection className="text-center mb-20">
-              <p className="text-luxury-spacing text-[11px] tracking-[0.3em] text-gray-400 mb-4">The Process</p>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Get Started in Three Simple Steps</h2>
-              <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+        <section id="how-it-works" className="py-20 sm:py-28 lg:py-32 bg-gray-50">
+          <div className="container mx-auto px-5 sm:px-6 lg:px-12">
+            <FadeInSection className="text-center mb-14 sm:mb-20">
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">The Process</p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight">Get Started in Three Simple Steps</h2>
+              <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
                 We've eliminated the complexity so you can focus on growing your agency
               </p>
             </FadeInSection>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-16 relative">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 sm:gap-16 relative">
               {/* Connecting line */}
               <div className="hidden md:block absolute top-12 left-[16.67%] right-[16.67%] h-px bg-gray-300" />
               
@@ -354,11 +352,11 @@ const LandingPage = () => {
                 { num: '03', title: 'Get Instant Results', desc: 'Review your AI-generated content, search results, or expert advice', bg: 'bg-caregrowth-blue' },
               ].map((step, i) => (
                 <FadeInSection key={step.num} delay={i * 0.12} className="text-center relative">
-                  <div className={`${step.bg} h-24 w-24 rounded-full flex items-center justify-center text-white mx-auto mb-8 relative z-10`}>
-                    <span className="text-2xl font-light tracking-wider">{step.num}</span>
+                  <div className={`${step.bg} h-20 w-20 sm:h-24 sm:w-24 rounded-full flex items-center justify-center text-white mx-auto mb-6 sm:mb-8 relative z-10`}>
+                    <span className="text-xl sm:text-2xl font-light tracking-wider">{step.num}</span>
                   </div>
-                  <h3 className="text-xl font-bold mb-3 tracking-tight">{step.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 tracking-tight">{step.title}</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm leading-relaxed max-w-xs mx-auto">
                     {step.desc}
                   </p>
                 </FadeInSection>
@@ -368,12 +366,12 @@ const LandingPage = () => {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-32 bg-white">
-          <div className="container mx-auto px-6 lg:px-12">
-            <FadeInSection className="text-center mb-20">
-              <p className="text-luxury-spacing text-[11px] tracking-[0.3em] text-gray-400 mb-4">Investment</p>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Simple, Transparent Pricing</h2>
-              <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+        <section id="pricing" className="py-20 sm:py-28 lg:py-32 bg-white">
+          <div className="container mx-auto px-5 sm:px-6 lg:px-12">
+            <FadeInSection className="text-center mb-14 sm:mb-20">
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-gray-400 mb-4">Investment</p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 tracking-tight">Simple, Transparent Pricing</h2>
+              <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">
                 Choose the credit package that fits your agency's needs
               </p>
             </FadeInSection>
@@ -381,19 +379,19 @@ const LandingPage = () => {
             <FadeInSection className="flex justify-center max-w-lg mx-auto" delay={0.15}>
               <div className="w-full border border-gray-200 rounded-sm overflow-hidden shadow-xl shadow-gray-100/50">
                 <div className="bg-caregrowth-blue text-white text-center py-3">
-                  <p className="text-luxury-spacing text-[11px] tracking-[0.3em]">COMPLETE SOLUTION</p>
+                  <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em]">COMPLETE SOLUTION</p>
                 </div>
-                <div className="p-10">
-                  <h3 className="text-2xl font-bold mb-6 text-center tracking-tight">CareGrowth Assistant Credits</h3>
+                <div className="p-7 sm:p-10">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center tracking-tight">CareGrowth Assistant Credits</h3>
                   <div className="mb-2 text-center">
-                    <span className="text-6xl font-light tracking-tight">$49</span>
+                    <span className="text-5xl sm:text-6xl font-light tracking-tight">$49</span>
                     <span className="text-gray-400 ml-1">/month</span>
                   </div>
-                  <p className="text-center text-sm text-gray-400 mb-10">Monthly subscription</p>
+                  <p className="text-center text-xs sm:text-sm text-gray-400 mb-8 sm:mb-10">Monthly subscription</p>
                   
-                  <div className="luxury-line mb-10" />
+                  <div className="luxury-line mb-8 sm:mb-10" />
                   
-                  <ul className="space-y-4 mb-10">
+                  <ul className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                     {[
                       '1000 Social Media Posts',
                       'Unlimited Documents',
@@ -404,12 +402,12 @@ const LandingPage = () => {
                     ].map((feature) => (
                       <li key={feature} className="flex items-center gap-3">
                         <CheckIcon />
-                        <span className="text-sm text-gray-700">{feature}</span>
+                        <span className="text-xs sm:text-sm text-gray-700">{feature}</span>
                       </li>
                     ))}
                   </ul>
                   <Link to="/login">
-                    <Button className="w-full bg-caregrowth-blue rounded-none h-14 text-sm tracking-widest font-semibold transition-all duration-300 hover:opacity-90">
+                    <Button className="w-full bg-caregrowth-blue rounded-none h-12 sm:h-14 text-xs sm:text-sm tracking-widest font-semibold transition-all duration-300 hover:opacity-90">
                       Get Started Now
                     </Button>
                   </Link>
@@ -420,26 +418,25 @@ const LandingPage = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="py-32 bg-caregrowth-blue text-white relative overflow-hidden">
-          {/* Background texture */}
+        <section className="py-20 sm:py-28 lg:py-32 bg-caregrowth-blue text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.03]" style={{
             backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)',
             backgroundSize: '60px 60px'
           }} />
           
-          <div className="container mx-auto px-6 lg:px-12 text-center relative z-10">
+          <div className="container mx-auto px-5 sm:px-6 lg:px-12 text-center relative z-10">
             <FadeInSection>
-              <p className="text-luxury-spacing text-[11px] tracking-[0.3em] text-white/40 mb-6">Start Today</p>
-              <h2 className="text-4xl md:text-5xl font-bold mb-8 tracking-tight">Ready to Grow Faster with Less Effort?</h2>
-              <p className="text-lg mb-12 max-w-2xl mx-auto text-white/70 leading-relaxed">
+              <p className="text-luxury-spacing text-[10px] sm:text-[11px] tracking-[0.3em] text-white/40 mb-4 sm:mb-6">Start Today</p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 tracking-tight">Ready to Grow Faster with Less Effort?</h2>
+              <p className="text-base sm:text-lg mb-10 sm:mb-12 max-w-2xl mx-auto text-white/70 leading-relaxed">
                 Join hundreds of agencies already using CareGrowth Assistant to create better content, access knowledge faster, and make smarter business decisions.
               </p>
               <Link to="/login">
-                <Button size="lg" className="bg-white text-caregrowth-blue hover:bg-blue-50 rounded-none px-12 h-14 text-sm tracking-widest font-semibold transition-all duration-300">
+                <Button size="lg" className="bg-white text-caregrowth-blue hover:bg-blue-50 rounded-none px-10 sm:px-12 h-12 sm:h-14 text-xs sm:text-sm tracking-widest font-semibold transition-all duration-300">
                   I'm Ready Now
                 </Button>
               </Link>
-              <p className="mt-6 text-white/40 text-sm tracking-wider">No credit card required. Cancel anytime.</p>
+              <p className="mt-5 sm:mt-6 text-white/40 text-xs sm:text-sm tracking-wider">No credit card required. Cancel anytime.</p>
             </FadeInSection>
           </div>
         </section>
