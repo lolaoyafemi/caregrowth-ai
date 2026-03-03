@@ -489,7 +489,7 @@ const ContentCalendarPage = () => {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-            Content Calendar
+            Onboarding
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Plan, schedule, and auto-publish your social media content across platforms.
@@ -544,24 +544,6 @@ const ContentCalendarPage = () => {
         </div>
       </div>
 
-      {/* Stats Bar */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {[
-          { label: 'Drafts', value: drafts, icon: FileText, color: 'text-muted-foreground' },
-          { label: 'Scheduled', value: scheduled, icon: Clock, color: 'text-amber-600' },
-          { label: 'Published', value: published, icon: CheckCircle, color: 'text-emerald-600' },
-        ].map(s => (
-          <Card key={s.label}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <s.icon size={20} className={s.color} />
-              <div>
-                <p className="text-2xl font-bold">{s.value}</p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       <CalendarAnalytics posts={posts} />
 
