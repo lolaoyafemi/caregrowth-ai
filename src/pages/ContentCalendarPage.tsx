@@ -21,6 +21,8 @@ import EditPostDialog from '@/components/calendar/EditPostDialog';
 import CalendarAnalytics from '@/components/calendar/CalendarAnalytics';
 import PlatformPreview from '@/components/calendar/PlatformPreview';
 import StartEngineWizard from '@/components/calendar/StartEngineWizard';
+import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
+import { Building2 } from 'lucide-react';
 
 const PLATFORM_CONFIG = {
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-blue-600' },
@@ -64,6 +66,7 @@ const ContentCalendarPage = () => {
   const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState('Your Business');
+  const [showBusinessForm, setShowBusinessForm] = useState(false);
   const [profileInitial, setProfileInitial] = useState('B');
   const { credits, refetch: refetchCredits } = useUserCredits();
 
@@ -528,6 +531,14 @@ const ContentCalendarPage = () => {
             </Dialog>
           )}
 
+          <Button
+            variant="outline"
+            onClick={() => setShowBusinessForm(true)}
+            className="gap-2"
+          >
+            <Building2 size={16} /> Business Details
+          </Button>
+
           <Dialog open={connectOpen} onOpenChange={(open) => { setConnectOpen(open); if (!open) fetchConnectedAccounts(); }}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2">
@@ -789,6 +800,15 @@ const ContentCalendarPage = () => {
         businessHandle={businessHandle}
         profileInitial={profileInitial}
       />
+
+      {showBusinessForm && (
+        <BusinessDetailsForm 
+          onClose={() => {
+            setShowBusinessForm(false);
+            fetchUserProfile();
+          }} 
+        />
+      )}
     </div>
   );
 };
