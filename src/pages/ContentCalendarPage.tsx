@@ -500,7 +500,7 @@ const ContentCalendarPage = () => {
             onClick={() => setGenerateOpen(true)}
             className="bg-primary hover:bg-primary/90 gap-2 font-semibold tracking-wide"
           >
-            <Plus size={16} /> Start the Engine
+            <Plus size={16} /> Start Posting
           </Button>
 
           <StartEngineWizard
