@@ -5,8 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { 
@@ -22,6 +20,7 @@ import ConnectAccountsPanel from '@/components/calendar/ConnectAccountsPanel';
 import EditPostDialog from '@/components/calendar/EditPostDialog';
 import CalendarAnalytics from '@/components/calendar/CalendarAnalytics';
 import PlatformPreview from '@/components/calendar/PlatformPreview';
+import StartEngineWizard from '@/components/calendar/StartEngineWizard';
 
 const PLATFORM_CONFIG = {
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-blue-600' },
@@ -61,8 +60,6 @@ const ContentCalendarPage = () => {
   const [drawerPost, setDrawerPost] = useState<ContentPost | null>(null);
   const [previewPost, setPreviewPost] = useState<ContentPost | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [selectedDays, setSelectedDays] = useState<string>('7');
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [generationMessage, setGenerationMessage] = useState('');
   const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
@@ -131,20 +128,16 @@ const ContentCalendarPage = () => {
     fetchUserProfile();
   }, [fetchPosts, fetchConnectedAccounts, fetchUserProfile]);
 
-  const handleGenerate = async () => {
-    if (selectedPlatforms.length === 0) {
-      toast.error('Please select at least one platform.');
-      return;
-    }
-
-    const days = parseInt(selectedDays);
-    const totalPosts = days * selectedPlatforms.length;
+  const handleGenerate = async (wizardResult: { mode: string; days: number; platforms: string[]; frequency: number; campaignName?: string; campaignGoal?: string }) => {
+    const { days, platforms: wizPlatforms, frequency } = wizardResult;
+    const totalPosts = days * wizPlatforms.length * frequency;
     
     if (credits < totalPosts) {
       toast.error(`You need ${totalPosts} credits. You have ${credits}.`);
       return;
     }
 
+    setGenerateOpen(false);
     setGenerating(true);
     const messages = [
       "All set… I'm lining everything up.",
@@ -180,7 +173,7 @@ const ContentCalendarPage = () => {
         .insert({
           user_id: userId,
           days,
-          platforms: selectedPlatforms,
+          platforms: wizPlatforms,
           created_by: userId,
         })
         .select()
@@ -195,42 +188,45 @@ const ContentCalendarPage = () => {
       const postsToInsert: any[] = [];
 
       for (let day = 0; day < days; day++) {
-        const scheduledDate = addDays(new Date(), day + 1);
-        scheduledDate.setHours(prefHour, prefMin, 0, 0);
+        for (let freq = 0; freq < frequency; freq++) {
+          const scheduledDate = addDays(new Date(), day + 1);
+          const hourOffset = freq * 4; // space posts 4 hours apart
+          scheduledDate.setHours(prefHour + hourOffset, prefMin, 0, 0);
 
-        for (const platform of selectedPlatforms) {
-          const category = categories[day % categories.length];
-          const tone = tones[day % tones.length];
+          for (const platform of wizPlatforms) {
+            const category = categories[(day * frequency + freq) % categories.length];
+            const tone = tones[(day * frequency + freq) % tones.length];
 
-          try {
-            const { data, error } = await supabase.functions.invoke('generate-post', {
-              body: { userId, postType: category, tone, platform, audience: '', subject: '' }
-            });
+            try {
+              const { data, error } = await supabase.functions.invoke('generate-post', {
+                body: { userId, postType: category, tone, platform, audience: '', subject: '' }
+              });
 
-            if (error) throw error;
+              if (error) throw error;
 
-            const postBody = data?.post || `${data?.hook || ''}\n\n${data?.body || ''}\n\n${data?.cta || ''}`.trim();
+              const postBody = data?.post || `${data?.hook || ''}\n\n${data?.body || ''}\n\n${data?.cta || ''}`.trim();
 
-            postsToInsert.push({
-              user_id: userId,
-              batch_id: batchId,
-              platform,
-              post_body: postBody,
-              scheduled_at: scheduledDate.toISOString(),
-              status: 'scheduled',
-              hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
-            });
-          } catch (genErr) {
-            console.error(`Failed to generate for ${platform} day ${day + 1}:`, genErr);
-            postsToInsert.push({
-              user_id: userId,
-              batch_id: batchId,
-              platform,
-              post_body: `[Content pending — generation will retry]`,
-              scheduled_at: scheduledDate.toISOString(),
-              status: 'draft',
-              hook_line: '',
-            });
+              postsToInsert.push({
+                user_id: userId,
+                batch_id: batchId,
+                platform,
+                post_body: postBody,
+                scheduled_at: scheduledDate.toISOString(),
+                status: 'scheduled',
+                hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
+              });
+            } catch (genErr) {
+              console.error(`Failed to generate for ${platform} day ${day + 1}:`, genErr);
+              postsToInsert.push({
+                user_id: userId,
+                batch_id: batchId,
+                platform,
+                post_body: `[Content pending — generation will retry]`,
+                scheduled_at: scheduledDate.toISOString(),
+                status: 'draft',
+                hook_line: '',
+              });
+            }
           }
         }
       }
@@ -290,7 +286,6 @@ const ContentCalendarPage = () => {
       });
 
       refetchCredits();
-      setGenerateOpen(false);
       toast.success(`All set. Your next ${days} days are ready.`);
     } catch (err: any) {
       console.error('Generation error:', err);
@@ -317,11 +312,6 @@ const ContentCalendarPage = () => {
     }
   };
 
-  const togglePlatform = (platform: string) => {
-    setSelectedPlatforms(prev =>
-      prev.includes(platform) ? prev.filter(p => p !== platform) : [...prev, platform]
-    );
-  };
 
   const handleDragStart = (e: React.DragEvent, postId: string) => {
     e.dataTransfer.setData('text/plain', postId);
@@ -506,17 +496,24 @@ const ContentCalendarPage = () => {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <Dialog open={generateOpen} onOpenChange={setGenerateOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 gap-2 font-semibold tracking-wide">
-                <Plus size={16} /> Generate Posts
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Generate Your Content Plan</DialogTitle>
-              </DialogHeader>
-              {generating ? (
+          <Button
+            onClick={() => setGenerateOpen(true)}
+            className="bg-primary hover:bg-primary/90 gap-2 font-semibold tracking-wide"
+          >
+            <Plus size={16} /> Start the Engine
+          </Button>
+
+          <StartEngineWizard
+            open={generateOpen}
+            onOpenChange={setGenerateOpen}
+            credits={credits}
+            onDeploy={handleGenerate}
+          />
+
+          {/* Generating overlay dialog */}
+          {generating && (
+            <Dialog open={generating}>
+              <DialogContent className="sm:max-w-md">
                 <div className="py-12 text-center space-y-4">
                   <div className="space-y-3">
                     <div className="h-3 bg-muted rounded-full overflow-hidden">
@@ -527,52 +524,9 @@ const ContentCalendarPage = () => {
                   </div>
                   <p className="text-sm text-muted-foreground mt-4">{generationMessage}</p>
                 </div>
-              ) : (
-                <div className="space-y-6 py-4">
-                  <div>
-                    <Label className="text-sm font-medium mb-3 block">How many days of content?</Label>
-                    <RadioGroup value={selectedDays} onValueChange={setSelectedDays} className="flex gap-4">
-                      {['7', '14', '30'].map(d => (
-                        <div key={d} className="flex items-center space-x-2">
-                          <RadioGroupItem value={d} id={`days-${d}`} />
-                          <Label htmlFor={`days-${d}`} className="cursor-pointer">{d} days</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium mb-3 block">Which platforms?</Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {Object.entries(PLATFORM_CONFIG).map(([key, config]) => (
-                        <label key={key} className={cn(
-                          "flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all",
-                          selectedPlatforms.includes(key) ? "border-primary bg-primary/10" : "hover:border-muted-foreground/30"
-                        )}>
-                          <Checkbox
-                            checked={selectedPlatforms.includes(key)}
-                            onCheckedChange={() => togglePlatform(key)}
-                          />
-                          <config.icon size={18} />
-                          <span className="text-sm">{config.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    This will generate {parseInt(selectedDays) * selectedPlatforms.length} posts using {parseInt(selectedDays) * selectedPlatforms.length} credits.
-                    You have <span className="font-medium">{credits}</span> credits available.
-                  </div>
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={selectedPlatforms.length === 0 || credits < parseInt(selectedDays) * selectedPlatforms.length}
-                    className="w-full"
-                  >
-                    Generate {parseInt(selectedDays) * selectedPlatforms.length} Posts
-                  </Button>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          )}
 
           <Dialog open={connectOpen} onOpenChange={(open) => { setConnectOpen(open); if (!open) fetchConnectedAccounts(); }}>
             <DialogTrigger asChild>
