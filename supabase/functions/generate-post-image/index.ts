@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -59,83 +59,72 @@ Style: professional, minimalist, high contrast, social-media-ready branded card.
 No photos of people. No stock imagery. Text-based design only.
 Ultra high resolution.`;
 
-    console.log('Generating image with prompt:', prompt.substring(0, 200));
+    console.log('Generating image with DALL-E 3, prompt:', prompt.substring(0, 200));
 
-    // Try multiple image models with retry logic
-    const IMAGE_MODELS = [
-      'google/gemini-2.5-flash-image',
-      'google/gemini-3-pro-image-preview',
-    ];
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not configured');
+    }
 
+    // Retry up to 3 times with exponential backoff
     let lastError: Error | null = null;
-    let imageBase64: string | undefined;
+    let imageUrl: string | undefined;
 
-    for (const model of IMAGE_MODELS) {
-      if (imageBase64) break;
-
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          if (attempt > 0) {
-            await new Promise(r => setTimeout(r, 2000));
-          }
-
-          console.log(`Trying model ${model}, attempt ${attempt + 1}`);
-
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 60000);
-
-          const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model,
-              messages: [{ role: 'user', content: prompt }],
-              modalities: ['image', 'text'],
-            }),
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeout);
-
-          if (!response.ok) {
-            const errText = await response.text();
-            console.error(`AI gateway error (${model}, attempt ${attempt + 1}):`, response.status, errText);
-            lastError = new Error(`Image generation failed: ${response.status}`);
-            continue;
-          }
-
-          const data = await response.json();
-          console.log('Response keys:', Object.keys(data));
-          
-          // Try multiple response formats
-          imageBase64 = data.choices?.[0]?.message?.images?.[0]?.image_url?.url
-            || data.choices?.[0]?.message?.content?.find?.((c: any) => c.type === 'image')?.image_url?.url
-            || data.choices?.[0]?.message?.content?.find?.((c: any) => c.type === 'image_url')?.image_url?.url;
-
-          if (!imageBase64) {
-            console.error('No image in response. Structure:', JSON.stringify(data).substring(0, 800));
-            lastError = new Error('No image in response');
-            continue;
-          }
-
-          break; // Success
-        } catch (err) {
-          console.error(`Attempt failed (${model}):`, err);
-          lastError = err as Error;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (attempt > 0) {
+          const delay = Math.pow(2, attempt) * 1000;
+          console.log(`Retry attempt ${attempt + 1} after ${delay}ms`);
+          await new Promise(r => setTimeout(r, delay));
         }
+
+        const response = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'dall-e-3',
+            prompt,
+            n: 1,
+            size: '1024x1024',
+            quality: 'standard',
+          }),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`OpenAI error (attempt ${attempt + 1}):`, response.status, errText);
+          lastError = new Error(`Image generation failed: ${response.status}`);
+          continue;
+        }
+
+        const data = await response.json();
+        imageUrl = data.data?.[0]?.url;
+
+        if (!imageUrl) {
+          console.error('No image URL in response:', JSON.stringify(data).substring(0, 500));
+          lastError = new Error('No image URL in response');
+          continue;
+        }
+
+        break; // Success
+      } catch (err) {
+        console.error(`Attempt ${attempt + 1} failed:`, err);
+        lastError = err as Error;
       }
     }
 
-    if (!imageBase64) {
-      throw lastError || new Error('Image generation failed after all attempts');
+    if (!imageUrl) {
+      throw lastError || new Error('Image generation failed after retries');
     }
 
-    // Extract base64 data (remove data:image/png;base64, prefix)
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-    const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+    // Fetch image bytes from the OpenAI URL
+    const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch generated image: ${imageResponse.status}`);
+    }
+    const binaryData = new Uint8Array(await imageResponse.arrayBuffer());
 
     // Upload to post-images bucket
     const filePath = `${user.id}/${post_id}-${Date.now()}.png`;
