@@ -188,48 +188,64 @@ const ContentCalendarPage = () => {
       const categories = ['attract', 'connect', 'transact'];
       const tones = ['professional', 'conversational', 'enthusiastic', 'authoritative', 'humorous'];
 
-      const postsToInsert: any[] = [];
+      // Build all generation requests upfront
+      const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date }[] = [];
 
       for (let day = 0; day < days; day++) {
         for (let freq = 0; freq < frequency; freq++) {
           const scheduledDate = addDays(new Date(), day + 1);
-          const hourOffset = freq * 4; // space posts 4 hours apart
+          const hourOffset = freq * 4;
           scheduledDate.setHours(prefHour + hourOffset, prefMin, 0, 0);
 
           for (const platform of wizPlatforms) {
             const category = categories[(day * frequency + freq) % categories.length];
             const tone = tones[(day * frequency + freq) % tones.length];
+            generationRequests.push({ platform, category, tone, scheduledDate: new Date(scheduledDate) });
+          }
+        }
+      }
 
-            try {
-              const { data, error } = await supabase.functions.invoke('generate-post', {
-                body: { userId, postType: category, tone, platform, audience: '', subject: '' }
-              });
+      // Generate posts in parallel batches of 5
+      const BATCH_SIZE = 5;
+      const postsToInsert: any[] = [];
 
-              if (error) throw error;
+      for (let i = 0; i < generationRequests.length; i += BATCH_SIZE) {
+        const batch = generationRequests.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map(async (req) => {
+            const { data, error } = await supabase.functions.invoke('generate-post', {
+              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: '' }
+            });
+            if (error) throw error;
+            return { req, data };
+          })
+        );
 
-              const postBody = data?.post || `${data?.hook || ''}\n\n${data?.body || ''}\n\n${data?.cta || ''}`.trim();
-
-              postsToInsert.push({
-                user_id: userId,
-                batch_id: batchId,
-                platform,
-                post_body: postBody,
-                scheduled_at: scheduledDate.toISOString(),
-                status: 'scheduled',
-                hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
-              });
-            } catch (genErr) {
-              console.error(`Failed to generate for ${platform} day ${day + 1}:`, genErr);
-              postsToInsert.push({
-                user_id: userId,
-                batch_id: batchId,
-                platform,
-                post_body: `[Content pending — generation will retry]`,
-                scheduled_at: scheduledDate.toISOString(),
-                status: 'draft',
-                hook_line: '',
-              });
-            }
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            const { req, data } = result.value;
+            const postBody = data?.post || `${data?.hook || ''}\n\n${data?.body || ''}\n\n${data?.cta || ''}`.trim();
+            postsToInsert.push({
+              user_id: userId,
+              batch_id: batchId,
+              platform: req.platform,
+              post_body: postBody,
+              scheduled_at: req.scheduledDate.toISOString(),
+              status: 'scheduled',
+              hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
+            });
+          } else {
+            const req = batch[results.indexOf(result)];
+            console.error(`Failed to generate for ${req.platform}:`, result.reason);
+            postsToInsert.push({
+              user_id: userId,
+              batch_id: batchId,
+              platform: req.platform,
+              post_body: `[Content pending — generation will retry]`,
+              scheduled_at: req.scheduledDate.toISOString(),
+              status: 'draft',
+              hook_line: '',
+            });
           }
         }
       }
