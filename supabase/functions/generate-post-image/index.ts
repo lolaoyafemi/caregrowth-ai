@@ -61,62 +61,76 @@ Ultra high resolution.`;
 
     console.log('Generating image with prompt:', prompt.substring(0, 200));
 
-    // Retry up to 3 times with exponential backoff
+    // Try multiple image models with retry logic
+    const IMAGE_MODELS = [
+      'google/gemini-2.5-flash-image',
+      'google/gemini-3-pro-image-preview',
+    ];
+
     let lastError: Error | null = null;
     let imageBase64: string | undefined;
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        if (attempt > 0) {
-          const delay = Math.pow(2, attempt) * 1000;
-          console.log(`Retry attempt ${attempt + 1} after ${delay}ms`);
-          await new Promise(r => setTimeout(r, delay));
+    for (const model of IMAGE_MODELS) {
+      if (imageBase64) break;
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          if (attempt > 0) {
+            await new Promise(r => setTimeout(r, 2000));
+          }
+
+          console.log(`Trying model ${model}, attempt ${attempt + 1}`);
+
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 60000);
+
+          const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model,
+              messages: [{ role: 'user', content: prompt }],
+              modalities: ['image', 'text'],
+            }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeout);
+
+          if (!response.ok) {
+            const errText = await response.text();
+            console.error(`AI gateway error (${model}, attempt ${attempt + 1}):`, response.status, errText);
+            lastError = new Error(`Image generation failed: ${response.status}`);
+            continue;
+          }
+
+          const data = await response.json();
+          console.log('Response keys:', Object.keys(data));
+          
+          // Try multiple response formats
+          imageBase64 = data.choices?.[0]?.message?.images?.[0]?.image_url?.url
+            || data.choices?.[0]?.message?.content?.find?.((c: any) => c.type === 'image')?.image_url?.url
+            || data.choices?.[0]?.message?.content?.find?.((c: any) => c.type === 'image_url')?.image_url?.url;
+
+          if (!imageBase64) {
+            console.error('No image in response. Structure:', JSON.stringify(data).substring(0, 800));
+            lastError = new Error('No image in response');
+            continue;
+          }
+
+          break; // Success
+        } catch (err) {
+          console.error(`Attempt failed (${model}):`, err);
+          lastError = err as Error;
         }
-
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 90000); // 90s timeout
-
-        const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash-preview-05-20',
-            messages: [{ role: 'user', content: prompt }],
-            modalities: ['image', 'text'],
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeout);
-
-        if (!response.ok) {
-          const errText = await response.text();
-          console.error(`AI gateway error (attempt ${attempt + 1}):`, response.status, errText);
-          lastError = new Error(`Image generation failed: ${response.status}`);
-          continue;
-        }
-
-        const data = await response.json();
-        imageBase64 = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-        if (!imageBase64) {
-          console.error('No image in response:', JSON.stringify(data).substring(0, 500));
-          lastError = new Error('No image in response');
-          continue;
-        }
-
-        break; // Success
-      } catch (err) {
-        console.error(`Attempt ${attempt + 1} failed:`, err);
-        lastError = err as Error;
       }
     }
 
     if (!imageBase64) {
-      throw lastError || new Error('Image generation failed after retries');
+      throw lastError || new Error('Image generation failed after all attempts');
     }
 
     // Extract base64 data (remove data:image/png;base64, prefix)
