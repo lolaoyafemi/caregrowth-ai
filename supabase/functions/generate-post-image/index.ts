@@ -61,31 +61,62 @@ Ultra high resolution.`;
 
     console.log('Generating image with prompt:', prompt.substring(0, 200));
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image',
-        messages: [{ role: 'user', content: prompt }],
-        modalities: ['image', 'text'],
-      }),
-    });
+    // Retry up to 3 times with exponential backoff
+    let lastError: Error | null = null;
+    let imageBase64: string | undefined;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('AI gateway error:', errText);
-      throw new Error(`Image generation failed: ${response.status}`);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (attempt > 0) {
+          const delay = Math.pow(2, attempt) * 1000;
+          console.log(`Retry attempt ${attempt + 1} after ${delay}ms`);
+          await new Promise(r => setTimeout(r, delay));
+        }
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 90000); // 90s timeout
+
+        const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash-preview-05-20',
+            messages: [{ role: 'user', content: prompt }],
+            modalities: ['image', 'text'],
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`AI gateway error (attempt ${attempt + 1}):`, response.status, errText);
+          lastError = new Error(`Image generation failed: ${response.status}`);
+          continue;
+        }
+
+        const data = await response.json();
+        imageBase64 = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+        if (!imageBase64) {
+          console.error('No image in response:', JSON.stringify(data).substring(0, 500));
+          lastError = new Error('No image in response');
+          continue;
+        }
+
+        break; // Success
+      } catch (err) {
+        console.error(`Attempt ${attempt + 1} failed:`, err);
+        lastError = err as Error;
+      }
     }
 
-    const data = await response.json();
-    const imageBase64 = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
     if (!imageBase64) {
-      console.error('No image in response:', JSON.stringify(data).substring(0, 500));
-      throw new Error('No image generated');
+      throw lastError || new Error('Image generation failed after retries');
     }
 
     // Extract base64 data (remove data:image/png;base64, prefix)
