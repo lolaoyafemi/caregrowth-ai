@@ -162,7 +162,7 @@ const PlatformPreview: React.FC<PlatformPreviewProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden bg-gray-100 border-0">
+      <DialogContent className="sm:max-w-lg p-0 bg-gray-100 border-0 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <div className="flex items-center gap-2">
             <div className={cn("w-6 h-6 rounded flex items-center justify-center text-white", platformInfo?.bg || 'bg-gray-500')}>
