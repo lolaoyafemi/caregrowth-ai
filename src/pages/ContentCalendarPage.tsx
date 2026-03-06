@@ -573,6 +573,21 @@ const ContentCalendarPage = () => {
 
           <Button
             variant="outline"
+            onClick={() => setShowBrandSetup(true)}
+            className="gap-2"
+          >
+            <Palette size={16} /> Brand Style
+          </Button>
+
+          <BrandStyleSetup
+            open={showBrandSetup}
+            onOpenChange={setShowBrandSetup}
+            onSave={saveBrandStyle}
+            initialValues={brandStyle || undefined}
+          />
+
+          <Button
+            variant="outline"
             onClick={() => setShowBusinessForm(true)}
             className="gap-2"
           >
