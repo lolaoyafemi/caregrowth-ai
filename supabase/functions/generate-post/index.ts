@@ -174,18 +174,23 @@ serve(async (req) => {
 
     const finalPost = `${hook} ${body} ${cta}`;
 
+    // Generate headline (max 10 words) and subheadline from hook
+    const headline = hook.split(/[.!?]/)[0]?.trim().split(/\s+/).slice(0, 10).join(' ') || hook.substring(0, 60);
+    const subheadline = hook.length > headline.length ? hook.substring(headline.length).trim().replace(/^[.!?,\s]+/, '') : '';
+
     // Log post to post_history
     try {
       await logPostToHistory(supabase, authenticatedUserId, postType, tone, platform, targetAudience, finalPost);
     } catch (logError) {
       console.error('Error logging post to history:', (logError as Error).message);
-      // Don't fail the entire request if logging fails
     }
 
     console.log('Final post generated successfully:', {
       source: contentSource,
       content_length: finalPost.length,
-      business_context_used: !!profile
+      business_context_used: !!profile,
+      headline,
+      subheadline: subheadline ? 'yes' : 'no'
     });
 
     return new Response(JSON.stringify({
@@ -193,6 +198,8 @@ serve(async (req) => {
       hook,
       body,
       cta,
+      headline,
+      subheadline,
       source: contentSource,
       business_context_used: !!profile,
       content_length: finalPost.length
