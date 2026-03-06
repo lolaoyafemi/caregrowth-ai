@@ -205,8 +205,10 @@ export type Database = {
           platform: string
           platform_post_id: string | null
           post_body: string
+          post_format: string
           published_at: string | null
           scheduled_at: string
+          slide_texts: string[] | null
           status: string
           subheadline: string | null
           updated_at: string
@@ -222,8 +224,10 @@ export type Database = {
           platform: string
           platform_post_id?: string | null
           post_body: string
+          post_format?: string
           published_at?: string | null
           scheduled_at: string
+          slide_texts?: string[] | null
           status?: string
           subheadline?: string | null
           updated_at?: string
@@ -239,8 +243,10 @@ export type Database = {
           platform?: string
           platform_post_id?: string | null
           post_body?: string
+          post_format?: string
           published_at?: string | null
           scheduled_at?: string
+          slide_texts?: string[] | null
           status?: string
           subheadline?: string | null
           updated_at?: string
