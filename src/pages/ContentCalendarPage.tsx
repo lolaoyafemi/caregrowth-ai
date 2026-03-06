@@ -283,11 +283,13 @@ const ContentCalendarPage = () => {
 
           for (let i = 0; i < inserted.length; i++) {
             const p = inserted[i];
-            const hookLine = postsToInsert[i]?.hook_line || p.post_body.split('\n')[0]?.substring(0, 100) || 'Your Post';
+            const postHeadline = postsToInsert[i]?.headline || postsToInsert[i]?.hook_line || p.post_body.split('\n')[0]?.substring(0, 60) || 'Your Post';
+            const postSubheadline = postsToInsert[i]?.subheadline || '';
 
             supabase.functions.invoke('generate-post-image', {
               body: {
-                hook_line: hookLine,
+                headline: postHeadline,
+                subheadline: postSubheadline,
                 business_name: userBusinessName,
                 post_id: p.id,
                 platform: p.platform,
