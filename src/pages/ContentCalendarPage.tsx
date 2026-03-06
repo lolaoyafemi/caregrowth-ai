@@ -22,7 +22,9 @@ import CalendarAnalytics from '@/components/calendar/CalendarAnalytics';
 import PlatformPreview from '@/components/calendar/PlatformPreview';
 import StartEngineWizard from '@/components/calendar/StartEngineWizard';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
-import { Building2 } from 'lucide-react';
+import BrandStyleSetup from '@/components/calendar/BrandStyleSetup';
+import { useBrandStyle } from '@/hooks/useBrandStyle';
+import { Building2, Palette } from 'lucide-react';
 
 const PLATFORM_CONFIG = {
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-blue-600' },
@@ -67,8 +69,18 @@ const ContentCalendarPage = () => {
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState('Your Business');
   const [showBusinessForm, setShowBusinessForm] = useState(false);
+  const [showBrandSetup, setShowBrandSetup] = useState(false);
   const [profileInitial, setProfileInitial] = useState('B');
   const { credits, refetch: refetchCredits } = useUserCredits();
+  const { brandStyle, needsSetup: brandNeedsSetup, saveBrandStyle, loading: brandLoading } = useBrandStyle();
+
+  // Prompt brand setup on first visit if not configured
+  useEffect(() => {
+    if (!brandLoading && brandNeedsSetup) {
+      const timer = setTimeout(() => setShowBrandSetup(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [brandLoading, brandNeedsSetup]);
 
   const fetchConnectedAccounts = useCallback(async () => {
     try {
@@ -290,9 +302,13 @@ const ContentCalendarPage = () => {
               body: {
                 headline: postHeadline,
                 subheadline: postSubheadline,
-                business_name: userBusinessName,
+                business_name: brandStyle?.brand_display_name || userBusinessName,
                 post_id: p.id,
                 platform: p.platform,
+                template: brandStyle?.selected_template_theme,
+                brand_primary_color: brandStyle?.brand_primary_color,
+                brand_accent_color: brandStyle?.brand_accent_color,
+                brand_font_style: brandStyle?.brand_font_style,
               },
             }).then(({ data: imgData }) => {
               if (imgData?.image_url) {
@@ -554,6 +570,21 @@ const ContentCalendarPage = () => {
               </DialogContent>
             </Dialog>
           )}
+
+          <Button
+            variant="outline"
+            onClick={() => setShowBrandSetup(true)}
+            className="gap-2"
+          >
+            <Palette size={16} /> Brand Style
+          </Button>
+
+          <BrandStyleSetup
+            open={showBrandSetup}
+            onOpenChange={setShowBrandSetup}
+            onSave={saveBrandStyle}
+            initialValues={brandStyle || undefined}
+          />
 
           <Button
             variant="outline"

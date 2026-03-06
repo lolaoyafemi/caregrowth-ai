@@ -77,6 +77,45 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_styles: {
+        Row: {
+          brand_accent_color: string
+          brand_display_name: string | null
+          brand_font_style: string
+          brand_primary_color: string
+          created_at: string
+          id: string
+          optional_logo_url: string | null
+          selected_template_theme: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand_accent_color?: string
+          brand_display_name?: string | null
+          brand_font_style?: string
+          brand_primary_color?: string
+          created_at?: string
+          id?: string
+          optional_logo_url?: string | null
+          selected_template_theme?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand_accent_color?: string
+          brand_display_name?: string | null
+          brand_font_style?: string
+          brand_primary_color?: string
+          created_at?: string
+          id?: string
+          optional_logo_url?: string | null
+          selected_template_theme?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       connected_accounts: {
         Row: {
           access_token: string | null
