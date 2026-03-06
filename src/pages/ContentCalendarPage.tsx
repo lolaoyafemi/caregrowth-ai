@@ -143,6 +143,7 @@ const ContentCalendarPage = () => {
         status: p.status,
         error_message: p.error_message || null,
         batch_id: p.batch_id,
+        post_format: p.post_format || 'single',
       }));
 
       setPosts(mapped);
