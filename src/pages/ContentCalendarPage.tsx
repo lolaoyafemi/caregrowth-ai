@@ -218,7 +218,19 @@ const ContentCalendarPage = () => {
       const tones = ['professional', 'conversational', 'enthusiastic', 'authoritative', 'humorous'];
 
       // Build all generation requests upfront
-      const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date }[] = [];
+      const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date; post_format: 'single' | 'carousel' }[] = [];
+
+      // Calculate total posts per platform and assign formats
+      const postsPerPlatform = days * frequency;
+      const platformFormats: Record<string, ('single' | 'carousel')[]> = {};
+      for (const platform of wizPlatforms) {
+        platformFormats[platform] = assignPostFormats(postsPerPlatform);
+      }
+
+      const platformCounters: Record<string, number> = {};
+      for (const platform of wizPlatforms) {
+        platformCounters[platform] = 0;
+      }
 
       for (let day = 0; day < days; day++) {
         for (let freq = 0; freq < frequency; freq++) {
@@ -229,7 +241,8 @@ const ContentCalendarPage = () => {
           for (const platform of wizPlatforms) {
             const category = categories[(day * frequency + freq) % categories.length];
             const tone = tones[(day * frequency + freq) % tones.length];
-            generationRequests.push({ platform, category, tone, scheduledDate: new Date(scheduledDate) });
+            const fmt = platformFormats[platform][platformCounters[platform]++];
+            generationRequests.push({ platform, category, tone, scheduledDate: new Date(scheduledDate), post_format: fmt });
           }
         }
       }
