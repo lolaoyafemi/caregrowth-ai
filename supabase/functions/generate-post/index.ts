@@ -140,9 +140,9 @@ serve(async (req) => {
 
     let hook = '', body = '', cta = '';
     let contentSource = '';
+    let slideTexts: string[] = [];
 
     try {
-      // Generate content using database prompts first, then fallback to coded prompts
       console.log('🤖 Generating content with database prompt integration');
       const generatedContent = await generateContentWithAI({
         userId: authenticatedUserId,
@@ -166,12 +166,29 @@ serve(async (req) => {
       throw new Error(`Content generation failed: ${(generationError as Error).message}`);
     }
 
+    // For carousel posts, split body into slide-sized chunks
+    if (isCarousel) {
+      const sentences = body.split(/(?<=[.!?])\s+/).filter(s => s.trim());
+      const slideCount = Math.min(Math.max(sentences.length, 3), 4);
+      const perSlide = Math.ceil(sentences.length / slideCount);
+      slideTexts = [];
+      for (let i = 0; i < slideCount; i++) {
+        slideTexts.push(sentences.slice(i * perSlide, (i + 1) * perSlide).join(' ').trim());
+      }
+      // Add CTA as final slide
+      slideTexts.push(cta);
+      console.log(`📸 Carousel: generated ${slideTexts.length} slides`);
+    }
+
     // Apply additional personalization if we have business profile
     if (profile) {
       console.log('Applying additional business personalization...');
       hook = personalizeContent(hook, profile, targetAudience, tone, platform);
       body = personalizeContent(body, profile, targetAudience, tone, platform);
       cta = personalizeContent(cta, profile, targetAudience, tone, platform);
+      if (isCarousel) {
+        slideTexts = slideTexts.map(s => personalizeContent(s, profile, targetAudience, tone, platform));
+      }
     }
 
     const finalPost = `${hook} ${body} ${cta}`;
@@ -192,7 +209,9 @@ serve(async (req) => {
       content_length: finalPost.length,
       business_context_used: !!profile,
       headline,
-      subheadline: subheadline ? 'yes' : 'no'
+      subheadline: subheadline ? 'yes' : 'no',
+      post_format: isCarousel ? 'carousel' : 'single',
+      slide_count: slideTexts.length,
     });
 
     return new Response(JSON.stringify({
@@ -202,6 +221,8 @@ serve(async (req) => {
       cta,
       headline,
       subheadline,
+      post_format: isCarousel ? 'carousel' : 'single',
+      slide_texts: isCarousel ? slideTexts : undefined,
       source: contentSource,
       business_context_used: !!profile,
       content_length: finalPost.length
