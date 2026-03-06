@@ -319,15 +319,27 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
             {/* Section 3: Content Preferences */}
             <div>
               <h3 className="text-lg font-semibold text-blue-600 mb-4">Section 3: Your Content Preferences</h3>
-              <div>
-                <Label htmlFor="testimonials">Do you have any testimonials, client wins, or feedback you'd like us to include in your content?</Label>
-                <Textarea
-                  id="testimonials"
-                  placeholder="Paste a few short lines or key phrases from happy clients"
-                  value={formData.testimonials}
-                  onChange={(e) => handleInputChange('testimonials', e.target.value)}
-                  className="min-h-[120px]"
-                />
+              <div className="space-y-6">
+                <div>
+                  <Label htmlFor="testimonials">Do you have any testimonials, client wins, or feedback you'd like us to include in your content?</Label>
+                  <Textarea
+                    id="testimonials"
+                    placeholder="Paste a few short lines or key phrases from happy clients"
+                    value={formData.testimonials}
+                    onChange={(e) => handleInputChange('testimonials', e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                </div>
+
+                {/* Logo Upload */}
+                <div>
+                  <Label className="flex items-center gap-1.5">
+                    <ImageIcon size={14} />
+                    Upload your logo
+                  </Label>
+                  <p className="text-xs text-muted-foreground mb-2">Your logo will appear subtly on each post.</p>
+                  <LogoUpload />
+                </div>
               </div>
             </div>
           </div>
