@@ -69,8 +69,18 @@ const ContentCalendarPage = () => {
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState('Your Business');
   const [showBusinessForm, setShowBusinessForm] = useState(false);
+  const [showBrandSetup, setShowBrandSetup] = useState(false);
   const [profileInitial, setProfileInitial] = useState('B');
   const { credits, refetch: refetchCredits } = useUserCredits();
+  const { brandStyle, needsSetup: brandNeedsSetup, saveBrandStyle, loading: brandLoading } = useBrandStyle();
+
+  // Prompt brand setup on first visit if not configured
+  useEffect(() => {
+    if (!brandLoading && brandNeedsSetup) {
+      const timer = setTimeout(() => setShowBrandSetup(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [brandLoading, brandNeedsSetup]);
 
   const fetchConnectedAccounts = useCallback(async () => {
     try {
