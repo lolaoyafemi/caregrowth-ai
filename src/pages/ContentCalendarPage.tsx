@@ -528,6 +528,9 @@ const ContentCalendarPage = () => {
           <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", statusConfig.className)}>
             {statusConfig.label}
           </Badge>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            {post.post_format === 'carousel' ? 'Carousel' : 'Single'}
+          </Badge>
           {(post.status === 'failed' || post.status === 'skipped') && (
             <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-auto" onClick={(e) => { e.stopPropagation(); handleRetry(post); }} title="Retry publishing">
               <RotateCcw size={11} />
