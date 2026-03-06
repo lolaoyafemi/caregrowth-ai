@@ -233,6 +233,8 @@ const ContentCalendarPage = () => {
               scheduled_at: req.scheduledDate.toISOString(),
               status: 'scheduled',
               hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
+              headline: data?.headline || '',
+              subheadline: data?.subheadline || '',
             });
           } else {
             const req = batch[results.indexOf(result)];
