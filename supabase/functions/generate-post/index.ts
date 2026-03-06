@@ -83,7 +83,8 @@ serve(async (req) => {
       });
     }
     
-    const { postType, tone, platform, audience, subject } = requestBody || {};
+    const { postType, tone, platform, audience, subject, post_format } = requestBody || {};
+    const isCarousel = post_format === 'carousel';
     
     console.log('Generate post request:', {
       userId: authenticatedUserId,
@@ -91,7 +92,8 @@ serve(async (req) => {
       tone,
       platform,
       audience,
-      subject
+      subject,
+      post_format: post_format || 'single',
     });
 
     // Validate environment variables
