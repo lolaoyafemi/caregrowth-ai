@@ -298,10 +298,11 @@ const ContentCalendarPage = () => {
       }
 
       if (postsToInsert.length > 0) {
-          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, ...rest }) => ({
+          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, ...rest }) => ({
             ...rest,
             headline: hl || null,
             subheadline: shl || null,
+            slide_texts: st || null,
           }));
         const { data: inserted, error: insertError } = await supabase
           .from('content_posts')
@@ -320,6 +321,7 @@ const ContentCalendarPage = () => {
             status: p.status,
             error_message: null,
             batch_id: p.batch_id,
+            post_format: p.post_format || 'single',
           }));
 
           setPosts(prev => [...prev, ...newPosts].sort(
@@ -330,6 +332,8 @@ const ContentCalendarPage = () => {
             const p = inserted[i];
             const postHeadline = postsToInsert[i]?.headline || postsToInsert[i]?.hook_line || p.post_body.split('\n')[0]?.substring(0, 60) || 'Your Post';
             const postSubheadline = postsToInsert[i]?.subheadline || '';
+            const postFormat = postsToInsert[i]?.post_format || 'single';
+            const postSlideTexts = postsToInsert[i]?.slide_texts || null;
 
             supabase.functions.invoke('generate-post-image', {
               body: {
@@ -342,6 +346,8 @@ const ContentCalendarPage = () => {
                 brand_primary_color: brandStyle?.brand_primary_color,
                 brand_accent_color: brandStyle?.brand_accent_color,
                 brand_font_style: brandStyle?.brand_font_style,
+                post_format: postFormat,
+                slide_texts: postSlideTexts,
               },
             }).then(({ data: imgData }) => {
               if (imgData?.image_url) {
