@@ -253,7 +253,11 @@ const ContentCalendarPage = () => {
       }
 
       if (postsToInsert.length > 0) {
-        const dbPosts = postsToInsert.map(({ hook_line, ...rest }) => rest);
+          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, ...rest }) => ({
+            ...rest,
+            headline: hl || null,
+            subheadline: shl || null,
+          }));
         const { data: inserted, error: insertError } = await supabase
           .from('content_posts')
           .insert(dbPosts)
