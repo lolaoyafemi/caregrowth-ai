@@ -256,7 +256,7 @@ const ContentCalendarPage = () => {
         const results = await Promise.allSettled(
           batch.map(async (req) => {
             const { data, error } = await supabase.functions.invoke('generate-post', {
-              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: '' }
+              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: '', post_format: req.post_format }
             });
             if (error) throw error;
             return { req, data };
@@ -277,6 +277,8 @@ const ContentCalendarPage = () => {
               hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
               headline: data?.headline || '',
               subheadline: data?.subheadline || '',
+              post_format: req.post_format,
+              slide_texts: data?.slide_texts || null,
             });
           } else {
             const req = batch[results.indexOf(result)];
@@ -289,6 +291,7 @@ const ContentCalendarPage = () => {
               scheduled_at: req.scheduledDate.toISOString(),
               status: 'draft',
               hook_line: '',
+              post_format: req.post_format,
             });
           }
         }
