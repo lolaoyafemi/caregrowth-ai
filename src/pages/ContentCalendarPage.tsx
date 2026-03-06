@@ -22,7 +22,9 @@ import CalendarAnalytics from '@/components/calendar/CalendarAnalytics';
 import PlatformPreview from '@/components/calendar/PlatformPreview';
 import StartEngineWizard from '@/components/calendar/StartEngineWizard';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
-import { Building2 } from 'lucide-react';
+import BrandStyleSetup from '@/components/calendar/BrandStyleSetup';
+import { useBrandStyle } from '@/hooks/useBrandStyle';
+import { Building2, Palette } from 'lucide-react';
 
 const PLATFORM_CONFIG = {
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-blue-600' },
