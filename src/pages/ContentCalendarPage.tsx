@@ -50,6 +50,22 @@ interface ContentPost {
   status: string;
   error_message?: string | null;
   batch_id?: string | null;
+  post_format?: string;
+}
+
+// 60% single, 40% carousel distribution
+function assignPostFormats(count: number): ('single' | 'carousel')[] {
+  const carouselCount = Math.round(count * 0.4);
+  const formats: ('single' | 'carousel')[] = [];
+  for (let i = 0; i < count; i++) {
+    formats.push(i < (count - carouselCount) ? 'single' : 'carousel');
+  }
+  // Shuffle to spread formats evenly
+  for (let i = formats.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [formats[i], formats[j]] = [formats[j], formats[i]];
+  }
+  return formats;
 }
 
 const ContentCalendarPage = () => {
