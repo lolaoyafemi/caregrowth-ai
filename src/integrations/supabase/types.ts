@@ -160,6 +160,7 @@ export type Database = {
           batch_id: string | null
           created_at: string
           error_message: string | null
+          headline: string | null
           id: string
           image_url: string | null
           platform: string
@@ -168,6 +169,7 @@ export type Database = {
           published_at: string | null
           scheduled_at: string
           status: string
+          subheadline: string | null
           updated_at: string
           user_id: string
         }
@@ -175,6 +177,7 @@ export type Database = {
           batch_id?: string | null
           created_at?: string
           error_message?: string | null
+          headline?: string | null
           id?: string
           image_url?: string | null
           platform: string
@@ -183,6 +186,7 @@ export type Database = {
           published_at?: string | null
           scheduled_at: string
           status?: string
+          subheadline?: string | null
           updated_at?: string
           user_id: string
         }
@@ -190,6 +194,7 @@ export type Database = {
           batch_id?: string | null
           created_at?: string
           error_message?: string | null
+          headline?: string | null
           id?: string
           image_url?: string | null
           platform?: string
@@ -198,6 +203,7 @@ export type Database = {
           published_at?: string | null
           scheduled_at?: string
           status?: string
+          subheadline?: string | null
           updated_at?: string
           user_id?: string
         }
