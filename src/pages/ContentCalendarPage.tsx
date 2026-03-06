@@ -50,6 +50,22 @@ interface ContentPost {
   status: string;
   error_message?: string | null;
   batch_id?: string | null;
+  post_format?: string;
+}
+
+// 60% single, 40% carousel distribution
+function assignPostFormats(count: number): ('single' | 'carousel')[] {
+  const carouselCount = Math.round(count * 0.4);
+  const formats: ('single' | 'carousel')[] = [];
+  for (let i = 0; i < count; i++) {
+    formats.push(i < (count - carouselCount) ? 'single' : 'carousel');
+  }
+  // Shuffle to spread formats evenly
+  for (let i = formats.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [formats[i], formats[j]] = [formats[j], formats[i]];
+  }
+  return formats;
 }
 
 const ContentCalendarPage = () => {
@@ -127,6 +143,7 @@ const ContentCalendarPage = () => {
         status: p.status,
         error_message: p.error_message || null,
         batch_id: p.batch_id,
+        post_format: p.post_format || 'single',
       }));
 
       setPosts(mapped);
@@ -201,7 +218,19 @@ const ContentCalendarPage = () => {
       const tones = ['professional', 'conversational', 'enthusiastic', 'authoritative', 'humorous'];
 
       // Build all generation requests upfront
-      const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date }[] = [];
+      const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date; post_format: 'single' | 'carousel' }[] = [];
+
+      // Calculate total posts per platform and assign formats
+      const postsPerPlatform = days * frequency;
+      const platformFormats: Record<string, ('single' | 'carousel')[]> = {};
+      for (const platform of wizPlatforms) {
+        platformFormats[platform] = assignPostFormats(postsPerPlatform);
+      }
+
+      const platformCounters: Record<string, number> = {};
+      for (const platform of wizPlatforms) {
+        platformCounters[platform] = 0;
+      }
 
       for (let day = 0; day < days; day++) {
         for (let freq = 0; freq < frequency; freq++) {
@@ -212,7 +241,8 @@ const ContentCalendarPage = () => {
           for (const platform of wizPlatforms) {
             const category = categories[(day * frequency + freq) % categories.length];
             const tone = tones[(day * frequency + freq) % tones.length];
-            generationRequests.push({ platform, category, tone, scheduledDate: new Date(scheduledDate) });
+            const fmt = platformFormats[platform][platformCounters[platform]++];
+            generationRequests.push({ platform, category, tone, scheduledDate: new Date(scheduledDate), post_format: fmt });
           }
         }
       }
@@ -226,7 +256,7 @@ const ContentCalendarPage = () => {
         const results = await Promise.allSettled(
           batch.map(async (req) => {
             const { data, error } = await supabase.functions.invoke('generate-post', {
-              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: '' }
+              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: '', post_format: req.post_format }
             });
             if (error) throw error;
             return { req, data };
@@ -247,6 +277,8 @@ const ContentCalendarPage = () => {
               hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
               headline: data?.headline || '',
               subheadline: data?.subheadline || '',
+              post_format: req.post_format,
+              slide_texts: data?.slide_texts || null,
             });
           } else {
             const req = batch[results.indexOf(result)];
@@ -259,16 +291,18 @@ const ContentCalendarPage = () => {
               scheduled_at: req.scheduledDate.toISOString(),
               status: 'draft',
               hook_line: '',
+              post_format: req.post_format,
             });
           }
         }
       }
 
       if (postsToInsert.length > 0) {
-          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, ...rest }) => ({
+          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, ...rest }) => ({
             ...rest,
             headline: hl || null,
             subheadline: shl || null,
+            slide_texts: st || null,
           }));
         const { data: inserted, error: insertError } = await supabase
           .from('content_posts')
@@ -287,6 +321,7 @@ const ContentCalendarPage = () => {
             status: p.status,
             error_message: null,
             batch_id: p.batch_id,
+            post_format: p.post_format || 'single',
           }));
 
           setPosts(prev => [...prev, ...newPosts].sort(
@@ -297,6 +332,8 @@ const ContentCalendarPage = () => {
             const p = inserted[i];
             const postHeadline = postsToInsert[i]?.headline || postsToInsert[i]?.hook_line || p.post_body.split('\n')[0]?.substring(0, 60) || 'Your Post';
             const postSubheadline = postsToInsert[i]?.subheadline || '';
+            const postFormat = postsToInsert[i]?.post_format || 'single';
+            const postSlideTexts = postsToInsert[i]?.slide_texts || null;
 
             supabase.functions.invoke('generate-post-image', {
               body: {
@@ -309,6 +346,8 @@ const ContentCalendarPage = () => {
                 brand_primary_color: brandStyle?.brand_primary_color,
                 brand_accent_color: brandStyle?.brand_accent_color,
                 brand_font_style: brandStyle?.brand_font_style,
+                post_format: postFormat,
+                slide_texts: postSlideTexts,
               },
             }).then(({ data: imgData }) => {
               if (imgData?.image_url) {
@@ -488,6 +527,9 @@ const ContentCalendarPage = () => {
           </div>
           <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", statusConfig.className)}>
             {statusConfig.label}
+          </Badge>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            {post.post_format === 'carousel' ? 'Carousel' : 'Single'}
           </Badge>
           {(post.status === 'failed' || post.status === 'skipped') && (
             <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-auto" onClick={(e) => { e.stopPropagation(); handleRetry(post); }} title="Retry publishing">

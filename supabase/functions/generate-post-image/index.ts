@@ -116,6 +116,70 @@ function renderSvg(
 </svg>`;
 }
 
+// ─── Carousel slide SVG (with slide number indicator) ─────────────────
+
+function renderCarouselSlide(
+  text: string,
+  slideIndex: number,
+  totalSlides: number,
+  businessName: string,
+  template: TemplateName,
+  brand: BrandColors,
+  isLastSlide: boolean,
+): string {
+  const W = 1080, H = 1080;
+  const font = brand.font;
+  const lines = wrapText(text, isLastSlide ? 28 : 24);
+  const fs = lines.length > 3 ? 44 : 54;
+  const totalTextHeight = lines.length * (fs + 14);
+  const startY = Math.max(300, (H / 2) - (totalTextHeight / 2) + fs);
+
+  // Slide indicator dots
+  const dotsSvg = Array.from({ length: totalSlides }, (_, i) =>
+    `<circle cx="${540 - ((totalSlides - 1) * 12) + i * 24}" cy="${H - 50}" r="5" fill="${i === slideIndex ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)'}" />`
+  ).join('\n  ');
+
+  if (template === 'quote_card') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="${brand.primary}"/>
+    <stop offset="100%" stop-color="${brand.accent}"/>
+  </linearGradient></defs>
+  <rect width="${W}" height="${H}" fill="url(#bg)"/>
+  ${slideIndex === 0 ? `<text x="100" y="200" font-family="${font}" font-size="160" fill="rgba(255,255,255,0.1)" font-weight="bold">"</text>` : ''}
+  ${lines.map((l, i) =>
+    `<text x="540" y="${startY + i * (fs + 14)}" font-family="${font}" font-size="${fs}" font-weight="${isLastSlide ? 'bold' : 'normal'}" fill="white" text-anchor="middle">${escapeXml(l)}</text>`
+  ).join('\n  ')}
+  <text x="540" y="${H - 90}" font-family="${font}" font-size="20" fill="rgba(255,255,255,0.5)" text-anchor="middle" letter-spacing="3">${escapeXml(businessName.toUpperCase())}</text>
+  ${dotsSvg}
+</svg>`;
+  }
+
+  if (template === 'minimalist') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="#fafafa"/>
+  <rect x="100" y="100" width="${60 + slideIndex * 20}" height="5" rx="3" fill="${brand.primary}"/>
+  ${lines.map((l, i) =>
+    `<text x="100" y="${startY + i * (fs + 12)}" font-family="${font}" font-size="${fs}" font-weight="${isLastSlide ? 'bold' : 'normal'}" fill="#111827">${escapeXml(l)}</text>`
+  ).join('\n  ')}
+  <text x="100" y="${H - 90}" font-family="${font}" font-size="20" fill="#9ca3af" letter-spacing="2">${escapeXml(businessName.toUpperCase())}</text>
+  ${dotsSvg.replace(/rgba\(255,255,255,0\.9\)/g, brand.primary).replace(/rgba\(255,255,255,0\.3\)/g, '#d1d5db')}
+</svg>`;
+  }
+
+  // dark_mode
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="#0a0a0a"/>
+  <circle cx="${800 + slideIndex * 50}" cy="200" r="250" fill="${brand.accent}" opacity="0.06"/>
+  <rect x="100" y="140" width="${40 + slideIndex * 15}" height="5" rx="3" fill="${brand.primary}"/>
+  ${lines.map((l, i) =>
+    `<text x="100" y="${startY + i * (fs + 14)}" font-family="${font}" font-size="${fs}" font-weight="${isLastSlide ? 'bold' : 'normal'}" fill="white">${escapeXml(l)}</text>`
+  ).join('\n  ')}
+  <text x="100" y="${H - 90}" font-family="${font}" font-size="20" fill="rgba(255,255,255,0.35)" letter-spacing="3">${escapeXml(businessName.toUpperCase())}</text>
+  ${dotsSvg}
+</svg>`;
+}
+
 async function svgToPng(svg: string): Promise<Uint8Array> {
   const { Resvg, initWasm } = await import('https://esm.sh/@aspect-dev/resvg-wasm@1.0.4');
   const wasmResponse = await fetch('https://esm.sh/@aspect-dev/resvg-wasm@1.0.4/resvg.wasm');
@@ -152,15 +216,17 @@ serve(async (req) => {
 
     const body = await req.json();
     const { headline, subheadline, business_name, post_id, platform, template,
-            brand_primary_color, brand_accent_color, brand_font_style } = body;
+            brand_primary_color, brand_accent_color, brand_font_style,
+            post_format, slide_texts } = body;
 
+    const isCarousel = post_format === 'carousel' && Array.isArray(slide_texts) && slide_texts.length > 0;
     const finalHeadline = headline || 'Your Post';
 
     if (!post_id) {
       return new Response(JSON.stringify({ error: 'Missing required field: post_id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Resolve brand colors: use request params, fall back to DB brand_styles, then defaults
+    // Resolve brand colors
     let brand: BrandColors = { ...DEFAULT_BRAND };
 
     if (brand_primary_color || brand_accent_color || brand_font_style) {
@@ -170,7 +236,6 @@ serve(async (req) => {
         font: FONT_MAP[brand_font_style] || DEFAULT_BRAND.font,
       };
     } else {
-      // Try fetching from brand_styles table
       const { data: styleData } = await supabase
         .from('brand_styles')
         .select('brand_primary_color, brand_accent_color, brand_font_style')
@@ -189,6 +254,60 @@ serve(async (req) => {
     const selectedTemplate: TemplateName = template || selectTemplate(platform || 'instagram');
     const businessLabel = business_name || 'Your Business';
 
+    if (isCarousel) {
+      // ── Carousel: render multiple slides ──
+      console.log(`Rendering carousel (${slide_texts.length} slides) for post ${post_id}`);
+      const imageUrls: string[] = [];
+
+      for (let i = 0; i < slide_texts.length; i++) {
+        const isLast = i === slide_texts.length - 1;
+        const svg = renderCarouselSlide(
+          slide_texts[i], i, slide_texts.length, businessLabel,
+          selectedTemplate, brand, isLast,
+        );
+
+        let pngData: Uint8Array;
+        try {
+          pngData = await svgToPng(svg);
+        } catch (renderError) {
+          console.error(`Slide ${i} render failed:`, renderError);
+          pngData = new TextEncoder().encode(svg);
+        }
+
+        const filePath = `${user.id}/${post_id}-slide-${i}-${Date.now()}.png`;
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(filePath, pngData, { contentType: 'image/png', upsert: true });
+
+        if (uploadError) throw new Error(`Upload slide ${i} failed: ${uploadError.message}`);
+
+        const { data: urlData } = supabase.storage.from('post-images').getPublicUrl(filePath);
+        imageUrls.push(urlData.publicUrl);
+      }
+
+      // Store first slide as main image_url, all URLs in slide_texts column
+      const primaryImage = imageUrls[0];
+      await supabase
+        .from('content_posts')
+        .update({
+          image_url: primaryImage,
+          headline: finalHeadline,
+          subheadline: subheadline || null,
+        })
+        .eq('id', post_id);
+
+      return new Response(JSON.stringify({
+        image_url: primaryImage,
+        image_urls: imageUrls,
+        template: selectedTemplate,
+        post_format: 'carousel',
+        slide_count: imageUrls.length,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Single image ──
     console.log(`Rendering "${selectedTemplate}" for post ${post_id}, brand: ${brand.primary}/${brand.accent}`);
 
     const svg = renderSvg(finalHeadline, subheadline || '', businessLabel, selectedTemplate, brand);
@@ -216,7 +335,7 @@ serve(async (req) => {
       .update({ image_url: publicUrl, headline: finalHeadline, subheadline: subheadline || null })
       .eq('id', post_id);
 
-    return new Response(JSON.stringify({ image_url: publicUrl, template: selectedTemplate }), {
+    return new Response(JSON.stringify({ image_url: publicUrl, template: selectedTemplate, post_format: 'single' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
