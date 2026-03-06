@@ -31,6 +31,74 @@ interface UserProfile {
   updated_at: string;
 }
 
+const LogoUpload = () => {
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user?.id) return;
+      const { data } = await supabase
+        .from('brand_styles')
+        .select('optional_logo_url')
+        .eq('user_id', userData.user.id)
+        .maybeSingle();
+      if (data?.optional_logo_url) setLogoUrl(data.optional_logo_url);
+    })();
+  }, []);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user?.id) throw new Error('Not authenticated');
+      const ext = file.name.split('.').pop();
+      const path = `${userData.user.id}/logo-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('post-images')
+        .upload(path, file, { contentType: file.type, upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from('post-images').getPublicUrl(path);
+      const url = urlData.publicUrl;
+      // Save to brand_styles
+      await supabase
+        .from('brand_styles')
+        .upsert({
+          user_id: userData.user.id,
+          optional_logo_url: url,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+      setLogoUrl(url);
+      toast.success('Logo uploaded!');
+    } catch (err: any) {
+      toast.error('Upload failed: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-4">
+      {logoUrl ? (
+        <img src={logoUrl} alt="Logo" className="w-14 h-14 rounded-lg object-contain border border-border bg-muted p-1" />
+      ) : (
+        <div className="w-14 h-14 rounded-lg border-2 border-dashed border-border flex items-center justify-center">
+          <Upload size={18} className="text-muted-foreground" />
+        </div>
+      )}
+      <label className="cursor-pointer">
+        <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
+        <span className="text-sm text-primary hover:underline">
+          {uploading ? 'Uploading…' : logoUrl ? 'Change logo' : 'Choose file'}
+        </span>
+      </label>
+    </div>
+  );
+};
+
 const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
   const [formData, setFormData] = useState({
     businessName: '',
