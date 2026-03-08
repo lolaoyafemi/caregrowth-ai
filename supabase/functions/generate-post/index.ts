@@ -131,7 +131,17 @@ serve(async (req) => {
     try {
       contentMemory = await getContentMemory(supabase, authenticatedUserId, 50);
       memoryContext = buildContentMemoryContext(contentMemory);
-      console.log(`📝 Content Memory loaded: ${contentMemory.length} recent posts`);
+      // Fetch full posts for performance analysis
+      const { data: perfPosts } = await supabase
+        .from('content_posts')
+        .select('likes, comments, shares, saves, impressions, content_anchor, demand_moment_type, topic_keywords, post_format, status')
+        .eq('user_id', authenticatedUserId)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      const performanceCtx = buildPerformanceContext(contentMemory, perfPosts || []);
+      memoryContext += performanceCtx;
+      console.log(`📝 Content Memory loaded: ${contentMemory.length} recent posts, performance insights added`);
     } catch (memoryError) {
       console.error('Error loading content memory:', (memoryError as Error).message);
     }
