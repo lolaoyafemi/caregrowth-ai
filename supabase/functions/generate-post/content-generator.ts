@@ -716,7 +716,7 @@ export const parseGeneratedContent = (content: string): { hook: string; body: st
   const ctaMatch = content.match(/(?:^|\n)\s*(?:\*{0,2})?cta:\s*(?:\*{0,2})?\s*(.*?)$/is);
   
   if (hookMatch) hook = hookMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
-  if (bodyMatch) body = bodyMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  if (bodyMatch) body = bodyMatch[1].trim().replace(/\n{3,}/g, '\n\n').replace(/[ \t]+/g, ' ');
   if (ctaMatch) cta = ctaMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
   
   // If structured parsing failed, try fallback approach
