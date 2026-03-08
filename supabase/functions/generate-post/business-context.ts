@@ -288,6 +288,54 @@ ${anchor.instruction}
 IMPORTANT: Ground this post in the caregiving reality above. Reference the real emotions and situations — not generic marketing language. The reader should think "they understand what I\'m going through."`;
 }
 
+/**
+ * Fetch the agency profile for a user (via their agency membership).
+ */
+export const getAgencyProfile = async (supabase: any, userId: string): Promise<any | null> => {
+  // First find the user's agency
+  const { data: agency } = await supabase
+    .from('agencies')
+    .select('id')
+    .eq('admin_user_id', userId)
+    .maybeSingle();
+
+  if (!agency) return null;
+
+  const { data: agencyProfile } = await supabase
+    .from('agency_profiles')
+    .select('*')
+    .eq('agency_id', agency.id)
+    .maybeSingle();
+
+  return agencyProfile;
+};
+
+/**
+ * Build agency context string for AI prompt injection.
+ */
+export const buildAgencyContext = (agencyProfile: any): string => {
+  if (!agencyProfile) return '';
+
+  const focusAreas = Array.isArray(agencyProfile.caregiving_focus)
+    ? agencyProfile.caregiving_focus.join(', ')
+    : 'caregiver burnout, hospital discharge stress, dementia care, loneliness, family guilt, respite care';
+
+  const services = Array.isArray(agencyProfile.services_offered)
+    ? agencyProfile.services_offered.join(', ')
+    : agencyProfile.services_offered || '';
+
+  return `
+AGENCY CONTEXT:
+Agency Name: ${agencyProfile.agency_name}
+Service Area: ${agencyProfile.service_area || 'Local community'}
+Services Offered: ${services || 'Home care services'}
+Ideal Client: ${agencyProfile.ideal_client_type || 'Families needing care'}
+Tone Preference: ${agencyProfile.tone_preference || 'professional'}
+Caregiving Focus Areas: ${focusAreas}
+
+IMPORTANT: Use the agency name, service area, and caregiving focus areas to make content specific and authentic. Reference the real caregiving challenges listed above.`;
+};
+
 export const buildBusinessContext = (profile: any, audience: string): string => {
   const targetAudience = audience || (profile?.ideal_client || 'families needing care');
   

@@ -38,6 +38,53 @@ export type Database = {
         }
         Relationships: []
       }
+      agency_profiles: {
+        Row: {
+          agency_id: string
+          agency_name: string
+          caregiving_focus: string[] | null
+          created_at: string
+          id: string
+          ideal_client_type: string | null
+          service_area: string | null
+          services_offered: string[] | null
+          tone_preference: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          agency_name: string
+          caregiving_focus?: string[] | null
+          created_at?: string
+          id?: string
+          ideal_client_type?: string | null
+          service_area?: string | null
+          services_offered?: string[] | null
+          tone_preference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          agency_name?: string
+          caregiving_focus?: string[] | null
+          created_at?: string
+          id?: string
+          ideal_client_type?: string | null
+          service_area?: string | null
+          services_offered?: string[] | null
+          tone_preference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_profiles_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: true
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
