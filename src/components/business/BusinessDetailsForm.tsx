@@ -295,6 +295,16 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                     onChange={(e) => handleInputChange('location', e.target.value)}
                   />
                 </div>
+
+                <div>
+                  <Label htmlFor="serviceArea">What areas do you serve?</Label>
+                  <Input
+                    id="serviceArea"
+                    placeholder="e.g., Greater Houston, Dallas-Fort Worth metro"
+                    value={formData.serviceArea}
+                    onChange={(e) => handleInputChange('serviceArea', e.target.value)}
+                  />
+                </div>
                 
                 <div className="md:col-span-2">
                   <Label htmlFor="coreService">What core service do you offer?</Label>
