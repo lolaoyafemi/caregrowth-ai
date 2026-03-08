@@ -176,6 +176,7 @@ export const buildPerformanceContext = (memory: ContentMemoryEntry[], posts: any
   ctx += '- Use these patterns as guidance, not strict rules — variety still matters.\n';
 
   return ctx;
+};
 
 export const getUserProfile = async (supabase: any, userId: string) => {
   const { data: profile, error: profileError } = await supabase
