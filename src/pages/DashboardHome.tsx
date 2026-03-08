@@ -18,6 +18,7 @@ import CreditExpirationWarning from '@/components/dashboard/CreditExpirationWarn
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import StrategyFeed from '@/components/dashboard/StrategyFeed';
 
 const DashboardHome = () => {
   const { user } = useUser();
@@ -193,6 +194,9 @@ const DashboardHome = () => {
       {/* Credit Expiration Warning */}
       {isMainAdmin && <CreditExpirationWarning />}
 
+
+      {/* Strategy Feed */}
+      <StrategyFeed />
 
       <h2 className="text-2xl font-semibold mb-6">AI Solutions</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
