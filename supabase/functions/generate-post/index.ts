@@ -5,7 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 import { generateContentWithAI, generateAllPlatformCaptions } from './content-generator.ts';
 import { buildBusinessContext, buildAgencyContext, getAgencyProfile, personalizeContent, buildCaregivingContext, selectContentAnchor, selectEngagementHook, selectDemandMoment } from './business-context.ts';
-import { getUserProfile, logPostToHistory, getContentMemory, buildContentMemoryContext, extractTopicKeywords } from './database-service.ts';
+import { getUserProfile, logPostToHistory, getContentMemory, buildContentMemoryContext, buildPerformanceContext, extractTopicKeywords } from './database-service.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
