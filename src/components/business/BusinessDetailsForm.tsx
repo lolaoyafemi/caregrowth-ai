@@ -103,6 +103,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
   const [formData, setFormData] = useState({
     businessName: '',
     location: '',
+    serviceArea: '',
     coreService: '',
     idealClient: '',
     mainOffer: '',
@@ -111,7 +112,8 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
     audienceProblem: '',
     objections: '',
     differentiator: '',
-    testimonials: ''
+    testimonials: '',
+    tonePreference: 'warm',
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -148,6 +150,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
         setFormData({
           businessName: typedProfile.business_name || '',
           location: typedProfile.location || '',
+          serviceArea: (typedProfile as any).service_area || '',
           coreService: typedProfile.core_service || '',
           idealClient: typedProfile.ideal_client || '',
           mainOffer: typedProfile.main_offer || '',
@@ -156,7 +159,8 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
           audienceProblem: typedProfile.audience_problem || '',
           objections: typedProfile.objections?.join(', ') || '',
           differentiator: typedProfile.differentiator || '',
-          testimonials: typedProfile.testimonial || ''
+          testimonials: typedProfile.testimonial || '',
+          tonePreference: (typedProfile as any).tone_preference || 'warm',
         });
         console.log('Existing profile loaded successfully');
       } else {
@@ -190,8 +194,9 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
         user_id: user.id,
         business_name: formData.businessName,
         location: formData.location,
+        service_area: formData.serviceArea,
         core_service: formData.coreService,
-        services: formData.coreService, // Keep for backward compatibility
+        services: formData.coreService,
         ideal_client: formData.idealClient,
         main_offer: formData.mainOffer,
         big_promise: formData.bigPromise,
@@ -201,6 +206,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
         objections: formData.objections ? formData.objections.split(',').map(item => item.trim()) : [],
         differentiator: formData.differentiator,
         testimonial: formData.testimonials,
+        tone_preference: formData.tonePreference,
         updated_at: new Date().toISOString()
       };
 
@@ -287,6 +293,16 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
                     placeholder="City and state"
                     value={formData.location}
                     onChange={(e) => handleInputChange('location', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="serviceArea">What areas do you serve?</Label>
+                  <Input
+                    id="serviceArea"
+                    placeholder="e.g., Greater Houston, Dallas-Fort Worth metro"
+                    value={formData.serviceArea}
+                    onChange={(e) => handleInputChange('serviceArea', e.target.value)}
                   />
                 </div>
                 
@@ -388,6 +404,23 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
             <div>
               <h3 className="text-lg font-semibold text-blue-600 mb-4">Section 3: Your Content Preferences</h3>
               <div className="space-y-6">
+                <div>
+                  <Label htmlFor="tonePreference">What tone best describes your brand voice?</Label>
+                  <select
+                    id="tonePreference"
+                    value={formData.tonePreference}
+                    onChange={(e) => handleInputChange('tonePreference', e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="warm">Warm & Empathetic</option>
+                    <option value="professional">Professional & Polished</option>
+                    <option value="conversational">Conversational & Friendly</option>
+                    <option value="authoritative">Authoritative & Expert</option>
+                    <option value="enthusiastic">Enthusiastic & Uplifting</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">This sets the default voice for all generated content.</p>
+                </div>
+
                 <div>
                   <Label htmlFor="testimonials">Do you have any testimonials, client wins, or feedback you'd like us to include in your content?</Label>
                   <Textarea

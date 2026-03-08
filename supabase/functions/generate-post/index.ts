@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 import { generateContentWithAI } from './content-generator.ts';
-import { buildBusinessContext, personalizeContent } from './business-context.ts';
+import { buildBusinessContext, personalizeContent, buildCaregivingContext } from './business-context.ts';
 import { getUserProfile, logPostToHistory } from './database-service.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -83,7 +83,7 @@ serve(async (req) => {
       });
     }
     
-    const { postType, tone, platform, audience, subject, post_format } = requestBody || {};
+    const { postType, tone, platform, audience, subject, post_format, post_index } = requestBody || {};
     const isCarousel = post_format === 'carousel';
     
     console.log('Generate post request:', {
@@ -143,15 +143,19 @@ serve(async (req) => {
     let slideTexts: string[] = [];
 
     try {
-      console.log('🤖 Generating content with database prompt integration');
+      // Build caregiving context based on post index for variety
+      const caregivingContext = buildCaregivingContext(post_index || 0);
+      const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext;
+
+      console.log('🤖 Generating content with database prompt integration + caregiving context');
       const generatedContent = await generateContentWithAI({
         userId: authenticatedUserId,
         postType,
-        tone,
+        tone: profile?.tone_preference || tone,
         platform,
         audience: targetAudience,
         subject,
-        businessContext: typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext),
+        businessContext: enrichedBusinessContext,
         openAIApiKey
       });
 

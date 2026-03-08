@@ -1329,11 +1329,13 @@ export type Database = {
           preferred_post_time: string | null
           reschedule_count: number | null
           role: string | null
+          service_area: string | null
           services: string | null
           status: string | null
           subscription_id: string | null
           testimonial: string | null
           timezone: string | null
+          tone_preference: string | null
           updated_at: string
           user_id: string
         }
@@ -1360,11 +1362,13 @@ export type Database = {
           preferred_post_time?: string | null
           reschedule_count?: number | null
           role?: string | null
+          service_area?: string | null
           services?: string | null
           status?: string | null
           subscription_id?: string | null
           testimonial?: string | null
           timezone?: string | null
+          tone_preference?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1391,11 +1395,13 @@ export type Database = {
           preferred_post_time?: string | null
           reschedule_count?: number | null
           role?: string | null
+          service_area?: string | null
           services?: string | null
           status?: string | null
           subscription_id?: string | null
           testimonial?: string | null
           timezone?: string | null
+          tone_preference?: string | null
           updated_at?: string
           user_id?: string
         }

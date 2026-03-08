@@ -294,9 +294,10 @@ const ContentCalendarPage = () => {
       for (let i = 0; i < generationRequests.length; i += BATCH_SIZE) {
         const batch = generationRequests.slice(i, i + BATCH_SIZE);
         const results = await Promise.allSettled(
-          batch.map(async (req) => {
+          batch.map(async (req, batchIdx) => {
+            const globalIdx = i + batchIdx;
             const { data, error } = await supabase.functions.invoke('generate-post', {
-              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: '', post_format: req.post_format }
+              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: '', post_format: req.post_format, post_index: globalIdx }
             });
             if (error) throw error;
             return { req, data };
