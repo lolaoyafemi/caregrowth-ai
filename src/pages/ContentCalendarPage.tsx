@@ -319,6 +319,7 @@ const ContentCalendarPage = () => {
               subheadline: data?.subheadline || '',
               post_format: req.post_format,
               slide_texts: data?.slide_texts || null,
+              _template: req.template,
             });
           } else {
             const req = batch[results.indexOf(result)];
