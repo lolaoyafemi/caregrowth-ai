@@ -147,6 +147,18 @@ serve(async (req) => {
       businessContext = { business_name: 'Your Business', core_service: 'service' };
     }
 
+    // Fetch agency profile and build agency context
+    let agencyContext = '';
+    try {
+      const agencyProfile = await getAgencyProfile(supabase, authenticatedUserId);
+      if (agencyProfile) {
+        agencyContext = buildAgencyContext(agencyProfile);
+        console.log('🏢 Agency context loaded for:', agencyProfile.agency_name);
+      }
+    } catch (agencyError) {
+      console.error('Error loading agency context:', (agencyError as Error).message);
+    }
+
     let hook = '', body = '', cta = '';
     let contentSource = '';
     let slideTexts: string[] = [];
@@ -156,7 +168,7 @@ serve(async (req) => {
     try {
       // Build caregiving context and select content anchor
       const caregivingContext = buildCaregivingContext(postIdx);
-      const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext + memoryContext;
+      const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + agencyContext + '\n' + caregivingContext + memoryContext;
 
       console.log('🤖 Generating content with database prompt integration + caregiving context + content memory');
       const generatedContent = await generateContentWithAI({
