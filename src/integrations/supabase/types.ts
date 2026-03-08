@@ -203,17 +203,21 @@ export type Database = {
           engagement_hook: string | null
           error_message: string | null
           headline: string | null
+          hook: string | null
           id: string
           image_url: string | null
           platform: string
           platform_post_id: string | null
           post_body: string
           post_format: string
+          post_type: string | null
           published_at: string | null
           scheduled_at: string
           slide_texts: string[] | null
           status: string
           subheadline: string | null
+          template_style: string | null
+          topic_keywords: string[] | null
           updated_at: string
           user_id: string
         }
@@ -225,17 +229,21 @@ export type Database = {
           engagement_hook?: string | null
           error_message?: string | null
           headline?: string | null
+          hook?: string | null
           id?: string
           image_url?: string | null
           platform: string
           platform_post_id?: string | null
           post_body: string
           post_format?: string
+          post_type?: string | null
           published_at?: string | null
           scheduled_at: string
           slide_texts?: string[] | null
           status?: string
           subheadline?: string | null
+          template_style?: string | null
+          topic_keywords?: string[] | null
           updated_at?: string
           user_id: string
         }
@@ -247,17 +255,21 @@ export type Database = {
           engagement_hook?: string | null
           error_message?: string | null
           headline?: string | null
+          hook?: string | null
           id?: string
           image_url?: string | null
           platform?: string
           platform_post_id?: string | null
           post_body?: string
           post_format?: string
+          post_type?: string | null
           published_at?: string | null
           scheduled_at?: string
           slide_texts?: string[] | null
           status?: string
           subheadline?: string | null
+          template_style?: string | null
+          topic_keywords?: string[] | null
           updated_at?: string
           user_id?: string
         }
