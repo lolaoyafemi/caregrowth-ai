@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 import { generateContentWithAI } from './content-generator.ts';
-import { buildBusinessContext, personalizeContent, buildCaregivingContext, selectContentAnchor } from './business-context.ts';
+import { buildBusinessContext, personalizeContent, buildCaregivingContext, selectContentAnchor, selectEngagementHook } from './business-context.ts';
 import { getUserProfile, logPostToHistory } from './database-service.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');

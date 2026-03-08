@@ -124,6 +124,84 @@ export const CONTENT_ANCHORS = [
 
 export type ContentAnchor = typeof CONTENT_ANCHORS[number]['anchor'];
 
+// ─── Engagement Hooks ────────────────────────────────────────────────
+// Short questions or reflective prompts to encourage comments (~40% of posts)
+
+export const ENGAGEMENT_HOOKS = [
+  {
+    type: 'reflection',
+    label: 'Reflection Hook',
+    examples: [
+      'Does this sound familiar in your family?',
+      'Have you ever felt this way as a caregiver?',
+      'Does this remind you of someone you love?',
+    ],
+  },
+  {
+    type: 'experience',
+    label: 'Experience Hook',
+    examples: [
+      'Have you ever seen someone go through this?',
+      'What was your experience the first time you needed help?',
+      'Has your family faced a moment like this?',
+    ],
+  },
+  {
+    type: 'opinion',
+    label: 'Opinion Hook',
+    examples: [
+      'Do you think families wait too long before asking for help?',
+      'What do you wish more people understood about caregiving?',
+      'Do you agree that asking for help is a sign of strength?',
+    ],
+  },
+  {
+    type: 'awareness',
+    label: 'Awareness Hook',
+    examples: [
+      'What signs helped you realize extra support might help?',
+      'Did you know this about home care?',
+      'What was the first sign that told you something had changed?',
+    ],
+  },
+  {
+    type: 'soft_response',
+    label: 'Soft Response Hook',
+    examples: [
+      'If this resonates with you, you\'re not alone.',
+      'Tag someone who needs to hear this today.',
+      'Save this for when you need a reminder.',
+    ],
+  },
+] as const;
+
+/**
+ * Determine if a post should include an engagement hook (~40% chance)
+ * and select one aligned with the content anchor.
+ */
+export function selectEngagementHook(postIndex: number, contentAnchor: string): { type: string; prompt: string } | null {
+  // Use a deterministic pseudo-random based on postIndex to get ~40%
+  const shouldInclude = ((postIndex * 7 + 3) % 10) < 4; // 0,1,2,3 → true (40%)
+  if (!shouldInclude) return null;
+
+  // Map anchors to preferred hook types for contextual alignment
+  const anchorHookMap: Record<string, string[]> = {
+    family_reality: ['reflection', 'experience'],
+    education: ['awareness', 'opinion'],
+    reassurance: ['soft_response', 'reflection'],
+    myth_vs_truth: ['opinion', 'awareness'],
+    behind_the_scenes: ['experience', 'reflection'],
+    soft_invitation: ['soft_response', 'experience'],
+  };
+
+  const preferredTypes = anchorHookMap[contentAnchor] || ['reflection', 'soft_response'];
+  const selectedType = preferredTypes[postIndex % preferredTypes.length];
+  const hookDef = ENGAGEMENT_HOOKS.find(h => h.type === selectedType) || ENGAGEMENT_HOOKS[0];
+  const example = hookDef.examples[postIndex % hookDef.examples.length];
+
+  return { type: hookDef.type, prompt: example };
+}
+
 /**
  * Select a content anchor for the current post based on index.
  */
