@@ -274,7 +274,7 @@ async function publishToLinkedIn(account: any, post: any): Promise<string | null
     lifecycleState: 'PUBLISHED',
     specificContent: {
       'com.linkedin.ugc.ShareContent': {
-        shareCommentary: { text: post.post_body },
+        shareCommentary: { text: post.caption_linkedin || post.post_body },
         shareMediaCategory: post.image_url ? 'IMAGE' : 'NONE',
       },
     },
