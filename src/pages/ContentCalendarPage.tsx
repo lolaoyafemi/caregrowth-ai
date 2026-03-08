@@ -194,6 +194,21 @@ const ContentCalendarPage = () => {
         error_message: p.error_message || null,
         batch_id: p.batch_id,
         post_format: p.post_format || 'single',
+        core_message: p.core_message || null,
+        caption_instagram: p.caption_instagram || null,
+        caption_linkedin: p.caption_linkedin || null,
+        caption_facebook: p.caption_facebook || null,
+        caption_x: p.caption_x || null,
+        subline: p.subline || null,
+        content_anchor: p.content_anchor || null,
+        demand_moment_type: p.demand_moment_type || null,
+        engagement_hook: p.engagement_hook || null,
+        hook: p.hook || null,
+        post_type: p.post_type || null,
+        topic_keywords: p.topic_keywords || null,
+        template_style: p.template_style || null,
+        carousel_image_urls: p.carousel_image_urls || null,
+        publish_skipped_reason: p.publish_skipped_reason || null,
       }));
 
       setPosts(mapped);
