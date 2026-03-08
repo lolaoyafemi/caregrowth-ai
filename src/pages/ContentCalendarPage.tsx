@@ -376,6 +376,7 @@ const ContentCalendarPage = () => {
             const postFormat = postsToInsert[i]?.post_format || 'single';
             const postSlideTexts = postsToInsert[i]?.slide_texts || null;
 
+            const postTemplate = postsToInsert[i]?._template || brandStyle?.selected_template_theme;
             supabase.functions.invoke('generate-post-image', {
               body: {
                 headline: postHeadline,
@@ -383,7 +384,7 @@ const ContentCalendarPage = () => {
                 business_name: brandStyle?.brand_display_name || userBusinessName,
                 post_id: p.id,
                 platform: p.platform,
-                template: brandStyle?.selected_template_theme,
+                template: postTemplate,
                 brand_primary_color: brandStyle?.brand_primary_color,
                 brand_accent_color: brandStyle?.brand_accent_color,
                 brand_font_style: brandStyle?.brand_font_style,
