@@ -51,6 +51,21 @@ interface ContentPost {
   error_message?: string | null;
   batch_id?: string | null;
   post_format?: string;
+  core_message?: string | null;
+  caption_instagram?: string | null;
+  caption_linkedin?: string | null;
+  caption_facebook?: string | null;
+  caption_x?: string | null;
+  subline?: string | null;
+  content_anchor?: string | null;
+  demand_moment_type?: string | null;
+  engagement_hook?: string | null;
+  hook?: string | null;
+  post_type?: string | null;
+  topic_keywords?: string[] | null;
+  template_style?: string | null;
+  carousel_image_urls?: string[] | null;
+  publish_skipped_reason?: string | null;
 }
 
 // 60% single, 40% carousel distribution
