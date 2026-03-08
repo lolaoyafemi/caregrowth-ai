@@ -1,0 +1,2 @@
+ALTER TABLE public.content_posts ADD COLUMN IF NOT EXISTS demand_moment_type text DEFAULT NULL;
+COMMENT ON COLUMN public.content_posts.demand_moment_type IS 'Demand moment type: recognition, education, relief, invitation. Appears roughly every 4-5 posts.';
