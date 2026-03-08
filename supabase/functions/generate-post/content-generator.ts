@@ -427,6 +427,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     },
     "educate": {
       systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. 5) Build your content taking cues from the user's subject ${subject}. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.
+${platformRules}
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd educational openings
@@ -434,6 +435,7 @@ CRITICAL: After generating your initial response, immediately review and refine 
 - Make the advice more specific and actionable
 - Ensure unique voice that stands out from generic tips
 - Strengthen practical value and clarity
+- Ensure the caption strictly follows the platform format rules above
 
 Generate your content, then provide an improved, refined version that flows better and offers more unique value.`,
       userPrompt: processedPrompt + `
