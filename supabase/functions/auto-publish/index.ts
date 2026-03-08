@@ -254,7 +254,7 @@ async function publishToX(account: any, post: any): Promise<string | null> {
       Authorization: `Bearer ${account.access_token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text: post.post_body }),
+    body: JSON.stringify({ text: post.caption_x || post.post_body }),
   });
 
   if (!res.ok) {
