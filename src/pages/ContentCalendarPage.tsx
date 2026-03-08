@@ -322,6 +322,7 @@ const ContentCalendarPage = () => {
               slide_texts: data?.slide_texts || null,
               content_anchor: data?.content_anchor || null,
               engagement_hook: data?.engagement_hook || null,
+              demand_moment_type: data?.demand_moment_type || null,
               _template: req.template,
             });
           } else {
