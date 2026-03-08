@@ -202,6 +202,65 @@ export function selectEngagementHook(postIndex: number, contentAnchor: string): 
   return { type: hookDef.type, prompt: example };
 }
 
+// ─── Demand Moments ──────────────────────────────────────────────────
+// Natural CTAs that encourage families to consider reaching out (~every 4-5 posts)
+
+export const DEMAND_MOMENTS = [
+  {
+    type: 'recognition',
+    label: 'Recognition Moment',
+    templates: [
+      'If your family is starting to feel overwhelmed with caregiving, it may be time to explore extra support.',
+      'When daily tasks start feeling heavier than usual, it could be a sign that additional help would make a difference.',
+      'If you\'re noticing changes in your loved one\'s needs, you\'re not imagining it — and you don\'t have to figure it out alone.',
+    ],
+  },
+  {
+    type: 'education',
+    label: 'Education Moment',
+    templates: [
+      'Many families think home care is only for serious medical needs, but most visits involve companionship, meals, and daily assistance.',
+      'Did you know that most home care starts with just a few hours a week? It\'s more flexible than most families expect.',
+      'Home care isn\'t about replacing family — it\'s about giving families the support they need to stay connected.',
+    ],
+  },
+  {
+    type: 'relief',
+    label: 'Relief Moment',
+    templates: [
+      'The first night families know their loved one is supported is often the first night they sleep peacefully.',
+      'Families often tell us the hardest part wasn\'t asking for help — it was waiting so long to do it.',
+      'There\'s a moment when caregivers realize they can breathe again. That moment is worth everything.',
+    ],
+  },
+  {
+    type: 'invitation',
+    label: 'Invitation Moment',
+    templates: [
+      'If your family is navigating something similar right now, we\'re here to talk.',
+      'No pressure, no commitment — just a conversation about what support could look like for your family.',
+      'Whenever you\'re ready, we\'re here. Even if it\'s just to ask a question.',
+    ],
+  },
+] as const;
+
+/**
+ * Determine if a post should be a demand moment (~every 4-5 posts).
+ * Returns the moment type and text, or null.
+ */
+export function selectDemandMoment(postIndex: number): { type: string; text: string } | null {
+  // Every 4-5 posts: trigger on indices 3, 8, 12, 17, 21, ...
+  // Pattern: offset 3, then every 5
+  if (postIndex < 3) return null;
+  if ((postIndex - 3) % 5 !== 0) return null;
+
+  const momentIdx = Math.floor((postIndex - 3) / 5);
+  const moment = DEMAND_MOMENTS[momentIdx % DEMAND_MOMENTS.length];
+  const template = moment.templates[momentIdx % moment.templates.length];
+
+  return { type: moment.type, text: template };
+}
+
 /**
  * Select a content anchor for the current post based on index.
  */

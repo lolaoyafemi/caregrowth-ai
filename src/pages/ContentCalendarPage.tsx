@@ -343,13 +343,14 @@ const ContentCalendarPage = () => {
       }
 
       if (postsToInsert.length > 0) {
-          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, content_anchor: ca, engagement_hook: eh, _template, ...rest }) => ({
+          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, content_anchor: ca, engagement_hook: eh, demand_moment_type: dmt, _template, ...rest }) => ({
             ...rest,
             headline: hl || null,
             subheadline: shl || null,
             slide_texts: st || null,
             content_anchor: ca || null,
             engagement_hook: eh || null,
+            demand_moment_type: dmt || null,
           }));
         const { data: inserted, error: insertError } = await supabase
           .from('content_posts')

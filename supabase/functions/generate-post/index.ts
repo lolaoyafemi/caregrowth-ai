@@ -207,6 +207,9 @@ serve(async (req) => {
     const postIdx = post_index || 0;
     const engagementHook = selectEngagementHook(postIdx, selectedAnchor.anchor);
 
+    // Select demand moment (~every 4-5 posts)
+    const demandMoment = selectDemandMoment(postIdx);
+
     // Log post to post_history
     try {
       await logPostToHistory(supabase, authenticatedUserId, postType, tone, platform, targetAudience, finalPost);
@@ -223,6 +226,7 @@ serve(async (req) => {
       post_format: isCarousel ? 'carousel' : 'single',
       slide_count: slideTexts.length,
       engagement_hook: engagementHook ? engagementHook.type : 'none',
+      demand_moment: demandMoment ? demandMoment.type : 'none',
     });
 
     return new Response(JSON.stringify({
@@ -238,6 +242,8 @@ serve(async (req) => {
       content_anchor_label: selectedAnchor.label,
       engagement_hook: engagementHook?.prompt || null,
       engagement_hook_type: engagementHook?.type || null,
+      demand_moment_type: demandMoment?.type || null,
+      demand_moment_text: demandMoment?.text || null,
       source: contentSource,
       business_context_used: !!profile,
       content_length: finalPost.length
