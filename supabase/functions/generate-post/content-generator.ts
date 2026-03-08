@@ -112,6 +112,9 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
 
   const toneDescription = (toneMap as any)[tone.toLowerCase()] || "Clear and natural tone";
 
+  // Platform-specific formatting rules
+  const platformRules = getPlatformFormattingRules(platform);
+
   // Add randomization and variety to ensure unique content
   const currentTime = new Date().toISOString();
   const randomSeed = Math.random().toString(36).substring(7);
