@@ -96,7 +96,70 @@ const getDefaultSettings = (model: string) => {
   }
 };
 
-export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
+// Platform-specific formatting rules for caption generation
+function getPlatformFormattingRules(platform: string): string {
+  switch (platform?.toLowerCase()) {
+    case 'instagram':
+      return `
+PLATFORM: Instagram
+FORMAT RULES:
+- Use an emotional, storytelling tone
+- Use line breaks between thoughts for readability (separate ideas with blank lines)
+- Longer captions are encouraged — storytelling is powerful here
+- Add 3-5 relevant hashtags at the very bottom, separated by a blank line
+- Use emojis sparingly and naturally (1-3 max)
+- Write as if speaking from the heart to one person
+- First line must stop the scroll — be bold or vulnerable`;
+
+    case 'linkedin':
+      return `
+PLATFORM: LinkedIn
+FORMAT RULES:
+- Use a professional, insight-driven tone
+- Keep paragraphs short (1-2 sentences each)
+- Minimal or zero emojis
+- Lead with a professional insight, data point, or industry observation
+- Write as a thought leader sharing lessons learned
+- No hashtags in the body — if needed, add 2-3 professional ones at the end
+- Total length: 150-250 words max
+- End with a question or invitation for professional discussion`;
+
+    case 'facebook':
+      return `
+PLATFORM: Facebook
+FORMAT RULES:
+- Use a warm, conversational, community-oriented tone
+- Write as if talking to neighbors or friends
+- Include a question or engagement prompt (e.g. "Have you experienced this?" or "Tag someone who needs this")
+- Moderate use of emojis is fine (2-4)
+- Keep it accessible and relatable
+- Medium length captions work best (100-200 words)
+- Focus on shared experiences and community connection`;
+
+    case 'x':
+    case 'twitter':
+      return `
+PLATFORM: X (Twitter)
+FORMAT RULES:
+- Be short, punchy, and direct
+- Maximum 280 characters for the main message
+- No hashtags unless absolutely essential (1 max)
+- No emojis unless they add meaning
+- One clear idea per post
+- Write like a headline or sharp observation
+- If the content needs more space, keep under 3 short lines`;
+
+    default:
+      return `
+PLATFORM: ${platform || 'General'}
+FORMAT RULES:
+- Use a clear, engaging tone
+- Keep the caption well-structured with natural flow
+- Moderate length (150-250 words)`;
+  }
+}
+
+
   const { postType, audience, tone, platform, subject, businessContext, openAIApiKey } = params;
 
   const selectedModel = selectOptimalModel(postType, audience);
