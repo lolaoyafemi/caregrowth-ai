@@ -143,15 +143,19 @@ serve(async (req) => {
     let slideTexts: string[] = [];
 
     try {
-      console.log('🤖 Generating content with database prompt integration');
+      // Build caregiving context based on post index for variety
+      const caregivingContext = buildCaregivingContext(post_index || 0);
+      const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext;
+
+      console.log('🤖 Generating content with database prompt integration + caregiving context');
       const generatedContent = await generateContentWithAI({
         userId: authenticatedUserId,
         postType,
-        tone,
+        tone: profile?.tone_preference || tone,
         platform,
         audience: targetAudience,
         subject,
-        businessContext: typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext),
+        businessContext: enrichedBusinessContext,
         openAIApiKey
       });
 
