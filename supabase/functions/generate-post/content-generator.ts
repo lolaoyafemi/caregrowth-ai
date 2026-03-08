@@ -313,6 +313,7 @@ FORMAT RULES:
   const contentPrompts = {
     "attract": {
       systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. 5) Build your content taking cues from the user's subject ${subject}. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.
+${platformRules}
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd openings
@@ -320,6 +321,7 @@ CRITICAL: After generating your initial response, immediately review and refine 
 - Make the tone more authentic and less robotic
 - Ensure unique voice that stands out from generic content
 - Strengthen emotional connection and specificity
+- Ensure the caption strictly follows the platform format rules above
 
 Generate your content, then provide an improved, refined version that flows better and feels more unique.`,
       userPrompt: processedPrompt + `
