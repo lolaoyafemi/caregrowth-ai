@@ -91,7 +91,8 @@ serve(async (req) => {
             platformPostId = await publishToX(freshAccount, post);
             break;
           default:
-            console.log(`Publishing to ${post.platform}: ${post.post_body.substring(0, 50)}...`);
+            const caption = post[`caption_${post.platform}`] || post.post_body;
+            console.log(`Publishing to ${post.platform}: ${caption.substring(0, 50)}...`);
             break;
         }
 
