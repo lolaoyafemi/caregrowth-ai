@@ -253,13 +253,16 @@ const ContentCalendarPage = () => {
       const tones = ['professional', 'conversational', 'enthusiastic', 'authoritative', 'humorous'];
 
       // Build all generation requests upfront
-      const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date; post_format: 'single' | 'carousel' }[] = [];
+      const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date; post_format: 'single' | 'carousel'; template: TemplateName }[] = [];
 
-      // Calculate total posts per platform and assign formats
+      // Calculate total posts per platform, assign formats + template rotation
       const postsPerPlatform = days * frequency;
       const platformFormats: Record<string, ('single' | 'carousel')[]> = {};
+      const platformTemplates: Record<string, TemplateName[]> = {};
       for (const platform of wizPlatforms) {
-        platformFormats[platform] = assignPostFormats(postsPerPlatform);
+        const formats = assignPostFormats(postsPerPlatform);
+        platformFormats[platform] = formats;
+        platformTemplates[platform] = assignTemplateRotation(formats, brandStyle?.selected_template_theme);
       }
 
       const platformCounters: Record<string, number> = {};
@@ -276,8 +279,10 @@ const ContentCalendarPage = () => {
           for (const platform of wizPlatforms) {
             const category = categories[(day * frequency + freq) % categories.length];
             const tone = tones[(day * frequency + freq) % tones.length];
-            const fmt = platformFormats[platform][platformCounters[platform]++];
-            generationRequests.push({ platform, category, tone, scheduledDate: new Date(scheduledDate), post_format: fmt });
+            const idx = platformCounters[platform]++;
+            const fmt = platformFormats[platform][idx];
+            const tmpl = platformTemplates[platform][idx];
+            generationRequests.push({ platform, category, tone, scheduledDate: new Date(scheduledDate), post_format: fmt, template: tmpl });
           }
         }
       }
