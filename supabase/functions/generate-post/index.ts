@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 import { generateContentWithAI } from './content-generator.ts';
-import { buildBusinessContext, personalizeContent, buildCaregivingContext } from './business-context.ts';
+import { buildBusinessContext, personalizeContent, buildCaregivingContext, selectContentAnchor } from './business-context.ts';
 import { getUserProfile, logPostToHistory } from './database-service.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -143,8 +143,10 @@ serve(async (req) => {
     let slideTexts: string[] = [];
 
     try {
-      // Build caregiving context based on post index for variety
-      const caregivingContext = buildCaregivingContext(post_index || 0);
+      // Build caregiving context and select content anchor
+      const postIdx = post_index || 0;
+      const caregivingContext = buildCaregivingContext(postIdx);
+      const selectedAnchor = selectContentAnchor(postIdx);
       const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext;
 
       console.log('🤖 Generating content with database prompt integration + caregiving context');
@@ -227,6 +229,8 @@ serve(async (req) => {
       subheadline,
       post_format: isCarousel ? 'carousel' : 'single',
       slide_texts: isCarousel ? slideTexts : undefined,
+      content_anchor: selectedAnchor.anchor,
+      content_anchor_label: selectedAnchor.label,
       source: contentSource,
       business_context_used: !!profile,
       content_length: finalPost.length

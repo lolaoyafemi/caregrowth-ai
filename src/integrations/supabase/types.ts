@@ -197,6 +197,7 @@ export type Database = {
       content_posts: {
         Row: {
           batch_id: string | null
+          content_anchor: string | null
           created_at: string
           error_message: string | null
           headline: string | null
@@ -216,6 +217,7 @@ export type Database = {
         }
         Insert: {
           batch_id?: string | null
+          content_anchor?: string | null
           created_at?: string
           error_message?: string | null
           headline?: string | null
@@ -235,6 +237,7 @@ export type Database = {
         }
         Update: {
           batch_id?: string | null
+          content_anchor?: string | null
           created_at?: string
           error_message?: string | null
           headline?: string | null

@@ -1,0 +1,2 @@
+ALTER TABLE public.content_posts ADD COLUMN IF NOT EXISTS content_anchor text DEFAULT NULL;
+COMMENT ON COLUMN public.content_posts.content_anchor IS 'Content anchor theme: family_reality, education, reassurance, myth_vs_truth, behind_the_scenes, soft_invitation';
