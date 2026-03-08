@@ -130,6 +130,9 @@ const DashboardHome = () => {
       {/* Zone 2 — Strategy Feed */}
       <StrategyFeed />
 
+      {/* CareGrowth Insights */}
+      <InsightCards />
+
       {/* Zone 3 — Activity Snapshot */}
       <ActivitySnapshot
         postsScheduled={activity.postsScheduled}
