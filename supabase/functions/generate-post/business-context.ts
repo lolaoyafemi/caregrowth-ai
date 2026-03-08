@@ -136,7 +136,7 @@ export function selectContentAnchor(postIndex: number): typeof CONTENT_ANCHORS[n
  */
 export function buildCaregivingContext(postIndex: number): string {
   const reality = selectCaregivingReality(postIndex);
-  const pattern = selectContentPattern(postIndex);
+  const anchor = selectContentAnchor(postIndex);
   const scenario = reality.scenarios[postIndex % reality.scenarios.length];
 
   return `
@@ -145,8 +145,8 @@ Situation: ${reality.label}
 Emotions families feel: ${reality.emotions.join(', ')}
 Real scenario to draw from: "${scenario}"
 
-CONTENT PATTERN FOR THIS POST: ${pattern.label}
-${pattern.instruction}
+CONTENT ANCHOR FOR THIS POST: ${anchor.label}
+${anchor.instruction}
 
 IMPORTANT: Ground this post in the caregiving reality above. Reference the real emotions and situations — not generic marketing language. The reader should think "they understand what I\'m going through."`;
 }
