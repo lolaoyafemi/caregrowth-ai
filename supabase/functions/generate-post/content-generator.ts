@@ -484,6 +484,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     },
     "transact": {
       systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. 5) Build your content taking cues from the user's subject ${subject}. Create compelling content that drives action through trust and demonstrated value.
+${platformRules}
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd sales language
@@ -491,6 +492,7 @@ CRITICAL: After generating your initial response, immediately review and refine 
 - Make the results more specific and credible
 - Ensure unique voice that builds authentic trust
 - Strengthen compelling reasons to take action
+- Ensure the caption strictly follows the platform format rules above
 
 Generate your content, then provide an improved, refined version that flows better and is more persuasively unique.`,
       userPrompt: processedPrompt + `
