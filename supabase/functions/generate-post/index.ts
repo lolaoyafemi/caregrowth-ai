@@ -5,7 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 import { generateContentWithAI } from './content-generator.ts';
 import { buildBusinessContext, personalizeContent, buildCaregivingContext, selectContentAnchor, selectEngagementHook, selectDemandMoment } from './business-context.ts';
-import { getUserProfile, logPostToHistory } from './database-service.ts';
+import { getUserProfile, logPostToHistory, getContentMemory, buildContentMemoryContext, extractTopicKeywords } from './database-service.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -122,8 +122,18 @@ serve(async (req) => {
       console.log('User profile loaded:', !!profile);
     } catch (profileError) {
       console.error('Error loading user profile:', (profileError as Error).message);
-      // Continue without profile - it's not critical for basic functionality
       profile = null;
+    }
+
+    // Fetch Content Memory (recent posts) for repetition avoidance
+    let contentMemory: any[] = [];
+    let memoryContext = '';
+    try {
+      contentMemory = await getContentMemory(supabase, authenticatedUserId, 50);
+      memoryContext = buildContentMemoryContext(contentMemory);
+      console.log(`📝 Content Memory loaded: ${contentMemory.length} recent posts`);
+    } catch (memoryError) {
+      console.error('Error loading content memory:', (memoryError as Error).message);
     }
 
     // Build comprehensive business context for personalization
@@ -134,22 +144,21 @@ serve(async (req) => {
       console.log('Business context built for:', profile?.business_name || 'Unknown business');
     } catch (contextError) {
       console.error('Error building business context:', (contextError as Error).message);
-      // Provide minimal context as fallback
       businessContext = { business_name: 'Your Business', core_service: 'service' };
     }
 
     let hook = '', body = '', cta = '';
     let contentSource = '';
     let slideTexts: string[] = [];
+    const postIdx = post_index || 0;
+    const selectedAnchor = selectContentAnchor(postIdx);
 
     try {
       // Build caregiving context and select content anchor
-      const postIdx = post_index || 0;
       const caregivingContext = buildCaregivingContext(postIdx);
-      const selectedAnchor = selectContentAnchor(postIdx);
-      const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext;
+      const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext + memoryContext;
 
-      console.log('🤖 Generating content with database prompt integration + caregiving context');
+      console.log('🤖 Generating content with database prompt integration + caregiving context + content memory');
       const generatedContent = await generateContentWithAI({
         userId: authenticatedUserId,
         postType,
@@ -199,12 +208,15 @@ serve(async (req) => {
 
     const finalPost = `${hook}\n\n${body}\n\n${cta}`.trim();
 
+    // Extract topic keywords from the generated caption
+    const topicKeywords = extractTopicKeywords(finalPost);
+    console.log('📌 Extracted topic keywords:', topicKeywords);
+
     // Generate headline (max 10 words) and subheadline from hook
     const headline = hook.split(/[.!?]/)[0]?.trim().split(/\s+/).slice(0, 10).join(' ') || hook.substring(0, 60);
     const subheadline = hook.length > headline.length ? hook.substring(headline.length).trim().replace(/^[.!?,\s]+/, '') : '';
 
     // Select engagement hook (~40% of posts)
-    const postIdx = post_index || 0;
     const engagementHook = selectEngagementHook(postIdx, selectedAnchor.anchor);
 
     // Select demand moment (~every 4-5 posts)
@@ -222,11 +234,11 @@ serve(async (req) => {
       content_length: finalPost.length,
       business_context_used: !!profile,
       headline,
-      subheadline: subheadline ? 'yes' : 'no',
       post_format: isCarousel ? 'carousel' : 'single',
-      slide_count: slideTexts.length,
       engagement_hook: engagementHook ? engagementHook.type : 'none',
       demand_moment: demandMoment ? demandMoment.type : 'none',
+      topic_keywords: topicKeywords,
+      content_memory_size: contentMemory.length,
     });
 
     return new Response(JSON.stringify({
@@ -244,6 +256,8 @@ serve(async (req) => {
       engagement_hook_type: engagementHook?.type || null,
       demand_moment_type: demandMoment?.type || null,
       demand_moment_text: demandMoment?.text || null,
+      post_type: postType,
+      topic_keywords: topicKeywords,
       source: contentSource,
       business_context_used: !!profile,
       content_length: finalPost.length
