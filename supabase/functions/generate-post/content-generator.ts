@@ -96,6 +96,69 @@ const getDefaultSettings = (model: string) => {
   }
 };
 
+// Platform-specific formatting rules for caption generation
+function getPlatformFormattingRules(platform: string): string {
+  switch (platform?.toLowerCase()) {
+    case 'instagram':
+      return `
+PLATFORM: Instagram
+FORMAT RULES:
+- Use an emotional, storytelling tone
+- Use line breaks between thoughts for readability (separate ideas with blank lines)
+- Longer captions are encouraged — storytelling is powerful here
+- Add 3-5 relevant hashtags at the very bottom, separated by a blank line
+- Use emojis sparingly and naturally (1-3 max)
+- Write as if speaking from the heart to one person
+- First line must stop the scroll — be bold or vulnerable`;
+
+    case 'linkedin':
+      return `
+PLATFORM: LinkedIn
+FORMAT RULES:
+- Use a professional, insight-driven tone
+- Keep paragraphs short (1-2 sentences each)
+- Minimal or zero emojis
+- Lead with a professional insight, data point, or industry observation
+- Write as a thought leader sharing lessons learned
+- No hashtags in the body — if needed, add 2-3 professional ones at the end
+- Total length: 150-250 words max
+- End with a question or invitation for professional discussion`;
+
+    case 'facebook':
+      return `
+PLATFORM: Facebook
+FORMAT RULES:
+- Use a warm, conversational, community-oriented tone
+- Write as if talking to neighbors or friends
+- Include a question or engagement prompt (e.g. "Have you experienced this?" or "Tag someone who needs this")
+- Moderate use of emojis is fine (2-4)
+- Keep it accessible and relatable
+- Medium length captions work best (100-200 words)
+- Focus on shared experiences and community connection`;
+
+    case 'x':
+    case 'twitter':
+      return `
+PLATFORM: X (Twitter)
+FORMAT RULES:
+- Be short, punchy, and direct
+- Maximum 280 characters for the main message
+- No hashtags unless absolutely essential (1 max)
+- No emojis unless they add meaning
+- One clear idea per post
+- Write like a headline or sharp observation
+- If the content needs more space, keep under 3 short lines`;
+
+    default:
+      return `
+PLATFORM: ${platform || 'General'}
+FORMAT RULES:
+- Use a clear, engaging tone
+- Keep the caption well-structured with natural flow
+- Moderate length (150-250 words)`;
+  }
+}
+
 export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, subject, businessContext, openAIApiKey } = params;
 
@@ -111,6 +174,9 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   };
 
   const toneDescription = (toneMap as any)[tone.toLowerCase()] || "Clear and natural tone";
+
+  // Platform-specific formatting rules
+  const platformRules = getPlatformFormattingRules(platform);
 
   // Add randomization and variety to ensure unique content
   const currentTime = new Date().toISOString();
@@ -247,6 +313,7 @@ export const generateContentWithAI = async (params: ContentGenerationParams): Pr
   const contentPrompts = {
     "attract": {
       systemPrompt: `You are an expert social media strategist with deep understanding of psychology, business positioning, and audience engagement. When using advanced reasoning models, think through: 1) The emotional state of the target audience, 2) The trust-building elements that matter most to them, 3) How to position expertise without appearing boastful, 4) The subtle psychological triggers that build credibility. 5) Build your content taking cues from the user's subject ${subject}. Create authentic, strategically crafted content that builds trust through genuine expertise demonstration.
+${platformRules}
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd openings
@@ -254,6 +321,7 @@ CRITICAL: After generating your initial response, immediately review and refine 
 - Make the tone more authentic and less robotic
 - Ensure unique voice that stands out from generic content
 - Strengthen emotional connection and specificity
+- Ensure the caption strictly follows the platform format rules above
 
 Generate your content, then provide an improved, refined version that flows better and feels more unique.`,
       userPrompt: processedPrompt + `
@@ -302,6 +370,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     },
     "connect": {
       systemPrompt: `You are an expert social media strategist specializing in emotional intelligence and human connection. When using advanced reasoning models, analyze: 1) The deep emotional needs of the audience, 2) The shared experiences that create bonds, 3) The vulnerability level that builds connection without oversharing, 4) The language patterns that evoke empathy. 5) Build your content taking cues from the user's subject ${subject}. Create deeply resonant content that makes people feel genuinely understood.
+${platformRules}
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd openings
@@ -309,6 +378,7 @@ CRITICAL: After generating your initial response, immediately review and refine 
 - Make the tone more authentic and emotionally resonant
 - Ensure unique voice that creates genuine connection
 - Strengthen relatability and emotional impact
+- Ensure the caption strictly follows the platform format rules above
 
 Generate your content, then provide an improved, refined version that flows better and feels more uniquely human.`,
       userPrompt: processedPrompt + `
@@ -357,6 +427,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     },
     "educate": {
       systemPrompt: `You are an expert social media strategist and educational content specialist. When using advanced reasoning models, consider: 1) The cognitive load of your audience and optimal information delivery, 2) The learning preferences of busy families, 3) How to make complex information immediately actionable, 4) The balance between depth and accessibility. 5) Build your content taking cues from the user's subject ${subject}. Create valuable content that genuinely educates while respecting the audience's time and mental bandwidth.
+${platformRules}
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd educational openings
@@ -364,6 +435,7 @@ CRITICAL: After generating your initial response, immediately review and refine 
 - Make the advice more specific and actionable
 - Ensure unique voice that stands out from generic tips
 - Strengthen practical value and clarity
+- Ensure the caption strictly follows the platform format rules above
 
 Generate your content, then provide an improved, refined version that flows better and offers more unique value.`,
       userPrompt: processedPrompt + `
@@ -412,6 +484,7 @@ CTA: [clear call-to-action - 1-2 sentences]`
     },
     "transact": {
       systemPrompt: `You are an expert social media strategist with deep expertise in conversion psychology and authentic sales communication. When using advanced reasoning models, analyze: 1) The decision-making psychology of your audience, 2) The objections and hesitations they harbor, 3) The social proof elements that build confidence, 4) The balance between showcasing results and maintaining humility. 5) Build your content taking cues from the user's subject ${subject}. Create compelling content that drives action through trust and demonstrated value.
+${platformRules}
 
 CRITICAL: After generating your initial response, immediately review and refine it to:
 - Eliminate repetitive phrases or clichéd sales language
@@ -419,6 +492,7 @@ CRITICAL: After generating your initial response, immediately review and refine 
 - Make the results more specific and credible
 - Ensure unique voice that builds authentic trust
 - Strengthen compelling reasons to take action
+- Ensure the caption strictly follows the platform format rules above
 
 Generate your content, then provide an improved, refined version that flows better and is more persuasively unique.`,
       userPrompt: processedPrompt + `
@@ -642,7 +716,7 @@ export const parseGeneratedContent = (content: string): { hook: string; body: st
   const ctaMatch = content.match(/(?:^|\n)\s*(?:\*{0,2})?cta:\s*(?:\*{0,2})?\s*(.*?)$/is);
   
   if (hookMatch) hook = hookMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
-  if (bodyMatch) body = bodyMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  if (bodyMatch) body = bodyMatch[1].trim().replace(/\n{3,}/g, '\n\n').replace(/[ \t]+/g, ' ');
   if (ctaMatch) cta = ctaMatch[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
   
   // If structured parsing failed, try fallback approach
