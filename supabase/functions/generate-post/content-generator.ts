@@ -159,7 +159,7 @@ FORMAT RULES:
   }
 }
 
-
+export const generateContentWithAI = async (params: ContentGenerationParams): Promise<GeneratedContent> => {
   const { postType, audience, tone, platform, subject, businessContext, openAIApiKey } = params;
 
   const selectedModel = selectOptimalModel(postType, audience);
