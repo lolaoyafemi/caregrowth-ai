@@ -357,6 +357,12 @@ const ContentCalendarPage = () => {
               post_type: data?.post_type || req.category || null,
               topic_keywords: data?.topic_keywords || null,
               _template: req.template,
+              core_message: data?.core_message || null,
+              subline: data?.subline || data?.subheadline || null,
+              caption_instagram: data?.caption_instagram || null,
+              caption_linkedin: data?.caption_linkedin || null,
+              caption_facebook: data?.caption_facebook || null,
+              caption_x: data?.caption_x || null,
             });
           } else {
             const req = batch[results.indexOf(result)];
