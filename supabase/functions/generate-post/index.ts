@@ -150,12 +150,12 @@ serve(async (req) => {
     let hook = '', body = '', cta = '';
     let contentSource = '';
     let slideTexts: string[] = [];
+    const postIdx = post_index || 0;
+    const selectedAnchor = selectContentAnchor(postIdx);
 
     try {
       // Build caregiving context and select content anchor
-      const postIdx = post_index || 0;
       const caregivingContext = buildCaregivingContext(postIdx);
-      const selectedAnchor = selectContentAnchor(postIdx);
       const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext + memoryContext;
 
       console.log('🤖 Generating content with database prompt integration + caregiving context + content memory');
