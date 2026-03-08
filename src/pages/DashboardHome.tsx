@@ -195,6 +195,9 @@ const DashboardHome = () => {
       {isMainAdmin && <CreditExpirationWarning />}
 
 
+      {/* Strategy Feed */}
+      <StrategyFeed />
+
       <h2 className="text-2xl font-semibold mb-6">AI Solutions</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="transition-transform duration-200 hover:scale-[1.02] hover:shadow-md">
