@@ -208,6 +208,24 @@ serve(async (req) => {
 
     const finalPost = `${hook}\n\n${body}\n\n${cta}`.trim();
 
+    // Build the core message (theme before platform adaptation)
+    const coreMessage = `${hook} ${body}`.substring(0, 300).trim();
+
+    // Build per-platform captions from the generated content
+    // The content was already generated for the requested platform;
+    // store it in the matching caption field and leave others null
+    // so the frontend can re-generate or adapt later.
+    const platformCaptions: Record<string, string | null> = {
+      caption_instagram: null,
+      caption_linkedin: null,
+      caption_facebook: null,
+      caption_x: null,
+    };
+    const captionKey = `caption_${platform === 'twitter' ? 'x' : platform}`;
+    if (captionKey in platformCaptions) {
+      platformCaptions[captionKey] = finalPost;
+    }
+
     // Extract topic keywords from the generated caption
     const topicKeywords = extractTopicKeywords(finalPost);
     console.log('📌 Extracted topic keywords:', topicKeywords);
@@ -215,6 +233,7 @@ serve(async (req) => {
     // Generate headline (max 10 words) and subheadline from hook
     const headline = hook.split(/[.!?]/)[0]?.trim().split(/\s+/).slice(0, 10).join(' ') || hook.substring(0, 60);
     const subheadline = hook.length > headline.length ? hook.substring(headline.length).trim().replace(/^[.!?,\s]+/, '') : '';
+    const subline = subheadline; // alias for new schema
 
     // Select engagement hook (~40% of posts)
     const engagementHook = selectEngagementHook(postIdx, selectedAnchor.anchor);
@@ -248,6 +267,9 @@ serve(async (req) => {
       cta,
       headline,
       subheadline,
+      subline,
+      core_message: coreMessage,
+      ...platformCaptions,
       post_format: isCarousel ? 'carousel' : 'single',
       slide_texts: isCarousel ? slideTexts : undefined,
       content_anchor: selectedAnchor.anchor,
