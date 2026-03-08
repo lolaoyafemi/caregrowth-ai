@@ -51,6 +51,21 @@ interface ContentPost {
   error_message?: string | null;
   batch_id?: string | null;
   post_format?: string;
+  core_message?: string | null;
+  caption_instagram?: string | null;
+  caption_linkedin?: string | null;
+  caption_facebook?: string | null;
+  caption_x?: string | null;
+  subline?: string | null;
+  content_anchor?: string | null;
+  demand_moment_type?: string | null;
+  engagement_hook?: string | null;
+  hook?: string | null;
+  post_type?: string | null;
+  topic_keywords?: string[] | null;
+  template_style?: string | null;
+  carousel_image_urls?: string[] | null;
+  publish_skipped_reason?: string | null;
 }
 
 // 60% single, 40% carousel distribution
@@ -179,6 +194,21 @@ const ContentCalendarPage = () => {
         error_message: p.error_message || null,
         batch_id: p.batch_id,
         post_format: p.post_format || 'single',
+        core_message: p.core_message || null,
+        caption_instagram: p.caption_instagram || null,
+        caption_linkedin: p.caption_linkedin || null,
+        caption_facebook: p.caption_facebook || null,
+        caption_x: p.caption_x || null,
+        subline: p.subline || null,
+        content_anchor: p.content_anchor || null,
+        demand_moment_type: p.demand_moment_type || null,
+        engagement_hook: p.engagement_hook || null,
+        hook: p.hook || null,
+        post_type: p.post_type || null,
+        topic_keywords: p.topic_keywords || null,
+        template_style: p.template_style || null,
+        carousel_image_urls: p.carousel_image_urls || null,
+        publish_skipped_reason: p.publish_skipped_reason || null,
       }));
 
       setPosts(mapped);
@@ -327,6 +357,12 @@ const ContentCalendarPage = () => {
               post_type: data?.post_type || req.category || null,
               topic_keywords: data?.topic_keywords || null,
               _template: req.template,
+              core_message: data?.core_message || null,
+              subline: data?.subline || data?.subheadline || null,
+              caption_instagram: data?.caption_instagram || null,
+              caption_linkedin: data?.caption_linkedin || null,
+              caption_facebook: data?.caption_facebook || null,
+              caption_x: data?.caption_x || null,
             });
           } else {
             const req = batch[results.indexOf(result)];
@@ -346,7 +382,7 @@ const ContentCalendarPage = () => {
       }
 
       if (postsToInsert.length > 0) {
-          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, content_anchor: ca, engagement_hook: eh, demand_moment_type: dmt, hook: hk, post_type: pt, topic_keywords: tk, _template, ...rest }) => ({
+          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, content_anchor: ca, engagement_hook: eh, demand_moment_type: dmt, hook: hk, post_type: pt, topic_keywords: tk, _template, core_message: cm, subline: sl, caption_instagram: ci, caption_linkedin: cl, caption_facebook: cf, caption_x: cx, ...rest }) => ({
             ...rest,
             headline: hl || null,
             subheadline: shl || null,
@@ -358,6 +394,12 @@ const ContentCalendarPage = () => {
             post_type: pt || null,
             template_style: _template || null,
             topic_keywords: tk || null,
+            core_message: cm || null,
+            subline: sl || null,
+            caption_instagram: ci || null,
+            caption_linkedin: cl || null,
+            caption_facebook: cf || null,
+            caption_x: cx || null,
           }));
         const { data: inserted, error: insertError } = await supabase
           .from('content_posts')
@@ -377,6 +419,19 @@ const ContentCalendarPage = () => {
             error_message: null,
             batch_id: p.batch_id,
             post_format: p.post_format || 'single',
+            core_message: p.core_message || null,
+            caption_instagram: p.caption_instagram || null,
+            caption_linkedin: p.caption_linkedin || null,
+            caption_facebook: p.caption_facebook || null,
+            caption_x: p.caption_x || null,
+            subline: p.subline || null,
+            content_anchor: p.content_anchor || null,
+            demand_moment_type: p.demand_moment_type || null,
+            engagement_hook: p.engagement_hook || null,
+            hook: p.hook || null,
+            post_type: p.post_type || null,
+            topic_keywords: p.topic_keywords || null,
+            template_style: p.template_style || null,
           }));
 
           setPosts(prev => [...prev, ...newPosts].sort(

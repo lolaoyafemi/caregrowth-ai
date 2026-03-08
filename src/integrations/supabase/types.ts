@@ -169,6 +169,7 @@ export type Database = {
       }
       content_batches: {
         Row: {
+          agency_id: string | null
           created_at: string
           created_by: string
           days: number
@@ -177,6 +178,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agency_id?: string | null
           created_at?: string
           created_by: string
           days: number
@@ -185,6 +187,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agency_id?: string | null
           created_at?: string
           created_by?: string
           days?: number
@@ -197,7 +200,13 @@ export type Database = {
       content_posts: {
         Row: {
           batch_id: string | null
+          caption_facebook: string | null
+          caption_instagram: string | null
+          caption_linkedin: string | null
+          caption_x: string | null
+          carousel_image_urls: string[] | null
           content_anchor: string | null
+          core_message: string | null
           created_at: string
           demand_moment_type: string | null
           engagement_hook: string | null
@@ -211,11 +220,13 @@ export type Database = {
           post_body: string
           post_format: string
           post_type: string | null
+          publish_skipped_reason: string | null
           published_at: string | null
           scheduled_at: string
           slide_texts: string[] | null
           status: string
           subheadline: string | null
+          subline: string | null
           template_style: string | null
           topic_keywords: string[] | null
           updated_at: string
@@ -223,7 +234,13 @@ export type Database = {
         }
         Insert: {
           batch_id?: string | null
+          caption_facebook?: string | null
+          caption_instagram?: string | null
+          caption_linkedin?: string | null
+          caption_x?: string | null
+          carousel_image_urls?: string[] | null
           content_anchor?: string | null
+          core_message?: string | null
           created_at?: string
           demand_moment_type?: string | null
           engagement_hook?: string | null
@@ -237,11 +254,13 @@ export type Database = {
           post_body: string
           post_format?: string
           post_type?: string | null
+          publish_skipped_reason?: string | null
           published_at?: string | null
           scheduled_at: string
           slide_texts?: string[] | null
           status?: string
           subheadline?: string | null
+          subline?: string | null
           template_style?: string | null
           topic_keywords?: string[] | null
           updated_at?: string
@@ -249,7 +268,13 @@ export type Database = {
         }
         Update: {
           batch_id?: string | null
+          caption_facebook?: string | null
+          caption_instagram?: string | null
+          caption_linkedin?: string | null
+          caption_x?: string | null
+          carousel_image_urls?: string[] | null
           content_anchor?: string | null
+          core_message?: string | null
           created_at?: string
           demand_moment_type?: string | null
           engagement_hook?: string | null
@@ -263,11 +288,13 @@ export type Database = {
           post_body?: string
           post_format?: string
           post_type?: string | null
+          publish_skipped_reason?: string | null
           published_at?: string | null
           scheduled_at?: string
           slide_texts?: string[] | null
           status?: string
           subheadline?: string | null
+          subline?: string | null
           template_style?: string | null
           topic_keywords?: string[] | null
           updated_at?: string
