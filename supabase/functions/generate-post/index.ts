@@ -122,8 +122,18 @@ serve(async (req) => {
       console.log('User profile loaded:', !!profile);
     } catch (profileError) {
       console.error('Error loading user profile:', (profileError as Error).message);
-      // Continue without profile - it's not critical for basic functionality
       profile = null;
+    }
+
+    // Fetch Content Memory (recent posts) for repetition avoidance
+    let contentMemory: any[] = [];
+    let memoryContext = '';
+    try {
+      contentMemory = await getContentMemory(supabase, authenticatedUserId, 50);
+      memoryContext = buildContentMemoryContext(contentMemory);
+      console.log(`📝 Content Memory loaded: ${contentMemory.length} recent posts`);
+    } catch (memoryError) {
+      console.error('Error loading content memory:', (memoryError as Error).message);
     }
 
     // Build comprehensive business context for personalization
@@ -134,7 +144,6 @@ serve(async (req) => {
       console.log('Business context built for:', profile?.business_name || 'Unknown business');
     } catch (contextError) {
       console.error('Error building business context:', (contextError as Error).message);
-      // Provide minimal context as fallback
       businessContext = { business_name: 'Your Business', core_service: 'service' };
     }
 
@@ -147,9 +156,9 @@ serve(async (req) => {
       const postIdx = post_index || 0;
       const caregivingContext = buildCaregivingContext(postIdx);
       const selectedAnchor = selectContentAnchor(postIdx);
-      const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext;
+      const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext + memoryContext;
 
-      console.log('🤖 Generating content with database prompt integration + caregiving context');
+      console.log('🤖 Generating content with database prompt integration + caregiving context + content memory');
       const generatedContent = await generateContentWithAI({
         userId: authenticatedUserId,
         postType,
