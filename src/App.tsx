@@ -21,6 +21,7 @@ const DashboardLayout = lazy(() => import('./components/dashboard/DashboardLayou
 const DashboardHome = lazy(() => import('./pages/DashboardHome'));
 const SocialMediaTool = lazy(() => import('./pages/SocialMediaTool'));
 const ContentCalendarPage = lazy(() => import('./pages/ContentCalendarPage'));
+const AgencySetupPage = lazy(() => import('./pages/AgencySetupPage'));
 const QAAssistantTool = lazy(() => import('./pages/QAAssistantTool'));
 const PromptsPage = lazy(() => import('./pages/PromptsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
