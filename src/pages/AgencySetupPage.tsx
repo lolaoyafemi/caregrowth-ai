@@ -41,9 +41,9 @@ const SERVICE_OPTIONS = [
 
 const PERSONALITY_OPTIONS = [
   { id: 'reassured', label: 'Reassured', desc: '"Everything is going to be okay."' },
-  { id: 'supported', label: 'Supported', desc: '"You're not doing this alone."' },
-  { id: 'informed', label: 'Informed', desc: '"Here's what you need to know."' },
-  { id: 'encouraged', label: 'Encouraged', desc: '"You're making a great choice."' },
+  { id: 'supported', label: 'Supported', desc: '"You\'re not doing this alone."' },
+  { id: 'informed', label: 'Informed', desc: '"Here\'s what you need to know."' },
+  { id: 'encouraged', label: 'Encouraged', desc: '"You\'re making a great choice."' },
 ];
 
 /* ------------------------------------------------------------------ */
