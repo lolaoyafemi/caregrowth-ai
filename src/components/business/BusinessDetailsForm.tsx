@@ -194,8 +194,9 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
         user_id: user.id,
         business_name: formData.businessName,
         location: formData.location,
+        service_area: formData.serviceArea,
         core_service: formData.coreService,
-        services: formData.coreService, // Keep for backward compatibility
+        services: formData.coreService,
         ideal_client: formData.idealClient,
         main_offer: formData.mainOffer,
         big_promise: formData.bigPromise,
@@ -205,6 +206,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
         objections: formData.objections ? formData.objections.split(',').map(item => item.trim()) : [],
         differentiator: formData.differentiator,
         testimonial: formData.testimonials,
+        tone_preference: formData.tonePreference,
         updated_at: new Date().toISOString()
       };
 
