@@ -113,6 +113,70 @@ export const buildContentMemoryContext = (memory: ContentMemoryEntry[]): string 
   return ctx;
 };
 
+/**
+ * Build a performance insights context string for the AI prompt
+ * to lean into what works best based on engagement data.
+ */
+export const buildPerformanceContext = (memory: ContentMemoryEntry[], posts: any[]): string => {
+  if (!posts || posts.length < 3) return '';
+
+  const published = posts.filter((p: any) => p.status === 'published');
+  if (published.length < 3) return '';
+
+  const eng = (p: any) => (p.likes || 0) + (p.comments || 0) + (p.shares || 0) + (p.saves || 0);
+
+  // Top topics
+  const topicTotals: Record<string, { total: number; count: number }> = {};
+  for (const p of published) {
+    for (const kw of (p.topic_keywords || [])) {
+      if (!topicTotals[kw]) topicTotals[kw] = { total: 0, count: 0 };
+      topicTotals[kw].total += eng(p);
+      topicTotals[kw].count++;
+    }
+  }
+  const topTopics = Object.entries(topicTotals)
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 3)
+    .map(([k]) => k);
+
+  // Top anchors
+  const anchorTotals: Record<string, number> = {};
+  for (const p of published) {
+    const a = p.content_anchor || 'general';
+    anchorTotals[a] = (anchorTotals[a] || 0) + eng(p);
+  }
+  const topAnchors = Object.entries(anchorTotals)
+    .filter(([k]) => k !== 'general')
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([k]) => k);
+
+  // Best format
+  const fmtAvg: Record<string, { total: number; count: number }> = {};
+  for (const p of published) {
+    const f = p.post_format || 'single';
+    if (!fmtAvg[f]) fmtAvg[f] = { total: 0, count: 0 };
+    fmtAvg[f].total += eng(p);
+    fmtAvg[f].count++;
+  }
+  const bestFmt = Object.entries(fmtAvg)
+    .map(([k, v]) => ({ key: k, avg: v.count > 0 ? v.total / v.count : 0 }))
+    .sort((a, b) => b.avg - a.avg)[0];
+
+  let ctx = '\nPERFORMANCE INSIGHTS — LEAN INTO WHAT WORKS:\n';
+  if (topTopics.length > 0) {
+    ctx += `- High-performing topics: ${topTopics.join(', ')}. Consider weaving these themes in when relevant.\n`;
+  }
+  if (topAnchors.length > 0) {
+    ctx += `- Best content anchors: ${topAnchors.join(', ')}. These resonate most with the audience.\n`;
+  }
+  if (bestFmt) {
+    ctx += `- Best format: ${bestFmt.key} (avg ${Math.round(bestFmt.avg)} interactions).\n`;
+  }
+  ctx += '- Use these patterns as guidance, not strict rules — variety still matters.\n';
+
+  return ctx;
+
 export const getUserProfile = async (supabase: any, userId: string) => {
   const { data: profile, error: profileError } = await supabase
     .from('user_profiles')

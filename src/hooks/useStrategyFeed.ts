@@ -68,22 +68,23 @@ export function useStrategyFeed() {
         });
       }
 
-      // 2. High-performing content anchor
+      // 2. High-performing content anchor (with deeper analysis)
       const recentPublished = posts.filter(
         p => p.status === 'published' && new Date(p.scheduled_at) >= weekAgo
       );
-      const anchorEngagement: Record<string, number> = {};
+      const anchorEngagement: Record<string, { total: number; comments: number; count: number }> = {};
       for (const p of recentPublished) {
         const anchor = p.content_anchor || 'general';
-        anchorEngagement[anchor] =
-          (anchorEngagement[anchor] || 0) +
-          (p.likes || 0) + (p.comments || 0) + (p.shares || 0) + (p.saves || 0);
+        if (!anchorEngagement[anchor]) anchorEngagement[anchor] = { total: 0, comments: 0, count: 0 };
+        anchorEngagement[anchor].total += (p.likes || 0) + (p.comments || 0) + (p.shares || 0) + (p.saves || 0);
+        anchorEngagement[anchor].comments += (p.comments || 0);
+        anchorEngagement[anchor].count++;
       }
       const topAnchor = Object.entries(anchorEngagement)
         .filter(([k]) => k !== 'general')
-        .sort((a, b) => b[1] - a[1])[0];
+        .sort((a, b) => b[1].total - a[1].total)[0];
 
-      if (topAnchor && topAnchor[1] > 0) {
+      if (topAnchor && topAnchor[1].total > 0) {
         results.push({
           id: 'top-anchor',
           icon: '🔥',
@@ -93,6 +94,55 @@ export function useStrategyFeed() {
           ctaLink: '/dashboard/content-calendar',
           priority: 8,
         });
+      }
+
+      // 2b. Reassurance / demand moment insight
+      const momentComments: Record<string, number> = {};
+      for (const p of recentPublished) {
+        const moment = p.demand_moment_type || 'general';
+        momentComments[moment] = (momentComments[moment] || 0) + (p.comments || 0);
+      }
+      const topMoment = Object.entries(momentComments)
+        .filter(([k]) => k !== 'general')
+        .sort((a, b) => b[1] - a[1])[0];
+      if (topMoment && topMoment[1] > 0) {
+        results.push({
+          id: 'demand-moment',
+          icon: '💬',
+          insight: `"${topMoment[0]}" posts are generating more comments.`,
+          reason: 'Comments signal trust and interest — families engaging with your content are closer to reaching out.',
+          ctaLabel: 'Create a similar post',
+          ctaLink: '/dashboard/social-media',
+          priority: 7,
+        });
+      }
+
+      // 2c. Format performance insight
+      const formatPerf: Record<string, { total: number; count: number }> = {};
+      for (const p of recentPublished) {
+        const fmt = p.post_format || 'single';
+        if (!formatPerf[fmt]) formatPerf[fmt] = { total: 0, count: 0 };
+        formatPerf[fmt].total += (p.likes || 0) + (p.comments || 0) + (p.shares || 0) + (p.saves || 0);
+        formatPerf[fmt].count++;
+      }
+      const fmtEntries = Object.entries(formatPerf).filter(([, v]) => v.count > 0);
+      if (fmtEntries.length >= 2) {
+        fmtEntries.sort((a, b) => (b[1].total / b[1].count) - (a[1].total / a[1].count));
+        const best = fmtEntries[0];
+        const bestAvg = best[1].total / best[1].count;
+        const secondAvg = fmtEntries[1][1].total / fmtEntries[1][1].count;
+        if (bestAvg > secondAvg * 1.3) {
+          const label = best[0] === 'carousel' ? 'Carousel posts' : best[0] === 'single' ? 'Single image posts' : `${best[0]} posts`;
+          results.push({
+            id: 'format-winner',
+            icon: '📊',
+            insight: `${label} are outperforming other formats.`,
+            reason: `They average ${Math.round(bestAvg)} interactions — consider using this format more often.`,
+            ctaLabel: 'Try this format',
+            ctaLink: '/dashboard/content-calendar',
+            priority: 6,
+          });
+        }
       }
 
       // 3. Incomplete onboarding / missing profile fields

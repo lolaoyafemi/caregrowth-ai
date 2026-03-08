@@ -5,7 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 import { generateContentWithAI, generateAllPlatformCaptions } from './content-generator.ts';
 import { buildBusinessContext, buildAgencyContext, getAgencyProfile, personalizeContent, buildCaregivingContext, selectContentAnchor, selectEngagementHook, selectDemandMoment } from './business-context.ts';
-import { getUserProfile, logPostToHistory, getContentMemory, buildContentMemoryContext, extractTopicKeywords } from './database-service.ts';
+import { getUserProfile, logPostToHistory, getContentMemory, buildContentMemoryContext, buildPerformanceContext, extractTopicKeywords } from './database-service.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -131,7 +131,17 @@ serve(async (req) => {
     try {
       contentMemory = await getContentMemory(supabase, authenticatedUserId, 50);
       memoryContext = buildContentMemoryContext(contentMemory);
-      console.log(`📝 Content Memory loaded: ${contentMemory.length} recent posts`);
+      // Fetch full posts for performance analysis
+      const { data: perfPosts } = await supabase
+        .from('content_posts')
+        .select('likes, comments, shares, saves, impressions, content_anchor, demand_moment_type, topic_keywords, post_format, status')
+        .eq('user_id', authenticatedUserId)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      const performanceCtx = buildPerformanceContext(contentMemory, perfPosts || []);
+      memoryContext += performanceCtx;
+      console.log(`📝 Content Memory loaded: ${contentMemory.length} recent posts, performance insights added`);
     } catch (memoryError) {
       console.error('Error loading content memory:', (memoryError as Error).message);
     }
