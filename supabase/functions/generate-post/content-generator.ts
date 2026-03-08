@@ -791,3 +791,84 @@ export const parseGeneratedContent = (content: string): { hook: string; body: st
   return { hook, body, cta };
 };
 
+/**
+ * Adapt an already-generated caption to all 4 platforms in a single AI call.
+ * Returns an object with caption_instagram, caption_linkedin, caption_facebook, caption_x.
+ */
+export const generateAllPlatformCaptions = async (
+  originalCaption: string,
+  originPlatform: string,
+  openAIApiKey: string,
+  businessName: string,
+): Promise<Record<string, string>> => {
+  const platforms = ['instagram', 'linkedin', 'facebook', 'x'];
+  const normalizedOrigin = originPlatform === 'twitter' ? 'x' : originPlatform;
+
+  // The origin platform already has its caption — we only need the other 3
+  const otherPlatforms = platforms.filter(p => p !== normalizedOrigin);
+
+  const platformGuidelines: Record<string, string> = {
+    instagram: 'Emotional storytelling tone. Line breaks between thoughts. 3-5 hashtags at the bottom separated by a blank line. 1-3 emojis max. First line must stop the scroll.',
+    linkedin: 'Professional, insight-driven. Short paragraphs (1-2 sentences). Minimal/zero emojis. 150-250 words max. End with a question for discussion. 2-3 professional hashtags at end only if needed.',
+    facebook: 'Warm, conversational, community-oriented. Include a question or engagement prompt. 2-4 emojis. 100-200 words. Focus on shared experiences.',
+    x: 'Short, punchy, direct. Maximum 280 characters. No hashtags unless essential (1 max). No emojis unless they add meaning. One clear idea.',
+  };
+
+  const adaptPrompt = `You are a social media expert. Below is a social media caption originally written for ${normalizedOrigin}.
+
+ORIGINAL CAPTION:
+${originalCaption}
+
+Adapt this caption for each of the following platforms. Keep the core message and brand voice of "${businessName}" but reformat and restyle for each platform's best practices.
+
+${otherPlatforms.map(p => `--- ${p.toUpperCase()} ---\nGuidelines: ${platformGuidelines[p]}`).join('\n\n')}
+
+Return your response in EXACTLY this format (one section per platform, no extra commentary):
+${otherPlatforms.map(p => `[${p.toUpperCase()}]\n(caption here)`).join('\n\n')}`;
+
+  const model = 'gpt-4.1-mini-2025-04-14';
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: 'You adapt social media captions across platforms while preserving the core message. Return only the adapted captions in the requested format.' },
+        { role: 'user', content: adaptPrompt },
+      ],
+      max_completion_tokens: 1200,
+      top_p: 0.9,
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error('Platform adaptation API error:', errText);
+    // Return only the original platform caption on failure
+    return { [`caption_${normalizedOrigin}`]: originalCaption };
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || '';
+
+  // Parse the response
+  const captions: Record<string, string> = {
+    [`caption_${normalizedOrigin}`]: originalCaption,
+  };
+
+  for (const p of otherPlatforms) {
+    const regex = new RegExp(`\\[${p.toUpperCase()}\\]\\s*\\n([\\s\\S]*?)(?=\\n\\[|$)`, 'i');
+    const match = content.match(regex);
+    if (match && match[1]?.trim()) {
+      captions[`caption_${p}`] = match[1].trim();
+    }
+  }
+
+  console.log('Platform captions generated:', Object.keys(captions));
+  return captions;
+};
+

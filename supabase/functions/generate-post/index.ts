@@ -3,7 +3,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
-import { generateContentWithAI } from './content-generator.ts';
+import { generateContentWithAI, generateAllPlatformCaptions } from './content-generator.ts';
 import { buildBusinessContext, personalizeContent, buildCaregivingContext, selectContentAnchor, selectEngagementHook, selectDemandMoment } from './business-context.ts';
 import { getUserProfile, logPostToHistory, getContentMemory, buildContentMemoryContext, extractTopicKeywords } from './database-service.ts';
 
@@ -211,19 +211,33 @@ serve(async (req) => {
     // Build the core message (theme before platform adaptation)
     const coreMessage = `${hook} ${body}`.substring(0, 300).trim();
 
-    // Build per-platform captions from the generated content
-    // The content was already generated for the requested platform;
-    // store it in the matching caption field and leave others null
-    // so the frontend can re-generate or adapt later.
-    const platformCaptions: Record<string, string | null> = {
+    // Generate captions for ALL 4 platforms in one AI call
+    let platformCaptions: Record<string, string | null> = {
       caption_instagram: null,
       caption_linkedin: null,
       caption_facebook: null,
       caption_x: null,
     };
-    const captionKey = `caption_${platform === 'twitter' ? 'x' : platform}`;
-    if (captionKey in platformCaptions) {
-      platformCaptions[captionKey] = finalPost;
+    try {
+      const allCaptions = await generateAllPlatformCaptions(
+        finalPost,
+        platform,
+        openAIApiKey,
+        profile?.business_name || 'Your Business',
+      );
+      // Merge generated captions
+      for (const [key, value] of Object.entries(allCaptions)) {
+        if (key in platformCaptions) {
+          platformCaptions[key] = value;
+        }
+      }
+      console.log('✅ All platform captions generated:', Object.keys(allCaptions));
+    } catch (captionError) {
+      console.error('⚠️ Multi-platform caption generation failed, falling back to single platform:', (captionError as Error).message);
+      const captionKey = `caption_${platform === 'twitter' ? 'x' : platform}`;
+      if (captionKey in platformCaptions) {
+        platformCaptions[captionKey] = finalPost;
+      }
     }
 
     // Extract topic keywords from the generated caption
