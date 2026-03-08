@@ -21,6 +21,7 @@ const DashboardLayout = lazy(() => import('./components/dashboard/DashboardLayou
 const DashboardHome = lazy(() => import('./pages/DashboardHome'));
 const SocialMediaTool = lazy(() => import('./pages/SocialMediaTool'));
 const ContentCalendarPage = lazy(() => import('./pages/ContentCalendarPage'));
+const AgencySetupPage = lazy(() => import('./pages/AgencySetupPage'));
 const QAAssistantTool = lazy(() => import('./pages/QAAssistantTool'));
 const PromptsPage = lazy(() => import('./pages/PromptsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
@@ -123,6 +124,7 @@ const AppContent = memo(() => {
               }>
                 <Route index element={<DashboardHome />} />
                 <Route path="social-media" element={<SocialMediaTool />} />
+                <Route path="agency-setup" element={<AgencySetupPage />} />
                 <Route path="content-calendar" element={<ContentCalendarPage />} />
                 <Route path="qa-assistant" element={<QAAssistantTool />} />
                 <Route path="prompts" element={<PromptsPage />} />
