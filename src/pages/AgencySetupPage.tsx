@@ -343,7 +343,7 @@ const AgencySetupPage = () => {
             </div>
             <FolderUpload onUploadComplete={() => {
               markComplete(3);
-              toast.success('Documents uploaded! They'll be processed shortly.');
+              toast.success('Documents uploaded! They will be processed shortly.');
             }} />
             <div className="flex gap-3">
               <Button onClick={() => { markComplete(3); setCurrentStage(4); }} className="bg-primary hover:bg-primary/90">
