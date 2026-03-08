@@ -142,6 +142,7 @@ serve(async (req) => {
     let contentSource = '';
     let slideTexts: string[] = [];
 
+    try {
       // Build caregiving context and select content anchor
       const postIdx = post_index || 0;
       const caregivingContext = buildCaregivingContext(postIdx);
