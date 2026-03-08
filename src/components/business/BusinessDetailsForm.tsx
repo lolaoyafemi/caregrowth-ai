@@ -150,6 +150,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
         setFormData({
           businessName: typedProfile.business_name || '',
           location: typedProfile.location || '',
+          serviceArea: (typedProfile as any).service_area || '',
           coreService: typedProfile.core_service || '',
           idealClient: typedProfile.ideal_client || '',
           mainOffer: typedProfile.main_offer || '',
@@ -158,7 +159,8 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
           audienceProblem: typedProfile.audience_problem || '',
           objections: typedProfile.objections?.join(', ') || '',
           differentiator: typedProfile.differentiator || '',
-          testimonials: typedProfile.testimonial || ''
+          testimonials: typedProfile.testimonial || '',
+          tonePreference: (typedProfile as any).tone_preference || 'warm',
         });
         console.log('Existing profile loaded successfully');
       } else {
