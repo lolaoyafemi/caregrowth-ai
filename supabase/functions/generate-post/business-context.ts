@@ -1,10 +1,168 @@
 
+
+// ─── Caregiving Reality Map ──────────────────────────────────────────
+// Real situations families face — used to ground AI content in authenticity
+
+const CAREGIVING_REALITY_MAP = [
+  {
+    situation: 'caregiver_burnout',
+    label: 'Caregiver Burnout',
+    emotions: ['exhaustion', 'guilt', 'isolation', 'resentment', 'grief'],
+    scenarios: [
+      'A daughter who hasn\'t slept through the night in months',
+      'A spouse who forgot what their own hobbies used to be',
+      'A son who snaps at his mother and immediately hates himself for it',
+    ],
+  },
+  {
+    situation: 'hospital_discharge',
+    label: 'Hospital Discharge Stress',
+    emotions: ['panic', 'overwhelm', 'confusion', 'fear'],
+    scenarios: [
+      'Getting a call that Mom is being discharged tomorrow — and nobody has a plan',
+      'Reading a 12-page discharge packet while running on no sleep',
+      'Being told "she can\'t live alone anymore" with zero guidance on what\'s next',
+    ],
+  },
+  {
+    situation: 'dementia_care',
+    label: 'Dementia Care Challenges',
+    emotions: ['heartbreak', 'frustration', 'loss', 'love', 'patience'],
+    scenarios: [
+      'Dad asking "who are you?" for the first time',
+      'Repeating the same conversation for the fifth time today — and choosing kindness again',
+      'Watching someone you love slowly become someone you don\'t recognize',
+    ],
+  },
+  {
+    situation: 'medication_management',
+    label: 'Medication Reminders',
+    emotions: ['worry', 'responsibility', 'stress'],
+    scenarios: [
+      'Wondering if Mom took her pills today — from 200 miles away',
+      'Sorting 14 medications into weekly pill boxes every Sunday',
+      'Getting a call from the pharmacy about a missed refill',
+    ],
+  },
+  {
+    situation: 'senior_loneliness',
+    label: 'Loneliness in Seniors',
+    emotions: ['sadness', 'worry', 'helplessness', 'compassion'],
+    scenarios: [
+      'Calling Dad and realizing you\'re the only person he talked to all week',
+      'A senior eating dinner alone every night after losing their spouse',
+      'Noticing the TV is always on — not for entertainment, just for a voice in the room',
+    ],
+  },
+  {
+    situation: 'family_guilt',
+    label: 'Family Guilt About Asking for Help',
+    emotions: ['shame', 'conflict', 'obligation', 'relief'],
+    scenarios: [
+      'Feeling like a failure for not being able to "do it all"',
+      'Siblings fighting about who should be doing more',
+      'Thinking "I should be the one caring for her — not a stranger"',
+    ],
+  },
+  {
+    situation: 'end_of_life',
+    label: 'End-of-Life Transitions',
+    emotions: ['grief', 'peace', 'love', 'fear', 'acceptance'],
+    scenarios: [
+      'Wanting to make sure their last days feel like home',
+      'Having the conversation nobody wants to have',
+      'Choosing comfort over treatment — and wondering if it\'s the right call',
+    ],
+  },
+  {
+    situation: 'respite_need',
+    label: 'Need for Respite',
+    emotions: ['exhaustion', 'hope', 'relief', 'guilt'],
+    scenarios: [
+      'A caregiver who hasn\'t taken a vacation in three years',
+      'Needing just one afternoon to go to a doctor\'s appointment alone',
+      'Feeling guilty for wanting a break from someone you love',
+    ],
+  },
+];
+
+// ─── Content Pattern Rotation ────────────────────────────────────────
+// Ensures feeds feel authentic, not promotional
+
+const CONTENT_PATTERNS = [
+  {
+    pattern: 'education',
+    label: 'Educational Post',
+    instruction: 'Teach the audience something useful about caregiving. Share a specific tip, process, or little-known fact. Position the agency as a knowledgeable guide — not a salesperson.',
+  },
+  {
+    pattern: 'emotional_story',
+    label: 'Emotional Story',
+    instruction: 'Tell a short, emotionally resonant story about a caregiving moment. It can be fictional but must feel real. Focus on a specific scene — not a general statement. The reader should feel something.',
+  },
+  {
+    pattern: 'myth_vs_truth',
+    label: 'Myth vs Truth',
+    instruction: 'Start with a common myth or misconception about home care, aging, or caregiving. Then gently correct it with the truth. The tone should be informative, not condescending.',
+  },
+  {
+    pattern: 'practical_tip',
+    label: 'Practical Tip',
+    instruction: 'Share one actionable, specific tip that a family caregiver could use today. Make it concrete — not vague advice like "take care of yourself." Example: "Keep a one-page medication list in your phone — it saves 10 minutes at every doctor visit."',
+  },
+  {
+    pattern: 'reassurance',
+    label: 'Reassurance Post',
+    instruction: 'Write a post that makes caregivers feel seen, supported, and less alone. No selling. No CTA. Just genuine reassurance that they\'re doing a good job and it\'s okay to need help.',
+  },
+  {
+    pattern: 'soft_cta',
+    label: 'Soft Call to Action',
+    instruction: 'Write a warm, low-pressure post that invites the reader to take a small step — like saving the post, visiting the website, or sending a message. The CTA should feel like an invitation, not a sales pitch.',
+  },
+];
+
+/**
+ * Select a caregiving reality for the current post based on index.
+ */
+export function selectCaregivingReality(postIndex: number): typeof CAREGIVING_REALITY_MAP[0] {
+  return CAREGIVING_REALITY_MAP[postIndex % CAREGIVING_REALITY_MAP.length];
+}
+
+/**
+ * Select a content pattern for the current post based on index.
+ */
+export function selectContentPattern(postIndex: number): typeof CONTENT_PATTERNS[0] {
+  return CONTENT_PATTERNS[postIndex % CONTENT_PATTERNS.length];
+}
+
+/**
+ * Build the caregiving context block to inject into AI prompts.
+ */
+export function buildCaregivingContext(postIndex: number): string {
+  const reality = selectCaregivingReality(postIndex);
+  const pattern = selectContentPattern(postIndex);
+  const scenario = reality.scenarios[postIndex % reality.scenarios.length];
+
+  return `
+CAREGIVING REALITY TO REFERENCE:
+Situation: ${reality.label}
+Emotions families feel: ${reality.emotions.join(', ')}
+Real scenario to draw from: "${scenario}"
+
+CONTENT PATTERN FOR THIS POST: ${pattern.label}
+${pattern.instruction}
+
+IMPORTANT: Ground this post in the caregiving reality above. Reference the real emotions and situations — not generic marketing language. The reader should think "they understand what I\'m going through."`;
+}
+
 export const buildBusinessContext = (profile: any, audience: string): string => {
   const targetAudience = audience || (profile?.ideal_client || 'families needing care');
   
   return profile ? `
 Business Name: ${profile.business_name || 'Home Care Business'}
 Services: ${profile.services || profile.core_service || 'Home care services'}
+Service Area: ${profile.service_area || profile.location || 'Local area'}
 Location: ${profile.location || 'Local area'}
 Phone Number: ${profile.phone_number || 'Contact us for more information'}
 Target Client: ${targetAudience}
@@ -15,6 +173,7 @@ Client Pain Points: ${Array.isArray(profile.pain_points) ? profile.pain_points.j
 Audience Problems: ${profile.audience_problem || 'Caregiving challenges'}
 Objections: ${Array.isArray(profile.objections) ? profile.objections.join(', ') : profile.objections || 'Cost and trust concerns'}
 Testimonial: ${profile.testimonial || 'Trusted by families in our community'}
+Tone Preference: ${profile.tone_preference || 'warm and empathetic'}
 ` : 'Home Care Business providing professional care services';
 };
 
@@ -24,6 +183,7 @@ export const personalizeContent = (text: string, profile: any, targetAudience: s
   return text
     .replace(/\{business_name\}/gi, profile.business_name || 'our business')
     .replace(/\{location\}/gi, profile.location || 'your area')
+    .replace(/\{service_area\}/gi, profile.service_area || profile.location || 'your area')
     .replace(/\{services\}/gi, profile.services || 'our services')
     .replace(/\{core_service\}/gi, profile.core_service || 'our services')
     .replace(/\{phone_number\}/gi, profile.phone_number || 'contact us')
@@ -36,6 +196,7 @@ export const personalizeContent = (text: string, profile: any, targetAudience: s
     .replace(/\{objections\}/gi, Array.isArray(profile.objections) ? profile.objections.join(', ') : 'common concerns')
     .replace(/\{audience\}/gi, targetAudience)
     .replace(/\{tone\}/gi, tone || 'professional')
+    .replace(/\{tone_preference\}/gi, profile.tone_preference || 'warm')
     .replace(/\{platform\}/gi, platform || 'social media')
     .replace(/\{testimonial\}/gi, profile.testimonial || 'trusted by our community');
 };
