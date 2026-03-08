@@ -83,7 +83,7 @@ serve(async (req) => {
       });
     }
     
-    const { postType, tone, platform, audience, subject, post_format } = requestBody || {};
+    const { postType, tone, platform, audience, subject, post_format, post_index } = requestBody || {};
     const isCarousel = post_format === 'carousel';
     
     console.log('Generate post request:', {
