@@ -199,6 +199,7 @@ export type Database = {
           batch_id: string | null
           content_anchor: string | null
           created_at: string
+          demand_moment_type: string | null
           engagement_hook: string | null
           error_message: string | null
           headline: string | null
@@ -220,6 +221,7 @@ export type Database = {
           batch_id?: string | null
           content_anchor?: string | null
           created_at?: string
+          demand_moment_type?: string | null
           engagement_hook?: string | null
           error_message?: string | null
           headline?: string | null
@@ -241,6 +243,7 @@ export type Database = {
           batch_id?: string | null
           content_anchor?: string | null
           created_at?: string
+          demand_moment_type?: string | null
           engagement_hook?: string | null
           error_message?: string | null
           headline?: string | null
