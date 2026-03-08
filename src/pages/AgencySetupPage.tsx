@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { 
-  Building2, Heart, Mic2, FileUp, Share2, Rocket,
-  Check, ChevronRight, ChevronLeft, SkipForward,
-  Upload, Facebook, Instagram, Linkedin, Twitter
+import {
+  Building2, Briefcase, Sparkles, FileUp, Share2, Rocket,
+  Check, ChevronRight, ChevronLeft, SkipForward, Globe,
+  Facebook, Instagram, Linkedin, Twitter, Loader2,
 } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,28 +17,38 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import FolderUpload from '@/components/upload/FolderUpload';
 
+/* ------------------------------------------------------------------ */
+/*  Constants                                                          */
+/* ------------------------------------------------------------------ */
+
 const STAGES = [
-  { id: 'profile', label: 'Agency Profile', icon: Building2 },
-  { id: 'philosophy', label: 'Care Philosophy', icon: Heart },
-  { id: 'voice', label: 'Brand Voice', icon: Mic2 },
-  { id: 'knowledge', label: 'Upload Knowledge', icon: FileUp },
-  { id: 'connect', label: 'Connect Platforms', icon: Share2 },
-  { id: 'generate', label: 'First Content', icon: Rocket },
+  { id: 'basics', label: 'Agency Basics', icon: Building2 },
+  { id: 'services', label: 'Services', icon: Briefcase },
+  { id: 'personality', label: 'Personality', icon: Sparkles },
+  { id: 'knowledge', label: 'Knowledge', icon: FileUp },
+  { id: 'connect', label: 'Platforms', icon: Share2 },
+  { id: 'activate', label: 'Activate', icon: Rocket },
 ] as const;
 
-const PHILOSOPHY_OPTIONS = [
-  { id: 'family-centered', label: 'Family-Centered Care', desc: 'We put the whole family at the center of every care plan.' },
-  { id: 'dementia', label: 'Dementia Specialists', desc: 'We specialize in memory care and cognitive support.' },
-  { id: 'companionship', label: 'Companionship-Focused', desc: 'We believe connection and presence matter most.' },
-  { id: 'hospital-discharge', label: 'Hospital Discharge Support', desc: 'We help families navigate the transition home.' },
-  { id: 'respite', label: 'Respite Care Specialists', desc: 'We give family caregivers the rest they deserve.' },
+const SERVICE_OPTIONS = [
+  { id: 'personal-care', label: 'Personal Care' },
+  { id: 'companion-care', label: 'Companion Care' },
+  { id: 'dementia-care', label: 'Dementia Care' },
+  { id: 'respite-care', label: 'Respite Care' },
+  { id: 'post-hospital-care', label: 'Post-Hospital Care' },
+  { id: 'live-in-care', label: 'Live-In Care' },
 ];
 
-const TONE_OPTIONS = [
-  { id: 'warm', label: 'Warm & Compassionate', desc: 'Empathetic language that feels like a caring friend.' },
-  { id: 'professional', label: 'Professional & Clinical', desc: 'Clear, authoritative, and trustworthy.' },
-  { id: 'friendly', label: 'Friendly & Conversational', desc: 'Approachable and easy to connect with.' },
+const PERSONALITY_OPTIONS = [
+  { id: 'reassured', label: 'Reassured', desc: '"Everything is going to be okay."' },
+  { id: 'supported', label: 'Supported', desc: '"You're not doing this alone."' },
+  { id: 'informed', label: 'Informed', desc: '"Here's what you need to know."' },
+  { id: 'encouraged', label: 'Encouraged', desc: '"You're making a great choice."' },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 
 const AgencySetupPage = () => {
   const { user } = useUser();
@@ -47,22 +56,21 @@ const AgencySetupPage = () => {
   const [currentStage, setCurrentStage] = useState(0);
   const [completedStages, setCompletedStages] = useState<Set<number>>(new Set());
 
-  // Stage 1 — Agency Profile
+  // Stage 1 — Basics
   const [agencyName, setAgencyName] = useState('');
   const [serviceArea, setServiceArea] = useState('');
-  const [servicesOffered, setServicesOffered] = useState('');
-  const [yearsOperating, setYearsOperating] = useState('');
-  const [targetClient, setTargetClient] = useState('');
+  const [website, setWebsite] = useState('');
+  const [extracting, setExtracting] = useState(false);
 
-  // Stage 2 — Philosophy
-  const [selectedPhilosophy, setSelectedPhilosophy] = useState<string[]>([]);
+  // Stage 2 — Services
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
-  // Stage 3 — Voice
-  const [selectedTone, setSelectedTone] = useState('');
+  // Stage 3 — Personality
+  const [selectedPersonality, setSelectedPersonality] = useState<string[]>([]);
 
-  // Load existing profile data
+  // Load existing data
   useEffect(() => {
-    const loadProfile = async () => {
+    const load = async () => {
       if (!user?.id) return;
       const { data: agency } = await supabase
         .from('agencies')
@@ -79,280 +87,287 @@ const AgencySetupPage = () => {
           .maybeSingle();
         if (profile) {
           setServiceArea(profile.service_area || '');
-          setServicesOffered(profile.services_offered?.join(', ') || '');
-          setTargetClient(profile.ideal_client_type || '');
-          setSelectedTone(profile.tone_preference || '');
-          if (profile.caregiving_focus) setSelectedPhilosophy(profile.caregiving_focus);
+          if (profile.services_offered?.length) setSelectedServices(profile.services_offered);
+          if (profile.caregiving_focus?.length) setSelectedPersonality(profile.caregiving_focus);
         }
       }
 
-      const { data: userProfile } = await supabase
+      const { data: up } = await supabase
         .from('user_profiles')
-        .select('business_name, service_area, services')
+        .select('business_name, service_area')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (userProfile) {
-        if (!agencyName && userProfile.business_name) setAgencyName(userProfile.business_name);
-        if (!serviceArea && userProfile.service_area) setServiceArea(userProfile.service_area);
-        if (!servicesOffered && userProfile.services) setServicesOffered(userProfile.services);
+      if (up) {
+        if (!agencyName && up.business_name) setAgencyName(up.business_name);
+        if (!serviceArea && up.service_area) setServiceArea(up.service_area);
       }
     };
-    loadProfile();
+    load();
   }, [user?.id]);
 
   const totalStages = STAGES.length;
-  const progressPercent = Math.round(((completedStages.size) / totalStages) * 100);
+  const progressPercent = Math.round((completedStages.size / totalStages) * 100);
 
-  const markComplete = (stageIndex: number) => {
-    setCompletedStages(prev => new Set([...prev, stageIndex]));
+  const markComplete = (i: number) => setCompletedStages(prev => new Set([...prev, i]));
+  const goNext = () => setCurrentStage(prev => Math.min(prev + 1, totalStages - 1));
+  const goBack = () => setCurrentStage(prev => Math.max(prev - 1, 0));
+
+  /* ---------- Website extraction ---------- */
+  const handleExtractFromWebsite = async () => {
+    if (!website.trim()) return;
+    setExtracting(true);
+    try {
+      // Try calling our edge function that uses Lovable AI to extract info
+      const { data, error } = await supabase.functions.invoke('extract-agency-info', {
+        body: { url: website },
+      });
+      if (error) throw error;
+      if (data?.services?.length) {
+        setSelectedServices(prev => [...new Set([...prev, ...data.services])]);
+        toast.success('We found some services on your website and pre-selected them.');
+      }
+      if (data?.serviceArea && !serviceArea) {
+        setServiceArea(data.serviceArea);
+      }
+    } catch {
+      // Silent fail — extraction is a bonus, not required
+      toast.info('We couldn\'t extract info automatically. No worries — you can fill it in below.');
+    } finally {
+      setExtracting(false);
+    }
   };
 
-  const handleSaveProfile = async () => {
+  /* ---------- Save handlers ---------- */
+  const handleSaveBasics = async () => {
     if (!user?.id) return;
     try {
-      // Upsert agency
       let agencyId: string;
       const { data: existing } = await supabase
-        .from('agencies')
-        .select('id')
-        .eq('admin_user_id', user.id)
-        .maybeSingle();
+        .from('agencies').select('id').eq('admin_user_id', user.id).maybeSingle();
 
       if (existing) {
         agencyId = existing.id;
         await supabase.from('agencies').update({ name: agencyName }).eq('id', agencyId);
       } else {
-        const { data: newAgency, error } = await supabase
-          .from('agencies')
-          .insert({ name: agencyName, admin_user_id: user.id })
-          .select('id')
-          .single();
+        const { data: n, error } = await supabase
+          .from('agencies').insert({ name: agencyName, admin_user_id: user.id }).select('id').single();
         if (error) throw error;
-        agencyId = newAgency.id;
+        agencyId = n.id;
       }
 
-      // Upsert agency profile
-      const services = servicesOffered.split(',').map(s => s.trim()).filter(Boolean);
-      const { data: existingProfile } = await supabase
-        .from('agency_profiles')
-        .select('id')
-        .eq('agency_id', agencyId)
-        .maybeSingle();
-
-      const profileData = {
-        agency_name: agencyName,
-        service_area: serviceArea,
-        services_offered: services,
-        ideal_client_type: targetClient,
-      };
-
-      if (existingProfile) {
-        await supabase.from('agency_profiles').update(profileData).eq('id', existingProfile.id);
+      // Ensure agency_profiles row exists
+      const { data: ep } = await supabase
+        .from('agency_profiles').select('id').eq('agency_id', agencyId).maybeSingle();
+      const pData = { agency_name: agencyName, service_area: serviceArea };
+      if (ep) {
+        await supabase.from('agency_profiles').update(pData).eq('id', ep.id);
       } else {
-        await supabase.from('agency_profiles').insert({ ...profileData, agency_id: agencyId });
+        await supabase.from('agency_profiles').insert({ ...pData, agency_id: agencyId });
       }
 
-      // Update user profile
-      await supabase.from('user_profiles').update({
-        business_name: agencyName,
-        service_area: serviceArea,
-        services: servicesOffered,
-      }).eq('user_id', user.id);
+      await supabase.from('user_profiles').update({ business_name: agencyName, service_area: serviceArea }).eq('user_id', user.id);
 
-      toast.success('Agency profile saved!');
+      toast.success('Agency basics saved!');
       markComplete(0);
-      setCurrentStage(1);
+      goNext();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save profile');
+      toast.error(err.message || 'Failed to save');
     }
   };
 
-  const handleSavePhilosophy = async () => {
+  const handleSaveServices = async () => {
     if (!user?.id) return;
     try {
       const { data: agency } = await supabase
-        .from('agencies')
-        .select('id')
-        .eq('admin_user_id', user.id)
-        .maybeSingle();
+        .from('agencies').select('id').eq('admin_user_id', user.id).maybeSingle();
       if (agency) {
         await supabase.from('agency_profiles')
-          .update({ caregiving_focus: selectedPhilosophy })
-          .eq('agency_id', agency.id);
-      }
-      toast.success('Care philosophy saved!');
-      markComplete(1);
-      setCurrentStage(2);
-    } catch {
-      toast.error('Failed to save philosophy');
-    }
-  };
-
-  const handleSaveVoice = async () => {
-    if (!user?.id) return;
-    try {
-      const { data: agency } = await supabase
-        .from('agencies')
-        .select('id')
-        .eq('admin_user_id', user.id)
-        .maybeSingle();
-      if (agency) {
-        await supabase.from('agency_profiles')
-          .update({ tone_preference: selectedTone })
+          .update({ services_offered: selectedServices })
           .eq('agency_id', agency.id);
       }
       await supabase.from('user_profiles')
-        .update({ tone_preference: selectedTone })
+        .update({ services: selectedServices.join(', ') })
         .eq('user_id', user.id);
-      toast.success('Brand voice saved!');
-      markComplete(2);
-      setCurrentStage(3);
+      toast.success('Services saved!');
+      markComplete(1);
+      goNext();
     } catch {
-      toast.error('Failed to save voice');
+      toast.error('Failed to save services');
     }
   };
 
-  const handleGenerateContent = () => {
-    markComplete(5);
-    navigate('/dashboard/social-media');
+  const handleSavePersonality = async () => {
+    if (!user?.id) return;
+    try {
+      const { data: agency } = await supabase
+        .from('agencies').select('id').eq('admin_user_id', user.id).maybeSingle();
+      if (agency) {
+        await supabase.from('agency_profiles')
+          .update({ caregiving_focus: selectedPersonality, tone_preference: selectedPersonality[0] || null })
+          .eq('agency_id', agency.id);
+      }
+      await supabase.from('user_profiles')
+        .update({ tone_preference: selectedPersonality[0] || null })
+        .eq('user_id', user.id);
+      toast.success('Personality saved!');
+      markComplete(2);
+      goNext();
+    } catch {
+      toast.error('Failed to save personality');
+    }
   };
 
-  const renderStageContent = () => {
+  const handleActivate = () => {
+    markComplete(5);
+    navigate('/dashboard/content-calendar');
+  };
+
+  /* ---------- Toggle helper ---------- */
+  const toggle = (list: string[], id: string) =>
+    list.includes(id) ? list.filter(x => x !== id) : [...list, id];
+
+  /* ---------- Selection card ---------- */
+  const SelectionCard = ({ id, label, desc, selected, onToggle }: {
+    id: string; label: string; desc?: string; selected: boolean; onToggle: () => void;
+  }) => (
+    <button
+      onClick={onToggle}
+      className={cn(
+        "flex items-start gap-3 p-4 rounded-xl border text-left transition-all",
+        selected
+          ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+          : "border-border hover:border-muted-foreground/30 hover:bg-accent/30"
+      )}
+    >
+      <div className={cn(
+        "mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+        selected ? "border-primary bg-primary" : "border-muted-foreground/40"
+      )}>
+        {selected && <Check className="h-3 w-3 text-primary-foreground" />}
+      </div>
+      <div>
+        <p className="font-medium text-foreground">{label}</p>
+        {desc && <p className="text-sm text-muted-foreground mt-0.5">{desc}</p>}
+      </div>
+    </button>
+  );
+
+  /* ---------- Render stages ---------- */
+  const renderStage = () => {
     switch (currentStage) {
+      /* Stage 1 — Agency Basics */
       case 0:
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold text-foreground">Tell us about your agency</h2>
-              <p className="text-muted-foreground mt-1">This helps us tailor everything we create to your business.</p>
+              <h2 className="text-2xl font-semibold text-foreground">Let's start with the basics</h2>
+              <p className="text-muted-foreground mt-1">Tell us a little about your agency so we can personalize everything.</p>
             </div>
             <div className="grid gap-4 max-w-lg">
               <div className="space-y-2">
-                <Label htmlFor="agencyName">Agency Name</Label>
-                <Input id="agencyName" placeholder="e.g., Sunshine Home Care" value={agencyName} onChange={e => setAgencyName(e.target.value)} />
+                <Label htmlFor="name">Agency Name</Label>
+                <Input id="name" placeholder="e.g., Sunshine Home Care" value={agencyName} onChange={e => setAgencyName(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="serviceArea">Service Area</Label>
-                <Input id="serviceArea" placeholder="e.g., Greater Austin, TX" value={serviceArea} onChange={e => setServiceArea(e.target.value)} />
+                <Label htmlFor="area">Service Area</Label>
+                <Input id="area" placeholder="e.g., Greater Austin, TX" value={serviceArea} onChange={e => setServiceArea(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="services">Services Offered</Label>
-                <Textarea id="services" placeholder="e.g., Personal care, companionship, dementia care, respite care" value={servicesOffered} onChange={e => setServicesOffered(e.target.value)} rows={2} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="years">Years Operating</Label>
-                <Input id="years" placeholder="e.g., 5" value={yearsOperating} onChange={e => setYearsOperating(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="target">Target Client Type</Label>
-                <Input id="target" placeholder="e.g., Families caring for aging parents" value={targetClient} onChange={e => setTargetClient(e.target.value)} />
+                <Label htmlFor="web">Website (optional)</Label>
+                <div className="flex gap-2">
+                  <Input id="web" placeholder="https://youragency.com" value={website} onChange={e => setWebsite(e.target.value)} className="flex-1" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExtractFromWebsite}
+                    disabled={!website.trim() || extracting}
+                    className="shrink-0"
+                  >
+                    {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+                    <span className="ml-1.5 hidden sm:inline">{extracting ? 'Scanning…' : 'Auto-fill'}</span>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">If provided, we'll try to extract your services automatically.</p>
               </div>
             </div>
-            <Button onClick={handleSaveProfile} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleSaveBasics} disabled={!agencyName.trim()}>
               Save & Continue <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         );
 
+      /* Stage 2 — Services */
       case 1:
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold text-foreground">What best describes your care philosophy?</h2>
-              <p className="text-muted-foreground mt-1">Select all that apply. This shapes the tone and themes of your content.</p>
+              <h2 className="text-2xl font-semibold text-foreground">What services does your agency offer?</h2>
+              <p className="text-muted-foreground mt-1">Select all that apply. This helps us create accurate, relevant content.</p>
             </div>
             <div className="grid gap-3 max-w-lg">
-              {PHILOSOPHY_OPTIONS.map(opt => (
-                <button
-                  key={opt.id}
-                  onClick={() => setSelectedPhilosophy(prev => 
-                    prev.includes(opt.id) ? prev.filter(p => p !== opt.id) : [...prev, opt.id]
-                  )}
-                  className={cn(
-                    "flex items-start gap-3 p-4 rounded-lg border text-left transition-all",
-                    selectedPhilosophy.includes(opt.id)
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                      : "border-border hover:border-muted-foreground/30"
-                  )}
-                >
-                  <div className={cn(
-                    "mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
-                    selectedPhilosophy.includes(opt.id) ? "border-primary bg-primary" : "border-muted-foreground/40"
-                  )}>
-                    {selectedPhilosophy.includes(opt.id) && <Check className="h-3 w-3 text-primary-foreground" />}
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">{opt.label}</p>
-                    <p className="text-sm text-muted-foreground">{opt.desc}</p>
-                  </div>
-                </button>
+              {SERVICE_OPTIONS.map(s => (
+                <SelectionCard
+                  key={s.id}
+                  id={s.id}
+                  label={s.label}
+                  selected={selectedServices.includes(s.id)}
+                  onToggle={() => setSelectedServices(prev => toggle(prev, s.id))}
+                />
               ))}
             </div>
-            <Button onClick={handleSavePhilosophy} disabled={selectedPhilosophy.length === 0} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleSaveServices} disabled={selectedServices.length === 0}>
               Save & Continue <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         );
 
+      /* Stage 3 — Personality */
       case 2:
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold text-foreground">How should your brand sound?</h2>
-              <p className="text-muted-foreground mt-1">Pick the tone that feels most like your agency.</p>
+              <h2 className="text-2xl font-semibold text-foreground">How do you want families to feel when they read your content?</h2>
+              <p className="text-muted-foreground mt-1">Pick one or two. This shapes the voice behind everything we write.</p>
             </div>
             <div className="grid gap-3 max-w-lg">
-              {TONE_OPTIONS.map(opt => (
-                <button
-                  key={opt.id}
-                  onClick={() => setSelectedTone(opt.id)}
-                  className={cn(
-                    "flex items-start gap-3 p-4 rounded-lg border text-left transition-all",
-                    selectedTone === opt.id
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                      : "border-border hover:border-muted-foreground/30"
-                  )}
-                >
-                  <div className={cn(
-                    "mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
-                    selectedTone === opt.id ? "border-primary bg-primary" : "border-muted-foreground/40"
-                  )}>
-                    {selectedTone === opt.id && <Check className="h-3 w-3 text-primary-foreground" />}
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">{opt.label}</p>
-                    <p className="text-sm text-muted-foreground">{opt.desc}</p>
-                  </div>
-                </button>
+              {PERSONALITY_OPTIONS.map(p => (
+                <SelectionCard
+                  key={p.id}
+                  id={p.id}
+                  label={p.label}
+                  desc={p.desc}
+                  selected={selectedPersonality.includes(p.id)}
+                  onToggle={() => setSelectedPersonality(prev => toggle(prev, p.id))}
+                />
               ))}
             </div>
-            <Button onClick={handleSaveVoice} disabled={!selectedTone} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleSavePersonality} disabled={selectedPersonality.length === 0}>
               Save & Continue <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         );
 
+      /* Stage 4 — Upload Knowledge */
       case 3:
         return (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-semibold text-foreground">Upload your knowledge base</h2>
               <p className="text-muted-foreground mt-1">
-                Service brochures, policy manuals, training materials, FAQ documents — anything that helps us answer questions about your agency.
+                Service brochures, policies, caregiver guides, FAQs — anything that helps us answer questions about your agency.
               </p>
             </div>
             <FolderUpload onUploadComplete={() => {
               markComplete(3);
-              toast.success('Documents uploaded! They will be processed shortly.');
+              toast.success('Documents uploaded! They'll be processed shortly.');
             }} />
-            <div className="flex gap-3">
-              <Button onClick={() => { markComplete(3); setCurrentStage(4); }} className="bg-primary hover:bg-primary/90">
-                Continue <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
+            <Button onClick={() => { markComplete(3); goNext(); }}>
+              Continue <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
           </div>
         );
 
+      /* Stage 5 — Connect Platforms */
       case 4:
         return (
           <div className="space-y-6">
@@ -366,11 +381,11 @@ const AgencySetupPage = () => {
                 { name: 'Instagram Business', icon: Instagram, color: 'text-pink-500' },
                 { name: 'LinkedIn', icon: Linkedin, color: 'text-blue-700' },
                 { name: 'X (optional)', icon: Twitter, color: 'text-foreground' },
-              ].map(platform => (
-                <Card key={platform.name} className="flex items-center justify-between p-4">
+              ].map(p => (
+                <Card key={p.name} className="flex items-center justify-between p-4 border-border">
                   <div className="flex items-center gap-3">
-                    <platform.icon className={cn("h-5 w-5", platform.color)} />
-                    <span className="font-medium text-foreground">{platform.name}</span>
+                    <p.icon className={cn("h-5 w-5", p.color)} />
+                    <span className="font-medium text-foreground">{p.name}</span>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/content-calendar')}>
                     Connect
@@ -378,23 +393,24 @@ const AgencySetupPage = () => {
                 </Card>
               ))}
             </div>
-            <Button onClick={() => { markComplete(4); setCurrentStage(5); }} className="bg-primary hover:bg-primary/90">
+            <Button onClick={() => { markComplete(4); goNext(); }}>
               Continue <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         );
 
+      /* Stage 6 — Activate Marketing */
       case 5:
         return (
           <div className="space-y-6 text-center max-w-md mx-auto py-8">
             <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
               <Rocket className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="text-2xl font-semibold text-foreground">You're all set!</h2>
+            <h2 className="text-2xl font-semibold text-foreground">You're ready to go!</h2>
             <p className="text-muted-foreground">
-              Let's prepare your first week of posts. We'll use everything you've told us to generate content that sounds like your agency.
+              Let's prepare your first week of posts. We'll use everything you've shared to generate content that sounds like your agency.
             </p>
-            <Button size="lg" onClick={handleGenerateContent} className="bg-primary hover:bg-primary/90">
+            <Button size="lg" onClick={handleActivate}>
               <Rocket className="mr-2 h-4 w-4" /> Generate 7-Day Content Plan
             </Button>
           </div>
@@ -404,9 +420,10 @@ const AgencySetupPage = () => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">Agency Setup</h1>
-        <p className="text-muted-foreground mt-1">Let's configure CareGrowth for your agency. You can skip steps and come back anytime.</p>
+        <p className="text-muted-foreground mt-1">Let's configure CareGrowth for your agency. Skip any step and come back anytime.</p>
       </div>
 
       {/* Progress tracker */}
@@ -444,22 +461,18 @@ const AgencySetupPage = () => {
       {/* Stage content */}
       <Card className="border-border">
         <CardContent className="p-6 sm:p-8">
-          {renderStageContent()}
+          {renderStage()}
         </CardContent>
       </Card>
 
       {/* Navigation */}
       <div className="flex items-center justify-between mt-6">
-        <Button
-          variant="ghost"
-          onClick={() => setCurrentStage(Math.max(0, currentStage - 1))}
-          disabled={currentStage === 0}
-        >
+        <Button variant="ghost" onClick={goBack} disabled={currentStage === 0}>
           <ChevronLeft className="mr-1 h-4 w-4" /> Back
         </Button>
         <Button
           variant="ghost"
-          onClick={() => setCurrentStage(Math.min(totalStages - 1, currentStage + 1))}
+          onClick={goNext}
           disabled={currentStage === totalStages - 1}
           className="text-muted-foreground"
         >
