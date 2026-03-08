@@ -208,6 +208,10 @@ serve(async (req) => {
 
     const finalPost = `${hook}\n\n${body}\n\n${cta}`.trim();
 
+    // Extract topic keywords from the generated caption
+    const topicKeywords = extractTopicKeywords(finalPost);
+    console.log('📌 Extracted topic keywords:', topicKeywords);
+
     // Generate headline (max 10 words) and subheadline from hook
     const headline = hook.split(/[.!?]/)[0]?.trim().split(/\s+/).slice(0, 10).join(' ') || hook.substring(0, 60);
     const subheadline = hook.length > headline.length ? hook.substring(headline.length).trim().replace(/^[.!?,\s]+/, '') : '';
@@ -231,11 +235,11 @@ serve(async (req) => {
       content_length: finalPost.length,
       business_context_used: !!profile,
       headline,
-      subheadline: subheadline ? 'yes' : 'no',
       post_format: isCarousel ? 'carousel' : 'single',
-      slide_count: slideTexts.length,
       engagement_hook: engagementHook ? engagementHook.type : 'none',
       demand_moment: demandMoment ? demandMoment.type : 'none',
+      topic_keywords: topicKeywords,
+      content_memory_size: contentMemory.length,
     });
 
     return new Response(JSON.stringify({
@@ -253,6 +257,8 @@ serve(async (req) => {
       engagement_hook_type: engagementHook?.type || null,
       demand_moment_type: demandMoment?.type || null,
       demand_moment_text: demandMoment?.text || null,
+      post_type: postType,
+      topic_keywords: topicKeywords,
       source: contentSource,
       business_context_used: !!profile,
       content_length: finalPost.length
