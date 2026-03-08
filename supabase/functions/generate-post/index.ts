@@ -191,7 +191,7 @@ serve(async (req) => {
       }
     }
 
-    const finalPost = `${hook} ${body} ${cta}`;
+    const finalPost = `${hook}\n\n${body}\n\n${cta}`.trim();
 
     // Generate headline (max 10 words) and subheadline from hook
     const headline = hook.split(/[.!?]/)[0]?.trim().split(/\s+/).slice(0, 10).join(' ') || hook.substring(0, 60);
