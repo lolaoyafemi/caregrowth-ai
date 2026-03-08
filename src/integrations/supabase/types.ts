@@ -255,6 +255,7 @@ export type Database = {
           caption_linkedin: string | null
           caption_x: string | null
           carousel_image_urls: string[] | null
+          comments: number | null
           content_anchor: string | null
           core_message: string | null
           created_at: string
@@ -265,6 +266,8 @@ export type Database = {
           hook: string | null
           id: string
           image_url: string | null
+          impressions: number | null
+          likes: number | null
           platform: string
           platform_post_id: string | null
           post_body: string
@@ -272,7 +275,9 @@ export type Database = {
           post_type: string | null
           publish_skipped_reason: string | null
           published_at: string | null
+          saves: number | null
           scheduled_at: string
+          shares: number | null
           slide_texts: string[] | null
           status: string
           subheadline: string | null
@@ -289,6 +294,7 @@ export type Database = {
           caption_linkedin?: string | null
           caption_x?: string | null
           carousel_image_urls?: string[] | null
+          comments?: number | null
           content_anchor?: string | null
           core_message?: string | null
           created_at?: string
@@ -299,6 +305,8 @@ export type Database = {
           hook?: string | null
           id?: string
           image_url?: string | null
+          impressions?: number | null
+          likes?: number | null
           platform: string
           platform_post_id?: string | null
           post_body: string
@@ -306,7 +314,9 @@ export type Database = {
           post_type?: string | null
           publish_skipped_reason?: string | null
           published_at?: string | null
+          saves?: number | null
           scheduled_at: string
+          shares?: number | null
           slide_texts?: string[] | null
           status?: string
           subheadline?: string | null
@@ -323,6 +333,7 @@ export type Database = {
           caption_linkedin?: string | null
           caption_x?: string | null
           carousel_image_urls?: string[] | null
+          comments?: number | null
           content_anchor?: string | null
           core_message?: string | null
           created_at?: string
@@ -333,6 +344,8 @@ export type Database = {
           hook?: string | null
           id?: string
           image_url?: string | null
+          impressions?: number | null
+          likes?: number | null
           platform?: string
           platform_post_id?: string | null
           post_body?: string
@@ -340,7 +353,9 @@ export type Database = {
           post_type?: string | null
           publish_skipped_reason?: string | null
           published_at?: string | null
+          saves?: number | null
           scheduled_at?: string
+          shares?: number | null
           slide_texts?: string[] | null
           status?: string
           subheadline?: string | null
