@@ -217,7 +217,6 @@ serve(async (req) => {
     const subheadline = hook.length > headline.length ? hook.substring(headline.length).trim().replace(/^[.!?,\s]+/, '') : '';
 
     // Select engagement hook (~40% of posts)
-    const postIdx = post_index || 0;
     const engagementHook = selectEngagementHook(postIdx, selectedAnchor.anchor);
 
     // Select demand moment (~every 4-5 posts)
