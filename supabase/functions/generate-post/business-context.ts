@@ -86,54 +86,49 @@ const CAREGIVING_REALITY_MAP = [
   },
 ];
 
-// ─── Content Pattern Rotation ────────────────────────────────────────
-// Ensures feeds feel authentic, not promotional
+// ─── Content Anchors ─────────────────────────────────────────────────
+// Predefined themes that guide every generated post
 
-const CONTENT_PATTERNS = [
+export const CONTENT_ANCHORS = [
   {
-    pattern: 'education',
-    label: 'Educational Post',
-    instruction: 'Teach the audience something useful about caregiving. Share a specific tip, process, or little-known fact. Position the agency as a knowledgeable guide — not a salesperson.',
+    anchor: 'family_reality',
+    label: 'Family Reality',
+    instruction: 'Write about a real caregiving situation families face. Use specific, emotionally resonant scenarios — not abstract statements. The reader should think "that\'s exactly what I\'m going through."',
   },
   {
-    pattern: 'emotional_story',
-    label: 'Emotional Story',
-    instruction: 'Tell a short, emotionally resonant story about a caregiving moment. It can be fictional but must feel real. Focus on a specific scene — not a general statement. The reader should feel something.',
+    anchor: 'education',
+    label: 'Caregiver Education',
+    instruction: 'Teach the audience something useful about caregiving. Share a specific tip, early warning sign, or little-known fact. Position the agency as a knowledgeable guide — not a salesperson.',
   },
   {
-    pattern: 'myth_vs_truth',
+    anchor: 'reassurance',
+    label: 'Reassurance',
+    instruction: 'Write a post that makes caregivers feel seen, supported, and less alone. No selling. No CTA. Just genuine emotional encouragement that they\'re doing a good job and it\'s okay to need help.',
+  },
+  {
+    anchor: 'myth_vs_truth',
     label: 'Myth vs Truth',
     instruction: 'Start with a common myth or misconception about home care, aging, or caregiving. Then gently correct it with the truth. The tone should be informative, not condescending.',
   },
   {
-    pattern: 'practical_tip',
-    label: 'Practical Tip',
-    instruction: 'Share one actionable, specific tip that a family caregiver could use today. Make it concrete — not vague advice like "take care of yourself." Example: "Keep a one-page medication list in your phone — it saves 10 minutes at every doctor visit."',
+    anchor: 'behind_the_scenes',
+    label: 'Behind the Scenes',
+    instruction: 'Give insight into the real work of professional caregiving. Show the human side — the training, the small moments of connection, the dedication. Make the reader appreciate what caregivers do every day.',
   },
   {
-    pattern: 'reassurance',
-    label: 'Reassurance Post',
-    instruction: 'Write a post that makes caregivers feel seen, supported, and less alone. No selling. No CTA. Just genuine reassurance that they\'re doing a good job and it\'s okay to need help.',
-  },
-  {
-    pattern: 'soft_cta',
-    label: 'Soft Call to Action',
+    anchor: 'soft_invitation',
+    label: 'Soft Invitation',
     instruction: 'Write a warm, low-pressure post that invites the reader to take a small step — like saving the post, visiting the website, or sending a message. The CTA should feel like an invitation, not a sales pitch.',
   },
-];
+] as const;
+
+export type ContentAnchor = typeof CONTENT_ANCHORS[number]['anchor'];
 
 /**
- * Select a caregiving reality for the current post based on index.
+ * Select a content anchor for the current post based on index.
  */
-export function selectCaregivingReality(postIndex: number): typeof CAREGIVING_REALITY_MAP[0] {
-  return CAREGIVING_REALITY_MAP[postIndex % CAREGIVING_REALITY_MAP.length];
-}
-
-/**
- * Select a content pattern for the current post based on index.
- */
-export function selectContentPattern(postIndex: number): typeof CONTENT_PATTERNS[0] {
-  return CONTENT_PATTERNS[postIndex % CONTENT_PATTERNS.length];
+export function selectContentAnchor(postIndex: number): typeof CONTENT_ANCHORS[number] {
+  return CONTENT_ANCHORS[postIndex % CONTENT_ANCHORS.length];
 }
 
 /**
