@@ -359,7 +359,7 @@ const AgencySetupPage = () => {
             </div>
             <FolderUpload onUploadComplete={() => {
               markComplete(3);
-              toast.success('Documents uploaded! They'll be processed shortly.');
+              toast.success('Documents uploaded! They will be processed shortly.');
             }} />
             <Button onClick={() => { markComplete(3); goNext(); }}>
               Continue <ChevronRight className="ml-1 h-4 w-4" />
