@@ -142,9 +142,10 @@ serve(async (req) => {
     let contentSource = '';
     let slideTexts: string[] = [];
 
-    try {
-      // Build caregiving context based on post index for variety
-      const caregivingContext = buildCaregivingContext(post_index || 0);
+      // Build caregiving context and select content anchor
+      const postIdx = post_index || 0;
+      const caregivingContext = buildCaregivingContext(postIdx);
+      const selectedAnchor = selectContentAnchor(postIdx);
       const enrichedBusinessContext = (typeof businessContext === 'string' ? businessContext : JSON.stringify(businessContext)) + '\n' + caregivingContext;
 
       console.log('🤖 Generating content with database prompt integration + caregiving context');
