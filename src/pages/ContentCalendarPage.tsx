@@ -60,12 +60,47 @@ function assignPostFormats(count: number): ('single' | 'carousel')[] {
   for (let i = 0; i < count; i++) {
     formats.push(i < (count - carouselCount) ? 'single' : 'carousel');
   }
-  // Shuffle to spread formats evenly
   for (let i = formats.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [formats[i], formats[j]] = [formats[j], formats[i]];
   }
   return formats;
+}
+
+// Visual rhythm rotation: rotate templates so the feed looks intentional
+// Pattern: Bold → Carousel → Minimalist → Carousel → Dark → Carousel → repeat with variation
+type TemplateName = 'quote_card' | 'minimalist' | 'dark_mode';
+
+function assignTemplateRotation(
+  formats: ('single' | 'carousel')[],
+  userDefault?: string
+): TemplateName[] {
+  const singleTemplates: TemplateName[] = ['quote_card', 'minimalist', 'dark_mode'];
+  const templates: TemplateName[] = [];
+  let singleIdx = 0;
+
+  for (let i = 0; i < formats.length; i++) {
+    if (formats[i] === 'carousel') {
+      // Carousel inherits the previous single template for visual consistency
+      const prev = templates.length > 0
+        ? templates[templates.length - 1]
+        : singleTemplates[0];
+      templates.push(prev);
+    } else {
+      templates.push(singleTemplates[singleIdx % singleTemplates.length]);
+      singleIdx++;
+    }
+  }
+
+  // Safety: never allow same template 3+ times in a row
+  for (let i = 2; i < templates.length; i++) {
+    if (templates[i] === templates[i - 1] && templates[i] === templates[i - 2]) {
+      const alternatives = singleTemplates.filter(t => t !== templates[i]);
+      templates[i] = alternatives[i % alternatives.length];
+    }
+  }
+
+  return templates;
 }
 
 const ContentCalendarPage = () => {
@@ -218,13 +253,16 @@ const ContentCalendarPage = () => {
       const tones = ['professional', 'conversational', 'enthusiastic', 'authoritative', 'humorous'];
 
       // Build all generation requests upfront
-      const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date; post_format: 'single' | 'carousel' }[] = [];
+      const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date; post_format: 'single' | 'carousel'; template: TemplateName }[] = [];
 
-      // Calculate total posts per platform and assign formats
+      // Calculate total posts per platform, assign formats + template rotation
       const postsPerPlatform = days * frequency;
       const platformFormats: Record<string, ('single' | 'carousel')[]> = {};
+      const platformTemplates: Record<string, TemplateName[]> = {};
       for (const platform of wizPlatforms) {
-        platformFormats[platform] = assignPostFormats(postsPerPlatform);
+        const formats = assignPostFormats(postsPerPlatform);
+        platformFormats[platform] = formats;
+        platformTemplates[platform] = assignTemplateRotation(formats, brandStyle?.selected_template_theme);
       }
 
       const platformCounters: Record<string, number> = {};
@@ -241,8 +279,10 @@ const ContentCalendarPage = () => {
           for (const platform of wizPlatforms) {
             const category = categories[(day * frequency + freq) % categories.length];
             const tone = tones[(day * frequency + freq) % tones.length];
-            const fmt = platformFormats[platform][platformCounters[platform]++];
-            generationRequests.push({ platform, category, tone, scheduledDate: new Date(scheduledDate), post_format: fmt });
+            const idx = platformCounters[platform]++;
+            const fmt = platformFormats[platform][idx];
+            const tmpl = platformTemplates[platform][idx];
+            generationRequests.push({ platform, category, tone, scheduledDate: new Date(scheduledDate), post_format: fmt, template: tmpl });
           }
         }
       }
@@ -279,6 +319,7 @@ const ContentCalendarPage = () => {
               subheadline: data?.subheadline || '',
               post_format: req.post_format,
               slide_texts: data?.slide_texts || null,
+              _template: req.template,
             });
           } else {
             const req = batch[results.indexOf(result)];
@@ -298,7 +339,7 @@ const ContentCalendarPage = () => {
       }
 
       if (postsToInsert.length > 0) {
-          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, ...rest }) => ({
+          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, _template, ...rest }) => ({
             ...rest,
             headline: hl || null,
             subheadline: shl || null,
@@ -335,6 +376,7 @@ const ContentCalendarPage = () => {
             const postFormat = postsToInsert[i]?.post_format || 'single';
             const postSlideTexts = postsToInsert[i]?.slide_texts || null;
 
+            const postTemplate = postsToInsert[i]?._template || brandStyle?.selected_template_theme;
             supabase.functions.invoke('generate-post-image', {
               body: {
                 headline: postHeadline,
@@ -342,7 +384,7 @@ const ContentCalendarPage = () => {
                 business_name: brandStyle?.brand_display_name || userBusinessName,
                 post_id: p.id,
                 platform: p.platform,
-                template: brandStyle?.selected_template_theme,
+                template: postTemplate,
                 brand_primary_color: brandStyle?.brand_primary_color,
                 brand_accent_color: brandStyle?.brand_accent_color,
                 brand_font_style: brandStyle?.brand_font_style,
