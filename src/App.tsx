@@ -124,6 +124,7 @@ const AppContent = memo(() => {
               }>
                 <Route index element={<DashboardHome />} />
                 <Route path="social-media" element={<SocialMediaTool />} />
+                <Route path="agency-setup" element={<AgencySetupPage />} />
                 <Route path="content-calendar" element={<ContentCalendarPage />} />
                 <Route path="qa-assistant" element={<QAAssistantTool />} />
                 <Route path="prompts" element={<PromptsPage />} />
