@@ -19,6 +19,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInte
 import ConnectAccountsPanel from '@/components/calendar/ConnectAccountsPanel';
 import EditPostDialog from '@/components/calendar/EditPostDialog';
 import CalendarAnalytics from '@/components/calendar/CalendarAnalytics';
+import EvidencePanel from '@/components/calendar/EvidencePanel';
 import PlatformPreview from '@/components/calendar/PlatformPreview';
 import StartEngineWizard from '@/components/calendar/StartEngineWizard';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
