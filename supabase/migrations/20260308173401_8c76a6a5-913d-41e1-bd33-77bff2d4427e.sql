@@ -1,0 +1,2 @@
+ALTER TABLE public.content_posts ADD COLUMN IF NOT EXISTS engagement_hook text DEFAULT NULL;
+COMMENT ON COLUMN public.content_posts.engagement_hook IS 'Engagement hook prompt: reflection, experience, opinion, awareness, soft_response. Added to ~40% of posts.';

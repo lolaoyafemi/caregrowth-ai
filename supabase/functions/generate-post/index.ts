@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 import { generateContentWithAI } from './content-generator.ts';
-import { buildBusinessContext, personalizeContent, buildCaregivingContext, selectContentAnchor } from './business-context.ts';
+import { buildBusinessContext, personalizeContent, buildCaregivingContext, selectContentAnchor, selectEngagementHook } from './business-context.ts';
 import { getUserProfile, logPostToHistory } from './database-service.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -203,6 +203,10 @@ serve(async (req) => {
     const headline = hook.split(/[.!?]/)[0]?.trim().split(/\s+/).slice(0, 10).join(' ') || hook.substring(0, 60);
     const subheadline = hook.length > headline.length ? hook.substring(headline.length).trim().replace(/^[.!?,\s]+/, '') : '';
 
+    // Select engagement hook (~40% of posts)
+    const postIdx = post_index || 0;
+    const engagementHook = selectEngagementHook(postIdx, selectedAnchor.anchor);
+
     // Log post to post_history
     try {
       await logPostToHistory(supabase, authenticatedUserId, postType, tone, platform, targetAudience, finalPost);
@@ -218,6 +222,7 @@ serve(async (req) => {
       subheadline: subheadline ? 'yes' : 'no',
       post_format: isCarousel ? 'carousel' : 'single',
       slide_count: slideTexts.length,
+      engagement_hook: engagementHook ? engagementHook.type : 'none',
     });
 
     return new Response(JSON.stringify({
@@ -231,10 +236,17 @@ serve(async (req) => {
       slide_texts: isCarousel ? slideTexts : undefined,
       content_anchor: selectedAnchor.anchor,
       content_anchor_label: selectedAnchor.label,
+      engagement_hook: engagementHook?.prompt || null,
+      engagement_hook_type: engagementHook?.type || null,
       source: contentSource,
       business_context_used: !!profile,
       content_length: finalPost.length
     }), {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    });
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/json'

@@ -199,6 +199,7 @@ export type Database = {
           batch_id: string | null
           content_anchor: string | null
           created_at: string
+          engagement_hook: string | null
           error_message: string | null
           headline: string | null
           id: string
@@ -219,6 +220,7 @@ export type Database = {
           batch_id?: string | null
           content_anchor?: string | null
           created_at?: string
+          engagement_hook?: string | null
           error_message?: string | null
           headline?: string | null
           id?: string
@@ -239,6 +241,7 @@ export type Database = {
           batch_id?: string | null
           content_anchor?: string | null
           created_at?: string
+          engagement_hook?: string | null
           error_message?: string | null
           headline?: string | null
           id?: string

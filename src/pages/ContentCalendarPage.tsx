@@ -321,6 +321,7 @@ const ContentCalendarPage = () => {
               post_format: req.post_format,
               slide_texts: data?.slide_texts || null,
               content_anchor: data?.content_anchor || null,
+              engagement_hook: data?.engagement_hook || null,
               _template: req.template,
             });
           } else {
@@ -341,12 +342,13 @@ const ContentCalendarPage = () => {
       }
 
       if (postsToInsert.length > 0) {
-          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, content_anchor: ca, _template, ...rest }) => ({
+          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, content_anchor: ca, engagement_hook: eh, _template, ...rest }) => ({
             ...rest,
             headline: hl || null,
             subheadline: shl || null,
             slide_texts: st || null,
             content_anchor: ca || null,
+            engagement_hook: eh || null,
           }));
         const { data: inserted, error: insertError } = await supabase
           .from('content_posts')
