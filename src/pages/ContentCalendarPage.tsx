@@ -765,6 +765,8 @@ const ContentCalendarPage = () => {
       </div>
 
 
+      <EvidencePanel />
+
       <CalendarAnalytics posts={posts} />
 
       {/* Calendar + Queue Grid */}
