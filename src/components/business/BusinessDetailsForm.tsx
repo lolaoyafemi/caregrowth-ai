@@ -103,6 +103,7 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
   const [formData, setFormData] = useState({
     businessName: '',
     location: '',
+    serviceArea: '',
     coreService: '',
     idealClient: '',
     mainOffer: '',
@@ -111,7 +112,8 @@ const BusinessDetailsForm = ({ onClose }: BusinessDetailsFormProps) => {
     audienceProblem: '',
     objections: '',
     differentiator: '',
-    testimonials: ''
+    testimonials: '',
+    tonePreference: 'warm',
   });
 
   const [isSaving, setIsSaving] = useState(false);
