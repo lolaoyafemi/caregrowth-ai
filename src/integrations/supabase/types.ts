@@ -120,6 +120,7 @@ export type Database = {
         Row: {
           access_token: string | null
           account_name: string | null
+          agency_id: string | null
           connected_at: string | null
           created_at: string
           error_message: string | null
@@ -136,6 +137,7 @@ export type Database = {
         Insert: {
           access_token?: string | null
           account_name?: string | null
+          agency_id?: string | null
           connected_at?: string | null
           created_at?: string
           error_message?: string | null
@@ -152,6 +154,7 @@ export type Database = {
         Update: {
           access_token?: string | null
           account_name?: string | null
+          agency_id?: string | null
           connected_at?: string | null
           created_at?: string
           error_message?: string | null
