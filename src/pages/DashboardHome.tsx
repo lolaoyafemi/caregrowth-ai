@@ -18,6 +18,7 @@ import CreditExpirationWarning from '@/components/dashboard/CreditExpirationWarn
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import StrategyFeed from '@/components/dashboard/StrategyFeed';
 
 const DashboardHome = () => {
   const { user } = useUser();
