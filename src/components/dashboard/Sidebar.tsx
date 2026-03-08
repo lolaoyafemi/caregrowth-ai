@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Zap,
   BookOpen,
-  CalendarDays
+  CalendarDays,
+  Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '../../contexts/UserContext';
