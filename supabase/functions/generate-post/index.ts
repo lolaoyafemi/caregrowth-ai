@@ -228,6 +228,8 @@ serve(async (req) => {
       subheadline,
       post_format: isCarousel ? 'carousel' : 'single',
       slide_texts: isCarousel ? slideTexts : undefined,
+      content_anchor: selectedAnchor.anchor,
+      content_anchor_label: selectedAnchor.label,
       source: contentSource,
       business_context_used: !!profile,
       content_length: finalPost.length
