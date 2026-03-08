@@ -320,6 +320,7 @@ const ContentCalendarPage = () => {
               subheadline: data?.subheadline || '',
               post_format: req.post_format,
               slide_texts: data?.slide_texts || null,
+              content_anchor: data?.content_anchor || null,
               _template: req.template,
             });
           } else {
