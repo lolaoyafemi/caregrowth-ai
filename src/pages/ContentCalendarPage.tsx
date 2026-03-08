@@ -766,6 +766,11 @@ const ContentCalendarPage = () => {
       </div>
 
 
+      <ProactiveNudge
+        onGenerate={() => setGenerateOpen(true)}
+        onConnect={() => setConnectOpen(true)}
+      />
+
       <EvidencePanel />
 
       <CalendarAnalytics posts={posts} />
