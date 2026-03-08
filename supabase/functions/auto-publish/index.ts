@@ -91,7 +91,8 @@ serve(async (req) => {
             platformPostId = await publishToX(freshAccount, post);
             break;
           default:
-            console.log(`Publishing to ${post.platform}: ${post.post_body.substring(0, 50)}...`);
+            const caption = post[`caption_${post.platform}`] || post.post_body;
+            console.log(`Publishing to ${post.platform}: ${caption.substring(0, 50)}...`);
             break;
         }
 
@@ -254,7 +255,7 @@ async function publishToX(account: any, post: any): Promise<string | null> {
       Authorization: `Bearer ${account.access_token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text: post.post_body }),
+    body: JSON.stringify({ text: post.caption_x || post.post_body }),
   });
 
   if (!res.ok) {
@@ -274,7 +275,7 @@ async function publishToLinkedIn(account: any, post: any): Promise<string | null
     lifecycleState: 'PUBLISHED',
     specificContent: {
       'com.linkedin.ugc.ShareContent': {
-        shareCommentary: { text: post.post_body },
+        shareCommentary: { text: post.caption_linkedin || post.post_body },
         shareMediaCategory: post.image_url ? 'IMAGE' : 'NONE',
       },
     },
