@@ -382,7 +382,7 @@ const ContentCalendarPage = () => {
       }
 
       if (postsToInsert.length > 0) {
-          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, content_anchor: ca, engagement_hook: eh, demand_moment_type: dmt, hook: hk, post_type: pt, topic_keywords: tk, _template, ...rest }) => ({
+          const dbPosts = postsToInsert.map(({ hook_line, headline: hl, subheadline: shl, slide_texts: st, content_anchor: ca, engagement_hook: eh, demand_moment_type: dmt, hook: hk, post_type: pt, topic_keywords: tk, _template, core_message: cm, subline: sl, caption_instagram: ci, caption_linkedin: cl, caption_facebook: cf, caption_x: cx, ...rest }) => ({
             ...rest,
             headline: hl || null,
             subheadline: shl || null,
@@ -394,6 +394,12 @@ const ContentCalendarPage = () => {
             post_type: pt || null,
             template_style: _template || null,
             topic_keywords: tk || null,
+            core_message: cm || null,
+            subline: sl || null,
+            caption_instagram: ci || null,
+            caption_linkedin: cl || null,
+            caption_facebook: cf || null,
+            caption_x: cx || null,
           }));
         const { data: inserted, error: insertError } = await supabase
           .from('content_posts')
