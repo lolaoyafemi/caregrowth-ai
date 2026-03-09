@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, TrendingUp, Settings, Database, BookOpen, Wrench, GraduationCap } from 'lucide-react';
+import { Shield, Users, TrendingUp, Settings, Database, BookOpen, Wrench, GraduationCap, Mic } from 'lucide-react';
 import SystemMetrics from '@/components/admin/SystemMetrics';
 import UserManagementTable from '@/components/admin/UserManagementTable';
 import UsageAnalytics from '@/components/admin/UsageAnalytics';
@@ -13,6 +13,7 @@ import SuperAdminManager from '@/components/admin/SuperAdminManager';
 import TrainingLibrary from '@/components/admin/TrainingLibrary';
 import TrainingAnalytics from '@/components/admin/TrainingAnalytics';
 import DraftScenarioManager from '@/components/admin/DraftScenarioManager';
+import VoiceSessionsViewer from '@/components/admin/VoiceSessionsViewer';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
