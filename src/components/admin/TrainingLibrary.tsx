@@ -303,7 +303,7 @@ const TrainingLibrary = () => {
 
   const getStatusBadge = (status: string, fetched: boolean) => {
     if (status === 'completed' && fetched) {
-      return <Badge className="bg-green-500 text-white">Ready</Badge>;
+      return <Badge variant="default">Ready</Badge>;
     } else if (status === 'processing') {
       return <Badge variant="secondary">Processing</Badge>;
     } else if (status === 'error' || status === 'failed') {
