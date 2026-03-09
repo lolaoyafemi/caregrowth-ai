@@ -47,9 +47,7 @@ const Header = () => {
       <div className="container mx-auto px-5 sm:px-6 lg:px-12">
         <div className="flex justify-between items-center h-16 sm:h-20">
           <Link to="/" className="flex items-center gap-3">
-            <h1 className={`text-base sm:text-lg font-semibold tracking-[0.08em] transition-colors duration-500 ${
-              scrolled ? 'text-gray-900' : 'text-white'
-            }`}>
+            <h1 className="text-base sm:text-lg font-semibold tracking-[0.1em] text-white transition-colors duration-500">
               CareGrowth Assistant
             </h1>
           </Link>
