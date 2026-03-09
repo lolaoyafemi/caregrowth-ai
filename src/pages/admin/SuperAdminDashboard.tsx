@@ -77,6 +77,10 @@ const SuperAdminDashboard = () => {
               <Shield className="h-4 w-4" />
               Activity
             </TabsTrigger>
+            <TabsTrigger value="training" className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4" />
+              Training
+            </TabsTrigger>
             <TabsTrigger value="maintenance" className="flex items-center gap-2">
               <Wrench className="h-4 w-4" />
               Maintenance
