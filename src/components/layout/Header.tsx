@@ -31,7 +31,7 @@ const Header = () => {
     }
   };
 
-  const navLinkClass = "text-luxury-spacing text-[11px] font-medium tracking-widest transition-colors duration-300 bg-transparent border-none cursor-pointer";
+  const navLinkClass = "text-[11px] font-medium tracking-[0.25em] uppercase transition-colors duration-500 bg-transparent border-none cursor-pointer";
 
   return (
     <motion.header
