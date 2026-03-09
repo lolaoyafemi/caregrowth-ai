@@ -63,3 +63,6 @@ verify_jwt = false
 
 [functions.social-oauth-callback]
 verify_jwt = false
+
+[functions.simulate-training-conversation]
+verify_jwt = false
