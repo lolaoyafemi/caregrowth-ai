@@ -60,23 +60,41 @@ Your task is to extract and generate realistic training scenarios from training 
 
 For each scenario you create:
 1. Identify real conversation examples, scripts, FAQs, or decision points from the document
-2. Create a realistic scenario description that sets the context
-3. Write a prompt asking the trainee how they would respond
-4. List 3-5 key points that should be in a good response
-5. Assign a difficulty level (easy, medium, hard)
-6. Add relevant tags for categorization
+2. Create a realistic situation summary that sets the context
+3. Identify the caller persona (e.g., "Daughter", "Spouse", "Social Worker")
+4. Identify the care situation (e.g., "Father has advancing dementia")
+5. Identify the primary concern (e.g., "Cost of care", "Caregiver trust")
+6. Write an initial prompt asking the trainee how they would respond
+7. List 3-5 key points that should be in a good response
+8. List common mistakes to avoid (e.g., "Rushing to quote price", "Sounding dismissive")
+9. Assign an emotional tone for the caller (e.g., "Anxious", "Defensive", "Overwhelmed")
+10. Assign a difficulty level (easy, medium, hard)
+11. Add relevant tags for categorization
+
+Supported scenario categories:
+- Intake Calls
+- Cost & Payment Questions
+- Dementia / Memory Care
+- Hospital Discharge
+- Caregiver Burnout
+- Trust & Safety
 
 Return scenarios in this exact JSON format:
 {
   "scenarios": [
     {
       "title": "Brief scenario title",
+      "category": "Intake Calls",
       "description": "Detailed scenario description setting the context",
-      "context": "Additional background information if needed",
+      "caller_persona": "Anxious Daughter",
+      "care_situation": "Mother recovering from fall",
+      "primary_concern": "Safety at night",
       "prompt_to_user": "Question asking how they would respond",
       "expected_key_points": ["point1", "point2", "point3"],
+      "common_mistakes": ["mistake1", "mistake2"],
+      "emotional_tone": "Anxious",
       "difficulty_level": "medium",
-      "scenario_type": "conversation|faq|decision|script",
+      "scenario_type": "conversation",
       "tags": ["tag1", "tag2"]
     }
   ]
@@ -114,15 +132,20 @@ Generate 3-5 high-quality, diverse scenarios from this document. Focus on practi
                       type: "object",
                       properties: {
                         title: { type: "string" },
+                        category: { type: "string" },
                         description: { type: "string" },
-                        context: { type: "string" },
+                        caller_persona: { type: "string" },
+                        care_situation: { type: "string" },
+                        primary_concern: { type: "string" },
                         prompt_to_user: { type: "string" },
                         expected_key_points: { type: "array", items: { type: "string" } },
+                        common_mistakes: { type: "array", items: { type: "string" } },
+                        emotional_tone: { type: "string" },
                         difficulty_level: { type: "string", enum: ["easy", "medium", "hard"] },
                         scenario_type: { type: "string", enum: ["conversation", "faq", "decision", "script"] },
                         tags: { type: "array", items: { type: "string" } },
                       },
-                      required: ["title", "description", "prompt_to_user", "expected_key_points", "difficulty_level", "scenario_type"],
+                      required: ["title", "category", "description", "caller_persona", "care_situation", "primary_concern", "prompt_to_user", "expected_key_points", "common_mistakes", "emotional_tone", "difficulty_level", "scenario_type"],
                     },
                   },
                 },
@@ -162,16 +185,29 @@ Generate 3-5 high-quality, diverse scenarios from this document. Focus on practi
     // Store scenarios in database
     const scenariosToInsert = scenarios.map((s: any) => ({
       document_id: documentId,
-      category: document.document_category,
+      category: s.category || document.document_category,
       scenario_type: s.scenario_type || "conversation",
       title: s.title,
       description: s.description,
-      context: s.context || null,
+      caller_persona: s.caller_persona,
+      care_situation: s.care_situation,
+      primary_concern: s.primary_concern,
       prompt_to_user: s.prompt_to_user,
       expected_key_points: s.expected_key_points,
+      common_mistakes: s.common_mistakes || [],
+      emotional_tone: s.emotional_tone,
       difficulty_level: s.difficulty_level || "medium",
       tags: s.tags || [],
       is_active: true,
+      status: 'draft',
+      ai_system_prompt: `You are simulating a caller contacting a home care agency. Your persona is: ${s.caller_persona}. The situation: ${s.care_situation}. Your primary concern: ${s.primary_concern}. Your emotional tone is: ${s.emotional_tone}. The agent will speak with you. Keep your responses short (1-3 sentences) and realistic. Only answer what is asked or express your concern. Start the conversation by saying what's on your mind.`,
+      evaluation_rubric: {
+        empathy: 20,
+        clarity: 20,
+        discovery: 20,
+        confidence: 20,
+        next_steps: 20
+      }
     }));
 
     const { data: insertedScenarios, error: insertError } = await supabase
