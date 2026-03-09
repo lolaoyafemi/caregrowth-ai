@@ -128,6 +128,10 @@ const SuperAdminDashboard = () => {
             <RealtimeActivity />
           </TabsContent>
 
+          <TabsContent value="training" className="space-y-6">
+            <TrainingLibrary />
+          </TabsContent>
+
           <TabsContent value="maintenance" className="space-y-6">
             <Card>
               <CardHeader>
