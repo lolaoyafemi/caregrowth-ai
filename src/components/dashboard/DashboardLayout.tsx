@@ -86,7 +86,7 @@ const DashboardLayout = memo(() => {
   const isDarkMode = userContextUser?.role === 'super_admin';
   
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-[hsl(220,20%,7%)]">
       {/* Desktop sidebar — always visible */}
       {!isMobile && (
         <Sidebar 
@@ -100,16 +100,14 @@ const DashboardLayout = memo(() => {
       <AnimatePresence>
         {isMobile && mobileOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
               onClick={closeMobile}
             />
-            {/* Sidebar panel */}
             <motion.div
               initial={{ x: -280 }}
               animate={{ x: 0 }}
@@ -124,7 +122,7 @@ const DashboardLayout = memo(() => {
               />
               <button
                 onClick={closeMobile}
-                className="absolute top-4 right-3 p-1.5 rounded-md bg-white/80 text-gray-700 hover:bg-gray-100"
+                className="absolute top-4 right-3 p-1.5 rounded-none bg-white/[0.06] text-white/50 hover:bg-white/10"
               >
                 <X size={18} />
               </button>
@@ -140,7 +138,7 @@ const DashboardLayout = memo(() => {
           animate={{ scale: fabVisible ? 1 : 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 24 }}
           onClick={() => setMobileOpen(true)}
-          className="fixed bottom-6 left-5 z-40 h-12 w-12 flex items-center justify-center rounded-full bg-caregrowth-blue text-white shadow-lg shadow-caregrowth-blue/30 active:scale-95 transition-transform"
+          className="fixed bottom-6 left-5 z-40 h-12 w-12 flex items-center justify-center rounded-none bg-caregrowth-green/90 text-white shadow-lg shadow-caregrowth-green/20 active:scale-95 transition-transform"
         >
           <Menu size={20} />
         </motion.button>
@@ -151,9 +149,7 @@ const DashboardLayout = memo(() => {
           userRole={userContextUser?.role} 
           userName={userContextUser?.name} 
         />
-        <main className={`flex-1 overflow-auto transition-colors duration-200 ${
-          isDarkMode ? 'bg-emerald-50/30' : 'bg-background'
-        }`}>
+        <main className="flex-1 overflow-auto bg-[hsl(220,15%,8%)]">
           <SupportNotificationListener />
           <DashboardOutlet />
         </main>
