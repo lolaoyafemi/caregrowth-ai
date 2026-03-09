@@ -404,7 +404,7 @@ const TrainingLibrary = () => {
                     </div>
 
                     {selectedFiles.length > 0 && (
-                      <div className="p-3 bg-primary/5 rounded-lg border">
+                      <div className="p-3 bg-muted rounded-lg border">
                         <p className="text-sm font-medium mb-2">
                           Selected ({selectedFiles.length}):
                         </p>
