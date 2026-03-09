@@ -137,6 +137,7 @@ const AppContent = memo(() => {
                 <Route path="admin/usage" element={<UsageMonitoringPage />} />
                 <Route path="agency/team" element={<TeamManagementPage />} />
                 <Route path="agency/usage" element={<AgencyUsagePage />} />
+                <Route path="training" element={<TrainingPracticePage />} />
               </Route>
               
               <Route path="*" element={<NotFound />} />

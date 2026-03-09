@@ -483,6 +483,27 @@ const TrainingLibrary = () => {
                             </div>
                             
                             <div className="flex items-center gap-2 ml-4">
+                              {(doc.processing_status === 'completed' && doc.fetched) && (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleGenerateScenarios(doc.id)}
+                                  disabled={generatingScenarios === doc.id}
+                                >
+                                  {generatingScenarios === doc.id ? (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                      Generating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="h-4 w-4 mr-2" />
+                                      Generate Scenarios
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+
                               <Button
                                 variant="ghost"
                                 size="sm"
