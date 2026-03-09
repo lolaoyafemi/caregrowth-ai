@@ -16,6 +16,7 @@ import AssistantGreeting from '@/components/dashboard/AssistantGreeting';
 import ActivitySnapshot from '@/components/dashboard/ActivitySnapshot';
 import StrategyFeed from '@/components/dashboard/StrategyFeed';
 import InsightCards from '@/components/dashboard/InsightCards';
+import AgencyHealthScore from '@/components/dashboard/AgencyHealthScore';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -81,6 +82,9 @@ const DashboardHome = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
+      {/* Zone 0 — Agency Health Score */}
+      <AgencyHealthScore />
+
       {/* Zone 1 — Assistant Header */}
       <AssistantGreeting postsScheduled={activity.postsScheduled} />
 
