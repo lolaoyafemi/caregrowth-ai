@@ -12,6 +12,7 @@ import StuckPaymentFixer from '@/components/admin/StuckPaymentFixer';
 import SuperAdminManager from '@/components/admin/SuperAdminManager';
 import TrainingLibrary from '@/components/admin/TrainingLibrary';
 import TrainingAnalytics from '@/components/admin/TrainingAnalytics';
+import DraftScenarioManager from '@/components/admin/DraftScenarioManager';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
