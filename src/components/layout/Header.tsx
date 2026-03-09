@@ -104,16 +104,16 @@ const Header = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-white border-t border-gray-100 overflow-hidden"
+            className="lg:hidden bg-[hsl(220,20%,4%)]/98 backdrop-blur-2xl border-t border-white/[0.06] overflow-hidden"
           >
-            <nav className="flex flex-col items-center px-6 py-6 gap-4">
-              <button onClick={() => scrollToSection('features')} className="text-sm text-gray-700 hover:text-gray-900 py-2">Features</button>
-              <button onClick={() => scrollToSection('video')} className="text-sm text-gray-700 hover:text-gray-900 py-2">How it Works</button>
-              <button onClick={() => scrollToSection('pricing')} className="text-sm text-gray-700 hover:text-gray-900 py-2">Pricing</button>
-              <SupportDialog><button className="text-sm text-gray-700 hover:text-gray-900 py-2">Support</button></SupportDialog>
-              <ContactDialog><button className="text-sm text-gray-700 hover:text-gray-900 py-2">Contact</button></ContactDialog>
-              <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="w-full max-w-xs mt-2">
-                <Button className="w-full bg-caregrowth-blue rounded-none">Dashboard</Button>
+            <nav className="flex flex-col items-center px-6 py-8 gap-5">
+              <button onClick={() => scrollToSection('features')} className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">Features</button>
+              <button onClick={() => scrollToSection('video')} className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">How it Works</button>
+              <button onClick={() => scrollToSection('pricing')} className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">Pricing</button>
+              <SupportDialog><button className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">Support</button></SupportDialog>
+              <ContactDialog><button className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">Contact</button></ContactDialog>
+              <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="w-full max-w-xs mt-3">
+                <Button className="w-full bg-gradient-to-r from-[hsl(43,60%,48%)] to-[hsl(43,50%,40%)] text-white rounded-none h-12 text-[10px] tracking-[0.3em] uppercase font-semibold border-0">Dashboard</Button>
               </Link>
             </nav>
           </motion.div>
