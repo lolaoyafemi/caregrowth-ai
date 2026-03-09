@@ -135,6 +135,9 @@ const DashboardHome = () => {
       {/* Zone 2 — Strategy Feed */}
       <StrategyFeed />
 
+      {/* Smart Scenario Suggestions */}
+      <SmartScenarioSuggestions />
+
       {/* CareGrowth Insights */}
       <InsightCards />
 
