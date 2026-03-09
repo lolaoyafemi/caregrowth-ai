@@ -762,6 +762,16 @@ export default function TrainingPracticePage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Voice Practice Session */}
+      {voicePracticeScenario && user && (
+        <VoicePracticeSession
+          scenario={voicePracticeScenario}
+          userId={user.id}
+          onClose={handleVoicePracticeClose}
+          onComplete={handleVoicePracticeComplete}
+        />
+      )}
     </div>
   );
 }

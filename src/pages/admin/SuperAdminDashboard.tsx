@@ -148,6 +148,20 @@ const SuperAdminDashboard = () => {
 
             <Card>
               <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mic className="h-5 w-5" /> Voice Practice Sessions
+                </CardTitle>
+                <CardDescription>
+                  Review completed voice practice sessions, transcripts, and scoring
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <VoiceSessionsViewer />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Training Analytics</CardTitle>
                 <CardDescription>
                   Track agency training progress and identify improvement areas
