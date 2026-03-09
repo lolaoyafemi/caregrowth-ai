@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import {
   Building2, Briefcase, Sparkles, FileUp, Share2, Rocket,
   Check, ChevronRight, ChevronLeft, SkipForward, Globe,
-  Facebook, Instagram, Linkedin, Twitter, Loader2,
+  Facebook, Instagram, Linkedin, Loader2,
 } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/integrations/supabase/client';
