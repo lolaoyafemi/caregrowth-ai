@@ -89,7 +89,7 @@ const Header = () => {
           </div>
 
           <button
-            className={`lg:hidden p-2 transition-colors ${scrolled ? 'text-gray-900' : 'text-white'}`}
+            className="lg:hidden p-2 text-white/70 hover:text-white transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
