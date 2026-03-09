@@ -313,7 +313,7 @@ export default function TrainingAnalytics() {
                     <div className="text-right">
                       <p className={`text-lg font-bold ${
                         (a.average_score || 0) >= 70 ? 'text-green-600' : 
-                        (a.average_score || 0) >= 50 ? 'text-amber-600' : 'text-red-600'
+                        (a.average_score || 0) >= 50 ? 'text-yellow-600' : 'text-destructive'
                       }`}>
                         {Math.round(a.average_score || 0)}
                       </p>
