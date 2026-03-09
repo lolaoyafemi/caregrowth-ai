@@ -79,7 +79,13 @@ export default function TrainingAnalytics() {
           .eq('is_active', true),
       ]);
 
-      setAnalytics((analyticsData || []).filter((a: any) => a.training_scenarios));
+      const processed = (analyticsData || [])
+        .filter((a: any) => a.training_scenarios)
+        .map((a: any) => ({
+          ...a,
+          common_mistakes: Array.isArray(a.common_mistakes) ? a.common_mistakes : [],
+        }));
+      setAnalytics(processed);
       setUserProgress(progressData || []);
       setTotalScenarios(scenarioCount || 0);
     } catch (error) {
