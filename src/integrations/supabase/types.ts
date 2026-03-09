@@ -1418,6 +1418,204 @@ export type Database = {
         }
         Relationships: []
       }
+      training_analytics: {
+        Row: {
+          average_score: number | null
+          category: string
+          common_mistakes: Json | null
+          difficulty_rating: number | null
+          id: string
+          scenario_id: string | null
+          total_attempts: number | null
+          total_completions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          average_score?: number | null
+          category: string
+          common_mistakes?: Json | null
+          difficulty_rating?: number | null
+          id?: string
+          scenario_id?: string | null
+          total_attempts?: number | null
+          total_completions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          average_score?: number | null
+          category?: string
+          common_mistakes?: Json | null
+          difficulty_rating?: number | null
+          id?: string
+          scenario_id?: string | null
+          total_attempts?: number | null
+          total_completions?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_analytics_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "training_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_progress: {
+        Row: {
+          average_score: number | null
+          best_score: number | null
+          category: string
+          created_at: string | null
+          id: string
+          last_activity_at: string | null
+          scenarios_attempted: number | null
+          scenarios_completed: number | null
+          total_time_spent: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          average_score?: number | null
+          best_score?: number | null
+          category: string
+          created_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          scenarios_attempted?: number | null
+          scenarios_completed?: number | null
+          total_time_spent?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          average_score?: number | null
+          best_score?: number | null
+          category?: string
+          created_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          scenarios_attempted?: number | null
+          scenarios_completed?: number | null
+          total_time_spent?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      training_responses: {
+        Row: {
+          ai_evaluation: Json | null
+          attempt_number: number | null
+          created_at: string | null
+          example_response: string | null
+          id: string
+          improvements: string[] | null
+          scenario_id: string
+          score: number | null
+          strengths: string[] | null
+          time_spent_seconds: number | null
+          user_id: string
+          user_response: string
+        }
+        Insert: {
+          ai_evaluation?: Json | null
+          attempt_number?: number | null
+          created_at?: string | null
+          example_response?: string | null
+          id?: string
+          improvements?: string[] | null
+          scenario_id: string
+          score?: number | null
+          strengths?: string[] | null
+          time_spent_seconds?: number | null
+          user_id: string
+          user_response: string
+        }
+        Update: {
+          ai_evaluation?: Json | null
+          attempt_number?: number | null
+          created_at?: string | null
+          example_response?: string | null
+          id?: string
+          improvements?: string[] | null
+          scenario_id?: string
+          score?: number | null
+          strengths?: string[] | null
+          time_spent_seconds?: number | null
+          user_id?: string
+          user_response?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_responses_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "training_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_scenarios: {
+        Row: {
+          category: string
+          context: string | null
+          created_at: string | null
+          description: string
+          difficulty_level: string | null
+          document_id: string | null
+          expected_key_points: string[] | null
+          id: string
+          is_active: boolean | null
+          prompt_to_user: string
+          scenario_type: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          context?: string | null
+          created_at?: string | null
+          description: string
+          difficulty_level?: string | null
+          document_id?: string | null
+          expected_key_points?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          prompt_to_user: string
+          scenario_type?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          context?: string | null
+          created_at?: string | null
+          description?: string
+          difficulty_level?: string | null
+          document_id?: string | null
+          expected_key_points?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          prompt_to_user?: string
+          scenario_type?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_scenarios_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "shared_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           audience_problem: string | null
