@@ -131,6 +131,8 @@ const SuperAdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="training" className="space-y-6">
+            <DraftScenarioManager />
+            
             <Card>
               <CardHeader>
                 <CardTitle>Training Library</CardTitle>
