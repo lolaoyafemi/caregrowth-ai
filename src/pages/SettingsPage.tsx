@@ -39,7 +39,7 @@ const SettingsPage = () => {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h1 className="text-2xl font-bold mt-3 flex items-center">
+        <h1 className="text-2xl font-bold mt-3 flex items-center text-white/90">
           <Settings className="mr-2 h-6 w-6" /> Settings
         </h1>
       </div>

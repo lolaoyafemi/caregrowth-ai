@@ -421,8 +421,8 @@ const AgencySetupPage = () => {
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Agency Setup</h1>
-        <p className="text-muted-foreground mt-1">Let's configure CareGrowth for your agency. Skip any step and come back anytime.</p>
+        <h1 className="text-3xl font-bold text-white/90">Agency Setup</h1>
+        <p className="text-white/40 mt-1">Let's configure CareGrowth for your agency. Skip any step and come back anytime.</p>
       </div>
 
       {/* Progress tracker */}

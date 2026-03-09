@@ -307,12 +307,12 @@ export default function TrainingPracticePage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Dumbbell className="h-5 w-5 text-primary" />
+            <div className="h-10 w-10 rounded-xl bg-caregrowth-green/10 flex items-center justify-center">
+              <Dumbbell className="h-5 w-5 text-caregrowth-green" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Practice Gym</h1>
+            <h1 className="text-2xl font-bold text-white/90">Practice Gym</h1>
           </div>
-          <p className="text-muted-foreground text-sm ml-[52px]">
+          <p className="text-white/40 text-sm ml-[52px]">
             Sharpen your skills with AI-simulated family conversations
           </p>
         </div>
