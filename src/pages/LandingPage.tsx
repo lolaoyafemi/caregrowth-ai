@@ -34,7 +34,7 @@ const Reveal = ({ children, className = '', delay = 0 }: { children: React.React
 /* ------------------------------------------------------------------ */
 const LuxuryDivider = () => (
   <div className="relative py-1">
-    <div className="h-px bg-gradient-to-r from-transparent via-[hsl(43,60%,55%)] to-transparent opacity-40" />
+    <div className="h-px bg-gradient-to-r from-transparent via-caregrowth-green to-transparent opacity-30" />
   </div>
 );
 
@@ -91,30 +91,29 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[hsl(220,20%,4%)] scroll-smooth selection:bg-[hsl(43,60%,55%)]/30 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-caregrowth-blue scroll-smooth selection:bg-caregrowth-green/30 selection:text-white">
       <Header />
 
       <main className="flex-grow">
 
         {/* ════════════════════════════════════════════════════════════ */}
-        {/*  HERO — Cinematic full-bleed, parallax, dramatic type      */}
+        {/*  HERO                                                       */}
         {/* ════════════════════════════════════════════════════════════ */}
         <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
-          {/* Layered background */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[hsl(220,20%,4%)] via-[hsl(222,25%,7%)] to-[hsl(220,20%,4%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-caregrowth-blue via-[hsl(222,25%,7%)] to-caregrowth-blue" />
 
           {/* Animated orbs */}
           <motion.div
             className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, hsla(43,60%,55%,0.08) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, hsla(104,71%,34%,0.08) 0%, transparent 70%)',
               y: heroY,
             }}
           />
           <motion.div
             className="absolute bottom-1/4 right-1/6 w-[500px] h-[500px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, hsla(104,71%,34%,0.06) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, hsla(222,47%,20%,0.12) 0%, transparent 70%)',
               y: heroY,
             }}
           />
@@ -125,8 +124,8 @@ const LandingPage = () => {
             backgroundSize: '100px 100px',
           }} />
 
-          {/* Horizontal accent lines */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(43,60%,55%)]/20 to-transparent" />
+          {/* Horizontal accent line */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-caregrowth-green/20 to-transparent" />
 
           <motion.div
             style={{ opacity: heroOpacity }}
@@ -139,7 +138,7 @@ const LandingPage = () => {
               transition={{ delay: 0.3, duration: 0.8 }}
               className="mb-8"
             >
-              <span className="inline-block text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-[hsl(43,60%,55%)]/70 font-medium border border-[hsl(43,60%,55%)]/15 px-6 py-2">
+              <span className="inline-block text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-caregrowth-green/70 font-medium border border-caregrowth-green/15 px-6 py-2">
                 Agency Command Center
               </span>
             </motion.div>
@@ -153,7 +152,7 @@ const LandingPage = () => {
             >
               Your Agency.
               <br />
-              <span className="bg-gradient-to-r from-[hsl(43,60%,55%)] via-[hsl(43,50%,70%)] to-[hsl(43,60%,55%)] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-caregrowth-green via-caregrowth-lightgreen to-caregrowth-green bg-clip-text text-transparent">
                 Elevated.
               </span>
             </motion.h1>
@@ -179,7 +178,7 @@ const LandingPage = () => {
               <Link to="/login">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-[hsl(43,60%,48%)] to-[hsl(43,50%,40%)] text-white hover:from-[hsl(43,60%,52%)] hover:to-[hsl(43,50%,44%)] rounded-none px-12 h-14 text-[11px] tracking-[0.35em] uppercase font-semibold transition-all duration-500 shadow-[0_0_40px_hsla(43,60%,55%,0.15)] hover:shadow-[0_0_60px_hsla(43,60%,55%,0.25)] group border-0"
+                  className="bg-caregrowth-green text-white hover:bg-caregrowth-green/90 rounded-none px-12 h-14 text-[11px] tracking-[0.35em] uppercase font-semibold transition-all duration-500 shadow-[0_0_40px_hsla(104,71%,34%,0.2)] hover:shadow-[0_0_60px_hsla(104,71%,34%,0.3)] group border-0"
                 >
                   Enter CareGrowth
                   <ArrowRight size={14} className="ml-3 group-hover:translate-x-1.5 transition-transform duration-300" />
@@ -211,23 +210,21 @@ const LandingPage = () => {
             </motion.div>
           </motion.div>
 
-          {/* Bottom fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[hsl(220,20%,4%)] to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-caregrowth-blue to-transparent" />
         </section>
 
         <LuxuryDivider />
 
         {/* ════════════════════════════════════════════════════════════ */}
-        {/*  THREE PILLARS — Editorial luxury grid                     */}
+        {/*  THREE PILLARS                                              */}
         {/* ════════════════════════════════════════════════════════════ */}
-        <section id="pillars" className="py-28 sm:py-36 bg-[hsl(220,20%,4%)] relative overflow-hidden">
-          {/* Ambient light */}
-          <div className="absolute top-0 right-0 w-[700px] h-[700px] bg-[hsl(43,60%,55%)]/[0.03] rounded-full blur-[200px]" />
+        <section id="pillars" className="py-28 sm:py-36 bg-caregrowth-blue relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[700px] h-[700px] bg-caregrowth-green/[0.03] rounded-full blur-[200px]" />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-caregrowth-green/[0.03] rounded-full blur-[180px]" />
 
           <div className="container mx-auto px-5 sm:px-6 lg:px-16 relative z-10">
             <Reveal className="text-center mb-20 sm:mb-28">
-              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-[hsl(43,60%,55%)]/60 font-medium mb-5">The Suite</p>
+              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-caregrowth-green/60 font-medium mb-5">The Suite</p>
               <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-[-0.02em] mb-5">
                 Three pillars of growth
               </h2>
@@ -236,21 +233,22 @@ const LandingPage = () => {
               </p>
             </Reveal>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-[1px] bg-white/[0.06] overflow-hidden">
+            {/* Seamless grid — no gap between columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-3">
               {pillars.map((pillar, i) => (
                 <Reveal key={pillar.title} delay={i * 0.15}>
-                  <div className="bg-[hsl(220,20%,5%)] p-8 sm:p-10 lg:p-12 h-full flex flex-col group hover:bg-[hsl(220,18%,7%)] transition-all duration-700 relative overflow-hidden">
+                  <div className={`bg-white/[0.03] p-8 sm:p-10 lg:p-12 h-full flex flex-col group hover:bg-white/[0.06] transition-all duration-700 relative overflow-hidden ${i < 2 ? 'lg:border-r border-white/[0.06]' : ''} border-b lg:border-b-0 border-white/[0.06] last:border-b-0`}>
                     {/* Hover glow */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-[hsl(43,60%,55%)]/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-caregrowth-green/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
                     <div className="relative z-10 flex flex-col h-full">
                       {/* Numeral */}
-                      <span className="text-[hsl(43,60%,55%)]/30 text-6xl sm:text-7xl font-extralight tracking-tight absolute top-0 right-0 leading-none select-none">
+                      <span className="text-caregrowth-green/20 text-6xl sm:text-7xl font-extralight tracking-tight absolute top-0 right-0 leading-none select-none">
                         {pillar.num}
                       </span>
 
                       {/* Icon */}
-                      <div className="w-10 h-10 rounded-none border border-[hsl(43,60%,55%)]/20 flex items-center justify-center text-[hsl(43,60%,55%)]/80 mb-8 group-hover:border-[hsl(43,60%,55%)]/40 transition-colors duration-500">
+                      <div className="w-10 h-10 rounded-none border border-caregrowth-green/20 flex items-center justify-center text-caregrowth-green/80 mb-8 group-hover:border-caregrowth-green/40 transition-colors duration-500">
                         {pillar.icon}
                       </div>
 
@@ -267,7 +265,7 @@ const LandingPage = () => {
                         <ul className="space-y-3 mb-10 flex-1">
                           {pillar.details.map((d) => (
                             <li key={d} className="flex items-center gap-3 text-xs text-white/45">
-                              <span className="w-1 h-1 rounded-full bg-[hsl(43,60%,55%)]/60 shrink-0" />
+                              <span className="w-1 h-1 rounded-full bg-caregrowth-green/60 shrink-0" />
                               <span className="font-light">{d}</span>
                             </li>
                           ))}
@@ -291,7 +289,7 @@ const LandingPage = () => {
                       {/* Buttons */}
                       <div className="flex gap-3 mt-auto">
                         <Link to={pillar.link} className={pillar.secondaryCta ? 'flex-1' : 'w-full'}>
-                          <Button className="w-full bg-gradient-to-r from-[hsl(43,60%,48%)] to-[hsl(43,50%,40%)] text-white rounded-none h-12 text-[10px] tracking-[0.3em] uppercase font-semibold hover:from-[hsl(43,60%,52%)] hover:to-[hsl(43,50%,44%)] transition-all duration-500 shadow-[0_4px_20px_hsla(43,60%,55%,0.1)] border-0">
+                          <Button className="w-full bg-caregrowth-green text-white rounded-none h-12 text-[10px] tracking-[0.3em] uppercase font-semibold hover:bg-caregrowth-green/90 transition-all duration-500 shadow-[0_4px_20px_hsla(104,71%,34%,0.15)] border-0">
                             {pillar.cta}
                           </Button>
                         </Link>
@@ -318,14 +316,14 @@ const LandingPage = () => {
         <LuxuryDivider />
 
         {/* ════════════════════════════════════════════════════════════ */}
-        {/*  TODAY'S INSIGHTS — Refined editorial cards                 */}
+        {/*  TODAY'S INSIGHTS                                           */}
         {/* ════════════════════════════════════════════════════════════ */}
-        <section id="features" className="py-28 sm:py-36 bg-[hsl(220,20%,4%)] relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[hsl(43,60%,55%)]/[0.02] rounded-full blur-[200px]" />
+        <section id="features" className="py-28 sm:py-36 bg-caregrowth-blue relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-caregrowth-green/[0.02] rounded-full blur-[200px]" />
 
           <div className="container mx-auto px-5 sm:px-6 lg:px-16 relative z-10">
             <Reveal className="text-center mb-16 sm:mb-24">
-              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-[hsl(43,60%,55%)]/60 font-medium mb-5">Intelligence</p>
+              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-caregrowth-green/60 font-medium mb-5">Intelligence</p>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-[-0.02em] mb-5">
                 Today's Insights
               </h2>
@@ -337,13 +335,12 @@ const LandingPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {insights.map((insight, i) => (
                 <Reveal key={insight.label} delay={i * 0.12}>
-                  <div className="group border border-white/[0.06] bg-white/[0.02] p-8 hover:border-[hsl(43,60%,55%)]/15 hover:bg-white/[0.03] transition-all duration-700 h-full flex flex-col relative overflow-hidden">
-                    {/* Top accent line */}
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(43,60%,55%)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                  <div className="group border border-white/[0.06] bg-white/[0.02] p-8 hover:border-caregrowth-green/15 hover:bg-white/[0.03] transition-all duration-700 h-full flex flex-col relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-caregrowth-green/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
                     <div className="flex items-center gap-3 mb-5">
-                      <span className="text-[hsl(43,60%,55%)]/70">{insight.icon}</span>
-                      <span className="text-[9px] tracking-[0.3em] text-[hsl(43,60%,55%)]/50 uppercase font-medium">
+                      <span className="text-caregrowth-green/70">{insight.icon}</span>
+                      <span className="text-[9px] tracking-[0.3em] text-caregrowth-green/50 uppercase font-medium">
                         {insight.label}
                       </span>
                     </div>
@@ -360,12 +357,12 @@ const LandingPage = () => {
         <LuxuryDivider />
 
         {/* ════════════════════════════════════════════════════════════ */}
-        {/*  HOW IT WORKS — Cinematic numbered steps                   */}
+        {/*  HOW IT WORKS                                               */}
         {/* ════════════════════════════════════════════════════════════ */}
         <section id="video" className="py-28 sm:py-36 bg-[hsl(222,25%,6%)] relative overflow-hidden">
           <div className="container mx-auto px-5 sm:px-6 lg:px-16 relative z-10">
             <Reveal className="text-center mb-20 sm:mb-28">
-              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-[hsl(43,60%,55%)]/60 font-medium mb-5">The Process</p>
+              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-caregrowth-green/60 font-medium mb-5">The Process</p>
               <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-[-0.02em] mb-5">
                 Up and running in minutes
               </h2>
@@ -375,8 +372,7 @@ const LandingPage = () => {
             </Reveal>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-0 max-w-5xl mx-auto relative">
-              {/* Connecting line */}
-              <div className="hidden md:block absolute top-16 left-[16.67%] right-[16.67%] h-px bg-gradient-to-r from-[hsl(43,60%,55%)]/10 via-[hsl(43,60%,55%)]/20 to-[hsl(43,60%,55%)]/10" />
+              <div className="hidden md:block absolute top-16 left-[16.67%] right-[16.67%] h-px bg-gradient-to-r from-caregrowth-green/10 via-caregrowth-green/20 to-caregrowth-green/10" />
 
               {[
                 { num: '01', title: 'Set Up Your Profile', desc: 'Tell us about your agency, your services, and the families you serve.' },
@@ -384,8 +380,8 @@ const LandingPage = () => {
                 { num: '03', title: 'Ask a Question', desc: 'Get guidance on real situations your team faces every day.' },
               ].map((step, i) => (
                 <Reveal key={step.num} delay={i * 0.15} className="text-center px-6 py-8 relative">
-                  <div className="w-20 h-20 mx-auto mb-8 flex items-center justify-center relative z-10 border border-[hsl(43,60%,55%)]/20 bg-[hsl(220,20%,4%)]">
-                    <span className="text-lg font-light tracking-[0.2em] text-[hsl(43,60%,55%)]/80">{step.num}</span>
+                  <div className="w-20 h-20 mx-auto mb-8 flex items-center justify-center relative z-10 border border-caregrowth-green/20 bg-caregrowth-blue">
+                    <span className="text-lg font-light tracking-[0.2em] text-caregrowth-green/80">{step.num}</span>
                   </div>
                   <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 tracking-tight">{step.title}</h3>
                   <p className="text-sm text-white/35 leading-relaxed max-w-xs mx-auto font-light">{step.desc}</p>
@@ -398,24 +394,23 @@ const LandingPage = () => {
         <LuxuryDivider />
 
         {/* ════════════════════════════════════════════════════════════ */}
-        {/*  PRICING — Monolithic card                                 */}
+        {/*  PRICING                                                    */}
         {/* ════════════════════════════════════════════════════════════ */}
-        <section id="pricing" className="py-28 sm:py-36 bg-[hsl(220,20%,4%)] relative overflow-hidden">
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[hsl(43,60%,55%)]/[0.03] rounded-full blur-[180px]" />
+        <section id="pricing" className="py-28 sm:py-36 bg-caregrowth-blue relative overflow-hidden">
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-caregrowth-green/[0.03] rounded-full blur-[180px]" />
 
           <div className="container mx-auto px-5 sm:px-6 lg:px-16 relative z-10">
             <Reveal className="text-center mb-16 sm:mb-24">
-              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-[hsl(43,60%,55%)]/60 font-medium mb-5">Investment</p>
+              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-caregrowth-green/60 font-medium mb-5">Investment</p>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-[-0.02em]">
                 Simple, transparent pricing
               </h2>
             </Reveal>
 
             <Reveal className="flex justify-center max-w-lg mx-auto" delay={0.15}>
-              <div className="w-full border border-white/[0.08] bg-white/[0.02] overflow-hidden relative group hover:border-[hsl(43,60%,55%)]/15 transition-all duration-700">
-                {/* Gold accent top */}
-                <div className="h-px bg-gradient-to-r from-transparent via-[hsl(43,60%,55%)]/50 to-transparent" />
-                <div className="bg-gradient-to-r from-[hsl(43,60%,48%)] to-[hsl(43,50%,40%)] text-white text-center py-3.5">
+              <div className="w-full border border-white/[0.08] bg-white/[0.02] overflow-hidden relative group hover:border-caregrowth-green/15 transition-all duration-700">
+                <div className="h-px bg-gradient-to-r from-transparent via-caregrowth-green/50 to-transparent" />
+                <div className="bg-caregrowth-green text-white text-center py-3.5">
                   <p className="text-[10px] tracking-[0.4em] uppercase font-medium">Complete Solution</p>
                 </div>
 
@@ -432,14 +427,14 @@ const LandingPage = () => {
                   <ul className="space-y-4 mb-10">
                     {['1,000 Social Media Posts', 'Unlimited Documents', 'Unlimited Q&A Queries', 'Priority Support', 'Advanced Analytics', 'Custom Integrations'].map((f) => (
                       <li key={f} className="flex items-center gap-3">
-                        <span className="w-1 h-1 rounded-full bg-[hsl(43,60%,55%)]/60" />
+                        <span className="w-1 h-1 rounded-full bg-caregrowth-green/60" />
                         <span className="text-sm text-white/50 font-light">{f}</span>
                       </li>
                     ))}
                   </ul>
 
                   <Link to="/login">
-                    <Button className="w-full bg-gradient-to-r from-[hsl(43,60%,48%)] to-[hsl(43,50%,40%)] text-white rounded-none h-14 text-[10px] tracking-[0.35em] uppercase font-semibold hover:from-[hsl(43,60%,52%)] hover:to-[hsl(43,50%,44%)] transition-all duration-500 shadow-[0_4px_30px_hsla(43,60%,55%,0.12)] border-0">
+                    <Button className="w-full bg-caregrowth-green text-white rounded-none h-14 text-[10px] tracking-[0.35em] uppercase font-semibold hover:bg-caregrowth-green/90 transition-all duration-500 shadow-[0_4px_30px_hsla(104,71%,34%,0.15)] border-0">
                       Get Started Now
                     </Button>
                   </Link>
@@ -452,23 +447,22 @@ const LandingPage = () => {
         <LuxuryDivider />
 
         {/* ════════════════════════════════════════════════════════════ */}
-        {/*  FINAL CTA — Dramatic close                                */}
+        {/*  FINAL CTA                                                  */}
         {/* ════════════════════════════════════════════════════════════ */}
-        <section className="py-32 sm:py-44 bg-[hsl(220,20%,4%)] text-white relative overflow-hidden">
-          {/* Grid texture */}
+        <section className="py-32 sm:py-44 bg-caregrowth-blue text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.02]" style={{
             backgroundImage: 'linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)',
             backgroundSize: '80px 80px',
           }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[hsl(43,60%,55%)]/[0.04] rounded-full blur-[200px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-caregrowth-green/[0.04] rounded-full blur-[200px]" />
 
           <div className="container mx-auto px-5 sm:px-6 lg:px-16 text-center relative z-10">
             <Reveal>
-              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-[hsl(43,60%,55%)]/50 font-medium mb-8">Start Today</p>
+              <p className="text-[10px] sm:text-[11px] tracking-[0.4em] uppercase text-caregrowth-green/50 font-medium mb-8">Start Today</p>
               <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-[-0.02em] mb-8 leading-[1.05]">
                 Ready to help more families
                 <br />
-                <span className="bg-gradient-to-r from-[hsl(43,60%,55%)] via-[hsl(43,50%,70%)] to-[hsl(43,60%,55%)] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-caregrowth-green via-caregrowth-lightgreen to-caregrowth-green bg-clip-text text-transparent">
                   find your agency?
                 </span>
               </h2>
@@ -479,7 +473,7 @@ const LandingPage = () => {
               <Link to="/login">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-[hsl(43,60%,48%)] to-[hsl(43,50%,40%)] text-white hover:from-[hsl(43,60%,52%)] hover:to-[hsl(43,50%,44%)] rounded-none px-14 h-16 text-[11px] tracking-[0.35em] uppercase font-semibold shadow-[0_0_50px_hsla(43,60%,55%,0.15)] hover:shadow-[0_0_70px_hsla(43,60%,55%,0.25)] transition-all duration-500 border-0"
+                  className="bg-caregrowth-green text-white hover:bg-caregrowth-green/90 rounded-none px-14 h-16 text-[11px] tracking-[0.35em] uppercase font-semibold shadow-[0_0_50px_hsla(104,71%,34%,0.2)] hover:shadow-[0_0_70px_hsla(104,71%,34%,0.3)] transition-all duration-500 border-0"
                 >
                   Enter CareGrowth
                 </Button>
