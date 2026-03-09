@@ -83,7 +83,7 @@ const DashboardLayout = memo(() => {
     return <Navigate to="/login" replace />;
   }
 
-  const isDarkMode = userContextUser?.role === 'super_admin';
+
   
   return (
     <div className="flex h-screen bg-[hsl(220,20%,7%)]">
