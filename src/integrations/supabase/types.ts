@@ -1559,49 +1559,73 @@ export type Database = {
       }
       training_scenarios: {
         Row: {
+          ai_system_prompt: string | null
+          caller_persona: string | null
+          care_situation: string | null
           category: string
+          common_mistakes: string[] | null
           context: string | null
           created_at: string | null
           description: string
           difficulty_level: string | null
           document_id: string | null
+          emotional_tone: string | null
+          evaluation_rubric: Json | null
           expected_key_points: string[] | null
           id: string
           is_active: boolean | null
+          primary_concern: string | null
           prompt_to_user: string
           scenario_type: string
+          status: string | null
           tags: string[] | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          ai_system_prompt?: string | null
+          caller_persona?: string | null
+          care_situation?: string | null
           category: string
+          common_mistakes?: string[] | null
           context?: string | null
           created_at?: string | null
           description: string
           difficulty_level?: string | null
           document_id?: string | null
+          emotional_tone?: string | null
+          evaluation_rubric?: Json | null
           expected_key_points?: string[] | null
           id?: string
           is_active?: boolean | null
+          primary_concern?: string | null
           prompt_to_user: string
           scenario_type?: string
+          status?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          ai_system_prompt?: string | null
+          caller_persona?: string | null
+          care_situation?: string | null
           category?: string
+          common_mistakes?: string[] | null
           context?: string | null
           created_at?: string | null
           description?: string
           difficulty_level?: string | null
           document_id?: string | null
+          emotional_tone?: string | null
+          evaluation_rubric?: Json | null
           expected_key_points?: string[] | null
           id?: string
           is_active?: boolean | null
+          primary_concern?: string | null
           prompt_to_user?: string
           scenario_type?: string
+          status?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string | null
