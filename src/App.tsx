@@ -34,6 +34,7 @@ const KnowledgePage = lazy(() => import('./pages/KnowledgePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegistrationSuccessPage = lazy(() => import('./pages/RegistrationSuccessPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const TrainingPracticePage = lazy(() => import('./pages/TrainingPracticePage'));
 
 // Optimized QueryClient with better defaults
 const queryClient = new QueryClient({
