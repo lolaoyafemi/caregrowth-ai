@@ -2143,6 +2143,81 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_practice_sessions: {
+        Row: {
+          agency_id: string | null
+          audio_url: string | null
+          completed_at: string | null
+          created_at: string
+          duration_seconds: number | null
+          feedback_summary: Json | null
+          id: string
+          improvements: string[] | null
+          overall_score: number | null
+          scenario_id: string
+          score_breakdown: Json | null
+          status: string
+          strengths: string[] | null
+          total_turns: number | null
+          transcript: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          audio_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          feedback_summary?: Json | null
+          id?: string
+          improvements?: string[] | null
+          overall_score?: number | null
+          scenario_id: string
+          score_breakdown?: Json | null
+          status?: string
+          strengths?: string[] | null
+          total_turns?: number | null
+          transcript?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          audio_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          feedback_summary?: Json | null
+          id?: string
+          improvements?: string[] | null
+          overall_score?: number | null
+          scenario_id?: string
+          score_breakdown?: Json | null
+          status?: string
+          strengths?: string[] | null
+          total_turns?: number | null
+          transcript?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_practice_sessions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_practice_sessions_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "training_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
