@@ -11,6 +11,7 @@ import SharedDocumentManager from '@/components/admin/SharedDocumentManager';
 import StuckPaymentFixer from '@/components/admin/StuckPaymentFixer';
 import SuperAdminManager from '@/components/admin/SuperAdminManager';
 import TrainingLibrary from '@/components/admin/TrainingLibrary';
+import TrainingAnalytics from '@/components/admin/TrainingAnalytics';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
@@ -129,7 +130,29 @@ const SuperAdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="training" className="space-y-6">
-            <TrainingLibrary />
+            <Card>
+              <CardHeader>
+                <CardTitle>Training Library</CardTitle>
+                <CardDescription>
+                  Upload and manage training materials
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TrainingLibrary />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Training Analytics</CardTitle>
+                <CardDescription>
+                  Track agency training progress and identify improvement areas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TrainingAnalytics />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="maintenance" className="space-y-6">

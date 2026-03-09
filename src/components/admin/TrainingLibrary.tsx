@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Upload, FileText, Trash2, RefreshCw, Edit, BookOpen, 
-  MessageSquare, Shield, HelpCircle, GraduationCap, Users 
+  MessageSquare, Shield, HelpCircle, GraduationCap, Users, Sparkles 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
@@ -79,6 +79,7 @@ const TrainingLibrary = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [editingDoc, setEditingDoc] = useState<TrainingDocument | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [generatingScenarios, setGeneratingScenarios] = useState<string | null>(null);
   const { user } = useUser();
 
   const loadDocuments = async () => {
@@ -301,6 +302,25 @@ const TrainingLibrary = () => {
     }
   };
 
+  const handleGenerateScenarios = async (docId: string) => {
+    setGeneratingScenarios(docId);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-training-scenarios', {
+        body: { documentId: docId }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      toast.success(`Generated ${data.scenarios_generated} training scenarios!`);
+    } catch (error: any) {
+      console.error('Scenario generation error:', error);
+      toast.error(error?.message || 'Failed to generate scenarios');
+    } finally {
+      setGeneratingScenarios(null);
+    }
+  };
+
   const getStatusBadge = (status: string, fetched: boolean) => {
     if (status === 'completed' && fetched) {
       return <Badge variant="default">Ready</Badge>;
@@ -464,6 +484,27 @@ const TrainingLibrary = () => {
                             </div>
                             
                             <div className="flex items-center gap-2 ml-4">
+                              {(doc.processing_status === 'completed' && doc.fetched) && (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleGenerateScenarios(doc.id)}
+                                  disabled={generatingScenarios === doc.id}
+                                >
+                                  {generatingScenarios === doc.id ? (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                      Generating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="h-4 w-4 mr-2" />
+                                      Generate Scenarios
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+
                               <Button
                                 variant="ghost"
                                 size="sm"
