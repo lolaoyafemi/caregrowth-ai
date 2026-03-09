@@ -17,7 +17,6 @@ interface GeneratedSection {
 
 interface GeneratedContent {
   facebook: GeneratedSection;
-  twitter: GeneratedSection;
   linkedin: GeneratedSection;
   instagram: GeneratedSection;
 }
