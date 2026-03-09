@@ -15,6 +15,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
+import VoicePracticeSession from '@/components/training/VoicePracticeSession';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
