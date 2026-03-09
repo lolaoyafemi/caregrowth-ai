@@ -81,11 +81,7 @@ const Header = () => {
             <Link to="/dashboard">
               <Button
                 variant="outline"
-                className={`text-luxury-spacing text-[11px] tracking-widest rounded-none border px-6 py-2 h-auto transition-all duration-300 ${
-                  scrolled
-                    ? 'border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
-                    : 'border-white/60 text-white hover:bg-white hover:text-gray-900'
-                }`}
+                className="text-[11px] tracking-[0.25em] uppercase rounded-none border border-[hsl(43,60%,55%)]/30 text-[hsl(43,60%,55%)]/80 hover:bg-[hsl(43,60%,55%)]/10 hover:border-[hsl(43,60%,55%)]/50 px-6 py-2 h-auto transition-all duration-500"
               >
                 Dashboard
               </Button>
