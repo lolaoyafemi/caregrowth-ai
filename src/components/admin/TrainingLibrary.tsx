@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Upload, FileText, Trash2, RefreshCw, Edit, BookOpen, 
-  MessageSquare, Shield, HelpCircle, GraduationCap, Users 
+  MessageSquare, Shield, HelpCircle, GraduationCap, Users, Sparkles 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
