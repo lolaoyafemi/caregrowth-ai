@@ -162,7 +162,7 @@ export default function TrainingAnalytics() {
           <CardContent className="pt-5">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-secondary/10 rounded-lg">
-                <Users className="h-5 w-5 text-blue-500" />
+                <Users className="h-5 w-5 text-secondary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{uniqueUsers}</p>
