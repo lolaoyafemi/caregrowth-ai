@@ -16,6 +16,7 @@ import AssistantGreeting from '@/components/dashboard/AssistantGreeting';
 import ActivitySnapshot from '@/components/dashboard/ActivitySnapshot';
 import StrategyFeed from '@/components/dashboard/StrategyFeed';
 import InsightCards from '@/components/dashboard/InsightCards';
+import AgencyHealthScore from '@/components/dashboard/AgencyHealthScore';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
