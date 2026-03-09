@@ -82,6 +82,9 @@ const DashboardHome = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
+      {/* Zone 0 — Agency Health Score */}
+      <AgencyHealthScore />
+
       {/* Zone 1 — Assistant Header */}
       <AssistantGreeting postsScheduled={activity.postsScheduled} />
 
