@@ -11,6 +11,7 @@ import SharedDocumentManager from '@/components/admin/SharedDocumentManager';
 import StuckPaymentFixer from '@/components/admin/StuckPaymentFixer';
 import SuperAdminManager from '@/components/admin/SuperAdminManager';
 import TrainingLibrary from '@/components/admin/TrainingLibrary';
+import TrainingAnalytics from '@/components/admin/TrainingAnalytics';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
