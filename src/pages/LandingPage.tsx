@@ -99,7 +99,7 @@ const LandingPage = () => {
         {/* ════════════════════════════════════════════════════════════ */}
         {/*  HERO                                                       */}
         {/* ════════════════════════════════════════════════════════════ */}
-        <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-28">
           <div className="absolute inset-0 bg-gradient-to-b from-caregrowth-blue via-[hsl(222,25%,7%)] to-caregrowth-blue" />
 
           {/* Animated orbs */}
