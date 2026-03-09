@@ -18,7 +18,8 @@ import {
   Zap,
   BookOpen,
   CalendarDays,
-  Building2
+  Building2,
+  GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '../../contexts/UserContext';
@@ -464,6 +465,22 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
             >
               <CalendarDays size={20} />
               {!collapsed && <span>Content Calendar</span>}
+            </NavLink>
+          )}
+
+          {showAdminItems && (
+            <NavLink
+              to="/dashboard/training"
+              className={({ isActive }) => cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+                isActive 
+                  ? (isSuperAdmin ? "bg-green-100 text-green-800" : "bg-caregrowth-lightblue text-caregrowth-blue") 
+                  : "text-gray-700 hover:bg-gray-100",
+                collapsed && "justify-center"
+              )}
+            >
+              <GraduationCap size={20} />
+              {!collapsed && <span>Practice Gym</span>}
             </NavLink>
           )}
 

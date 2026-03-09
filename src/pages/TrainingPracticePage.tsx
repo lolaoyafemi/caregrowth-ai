@@ -1,18 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   GraduationCap, ChevronRight, Star, CheckCircle, AlertCircle,
   BookOpen, Clock, Target, RefreshCw, MessageSquare, TrendingUp,
-  Send, Phone, User, Bot, Lightbulb,
+  Send, Phone, User, Lightbulb, Dumbbell, BarChart3, Award, Flame,
+  ShieldCheck, Heart, Search, Mic, Brain, ArrowRight, Zap,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
 
 interface Scenario {
   id: string;
@@ -56,33 +62,44 @@ interface Evaluation {
   score_breakdown?: ScoreBreakdown;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  'Intake Calls': 'Intake Calls',
-  'Cost & Payment Questions': 'Cost & Payment',
-  'Dementia / Memory Care': 'Dementia Care',
-  'Hospital Discharge': 'Hospital Discharge',
-  'Caregiver Burnout': 'Caregiver Burnout',
-  'Trust & Safety': 'Trust & Safety',
-  client_intake_guidance: 'Client Intake',
-  conversation_scripts: 'Conversation Scripts',
-  insurance_payment_knowledge: 'Insurance & Payment',
-  family_faq: 'Family FAQ',
-  training_modules: 'Training Modules',
+/* ------------------------------------------------------------------ */
+/*  Constants                                                          */
+/* ------------------------------------------------------------------ */
+
+const MAX_EXCHANGES = 8;
+const MIN_EXCHANGES_FOR_END = 3;
+
+const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  'Intake Calls': { label: 'Intake Calls', icon: Phone, color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  'Cost & Payment Questions': { label: 'Cost Questions', icon: BarChart3, color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  'Dementia / Memory Care': { label: 'Dementia Safety', icon: Brain, color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  'Hospital Discharge': { label: 'Hospital Discharge', icon: Heart, color: 'bg-red-100 text-red-700 border-red-200' },
+  'Caregiver Burnout': { label: 'Caregiver Burnout', icon: Flame, color: 'bg-orange-100 text-orange-700 border-orange-200' },
+  'Trust & Safety': { label: 'Trust & Safety', icon: ShieldCheck, color: 'bg-teal-100 text-teal-700 border-teal-200' },
+  client_intake_guidance: { label: 'Client Intake', icon: Phone, color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  conversation_scripts: { label: 'Scripts', icon: MessageSquare, color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+  insurance_payment_knowledge: { label: 'Insurance', icon: BarChart3, color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  family_faq: { label: 'Family FAQ', icon: Search, color: 'bg-amber-100 text-amber-700 border-amber-200' },
+  training_modules: { label: 'Training', icon: GraduationCap, color: 'bg-violet-100 text-violet-700 border-violet-200' },
 };
 
-const DIFFICULTY_COLOR: Record<string, string> = {
-  easy: 'text-green-600',
-  medium: 'text-yellow-600',
-  hard: 'text-red-600',
+const DIFFICULTY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  easy: { label: 'Easy', color: 'text-green-700', bg: 'bg-green-100 border-green-200' },
+  medium: { label: 'Medium', color: 'text-amber-700', bg: 'bg-amber-100 border-amber-200' },
+  hard: { label: 'Hard', color: 'text-red-700', bg: 'bg-red-100 border-red-200' },
 };
 
-const SCORE_LABELS: Record<string, string> = {
-  empathy: 'Empathy',
-  clarity: 'Clarity',
-  discovery: 'Discovery',
-  confidence: 'Confidence',
-  next_steps: 'Next Steps',
+const SCORE_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
+  empathy: { label: 'Empathy', icon: Heart },
+  clarity: { label: 'Clarity', icon: Lightbulb },
+  discovery: { label: 'Discovery', icon: Search },
+  confidence: { label: 'Confidence', icon: ShieldCheck },
+  next_steps: { label: 'Next Steps', icon: ArrowRight },
 };
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 
 export default function TrainingPracticePage() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -93,39 +110,45 @@ export default function TrainingPracticePage() {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [userProgress, setUserProgress] = useState<any[]>([]);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [completedScenarios, setCompletedScenarios] = useState<Set<string>>(new Set());
   const [conversationEnded, setConversationEnded] = useState(false);
+  const [allResponses, setAllResponses] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('scenarios');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { user } = useUser();
 
-  useEffect(() => {
-    loadScenariosAndProgress();
-  }, []);
+  const userExchanges = messages.filter(m => m.role === 'user').length;
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  useEffect(() => { loadData(); }, []);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  const loadScenariosAndProgress = async () => {
+  // Auto-end after MAX_EXCHANGES
+  useEffect(() => {
+    if (userExchanges >= MAX_EXCHANGES && !conversationEnded && !isEvaluating && currentScenario) {
+      handleEndConversation();
+    }
+  }, [userExchanges]);
+
+  const loadData = async () => {
     setIsLoading(true);
     try {
-      const [{ data: scenariosData }, { data: progressData }, { data: responsesData }] = await Promise.all([
+      const [{ data: scenariosData }, { data: responsesData }] = await Promise.all([
         supabase
           .from('training_scenarios')
           .select('*')
           .eq('is_active', true)
           .eq('status', 'published')
           .order('difficulty_level'),
-        user ? supabase.from('training_progress').select('*').eq('user_id', user.id) : Promise.resolve({ data: [] }),
-        user ? supabase.from('training_responses').select('scenario_id, score').eq('user_id', user.id).gte('score', 70) : Promise.resolve({ data: [] }),
+        user
+          ? supabase.from('training_responses').select('scenario_id, score, created_at, strengths, improvements, ai_evaluation').eq('user_id', user.id).order('created_at', { ascending: false })
+          : Promise.resolve({ data: [] }),
       ]);
 
       setScenarios((scenariosData as Scenario[]) || []);
-      setUserProgress(progressData || []);
-      setCompletedScenarios(new Set((responsesData || []).map((r: any) => r.scenario_id)));
+      setAllResponses(responsesData || []);
+      setCompletedScenarios(new Set((responsesData || []).filter((r: any) => r.score >= 70).map((r: any) => r.scenario_id)));
     } catch (error) {
       console.error('Error loading scenarios:', error);
     } finally {
@@ -133,33 +156,58 @@ export default function TrainingPracticePage() {
     }
   };
 
+  /* ---------- Stats computations ---------- */
+  const stats = useMemo(() => {
+    if (!allResponses.length) return null;
+    const totalConversations = allResponses.length;
+    const avgScore = Math.round(allResponses.reduce((a, r) => a + (r.score || 0), 0) / totalConversations);
+
+    // Aggregate score breakdowns
+    const breakdownTotals: Record<string, number> = { empathy: 0, clarity: 0, discovery: 0, confidence: 0, next_steps: 0 };
+    let breakdownCount = 0;
+    allResponses.forEach(r => {
+      const bd = r.ai_evaluation?.score_breakdown;
+      if (bd) {
+        breakdownCount++;
+        Object.keys(breakdownTotals).forEach(k => { breakdownTotals[k] += bd[k] || 0; });
+      }
+    });
+
+    const avgBreakdown = breakdownCount > 0
+      ? Object.fromEntries(Object.entries(breakdownTotals).map(([k, v]) => [k, Math.round(v / breakdownCount)]))
+      : null;
+
+    const strongest = avgBreakdown ? Object.entries(avgBreakdown).sort((a, b) => b[1] - a[1])[0] : null;
+    const weakest = avgBreakdown ? Object.entries(avgBreakdown).sort((a, b) => a[1] - b[1])[0] : null;
+
+    return { totalConversations, avgScore, avgBreakdown, strongest, weakest };
+  }, [allResponses]);
+
+  /* ---------- Scenario actions ---------- */
   const handleSelectScenario = async (scenario: Scenario) => {
     setCurrentScenario(scenario);
     setMessages([]);
     setEvaluation(null);
     setConversationEnded(false);
     setStartTime(new Date());
-
-    // Get initial caller message
+    setActiveTab('scenarios');
     setIsSending(true);
+
     try {
       const { data, error } = await supabase.functions.invoke('simulate-training-conversation', {
         body: { scenarioId: scenario.id, messages: [] },
       });
       if (error) throw error;
-      if (data.reply) {
-        setMessages([{ role: 'assistant', content: data.reply }]);
-      }
-    } catch (err: any) {
+      if (data.reply) setMessages([{ role: 'assistant', content: data.reply }]);
+    } catch {
       toast.error('Failed to start scenario');
-      console.error(err);
     } finally {
       setIsSending(false);
     }
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !currentScenario || isSending) return;
+    if (!inputMessage.trim() || !currentScenario || isSending || conversationEnded) return;
 
     const userMsg: ChatMessage = { role: 'user', content: inputMessage.trim() };
     const newMessages = [...messages, userMsg];
@@ -172,23 +220,20 @@ export default function TrainingPracticePage() {
         body: { scenarioId: currentScenario.id, messages: newMessages },
       });
       if (error) throw error;
-      if (data.reply) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-      }
-    } catch (err: any) {
+      if (data.reply) setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+    } catch {
       toast.error('Failed to get response');
-      console.error(err);
     } finally {
       setIsSending(false);
     }
   };
 
   const handleEndConversation = async () => {
-    if (!currentScenario || !user) return;
+    if (!currentScenario || !user || isEvaluating) return;
     setConversationEnded(true);
     setIsEvaluating(true);
 
-    const timeSpent = startTime ? Math.floor((new Date().getTime() - startTime.getTime()) / 1000) : null;
+    const timeSpent = startTime ? Math.floor((Date.now() - startTime.getTime()) / 1000) : null;
 
     try {
       const { data, error } = await supabase.functions.invoke('evaluate-training-response', {
@@ -200,16 +245,12 @@ export default function TrainingPracticePage() {
           timeSpentSeconds: timeSpent,
         },
       });
-
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
       setEvaluation(data.evaluation);
-      if (data.evaluation.score >= 70) {
-        setCompletedScenarios(prev => new Set([...prev, currentScenario.id]));
-      }
-      await loadScenariosAndProgress();
+      if (data.evaluation.score >= 70) setCompletedScenarios(prev => new Set([...prev, currentScenario.id]));
+      await loadData();
     } catch (error: any) {
-      console.error('Evaluation error:', error);
       toast.error(error?.message || 'Failed to evaluate conversation');
     } finally {
       setIsEvaluating(false);
@@ -217,17 +258,26 @@ export default function TrainingPracticePage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
   };
 
+  const resetToList = () => {
+    setCurrentScenario(null);
+    setMessages([]);
+    setEvaluation(null);
+    setConversationEnded(false);
+  };
+
+  /* ---------- Derived ---------- */
   const categories = [...new Set(scenarios.map(s => s.category))];
   const filteredScenarios = selectedCategory ? scenarios.filter(s => s.category === selectedCategory) : scenarios;
   const totalCompleted = completedScenarios.size;
   const totalScenarios = scenarios.length;
   const overallProgress = totalScenarios > 0 ? Math.round((totalCompleted / totalScenarios) * 100) : 0;
+
+  /* ---------------------------------------------------------------- */
+  /*  Render                                                           */
+  /* ---------------------------------------------------------------- */
 
   if (isLoading) {
     return (
@@ -238,119 +288,175 @@ export default function TrainingPracticePage() {
   }
 
   return (
-    <div className="space-y-6 p-4">
-      {/* Header Progress */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-primary" />
-              <span className="font-semibold">Practice Scenarios</span>
+    <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+      {/* Hero Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Dumbbell className="h-5 w-5 text-primary" />
             </div>
-            <span className="text-sm text-muted-foreground">
-              {totalCompleted} / {totalScenarios} completed
-            </span>
+            <h1 className="text-2xl font-bold text-foreground">Practice Gym</h1>
           </div>
-          <Progress value={overallProgress} className="h-2 mb-2" />
-          <p className="text-xs text-muted-foreground">{overallProgress}% complete</p>
+          <p className="text-muted-foreground text-sm ml-[52px]">
+            Sharpen your skills with AI-simulated family conversations
+          </p>
+        </div>
+
+        {/* Quick Stats Row */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <span className="text-sm font-medium">{totalCompleted}/{totalScenarios}</span>
+            <span className="text-xs text-muted-foreground">completed</span>
+          </div>
+          {stats && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border">
+              <Award className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">{stats.avgScore}</span>
+              <span className="text-xs text-muted-foreground">avg score</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Overall Progress</span>
+            <span className="text-sm font-semibold text-primary">{overallProgress}%</span>
+          </div>
+          <Progress value={overallProgress} className="h-2" />
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Scenario List */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Scenarios</CardTitle>
-              <CardDescription>Select a scenario to begin roleplay</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-sm grid-cols-2">
+          <TabsTrigger value="scenarios" className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" /> Scenarios
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" /> Practice Stats
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ============ SCENARIOS TAB ============ */}
+        <TabsContent value="scenarios" className="mt-4">
+          {!currentScenario ? (
+            <div className="space-y-6">
+              {/* Category Filters */}
               <div className="flex flex-wrap gap-2">
-                <Button variant={selectedCategory === null ? "default" : "outline"} size="sm" onClick={() => setSelectedCategory(null)} className="text-xs">All</Button>
-                {categories.map(cat => (
-                  <Button key={cat} variant={selectedCategory === cat ? "default" : "outline"} size="sm" onClick={() => setSelectedCategory(cat)} className="text-xs">
-                    {CATEGORY_LABELS[cat] || cat}
-                  </Button>
-                ))}
+                <Button variant={selectedCategory === null ? 'default' : 'outline'} size="sm" onClick={() => setSelectedCategory(null)}>All</Button>
+                {categories.map(cat => {
+                  const cfg = CATEGORY_CONFIG[cat];
+                  return (
+                    <Button key={cat} variant={selectedCategory === cat ? 'default' : 'outline'} size="sm" onClick={() => setSelectedCategory(cat)}>
+                      {cfg?.label || cat}
+                    </Button>
+                  );
+                })}
               </div>
 
+              {/* Scenario Cards Grid */}
               {filteredScenarios.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <BookOpen className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">No published scenarios available yet</p>
-                </div>
+                <Card className="py-16">
+                  <CardContent className="text-center">
+                    <BookOpen className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-40" />
+                    <p className="font-medium text-foreground mb-1">No scenarios available yet</p>
+                    <p className="text-sm text-muted-foreground">Scenarios will appear here once approved by your Super Admin.</p>
+                  </CardContent>
+                </Card>
               ) : (
-                <ScrollArea className="max-h-[500px]">
-                  <div className="space-y-2 pr-2">
-                    {filteredScenarios.map(scenario => (
-                      <button
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredScenarios.map(scenario => {
+                    const catCfg = CATEGORY_CONFIG[scenario.category] || { label: scenario.category, icon: GraduationCap, color: 'bg-muted text-foreground border-border' };
+                    const diffCfg = DIFFICULTY_CONFIG[scenario.difficulty_level] || DIFFICULTY_CONFIG.medium;
+                    const isCompleted = completedScenarios.has(scenario.id);
+                    const CatIcon = catCfg.icon;
+
+                    return (
+                      <Card
                         key={scenario.id}
+                        className={`group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 ${isCompleted ? 'border-green-200 bg-green-50/30' : ''}`}
                         onClick={() => handleSelectScenario(scenario)}
-                        className={`w-full text-left p-3 rounded-lg border transition-all ${
-                          currentScenario?.id === scenario.id
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                        }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              {completedScenarios.has(scenario.id) && <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />}
-                              <p className="text-sm font-medium truncate">{scenario.title}</p>
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${catCfg.color} border`}>
+                              <CatIcon className="h-4 w-4" />
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className={`text-xs font-medium ${DIFFICULTY_COLOR[scenario.difficulty_level]}`}>{scenario.difficulty_level}</span>
-                              <span className="text-xs text-muted-foreground">{CATEGORY_LABELS[scenario.category] || scenario.category}</span>
+                              {isCompleted && (
+                                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs">
+                                  <CheckCircle className="h-3 w-3 mr-1" /> Done
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className={`text-xs ${diffCfg.bg} ${diffCfg.color}`}>
+                                {diffCfg.label}
+                              </Badge>
                             </div>
                           </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Chat Area */}
-        <div className="lg:col-span-2">
-          {!currentScenario ? (
-            <Card className="h-full flex items-center justify-center min-h-[500px]">
-              <CardContent className="text-center">
-                <Phone className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-40" />
-                <h3 className="font-semibold text-lg mb-2">Select a Practice Scenario</h3>
-                <p className="text-muted-foreground text-sm max-w-md">
-                  Choose a scenario to start a roleplay conversation. The AI will simulate a family member contacting your agency.
-                </p>
-              </CardContent>
-            </Card>
+                          <h3 className="font-semibold text-foreground mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+                            {scenario.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{scenario.description}</p>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">{catCfg.label}</span>
+                            <Button variant="ghost" size="sm" className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                              Start Practice <ArrowRight className="h-3 w-3 ml-1" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           ) : (
+            /* ============ ACTIVE CONVERSATION ============ */
             <div className="space-y-4">
-              {/* Scenario Info */}
+              {/* Back + Scenario Info */}
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" onClick={resetToList}>
+                  ← Back
+                </Button>
+              </div>
+
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-xs">{CATEGORY_LABELS[currentScenario.category] || currentScenario.category}</Badge>
-                        <span className={`text-xs font-medium ${DIFFICULTY_COLOR[currentScenario.difficulty_level]}`}>{currentScenario.difficulty_level}</span>
+                        <Badge variant="outline" className="text-xs">{CATEGORY_CONFIG[currentScenario.category]?.label || currentScenario.category}</Badge>
+                        <Badge variant="outline" className={`text-xs ${DIFFICULTY_CONFIG[currentScenario.difficulty_level]?.bg || ''} ${DIFFICULTY_CONFIG[currentScenario.difficulty_level]?.color || ''}`}>
+                          {DIFFICULTY_CONFIG[currentScenario.difficulty_level]?.label || currentScenario.difficulty_level}
+                        </Badge>
                       </div>
-                      <h3 className="font-semibold">{currentScenario.title}</h3>
+                      <h3 className="font-semibold text-foreground">{currentScenario.title}</h3>
                       <p className="text-sm text-muted-foreground mt-1">{currentScenario.description}</p>
                     </div>
                     {currentScenario.caller_persona && (
-                      <Badge className="bg-blue-100 text-blue-800 border-blue-200 shrink-0">{currentScenario.caller_persona}</Badge>
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200 shrink-0 ml-4">{currentScenario.caller_persona}</Badge>
                     )}
                   </div>
+                  {/* Exchange counter */}
+                  {!conversationEnded && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <Progress value={(userExchanges / MAX_EXCHANGES) * 100} className="h-1.5 flex-1" />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{userExchanges}/{MAX_EXCHANGES} exchanges</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
-              {/* Chat Messages */}
-              <Card className="flex flex-col" style={{ minHeight: '400px' }}>
-                <CardContent className="flex-1 p-0">
-                  <ScrollArea className="h-[350px] p-4">
+              {/* Chat */}
+              <Card className="flex flex-col" style={{ minHeight: '420px' }}>
+                <CardContent className="flex-1 p-0 flex flex-col">
+                  <ScrollArea className="flex-1 p-4" style={{ height: '350px' }}>
                     <div className="space-y-4">
                       {messages.map((msg, i) => (
                         <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -359,10 +465,8 @@ export default function TrainingPracticePage() {
                               <Phone className="h-4 w-4 text-accent-foreground" />
                             </div>
                           )}
-                          <div className={`max-w-[75%] rounded-xl px-4 py-2.5 ${
-                            msg.role === 'user'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-foreground'
+                          <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                            msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                           }`}>
                             <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                           </div>
@@ -378,7 +482,7 @@ export default function TrainingPracticePage() {
                           <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center shrink-0">
                             <Phone className="h-4 w-4 text-accent-foreground" />
                           </div>
-                          <div className="bg-muted rounded-xl px-4 py-2.5">
+                          <div className="bg-muted rounded-2xl px-4 py-2.5">
                             <div className="flex gap-1">
                               <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                               <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -387,11 +491,19 @@ export default function TrainingPracticePage() {
                           </div>
                         </div>
                       )}
+                      {isEvaluating && (
+                        <div className="flex justify-center py-4">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            Analyzing your performance…
+                          </div>
+                        </div>
+                      )}
                       <div ref={chatEndRef} />
                     </div>
                   </ScrollArea>
 
-                  {/* Input Area */}
+                  {/* Input */}
                   {!conversationEnded && messages.length > 0 && (
                     <div className="border-t p-4">
                       <div className="flex gap-2">
@@ -399,7 +511,7 @@ export default function TrainingPracticePage() {
                           value={inputMessage}
                           onChange={e => setInputMessage(e.target.value)}
                           onKeyDown={handleKeyDown}
-                          placeholder="Type your response..."
+                          placeholder="Type your response…"
                           disabled={isSending}
                           className="flex-1"
                         />
@@ -408,14 +520,10 @@ export default function TrainingPracticePage() {
                         </Button>
                       </div>
                       <div className="flex justify-between items-center mt-2">
-                        <p className="text-xs text-muted-foreground">{messages.filter(m => m.role === 'user').length} exchanges</p>
-                        {messages.filter(m => m.role === 'user').length >= 3 && (
+                        <p className="text-xs text-muted-foreground">{userExchanges} of {MAX_EXCHANGES} exchanges</p>
+                        {userExchanges >= MIN_EXCHANGES_FOR_END && (
                           <Button variant="outline" size="sm" onClick={handleEndConversation} disabled={isEvaluating}>
-                            {isEvaluating ? (
-                              <><RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Evaluating...</>
-                            ) : (
-                              <><Target className="h-3 w-3 mr-1" /> End & Get Feedback</>
-                            )}
+                            <Target className="h-3 w-3 mr-1" /> End & Get Feedback
                           </Button>
                         )}
                       </div>
@@ -424,78 +532,92 @@ export default function TrainingPracticePage() {
                 </CardContent>
               </Card>
 
-              {/* Evaluation Results */}
+              {/* ============ EVALUATION ============ */}
               {evaluation && (
-                <Card className="border-2 border-primary/20">
-                  <CardHeader>
+                <Card className="border-2 border-primary/20 overflow-hidden">
+                  <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-6">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">Performance Review</CardTitle>
-                      <div className={`text-3xl font-bold ${evaluation.score >= 80 ? 'text-green-600' : evaluation.score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {evaluation.score}<span className="text-base font-normal text-muted-foreground">/100</span>
+                      <div>
+                        <h3 className="text-lg font-bold text-foreground">Performance Review</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{evaluation.overall_feedback}</p>
+                      </div>
+                      <div className={`text-4xl font-bold ${evaluation.score >= 80 ? 'text-green-600' : evaluation.score >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                        {evaluation.score}<span className="text-lg font-normal text-muted-foreground">/100</span>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{evaluation.overall_feedback}</p>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
+                  </div>
+
+                  <CardContent className="p-6 space-y-6">
                     {/* Score Breakdown */}
                     {evaluation.score_breakdown && (
                       <div>
-                        <h4 className="text-sm font-semibold mb-3">Score Breakdown</h4>
-                        <div className="grid grid-cols-5 gap-3">
-                          {Object.entries(evaluation.score_breakdown).map(([key, value]) => (
-                            <div key={key} className="text-center">
-                              <div className={`text-lg font-bold ${(value as number) >= 80 ? 'text-green-600' : (value as number) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {value as number}
+                        <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                          <BarChart3 className="h-4 w-4 text-primary" /> Score Breakdown
+                        </h4>
+                        <div className="grid grid-cols-5 gap-4">
+                          {Object.entries(evaluation.score_breakdown).map(([key, value]) => {
+                            const cfg = SCORE_LABELS[key];
+                            const Icon = cfg?.icon || Star;
+                            return (
+                              <div key={key} className="text-center">
+                                <div className="h-10 w-10 mx-auto rounded-full bg-muted flex items-center justify-center mb-2">
+                                  <Icon className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                                <div className={`text-lg font-bold ${(value as number) >= 80 ? 'text-green-600' : (value as number) >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                                  {value as number}
+                                </div>
+                                <p className="text-xs text-muted-foreground">{cfg?.label || key}</p>
+                                <Progress value={value as number} className="h-1 mt-1" />
                               </div>
-                              <p className="text-xs text-muted-foreground">{SCORE_LABELS[key] || key}</p>
-                              <Progress value={value as number} className="h-1 mt-1" />
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
 
-                    {/* Strengths */}
-                    <div>
-                      <h4 className="text-sm font-semibold flex items-center gap-2 mb-2 text-green-700">
-                        <CheckCircle className="h-4 w-4" /> Strengths
-                      </h4>
-                      <ul className="space-y-1.5">
-                        {evaluation.strengths.map((s, i) => (
-                          <li key={i} className="text-sm flex items-start gap-2">
-                            <Star className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />{s}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {/* Strengths */}
+                      <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-3 text-green-800">
+                          <CheckCircle className="h-4 w-4" /> Strengths
+                        </h4>
+                        <ul className="space-y-2">
+                          {evaluation.strengths.map((s, i) => (
+                            <li key={i} className="text-sm flex items-start gap-2 text-green-900">
+                              <Star className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />{s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
 
-                    {/* Improvements */}
-                    <div>
-                      <h4 className="text-sm font-semibold flex items-center gap-2 mb-2 text-amber-700">
-                        <AlertCircle className="h-4 w-4" /> Areas to Improve
-                      </h4>
-                      <ul className="space-y-1.5">
-                        {evaluation.improvements.map((s, i) => (
-                          <li key={i} className="text-sm flex items-start gap-2">
-                            <Lightbulb className="h-3.5 w-3.5 text-amber-500 mt-0.5 flex-shrink-0" />{s}
-                          </li>
-                        ))}
-                      </ul>
+                      {/* Improvements */}
+                      <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-3 text-amber-800">
+                          <AlertCircle className="h-4 w-4" /> Areas to Improve
+                        </h4>
+                        <ul className="space-y-2">
+                          {evaluation.improvements.map((s, i) => (
+                            <li key={i} className="text-sm flex items-start gap-2 text-amber-900">
+                              <Lightbulb className="h-3.5 w-3.5 text-amber-500 mt-0.5 flex-shrink-0" />{s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
 
                     {/* Example Response */}
-                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
                       <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                         <MessageSquare className="h-4 w-4 text-primary" /> Stronger Response Example
                       </h4>
-                      <p className="text-sm text-muted-foreground italic">{evaluation.example_response}</p>
+                      <p className="text-sm text-muted-foreground italic leading-relaxed">{evaluation.example_response}</p>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                       <Button onClick={() => handleSelectScenario(currentScenario!)} variant="outline" className="flex-1">
                         <RefreshCw className="h-4 w-4 mr-2" /> Try Again
                       </Button>
-                      <Button onClick={() => { setCurrentScenario(null); setMessages([]); setEvaluation(null); setConversationEnded(false); }} variant="default" className="flex-1">
+                      <Button onClick={resetToList} variant="default" className="flex-1">
                         Next Scenario <ChevronRight className="h-4 w-4 ml-2" />
                       </Button>
                     </div>
@@ -504,8 +626,118 @@ export default function TrainingPracticePage() {
               )}
             </div>
           )}
-        </div>
-      </div>
+        </TabsContent>
+
+        {/* ============ STATS TAB ============ */}
+        <TabsContent value="stats" className="mt-4">
+          {!stats ? (
+            <Card className="py-16">
+              <CardContent className="text-center">
+                <BarChart3 className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-40" />
+                <p className="font-medium text-foreground mb-1">No practice data yet</p>
+                <p className="text-sm text-muted-foreground">Complete a practice scenario to see your stats.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {/* Overview Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <MessageSquare className="h-6 w-6 mx-auto mb-2 text-primary" />
+                    <div className="text-2xl font-bold text-foreground">{stats.totalConversations}</div>
+                    <p className="text-xs text-muted-foreground">Conversations</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <Award className="h-6 w-6 mx-auto mb-2 text-primary" />
+                    <div className="text-2xl font-bold text-foreground">{stats.avgScore}</div>
+                    <p className="text-xs text-muted-foreground">Average Score</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <Zap className="h-6 w-6 mx-auto mb-2 text-green-600" />
+                    <div className="text-lg font-bold text-foreground">{stats.strongest ? SCORE_LABELS[stats.strongest[0]]?.label || stats.strongest[0] : '—'}</div>
+                    <p className="text-xs text-muted-foreground">Strongest Skill</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <Target className="h-6 w-6 mx-auto mb-2 text-amber-600" />
+                    <div className="text-lg font-bold text-foreground">{stats.weakest ? SCORE_LABELS[stats.weakest[0]]?.label || stats.weakest[0] : '—'}</div>
+                    <p className="text-xs text-muted-foreground">Needs Work</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Skill Breakdown */}
+              {stats.avgBreakdown && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Skill Breakdown</CardTitle>
+                    <CardDescription>Your average scores across all practice sessions</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {Object.entries(stats.avgBreakdown).map(([key, value]) => {
+                      const cfg = SCORE_LABELS[key];
+                      const Icon = cfg?.icon || Star;
+                      return (
+                        <div key={key} className="flex items-center gap-4">
+                          <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-medium">{cfg?.label || key}</span>
+                              <span className={`text-sm font-bold ${value >= 80 ? 'text-green-600' : value >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{value}</span>
+                            </div>
+                            <Progress value={value} className="h-2" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recent Sessions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Recent Sessions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {allResponses.slice(0, 10).map((r, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                            r.score >= 80 ? 'bg-green-100 text-green-700' : r.score >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {r.score}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Practice Session</p>
+                            <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {r.score >= 70 ? (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">Passed</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">Retry</Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
