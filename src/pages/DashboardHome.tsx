@@ -139,6 +139,9 @@ const DashboardHome = () => {
       {/* Smart Scenario Suggestions */}
       <SmartScenarioSuggestions />
 
+      {/* Family Pulse */}
+      <FamilyPulse />
+
       {/* CareGrowth Insights */}
       <InsightCards />
 
