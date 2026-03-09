@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Facebook, Instagram, Linkedin, Twitter, CheckCircle2, Loader2, AlertCircle, Lock } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, CheckCircle2, Loader2, AlertCircle, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
