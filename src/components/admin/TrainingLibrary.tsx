@@ -79,6 +79,7 @@ const TrainingLibrary = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [editingDoc, setEditingDoc] = useState<TrainingDocument | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [generatingScenarios, setGeneratingScenarios] = useState<string | null>(null);
   const { user } = useUser();
 
   const loadDocuments = async () => {
