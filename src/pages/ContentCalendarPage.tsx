@@ -685,10 +685,10 @@ const ContentCalendarPage = () => {
       {/* Header — matches reference project */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white/90">
             Onboarding
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <p className="text-white/40 mt-1 text-sm">
             Plan, schedule, and auto-publish your social media content across platforms.
           </p>
         </div>

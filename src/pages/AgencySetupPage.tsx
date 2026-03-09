@@ -421,15 +421,15 @@ const AgencySetupPage = () => {
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Agency Setup</h1>
-        <p className="text-muted-foreground mt-1">Let's configure CareGrowth for your agency. Skip any step and come back anytime.</p>
+        <h1 className="text-3xl font-bold text-white/90">Agency Setup</h1>
+        <p className="text-white/40 mt-1">Let's configure CareGrowth for your agency. Skip any step and come back anytime.</p>
       </div>
 
       {/* Progress tracker */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-muted-foreground">Setup Progress</span>
-          <span className="text-sm font-medium text-primary">{progressPercent}%</span>
+          <span className="text-sm font-medium text-white/40">Setup Progress</span>
+          <span className="text-sm font-medium text-caregrowth-green">{progressPercent}%</span>
         </div>
         <Progress value={progressPercent} className="h-2 mb-4 bg-muted [&>div]:bg-primary" />
         <div className="flex flex-wrap gap-2">

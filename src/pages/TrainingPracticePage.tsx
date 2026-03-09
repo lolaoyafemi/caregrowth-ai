@@ -307,28 +307,28 @@ export default function TrainingPracticePage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Dumbbell className="h-5 w-5 text-primary" />
+            <div className="h-10 w-10 rounded-xl bg-caregrowth-green/10 flex items-center justify-center">
+              <Dumbbell className="h-5 w-5 text-caregrowth-green" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Practice Gym</h1>
+            <h1 className="text-2xl font-bold text-white/90">Practice Gym</h1>
           </div>
-          <p className="text-muted-foreground text-sm ml-[52px]">
+          <p className="text-white/40 text-sm ml-[52px]">
             Sharpen your skills with AI-simulated family conversations
           </p>
         </div>
 
         {/* Quick Stats Row */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium">{totalCompleted}/{totalScenarios}</span>
-            <span className="text-xs text-muted-foreground">completed</span>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-none bg-white/[0.04] border border-white/[0.06]">
+            <CheckCircle className="h-4 w-4 text-caregrowth-green" />
+            <span className="text-sm font-medium text-white/80">{totalCompleted}/{totalScenarios}</span>
+            <span className="text-xs text-white/40">completed</span>
           </div>
           {stats && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border">
-              <Award className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">{stats.avgScore}</span>
-              <span className="text-xs text-muted-foreground">avg score</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-none bg-white/[0.04] border border-white/[0.06]">
+              <Award className="h-4 w-4 text-caregrowth-green" />
+              <span className="text-sm font-medium text-white/80">{stats.avgScore}</span>
+              <span className="text-xs text-white/40">avg score</span>
             </div>
           )}
         </div>
