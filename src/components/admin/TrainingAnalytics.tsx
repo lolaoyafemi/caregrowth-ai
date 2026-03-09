@@ -45,7 +45,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   training_modules: 'Training Modules',
 };
 
-const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', '#10b981', '#f59e0b', '#ef4444'];
+const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))', 'hsl(var(--destructive))'];
 
 export default function TrainingAnalytics() {
   const [analytics, setAnalytics] = useState<AnalyticsData[]>([]);
