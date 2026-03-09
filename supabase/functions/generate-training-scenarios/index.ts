@@ -185,16 +185,29 @@ Generate 3-5 high-quality, diverse scenarios from this document. Focus on practi
     // Store scenarios in database
     const scenariosToInsert = scenarios.map((s: any) => ({
       document_id: documentId,
-      category: document.document_category,
+      category: s.category || document.document_category,
       scenario_type: s.scenario_type || "conversation",
       title: s.title,
       description: s.description,
-      context: s.context || null,
+      caller_persona: s.caller_persona,
+      care_situation: s.care_situation,
+      primary_concern: s.primary_concern,
       prompt_to_user: s.prompt_to_user,
       expected_key_points: s.expected_key_points,
+      common_mistakes: s.common_mistakes || [],
+      emotional_tone: s.emotional_tone,
       difficulty_level: s.difficulty_level || "medium",
       tags: s.tags || [],
       is_active: true,
+      status: 'draft',
+      ai_system_prompt: `You are simulating a caller contacting a home care agency. Your persona is: ${s.caller_persona}. The situation: ${s.care_situation}. Your primary concern: ${s.primary_concern}. Your emotional tone is: ${s.emotional_tone}. The agent will speak with you. Keep your responses short (1-3 sentences) and realistic. Only answer what is asked or express your concern. Start the conversation by saying what's on your mind.`,
+      evaluation_rubric: {
+        empathy: 20,
+        clarity: 20,
+        discovery: 20,
+        confidence: 20,
+        next_steps: 20
+      }
     }));
 
     const { data: insertedScenarios, error: insertError } = await supabase
