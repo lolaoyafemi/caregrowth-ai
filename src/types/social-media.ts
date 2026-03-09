@@ -7,7 +7,6 @@ export interface GeneratedSection {
 
 export interface GeneratedContent {
   facebook: GeneratedSection;
-  twitter: GeneratedSection;
   linkedin: GeneratedSection;
   instagram: GeneratedSection;
 }

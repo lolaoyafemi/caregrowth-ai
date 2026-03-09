@@ -1,5 +1,5 @@
 import React from 'react';
-import { Facebook, Instagram, Linkedin, Twitter, Heart, MessageCircle, Share2, ThumbsUp, Repeat2, Bookmark, Send, MoreHorizontal } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Heart, MessageCircle, Share2, ThumbsUp, Repeat2, Bookmark, Send, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -143,7 +143,6 @@ const PLATFORM_LABELS: Record<string, { label: string; icon: any; bg: string }> 
   facebook: { label: 'Facebook', icon: Facebook, bg: 'bg-blue-600' },
   instagram: { label: 'Instagram', icon: Instagram, bg: 'bg-gradient-to-br from-purple-500 to-pink-500' },
   linkedin: { label: 'LinkedIn', icon: Linkedin, bg: 'bg-blue-700' },
-  x: { label: 'X (Twitter)', icon: Twitter, bg: 'bg-black' },
 };
 
 const PlatformPreview: React.FC<PlatformPreviewProps> = ({

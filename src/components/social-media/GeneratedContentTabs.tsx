@@ -17,7 +17,6 @@ interface GeneratedSection {
 
 interface GeneratedContent {
   facebook: GeneratedSection;
-  twitter: GeneratedSection;
   linkedin: GeneratedSection;
   instagram: GeneratedSection;
 }
@@ -111,12 +110,11 @@ const GeneratedContentTabs: React.FC<GeneratedContentTabsProps> = ({
       <Tabs defaultValue="facebook">
         <TabsList className="mb-6 w-full justify-start">
           <TabsTrigger value="facebook">Facebook</TabsTrigger>
-          <TabsTrigger value="twitter">Twitter</TabsTrigger>
           <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
           <TabsTrigger value="instagram">Instagram</TabsTrigger>
         </TabsList>
         
-        {["facebook", "twitter", "linkedin", "instagram"].map((platform) => (
+        {["facebook", "linkedin", "instagram"].map((platform) => (
           <TabsContent key={platform} value={platform}>
             <Card className="p-6">
               {isGenerating ? (

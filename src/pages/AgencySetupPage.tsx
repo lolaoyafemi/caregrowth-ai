@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import {
   Building2, Briefcase, Sparkles, FileUp, Share2, Rocket,
   Check, ChevronRight, ChevronLeft, SkipForward, Globe,
-  Facebook, Instagram, Linkedin, Twitter, Loader2,
+  Facebook, Instagram, Linkedin, Loader2,
 } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -380,7 +380,6 @@ const AgencySetupPage = () => {
                 { name: 'Facebook Page', icon: Facebook, color: 'text-blue-600' },
                 { name: 'Instagram Business', icon: Instagram, color: 'text-pink-500' },
                 { name: 'LinkedIn', icon: Linkedin, color: 'text-blue-700' },
-                { name: 'X (optional)', icon: Twitter, color: 'text-foreground' },
               ].map(p => (
                 <Card key={p.name} className="flex items-center justify-between p-4 border-border">
                   <div className="flex items-center gap-3">

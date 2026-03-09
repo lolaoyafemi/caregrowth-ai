@@ -136,10 +136,10 @@ const DashboardHome = () => {
 
       {/* Greeting */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground tracking-tight">
+        <h1 className="text-3xl font-bold text-white/90 tracking-tight">
           Good {timeOfDay}{firstName ? `, ${firstName}` : ''}
         </h1>
-        <p className="mt-1 text-muted-foreground text-lg">
+        <p className="mt-1 text-white/40 text-lg">
           Your Agency Command Center. Everything you need to grow your home care agency in one place.
         </p>
       </div>
@@ -147,35 +147,35 @@ const DashboardHome = () => {
       {/* Credit bar for admins */}
       {isMainAdmin && (
         <Card className={cn(
-          "mb-6 bg-card border-border/60 transition-all duration-300",
-          creditUpdateAnimation && "ring-2 ring-primary/30 scale-[1.01]"
+          "mb-6 bg-white/[0.03] border-white/[0.06] transition-all duration-300",
+          creditUpdateAnimation && "ring-1 ring-caregrowth-green/30 scale-[1.01]"
         )}>
           <CardContent className="flex items-center gap-5 p-5">
-            <div className="shrink-0 rounded-lg bg-secondary p-2.5 text-primary">
+            <div className="shrink-0 rounded-none bg-caregrowth-green/10 p-2.5 text-caregrowth-green">
               <Coins className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-foreground">Credits</span>
+                <span className="text-sm font-medium text-white/60 tracking-wide">Credits</span>
                 <span className={cn(
-                  "font-bold text-lg text-foreground transition-all",
+                  "font-bold text-lg text-white/90 transition-all",
                   creditUpdateAnimation && "scale-110"
                 )}>
                   {credits.toLocaleString()}
-                  {creditUpdateAnimation && <Zap size={14} className="inline ml-1 text-chart-4 animate-pulse" />}
+                  {creditUpdateAnimation && <Zap size={14} className="inline ml-1 text-caregrowth-green animate-pulse" />}
                 </span>
               </div>
-              <Progress value={100 - getUsagePercentage()} className="h-1.5 bg-secondary [&>div]:bg-primary" />
-              <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
+              <Progress value={100 - getUsagePercentage()} className="h-1 bg-white/[0.06] [&>div]:bg-caregrowth-green/60" />
+              <div className="flex items-center justify-between mt-1 text-xs text-white/30">
                 <span>Used: {usedThisMonth.toLocaleString()}</span>
                 <span>{getUsagePercentage()}% used</span>
               </div>
             </div>
             <div className="flex gap-2 shrink-0">
-              <Button size="sm" onClick={() => window.location.href = '/stripe-payment'}>
+              <Button size="sm" className="bg-caregrowth-green/20 hover:bg-caregrowth-green/30 text-caregrowth-green border border-caregrowth-green/20 rounded-none text-[11px] tracking-wider uppercase" onClick={() => window.location.href = '/stripe-payment'}>
                 Buy Credits
               </Button>
-              <Button variant="outline" size="sm" onClick={() => { refetch(); refetchUsage(); }} disabled={loading || usageLoading}>
+              <Button variant="outline" size="sm" className="border-white/10 text-white/40 hover:text-white/60 hover:bg-white/[0.04] rounded-none text-[11px] tracking-wider uppercase" onClick={() => { refetch(); refetchUsage(); }} disabled={loading || usageLoading}>
                 Refresh
               </Button>
             </div>
@@ -186,33 +186,32 @@ const DashboardHome = () => {
       {isMainAdmin && <CreditExpirationWarning />}
 
       {/* Three Pillar Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 mb-10">
 
         {/* 1. Agency Setup */}
-        <Card className="border-border/60 hover:shadow-md transition-shadow flex flex-col">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-none hover:bg-white/[0.04] transition-all flex flex-col lg:border-r">
           <CardContent className="p-6 flex flex-col flex-1 gap-4">
-            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-secondary">
-              <Building2 className="h-5 w-5 text-primary" />
+            <div className="flex items-center justify-center w-11 h-11 rounded-none bg-caregrowth-green/10 border border-caregrowth-green/20">
+              <Building2 className="h-5 w-5 text-caregrowth-green" />
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-semibold text-foreground mb-1.5">
+              <h3 className="text-base font-semibold text-white/80 mb-1.5">
                 Build Your Agency Foundation
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-white/35 leading-relaxed">
                 Complete your agency profile and onboarding so CareGrowth can generate guidance and content tailored to your services.
               </p>
             </div>
 
-            {/* Progress */}
             <div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-                <span>Onboarding progress</span>
-                <span className="font-medium text-foreground">{setup.completion}%</span>
+              <div className="flex items-center justify-between text-xs text-white/30 mb-1.5">
+                <span className="tracking-wider uppercase text-[10px]">Onboarding progress</span>
+                <span className="font-medium text-white/60">{setup.completion}%</span>
               </div>
-              <Progress value={setup.completion} className="h-2 bg-secondary [&>div]:bg-primary" />
+              <Progress value={setup.completion} className="h-1 bg-white/[0.06] [&>div]:bg-caregrowth-green/60" />
             </div>
 
-            <div className="flex flex-col gap-2 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-2 text-xs text-white/30">
               <span className="flex items-center gap-1.5">
                 <FileText className="h-3.5 w-3.5" /> Complete agency profile
               </span>
@@ -225,7 +224,7 @@ const DashboardHome = () => {
             </div>
 
             <Link to="/dashboard/agency-setup" className="mt-auto">
-              <Button className="w-full gap-1.5" size="sm">
+              <Button className="w-full gap-1.5 bg-caregrowth-green/15 hover:bg-caregrowth-green/25 text-caregrowth-green border border-caregrowth-green/20 rounded-none text-[11px] tracking-wider uppercase" size="sm">
                 Continue Setup <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
@@ -233,38 +232,37 @@ const DashboardHome = () => {
         </Card>
 
         {/* 2. Family Visibility Engine */}
-        <Card className="border-border/60 hover:shadow-md transition-shadow flex flex-col">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-none hover:bg-white/[0.04] transition-all flex flex-col lg:border-r">
           <CardContent className="p-6 flex flex-col flex-1 gap-4">
-            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-secondary">
-              <Eye className="h-5 w-5 text-primary" />
+            <div className="flex items-center justify-center w-11 h-11 rounded-none bg-caregrowth-green/10 border border-caregrowth-green/20">
+              <Eye className="h-5 w-5 text-caregrowth-green" />
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-semibold text-foreground mb-1.5">
+              <h3 className="text-base font-semibold text-white/80 mb-1.5">
                 Stay Visible to Families Searching for Care
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-white/35 leading-relaxed">
                 Generate and schedule helpful posts that show families how your agency can support them.
               </p>
             </div>
 
-            {/* Quick stats */}
-            <div className="rounded-lg bg-secondary/50 p-3 space-y-2 text-sm">
+            <div className="rounded-none bg-white/[0.03] border border-white/[0.06] p-3 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Posts scheduled this week</span>
-                <span className="font-medium text-foreground">{activity.postsScheduled}</span>
+                <span className="text-white/30">Posts scheduled this week</span>
+                <span className="font-medium text-white/70">{activity.postsScheduled}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Posts published</span>
-                <span className="font-medium text-foreground">{activity.postsPublished}</span>
+                <span className="text-white/30">Posts published</span>
+                <span className="font-medium text-white/70">{activity.postsPublished}</span>
               </div>
             </div>
 
             <div className="flex gap-2 mt-auto">
               <Link to="/dashboard/social-media" className="flex-1">
-                <Button className="w-full" size="sm">Generate Posts</Button>
+                <Button className="w-full bg-caregrowth-green/15 hover:bg-caregrowth-green/25 text-caregrowth-green border border-caregrowth-green/20 rounded-none text-[11px] tracking-wider uppercase" size="sm">Generate Posts</Button>
               </Link>
               <Link to="/dashboard/content-calendar" className="flex-1">
-                <Button variant="outline" className="w-full gap-1" size="sm">
+                <Button variant="outline" className="w-full gap-1 border-white/10 text-white/40 hover:text-white/60 hover:bg-white/[0.04] rounded-none text-[11px] tracking-wider uppercase" size="sm">
                   <CalendarDays className="h-3.5 w-3.5" /> Calendar
                 </Button>
               </Link>
@@ -273,27 +271,26 @@ const DashboardHome = () => {
         </Card>
 
         {/* 3. Ask Jared */}
-        <Card className="border-border/60 hover:shadow-md transition-shadow flex flex-col">
+        <Card className="bg-white/[0.02] border-white/[0.06] rounded-none hover:bg-white/[0.04] transition-all flex flex-col">
           <CardContent className="p-6 flex flex-col flex-1 gap-4">
-            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-secondary">
-              <MessageCircle className="h-5 w-5 text-primary" />
+            <div className="flex items-center justify-center w-11 h-11 rounded-none bg-caregrowth-green/10 border border-caregrowth-green/20">
+              <MessageCircle className="h-5 w-5 text-caregrowth-green" />
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-semibold text-foreground mb-1.5">
+              <h3 className="text-base font-semibold text-white/80 mb-1.5">
                 Ask Jared
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-white/35 leading-relaxed">
                 Your home care assistant trained on agency knowledge and documents.
               </p>
             </div>
 
-            {/* Example prompts */}
             <div className="space-y-2">
               {examplePrompts.map((prompt, i) => (
                 <Link
                   key={i}
                   to={`/dashboard/qa-assistant?q=${encodeURIComponent(prompt)}`}
-                  className="block rounded-lg bg-secondary/50 px-3 py-2 text-xs text-muted-foreground hover:bg-secondary transition-colors leading-relaxed"
+                  className="block rounded-none bg-white/[0.03] border border-white/[0.06] px-3 py-2 text-xs text-white/35 hover:bg-white/[0.06] hover:text-white/50 transition-colors leading-relaxed"
                 >
                   "{prompt}"
                 </Link>
@@ -301,7 +298,7 @@ const DashboardHome = () => {
             </div>
 
             <Link to="/dashboard/qa-assistant" className="mt-auto">
-              <Button className="w-full gap-1.5" size="sm">
+              <Button className="w-full gap-1.5 bg-caregrowth-green/15 hover:bg-caregrowth-green/25 text-caregrowth-green border border-caregrowth-green/20 rounded-none text-[11px] tracking-wider uppercase" size="sm">
                 Start Conversation <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </Link>

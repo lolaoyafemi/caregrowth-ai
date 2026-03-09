@@ -190,7 +190,6 @@ const SocialMediaTool = () => {
 
       const content: GeneratedContent = {
         facebook: { hook, body, cta },
-        twitter: { hook, body, cta },
         linkedin: { hook, body, cta },
         instagram: { hook, body, cta }
       };

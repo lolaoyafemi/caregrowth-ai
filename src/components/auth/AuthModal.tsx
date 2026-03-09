@@ -13,7 +13,7 @@ const SIGNIN_METHOD_LABELS: Record<string, { label: string; color: string }> = {
   email: { label: 'Email', color: 'bg-blue-100 text-blue-800 border-blue-200' },
   google: { label: 'Google', color: 'bg-red-100 text-red-800 border-red-200' },
   facebook: { label: 'Facebook', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-  twitter: { label: 'X (Twitter)', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+  
   linkedin_oidc: { label: 'LinkedIn', color: 'bg-sky-100 text-sky-800 border-sky-200' },
 };
 
@@ -33,7 +33,7 @@ const AuthModal: React.FC = () => {
     color: ''
   });
   
-  const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithFacebook, signInWithTwitter, signInWithLinkedIn } = useAuth();
+  const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithFacebook, signInWithLinkedIn } = useAuth();
   const navigate = useNavigate();
 
   const lastMethod = localStorage.getItem('last_signin_method');
@@ -228,24 +228,6 @@ const AuthModal: React.FC = () => {
                 )}
                 Continue with Facebook
                 {lastMethod === 'facebook' && <span className="ml-auto text-[10px] text-green-600 font-semibold">LAST USED</span>}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-11 border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 flex items-center justify-center gap-3 font-medium"
-                onClick={() => handleSocialSignIn('twitter', signInWithTwitter)}
-                disabled={loading || !!socialLoading}
-              >
-                {socialLoading === 'twitter' ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-800"></div>
-                ) : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                )}
-                Continue with X
-                {lastMethod === 'twitter' && <span className="ml-auto text-[10px] text-green-600 font-semibold">LAST USED</span>}
               </Button>
 
               <Button
