@@ -38,6 +38,59 @@ export type Database = {
         }
         Relationships: []
       }
+      agency_intelligence_profiles: {
+        Row: {
+          agency_id: string
+          brand_voice: string | null
+          care_specialties: string[] | null
+          created_at: string
+          id: string
+          insurance_accepted: string[] | null
+          onboarding_completed: boolean | null
+          pricing_model: string | null
+          service_locations: string[] | null
+          services_offered: string[] | null
+          target_client_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          brand_voice?: string | null
+          care_specialties?: string[] | null
+          created_at?: string
+          id?: string
+          insurance_accepted?: string[] | null
+          onboarding_completed?: boolean | null
+          pricing_model?: string | null
+          service_locations?: string[] | null
+          services_offered?: string[] | null
+          target_client_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          brand_voice?: string | null
+          care_specialties?: string[] | null
+          created_at?: string
+          id?: string
+          insurance_accepted?: string[] | null
+          onboarding_completed?: boolean | null
+          pricing_model?: string | null
+          service_locations?: string[] | null
+          services_offered?: string[] | null
+          target_client_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_intelligence_profiles_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: true
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agency_profiles: {
         Row: {
           agency_id: string
@@ -246,6 +299,100 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      content_compliance_flags: {
+        Row: {
+          created_at: string
+          flagged_text: string | null
+          id: string
+          issue_type: string
+          post_id: string | null
+          resolved: boolean | null
+          severity_level: string
+          suggested_revision: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          flagged_text?: string | null
+          id?: string
+          issue_type: string
+          post_id?: string | null
+          resolved?: boolean | null
+          severity_level?: string
+          suggested_revision?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          flagged_text?: string | null
+          id?: string
+          issue_type?: string
+          post_id?: string | null
+          resolved?: boolean | null
+          severity_level?: string
+          suggested_revision?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_compliance_flags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_performance: {
+        Row: {
+          captured_at: string
+          clicks: number | null
+          comments: number | null
+          engagement: number | null
+          id: string
+          impressions: number | null
+          platform: string
+          post_id: string | null
+          saves: number | null
+          shares: number | null
+          user_id: string
+        }
+        Insert: {
+          captured_at?: string
+          clicks?: number | null
+          comments?: number | null
+          engagement?: number | null
+          id?: string
+          impressions?: number | null
+          platform: string
+          post_id?: string | null
+          saves?: number | null
+          shares?: number | null
+          user_id: string
+        }
+        Update: {
+          captured_at?: string
+          clicks?: number | null
+          comments?: number | null
+          engagement?: number | null
+          id?: string
+          impressions?: number | null
+          platform?: string
+          post_id?: string | null
+          saves?: number | null
+          shares?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_performance_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       content_posts: {
         Row: {
@@ -773,6 +920,107 @@ export type Database = {
         }
         Relationships: []
       }
+      intake_conversations: {
+        Row: {
+          agency_id: string
+          ai_guided_questions: Json | null
+          conversation_type: string
+          created_at: string
+          id: string
+          status: string
+          summary_output: string | null
+          updated_at: string
+          user_input: string | null
+        }
+        Insert: {
+          agency_id: string
+          ai_guided_questions?: Json | null
+          conversation_type?: string
+          created_at?: string
+          id?: string
+          status?: string
+          summary_output?: string | null
+          updated_at?: string
+          user_input?: string | null
+        }
+        Update: {
+          agency_id?: string
+          ai_guided_questions?: Json | null
+          conversation_type?: string
+          created_at?: string
+          id?: string
+          status?: string
+          summary_output?: string | null
+          updated_at?: string
+          user_input?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_conversations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_signals: {
+        Row: {
+          agency_id: string
+          comment_text: string | null
+          commenter_name: string | null
+          created_at: string
+          id: string
+          lead_probability_score: number | null
+          platform: string
+          post_id: string | null
+          status: string
+          suggested_reply: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          comment_text?: string | null
+          commenter_name?: string | null
+          created_at?: string
+          id?: string
+          lead_probability_score?: number | null
+          platform: string
+          post_id?: string | null
+          status?: string
+          suggested_reply?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          comment_text?: string | null
+          commenter_name?: string | null
+          created_at?: string
+          id?: string
+          lead_probability_score?: number | null
+          platform?: string
+          post_id?: string | null
+          status?: string
+          suggested_reply?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_signals_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_signals_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       openai_keys: {
         Row: {
           active: boolean
@@ -1011,6 +1259,53 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      review_responses: {
+        Row: {
+          agency_id: string
+          ai_suggested_reply: string | null
+          created_at: string
+          id: string
+          platform: string
+          response_status: string
+          review_text: string | null
+          reviewer_name: string | null
+          sentiment_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          ai_suggested_reply?: string | null
+          created_at?: string
+          id?: string
+          platform: string
+          response_status?: string
+          review_text?: string | null
+          reviewer_name?: string | null
+          sentiment_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          ai_suggested_reply?: string | null
+          created_at?: string
+          id?: string
+          platform?: string
+          response_status?: string
+          review_text?: string | null
+          reviewer_name?: string | null
+          sentiment_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_responses_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_audit_log: {
         Row: {
@@ -1636,6 +1931,41 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "shared_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_patterns: {
+        Row: {
+          activity_type: string
+          agency_id: string
+          created_at: string
+          id: string
+          pattern_detected: string | null
+          suggested_action: string | null
+        }
+        Insert: {
+          activity_type: string
+          agency_id: string
+          created_at?: string
+          id?: string
+          pattern_detected?: string | null
+          suggested_action?: string | null
+        }
+        Update: {
+          activity_type?: string
+          agency_id?: string
+          created_at?: string
+          id?: string
+          pattern_detected?: string | null
+          suggested_action?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_patterns_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]
