@@ -18,6 +18,7 @@ interface VoiceSession {
   user_id: string;
   agency_id: string | null;
   scenario_id: string;
+  audio_url?: string | null;
   transcript: any[];
   score_breakdown: any;
   feedback_summary: any;
