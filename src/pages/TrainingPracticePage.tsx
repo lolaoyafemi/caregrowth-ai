@@ -270,6 +270,18 @@ export default function TrainingPracticePage() {
     setConversationEnded(false);
   };
 
+  const handleStartVoicePractice = (scenario: Scenario) => {
+    setVoicePracticeScenario(scenario);
+  };
+
+  const handleVoicePracticeComplete = () => {
+    loadData();
+  };
+
+  const handleVoicePracticeClose = () => {
+    setVoicePracticeScenario(null);
+  };
+
   /* ---------- Derived ---------- */
   const categories = [...new Set(scenarios.map(s => s.category))];
   const filteredScenarios = selectedCategory ? scenarios.filter(s => s.category === selectedCategory) : scenarios;
