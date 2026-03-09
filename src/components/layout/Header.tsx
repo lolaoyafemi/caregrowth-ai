@@ -62,7 +62,7 @@ const Header = () => {
                 <button
                   key={item.label}
                   onClick={item.action}
-                  className={`${navLinkClass} ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'}`}
+                  className={`${navLinkClass} text-white/50 hover:text-[hsl(43,60%,55%)]`}
                 >
                   {item.label}
                 </button>
