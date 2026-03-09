@@ -269,6 +269,13 @@ export function selectContentAnchor(postIndex: number): typeof CONTENT_ANCHORS[n
 }
 
 /**
+ * Select a caregiving reality based on post index rotation.
+ */
+export function selectCaregivingReality(postIndex: number): typeof CAREGIVING_REALITY_MAP[number] {
+  return CAREGIVING_REALITY_MAP[postIndex % CAREGIVING_REALITY_MAP.length];
+}
+
+/**
  * Build the caregiving context block to inject into AI prompts.
  */
 export function buildCaregivingContext(postIndex: number): string {
