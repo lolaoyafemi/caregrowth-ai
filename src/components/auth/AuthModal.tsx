@@ -13,7 +13,7 @@ const SIGNIN_METHOD_LABELS: Record<string, { label: string; color: string }> = {
   email: { label: 'Email', color: 'bg-blue-100 text-blue-800 border-blue-200' },
   google: { label: 'Google', color: 'bg-red-100 text-red-800 border-red-200' },
   facebook: { label: 'Facebook', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-  twitter: { label: 'X (Twitter)', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+  
   linkedin_oidc: { label: 'LinkedIn', color: 'bg-sky-100 text-sky-800 border-sky-200' },
 };
 
