@@ -117,6 +117,7 @@ export default function TrainingPracticePage() {
   const [conversationEnded, setConversationEnded] = useState(false);
   const [allResponses, setAllResponses] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('scenarios');
+  const [voicePracticeScenario, setVoicePracticeScenario] = useState<Scenario | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { user } = useUser();
 
