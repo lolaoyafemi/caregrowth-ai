@@ -31,25 +31,23 @@ const Header = () => {
     }
   };
 
-  const navLinkClass = "text-luxury-spacing text-[11px] font-medium tracking-widest transition-colors duration-300 bg-transparent border-none cursor-pointer";
+  const navLinkClass = "text-[11px] font-medium tracking-[0.25em] uppercase transition-colors duration-500 bg-transparent border-none cursor-pointer";
 
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${
         scrolled
-          ? 'bg-white/90 backdrop-blur-xl shadow-[0_1px_0_0_rgba(0,0,0,0.05)]'
+          ? 'bg-[hsl(220,20%,4%)]/95 backdrop-blur-2xl shadow-[0_1px_0_0_hsla(43,60%,55%,0.08)]'
           : 'bg-transparent'
       }`}
     >
       <div className="container mx-auto px-5 sm:px-6 lg:px-12">
         <div className="flex justify-between items-center h-16 sm:h-20">
           <Link to="/" className="flex items-center gap-3">
-            <h1 className={`text-base sm:text-lg font-semibold tracking-[0.08em] transition-colors duration-500 ${
-              scrolled ? 'text-gray-900' : 'text-white'
-            }`}>
+            <h1 className="text-base sm:text-lg font-semibold tracking-[0.1em] text-white transition-colors duration-500">
               CareGrowth Assistant
             </h1>
           </Link>
@@ -64,18 +62,18 @@ const Header = () => {
                 <button
                   key={item.label}
                   onClick={item.action}
-                  className={`${navLinkClass} ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'}`}
+                  className={`${navLinkClass} text-white/50 hover:text-[hsl(43,60%,55%)]`}
                 >
                   {item.label}
                 </button>
               ))}
               <SupportDialog>
-                <button className={`${navLinkClass} ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'}`}>
+                <button className={`${navLinkClass} text-white/50 hover:text-[hsl(43,60%,55%)]`}>
                   Support
                 </button>
               </SupportDialog>
               <ContactDialog>
-                <button className={`${navLinkClass} ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'}`}>
+                <button className={`${navLinkClass} text-white/50 hover:text-[hsl(43,60%,55%)]`}>
                   Contact
                 </button>
               </ContactDialog>
@@ -83,11 +81,7 @@ const Header = () => {
             <Link to="/dashboard">
               <Button
                 variant="outline"
-                className={`text-luxury-spacing text-[11px] tracking-widest rounded-none border px-6 py-2 h-auto transition-all duration-300 ${
-                  scrolled
-                    ? 'border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
-                    : 'border-white/60 text-white hover:bg-white hover:text-gray-900'
-                }`}
+                className="text-[11px] tracking-[0.25em] uppercase rounded-none border border-[hsl(43,60%,55%)]/30 text-[hsl(43,60%,55%)]/80 hover:bg-[hsl(43,60%,55%)]/10 hover:border-[hsl(43,60%,55%)]/50 px-6 py-2 h-auto transition-all duration-500"
               >
                 Dashboard
               </Button>
@@ -95,7 +89,7 @@ const Header = () => {
           </div>
 
           <button
-            className={`lg:hidden p-2 transition-colors ${scrolled ? 'text-gray-900' : 'text-white'}`}
+            className="lg:hidden p-2 text-white/70 hover:text-white transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -110,16 +104,16 @@ const Header = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-white border-t border-gray-100 overflow-hidden"
+            className="lg:hidden bg-[hsl(220,20%,4%)]/98 backdrop-blur-2xl border-t border-white/[0.06] overflow-hidden"
           >
-            <nav className="flex flex-col items-center px-6 py-6 gap-4">
-              <button onClick={() => scrollToSection('features')} className="text-sm text-gray-700 hover:text-gray-900 py-2">Features</button>
-              <button onClick={() => scrollToSection('video')} className="text-sm text-gray-700 hover:text-gray-900 py-2">How it Works</button>
-              <button onClick={() => scrollToSection('pricing')} className="text-sm text-gray-700 hover:text-gray-900 py-2">Pricing</button>
-              <SupportDialog><button className="text-sm text-gray-700 hover:text-gray-900 py-2">Support</button></SupportDialog>
-              <ContactDialog><button className="text-sm text-gray-700 hover:text-gray-900 py-2">Contact</button></ContactDialog>
-              <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="w-full max-w-xs mt-2">
-                <Button className="w-full bg-caregrowth-blue rounded-none">Dashboard</Button>
+            <nav className="flex flex-col items-center px-6 py-8 gap-5">
+              <button onClick={() => scrollToSection('features')} className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">Features</button>
+              <button onClick={() => scrollToSection('video')} className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">How it Works</button>
+              <button onClick={() => scrollToSection('pricing')} className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">Pricing</button>
+              <SupportDialog><button className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">Support</button></SupportDialog>
+              <ContactDialog><button className="text-xs tracking-[0.2em] uppercase text-white/50 hover:text-[hsl(43,60%,55%)] py-2 transition-colors">Contact</button></ContactDialog>
+              <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="w-full max-w-xs mt-3">
+                <Button className="w-full bg-gradient-to-r from-[hsl(43,60%,48%)] to-[hsl(43,50%,40%)] text-white rounded-none h-12 text-[10px] tracking-[0.3em] uppercase font-semibold border-0">Dashboard</Button>
               </Link>
             </nav>
           </motion.div>
