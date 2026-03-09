@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { 
   CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, 
-  Edit2, RotateCcw, Facebook, Instagram, Linkedin, Twitter,
+  Edit2, RotateCcw, Facebook, Instagram, Linkedin,
   Loader2, Link2, AlertCircle, GripVertical, FileText, CheckCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
