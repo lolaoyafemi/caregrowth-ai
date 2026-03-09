@@ -33,7 +33,7 @@ const AuthModal: React.FC = () => {
     color: ''
   });
   
-  const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithFacebook, signInWithTwitter, signInWithLinkedIn } = useAuth();
+  const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithFacebook, signInWithLinkedIn } = useAuth();
   const navigate = useNavigate();
 
   const lastMethod = localStorage.getItem('last_signin_method');
