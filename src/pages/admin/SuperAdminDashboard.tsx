@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, TrendingUp, Settings, Database, BookOpen, Wrench } from 'lucide-react';
+import { Shield, Users, TrendingUp, Settings, Database, BookOpen, Wrench, GraduationCap } from 'lucide-react';
 import SystemMetrics from '@/components/admin/SystemMetrics';
 import UserManagementTable from '@/components/admin/UserManagementTable';
 import UsageAnalytics from '@/components/admin/UsageAnalytics';
@@ -10,6 +10,7 @@ import RealtimeActivity from '@/components/admin/RealtimeActivity';
 import SharedDocumentManager from '@/components/admin/SharedDocumentManager';
 import StuckPaymentFixer from '@/components/admin/StuckPaymentFixer';
 import SuperAdminManager from '@/components/admin/SuperAdminManager';
+import TrainingLibrary from '@/components/admin/TrainingLibrary';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
@@ -51,7 +52,7 @@ const SuperAdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Overview
@@ -75,6 +76,10 @@ const SuperAdminDashboard = () => {
             <TabsTrigger value="activity" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Activity
+            </TabsTrigger>
+            <TabsTrigger value="training" className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4" />
+              Training
             </TabsTrigger>
             <TabsTrigger value="maintenance" className="flex items-center gap-2">
               <Wrench className="h-4 w-4" />
@@ -121,6 +126,10 @@ const SuperAdminDashboard = () => {
 
           <TabsContent value="activity" className="space-y-6">
             <RealtimeActivity />
+          </TabsContent>
+
+          <TabsContent value="training" className="space-y-6">
+            <TrainingLibrary />
           </TabsContent>
 
           <TabsContent value="maintenance" className="space-y-6">
