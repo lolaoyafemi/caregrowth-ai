@@ -15,6 +15,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
+import VoicePracticeSession from '@/components/training/VoicePracticeSession';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -116,6 +117,7 @@ export default function TrainingPracticePage() {
   const [conversationEnded, setConversationEnded] = useState(false);
   const [allResponses, setAllResponses] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('scenarios');
+  const [voicePracticeScenario, setVoicePracticeScenario] = useState<Scenario | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { user } = useUser();
 
@@ -268,6 +270,18 @@ export default function TrainingPracticePage() {
     setConversationEnded(false);
   };
 
+  const handleStartVoicePractice = (scenario: Scenario) => {
+    setVoicePracticeScenario(scenario);
+  };
+
+  const handleVoicePracticeComplete = () => {
+    loadData();
+  };
+
+  const handleVoicePracticeClose = () => {
+    setVoicePracticeScenario(null);
+  };
+
   /* ---------- Derived ---------- */
   const categories = [...new Set(scenarios.map(s => s.category))];
   const filteredScenarios = selectedCategory ? scenarios.filter(s => s.category === selectedCategory) : scenarios;
@@ -405,9 +419,19 @@ export default function TrainingPracticePage() {
 
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">{catCfg.label}</span>
-                            <Button variant="ghost" size="sm" className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                              Start Practice <ArrowRight className="h-3 w-3 ml-1" />
-                            </Button>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-xs text-primary"
+                                onClick={(e) => { e.stopPropagation(); handleStartVoicePractice(scenario); }}
+                              >
+                                <Mic className="h-3 w-3 mr-1" /> Voice
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-xs text-primary">
+                                Start Practice <ArrowRight className="h-3 w-3 ml-1" />
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -738,6 +762,16 @@ export default function TrainingPracticePage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Voice Practice Session */}
+      {voicePracticeScenario && user && (
+        <VoicePracticeSession
+          scenario={voicePracticeScenario}
+          userId={user.id}
+          onClose={handleVoicePracticeClose}
+          onComplete={handleVoicePracticeComplete}
+        />
+      )}
     </div>
   );
 }

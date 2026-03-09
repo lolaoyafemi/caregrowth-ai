@@ -66,3 +66,9 @@ verify_jwt = false
 
 [functions.simulate-training-conversation]
 verify_jwt = false
+
+[functions.voice-speech-to-text]
+verify_jwt = false
+
+[functions.voice-text-to-speech]
+verify_jwt = false

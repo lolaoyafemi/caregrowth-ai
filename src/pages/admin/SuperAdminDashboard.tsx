@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, TrendingUp, Settings, Database, BookOpen, Wrench, GraduationCap } from 'lucide-react';
+import { Shield, Users, TrendingUp, Settings, Database, BookOpen, Wrench, GraduationCap, Mic } from 'lucide-react';
 import SystemMetrics from '@/components/admin/SystemMetrics';
 import UserManagementTable from '@/components/admin/UserManagementTable';
 import UsageAnalytics from '@/components/admin/UsageAnalytics';
@@ -13,6 +13,7 @@ import SuperAdminManager from '@/components/admin/SuperAdminManager';
 import TrainingLibrary from '@/components/admin/TrainingLibrary';
 import TrainingAnalytics from '@/components/admin/TrainingAnalytics';
 import DraftScenarioManager from '@/components/admin/DraftScenarioManager';
+import VoiceSessionsViewer from '@/components/admin/VoiceSessionsViewer';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
@@ -142,6 +143,20 @@ const SuperAdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <TrainingLibrary />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mic className="h-5 w-5" /> Voice Practice Sessions
+                </CardTitle>
+                <CardDescription>
+                  Review completed voice practice sessions, transcripts, and scoring
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <VoiceSessionsViewer />
               </CardContent>
             </Card>
 
