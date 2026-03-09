@@ -1,5 +1,5 @@
 import React from 'react';
-import { Facebook, Instagram, Linkedin, Twitter, Heart, MessageCircle, Share2, ThumbsUp, Repeat2, Bookmark, Send, MoreHorizontal } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Heart, MessageCircle, Share2, ThumbsUp, Repeat2, Bookmark, Send, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
