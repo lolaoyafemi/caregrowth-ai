@@ -419,9 +419,19 @@ export default function TrainingPracticePage() {
 
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">{catCfg.label}</span>
-                            <Button variant="ghost" size="sm" className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                              Start Practice <ArrowRight className="h-3 w-3 ml-1" />
-                            </Button>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-xs text-primary"
+                                onClick={(e) => { e.stopPropagation(); handleStartVoicePractice(scenario); }}
+                              >
+                                <Mic className="h-3 w-3 mr-1" /> Voice
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-xs text-primary">
+                                Start Practice <ArrowRight className="h-3 w-3 ml-1" />
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
