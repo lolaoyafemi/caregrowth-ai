@@ -301,6 +301,25 @@ const TrainingLibrary = () => {
     }
   };
 
+  const handleGenerateScenarios = async (docId: string) => {
+    setGeneratingScenarios(docId);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-training-scenarios', {
+        body: { documentId: docId }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      toast.success(`Generated ${data.scenarios_generated} training scenarios!`);
+    } catch (error: any) {
+      console.error('Scenario generation error:', error);
+      toast.error(error?.message || 'Failed to generate scenarios');
+    } finally {
+      setGeneratingScenarios(null);
+    }
+  };
+
   const getStatusBadge = (status: string, fetched: boolean) => {
     if (status === 'completed' && fetched) {
       return <Badge variant="default">Ready</Badge>;
