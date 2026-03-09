@@ -319,16 +319,16 @@ export default function TrainingPracticePage() {
 
         {/* Quick Stats Row */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium">{totalCompleted}/{totalScenarios}</span>
-            <span className="text-xs text-muted-foreground">completed</span>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-none bg-white/[0.04] border border-white/[0.06]">
+            <CheckCircle className="h-4 w-4 text-caregrowth-green" />
+            <span className="text-sm font-medium text-white/80">{totalCompleted}/{totalScenarios}</span>
+            <span className="text-xs text-white/40">completed</span>
           </div>
           {stats && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border">
-              <Award className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">{stats.avgScore}</span>
-              <span className="text-xs text-muted-foreground">avg score</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-none bg-white/[0.04] border border-white/[0.06]">
+              <Award className="h-4 w-4 text-caregrowth-green" />
+              <span className="text-sm font-medium text-white/80">{stats.avgScore}</span>
+              <span className="text-xs text-white/40">avg score</span>
             </div>
           )}
         </div>

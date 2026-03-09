@@ -428,8 +428,8 @@ const AgencySetupPage = () => {
       {/* Progress tracker */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-muted-foreground">Setup Progress</span>
-          <span className="text-sm font-medium text-primary">{progressPercent}%</span>
+          <span className="text-sm font-medium text-white/40">Setup Progress</span>
+          <span className="text-sm font-medium text-caregrowth-green">{progressPercent}%</span>
         </div>
         <Progress value={progressPercent} className="h-2 mb-4 bg-muted [&>div]:bg-primary" />
         <div className="flex flex-wrap gap-2">

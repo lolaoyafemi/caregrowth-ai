@@ -25,17 +25,17 @@ const SettingsPage = () => {
     <div className="container mx-auto p-6">
       <div className="mb-6">
         <Breadcrumb>
-          <BreadcrumbList>
+          <BreadcrumbList className="text-white/30">
             <BreadcrumbItem>
-              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              <BreadcrumbLink href="/" className="text-white/40 hover:text-white/60">Home</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href="/settings">Settings</BreadcrumbLink>
+              <BreadcrumbLink href="/settings" className="text-white/40 hover:text-white/60">Settings</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Platform Settings</BreadcrumbPage>
+              <BreadcrumbPage className="text-white/60">Platform Settings</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
