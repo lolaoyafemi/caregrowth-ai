@@ -143,7 +143,6 @@ const PLATFORM_LABELS: Record<string, { label: string; icon: any; bg: string }> 
   facebook: { label: 'Facebook', icon: Facebook, bg: 'bg-blue-600' },
   instagram: { label: 'Instagram', icon: Instagram, bg: 'bg-gradient-to-br from-purple-500 to-pink-500' },
   linkedin: { label: 'LinkedIn', icon: Linkedin, bg: 'bg-blue-700' },
-  x: { label: 'X (Twitter)', icon: Twitter, bg: 'bg-black' },
 };
 
 const PlatformPreview: React.FC<PlatformPreviewProps> = ({

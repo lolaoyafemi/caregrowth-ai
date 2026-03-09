@@ -32,7 +32,6 @@ const PLATFORM_CONFIG = {
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-blue-600' },
   instagram: { icon: Instagram, label: 'Instagram', color: 'bg-gradient-to-br from-purple-500 to-pink-500' },
   linkedin: { icon: Linkedin, label: 'LinkedIn', color: 'bg-blue-700' },
-  x: { icon: Twitter, label: 'X', color: 'bg-black' },
 };
 
 const STATUS_CONFIG = {

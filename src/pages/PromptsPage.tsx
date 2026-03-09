@@ -245,7 +245,6 @@ const PromptsPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="facebook">Facebook</SelectItem>
-                    <SelectItem value="twitter">Twitter</SelectItem>
                     <SelectItem value="linkedin">LinkedIn</SelectItem>
                     <SelectItem value="instagram">Instagram</SelectItem>
                     <SelectItem value="all">All Platforms</SelectItem>

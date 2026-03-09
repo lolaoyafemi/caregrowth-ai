@@ -233,24 +233,6 @@ const AuthModal: React.FC = () => {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-11 border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 flex items-center justify-center gap-3 font-medium"
-                onClick={() => handleSocialSignIn('twitter', signInWithTwitter)}
-                disabled={loading || !!socialLoading}
-              >
-                {socialLoading === 'twitter' ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-800"></div>
-                ) : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                )}
-                Continue with X
-                {lastMethod === 'twitter' && <span className="ml-auto text-[10px] text-green-600 font-semibold">LAST USED</span>}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
                 className="w-full h-11 border-2 border-gray-200 hover:border-sky-300 hover:bg-sky-50 flex items-center justify-center gap-3 font-medium"
                 onClick={() => handleSocialSignIn('linkedin', signInWithLinkedIn)}
                 disabled={loading || !!socialLoading}

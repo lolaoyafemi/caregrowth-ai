@@ -380,7 +380,6 @@ const AgencySetupPage = () => {
                 { name: 'Facebook Page', icon: Facebook, color: 'text-blue-600' },
                 { name: 'Instagram Business', icon: Instagram, color: 'text-pink-500' },
                 { name: 'LinkedIn', icon: Linkedin, color: 'text-blue-700' },
-                { name: 'X (optional)', icon: Twitter, color: 'text-foreground' },
               ].map(p => (
                 <Card key={p.name} className="flex items-center justify-between p-4 border-border">
                   <div className="flex items-center gap-3">
