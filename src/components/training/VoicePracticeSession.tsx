@@ -133,7 +133,7 @@ export default function VoicePracticeSession({
       await supabase
         .from('voice_practice_sessions')
         .update({
-          transcript: msgs.map(m => ({ role: m.role, content: m.content, timestamp: m.timestamp })),
+          transcript: msgs.map(m => ({ role: m.role, content: m.content, timestamp: m.timestamp.toISOString() })) as any,
           total_turns: msgs.filter(m => m.role === 'user').length,
           updated_at: new Date().toISOString(),
         })
