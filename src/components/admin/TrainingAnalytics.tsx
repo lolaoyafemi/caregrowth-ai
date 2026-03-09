@@ -19,9 +19,9 @@ interface AnalyticsData {
   category: string;
   total_attempts: number;
   total_completions: number;
-  average_score: number;
-  common_mistakes: Array<{ point: string; count: number }>;
-  difficulty_rating: number;
+  average_score: number | null;
+  common_mistakes: Array<{ point: string; count: number }> | null;
+  difficulty_rating: number | null;
   training_scenarios: {
     title: string;
     difficulty_level: string;
