@@ -123,7 +123,7 @@ const AppContent = memo(() => {
                 </ErrorBoundary>
               }>
                 <Route index element={<DashboardHome />} />
-                <Route path="social-media" element={<SocialMediaTool />} />
+                <Route path="social-media" element={<ContentCalendarPage />} />
                 <Route path="agency-setup" element={<AgencySetupPage />} />
                 <Route path="content-calendar" element={<ContentCalendarPage />} />
                 <Route path="qa-assistant" element={<QAAssistantTool />} />
