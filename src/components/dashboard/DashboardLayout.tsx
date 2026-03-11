@@ -149,7 +149,7 @@ const DashboardLayout = memo(() => {
           userRole={userContextUser?.role} 
           userName={userContextUser?.name} 
         />
-        <main className="flex-1 overflow-auto bg-[hsl(220,15%,8%)]">
+        <main className="flex-1 overflow-auto bg-background">
           <SupportNotificationListener />
           <DashboardOutlet />
         </main>
