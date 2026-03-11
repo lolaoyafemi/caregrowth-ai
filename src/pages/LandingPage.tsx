@@ -64,10 +64,8 @@ const LandingPage = () => {
       title: 'Stay Visible to Families',
       description: 'Generate and schedule helpful posts that show families how your agency can support them.',
       details: ['Generate social media posts in seconds', 'Schedule content across platforms', 'Track what resonates with families'],
-      cta: 'Generate Posts',
-      secondaryCta: 'Calendar',
-      link: '/dashboard/social-media',
-      secondaryLink: '/dashboard/content-calendar',
+      cta: 'Open Nora',
+      link: '/dashboard/content-calendar',
     },
     {
       num: 'III',

@@ -205,7 +205,7 @@ export function useStrategyFeed() {
           insight: seasonal.insight,
           reason: `Timely content about "${seasonal.topic}" shows families you understand their world right now.`,
           ctaLabel: 'Create a timely post',
-          ctaLink: '/dashboard/social-media',
+          ctaLink: '/dashboard/content-calendar',
           priority: 5,
         });
       }
