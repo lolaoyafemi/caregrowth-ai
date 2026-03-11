@@ -86,7 +86,7 @@ const DashboardLayout = memo(() => {
 
   
   return (
-    <div className="flex h-screen bg-[hsl(220,20%,7%)]">
+    <div className="flex h-screen bg-background">
       {/* Desktop sidebar — always visible */}
       {!isMobile && (
         <Sidebar 
