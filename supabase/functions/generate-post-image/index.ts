@@ -180,15 +180,6 @@ function renderCarouselSlide(
 </svg>`;
 }
 
-async function svgToPng(svg: string): Promise<Uint8Array> {
-  const { Resvg, initWasm } = await import('https://esm.sh/@aspect-dev/resvg-wasm@1.0.4');
-  const wasmResponse = await fetch('https://esm.sh/@aspect-dev/resvg-wasm@1.0.4/resvg.wasm');
-  const wasmBytes = await wasmResponse.arrayBuffer();
-  try { await initWasm(wasmBytes); } catch (_e) { /* already init */ }
-  const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1080 } });
-  return resvg.render().asPng();
-}
-
 function selectTemplate(platform: string): TemplateName {
   const templates: TemplateName[] = ['quote_card', 'minimalist', 'dark_mode'];
   const seed = Date.now();
@@ -266,18 +257,11 @@ serve(async (req) => {
           selectedTemplate, brand, isLast,
         );
 
-        let pngData: Uint8Array;
-        try {
-          pngData = await svgToPng(svg);
-        } catch (renderError) {
-          console.error(`Slide ${i} render failed:`, renderError);
-          pngData = new TextEncoder().encode(svg);
-        }
-
-        const filePath = `${user.id}/${post_id}-slide-${i}-${Date.now()}.png`;
+        const svgBytes = new TextEncoder().encode(svg);
+        const filePath = `${user.id}/${post_id}-slide-${i}-${Date.now()}.svg`;
         const { error: uploadError } = await supabase.storage
           .from('post-images')
-          .upload(filePath, pngData, { contentType: 'image/png', upsert: true });
+          .upload(filePath, svgBytes, { contentType: 'image/svg+xml', upsert: true });
 
         if (uploadError) throw new Error(`Upload slide ${i} failed: ${uploadError.message}`);
 
@@ -285,7 +269,7 @@ serve(async (req) => {
         imageUrls.push(urlData.publicUrl);
       }
 
-      // Store first slide as main image_url, all URLs in slide_texts column
+      // Store first slide as main image_url
       const primaryImage = imageUrls[0];
       await supabase
         .from('content_posts')
@@ -311,19 +295,12 @@ serve(async (req) => {
     console.log(`Rendering "${selectedTemplate}" for post ${post_id}, brand: ${brand.primary}/${brand.accent}`);
 
     const svg = renderSvg(finalHeadline, subheadline || '', businessLabel, selectedTemplate, brand);
+    const svgBytes = new TextEncoder().encode(svg);
 
-    let pngData: Uint8Array;
-    try {
-      pngData = await svgToPng(svg);
-    } catch (renderError) {
-      console.error('SVG→PNG render failed:', renderError);
-      pngData = new TextEncoder().encode(svg);
-    }
-
-    const filePath = `${user.id}/${post_id}-${Date.now()}.png`;
+    const filePath = `${user.id}/${post_id}-${Date.now()}.svg`;
     const { error: uploadError } = await supabase.storage
       .from('post-images')
-      .upload(filePath, pngData, { contentType: 'image/png', upsert: true });
+      .upload(filePath, svgBytes, { contentType: 'image/svg+xml', upsert: true });
 
     if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
