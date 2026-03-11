@@ -86,7 +86,7 @@ const DashboardLayout = memo(() => {
 
   
   return (
-    <div className="flex h-screen bg-[hsl(220,20%,7%)]">
+    <div className="flex h-screen bg-background">
       {/* Desktop sidebar — always visible */}
       {!isMobile && (
         <Sidebar 
@@ -149,7 +149,7 @@ const DashboardLayout = memo(() => {
           userRole={userContextUser?.role} 
           userName={userContextUser?.name} 
         />
-        <main className="flex-1 overflow-auto bg-[hsl(220,15%,8%)]">
+        <main className="flex-1 overflow-auto bg-background">
           <SupportNotificationListener />
           <DashboardOutlet />
         </main>

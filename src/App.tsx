@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, memo } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from 'next-themes';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SecurityProvider } from './components/security/SecurityProvider';
@@ -151,15 +152,17 @@ const AppContent = memo(() => {
 const App = memo(() => {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <SecurityProvider>
-          <UserProvider>
-            <AuthProvider>
-              <AppContent />
-            </AuthProvider>
-          </UserProvider>
-        </SecurityProvider>
-      </QueryClientProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <QueryClientProvider client={queryClient}>
+          <SecurityProvider>
+            <UserProvider>
+              <AuthProvider>
+                <AppContent />
+              </AuthProvider>
+            </UserProvider>
+          </SecurityProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 });

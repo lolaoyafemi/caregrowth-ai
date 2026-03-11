@@ -65,9 +65,9 @@ const AccountSettings = () => {
   };
 
   return (
-    <Card className="shadow-md border-t-4 border-t-gray-400 transition-all duration-200 hover:shadow-lg">
+    <Card className="shadow-md border-t-4 border-t-primary/30 transition-all duration-200 hover:shadow-lg">
       <CardHeader className="flex flex-row items-center gap-2">
-        <CircleUser className="h-6 w-6 text-gray-700" />
+        <CircleUser className="h-6 w-6 text-muted-foreground" />
         <div>
           <CardTitle>Account Settings</CardTitle>
           <CardDescription>
