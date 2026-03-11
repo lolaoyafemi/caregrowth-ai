@@ -32,7 +32,7 @@ function useSeasonalInsights(): QuickInsight[] {
         label: 'Family Care Trend',
         text: 'Families are searching for help with hospital discharge transitions. A post on this topic could reach new clients.',
         actionLabel: 'Create a Post',
-        actionPath: '/dashboard/social-media?pulse=' + encodeURIComponent('Create a post about supporting families during hospital-to-home transitions.'),
+        actionPath: '/dashboard/content-calendar',
         color: 'border-l-chart-1',
         peak: [0, 1, 10, 11],
       },
