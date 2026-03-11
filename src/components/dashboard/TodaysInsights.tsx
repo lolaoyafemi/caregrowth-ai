@@ -42,7 +42,7 @@ function useSeasonalInsights(): QuickInsight[] {
         label: 'Family Care Trend',
         text: 'Nighttime wandering is one of the top reasons families look for professional in-home care. Consider sharing your approach.',
         actionLabel: 'Create a Post',
-        actionPath: '/dashboard/social-media?pulse=' + encodeURIComponent('Create a post explaining how caregivers prevent nighttime wandering risks.'),
+        actionPath: '/dashboard/content-calendar',
         color: 'border-l-chart-2',
         peak: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
       },
