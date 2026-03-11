@@ -72,7 +72,7 @@ function useSeasonalInsights(): QuickInsight[] {
         label: 'Seasonal Opportunity',
         text: 'Falls are the leading cause of injury in older adults. Share practical prevention tips families can use at home.',
         actionLabel: 'Create a Post',
-        actionPath: '/dashboard/social-media?pulse=' + encodeURIComponent('Create a post with practical fall-prevention tips for families.'),
+        actionPath: '/dashboard/content-calendar',
         color: 'border-l-chart-5',
         peak: [5, 6, 7, 8],
       },
