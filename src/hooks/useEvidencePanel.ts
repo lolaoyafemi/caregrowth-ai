@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface EvidenceInsight {
   id: string;
-  category: 'attention' | 'conversation' | 'trust' | 'inquiry' | 'suggestion';
+  category: 'trust' | 'inquiry' | 'suggestion';
   icon: string;
   title: string;
   message: string;
@@ -43,35 +43,8 @@ export function useEvidencePanel() {
     const totalShares = recentPosts.reduce((s, p) => s + (p.shares || 0), 0);
     const totalSaves = recentPosts.reduce((s, p) => s + (p.saves || 0), 0);
 
-    // 1. Attention
-    results.push({
-      id: 'attention',
-      category: 'attention',
-      icon: '👁️',
-      title: 'Attention',
-      message: totalImpressions > 0
-        ? `Your posts reached ${totalImpressions.toLocaleString()} people this week.`
-        : recentPosts.length > 0
-          ? `${recentPosts.length} posts published this week — impressions will appear once platforms report data.`
-          : 'No published posts this week yet. Start posting to see reach insights.',
-      metric: totalImpressions,
-      trend: totalImpressions > 0 ? 'up' : 'neutral',
-    });
 
-    // 2. Conversation
-    results.push({
-      id: 'conversation',
-      category: 'conversation',
-      icon: '💬',
-      title: 'Conversation',
-      message: totalComments > 0
-        ? `Your posts received ${totalComments} comment${totalComments !== 1 ? 's' : ''} this week.`
-        : 'No comments yet this week. Engagement hooks in your posts will help spark conversations.',
-      metric: totalComments,
-      trend: totalComments > 0 ? 'up' : 'neutral',
-    });
-
-    // 3. Trust Signals — group by content_anchor
+    // 1. Trust Signals — group by content_anchor
     const anchorEngagement: Record<string, number> = {};
     for (const p of recentPosts) {
       const anchor = p.content_anchor || 'general';

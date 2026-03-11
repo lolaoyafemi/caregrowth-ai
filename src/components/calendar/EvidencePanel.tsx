@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const CATEGORY_STYLES: Record<EvidenceInsight['category'], { bg: string; border: string; accent: string }> = {
-  attention: { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', accent: 'text-blue-700 dark:text-blue-300' },
-  conversation: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-200 dark:border-emerald-800', accent: 'text-emerald-700 dark:text-emerald-300' },
   trust: { bg: 'bg-violet-50 dark:bg-violet-950/30', border: 'border-violet-200 dark:border-violet-800', accent: 'text-violet-700 dark:text-violet-300' },
   inquiry: { bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800', accent: 'text-amber-700 dark:text-amber-300' },
   suggestion: { bg: 'bg-rose-50 dark:bg-rose-950/30', border: 'border-rose-200 dark:border-rose-800', accent: 'text-rose-700 dark:text-rose-300' },
@@ -55,13 +53,13 @@ const EvidencePanel = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5].map(i => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
               <Skeleton key={i} className="h-24 rounded-lg" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {insights.map(insight => (
               <InsightCard key={insight.id} insight={insight} />
             ))}
