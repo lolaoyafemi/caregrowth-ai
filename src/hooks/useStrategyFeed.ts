@@ -112,7 +112,7 @@ export function useStrategyFeed() {
           insight: `"${topMoment[0]}" posts are generating more comments.`,
           reason: 'Comments signal trust and interest — families engaging with your content are closer to reaching out.',
           ctaLabel: 'Create a similar post',
-          ctaLink: '/dashboard/social-media',
+          ctaLink: '/dashboard/content-calendar',
           priority: 7,
         });
       }
@@ -205,7 +205,7 @@ export function useStrategyFeed() {
           insight: seasonal.insight,
           reason: `Timely content about "${seasonal.topic}" shows families you understand their world right now.`,
           ctaLabel: 'Create a timely post',
-          ctaLink: '/dashboard/social-media',
+          ctaLink: '/dashboard/content-calendar',
           priority: 5,
         });
       }

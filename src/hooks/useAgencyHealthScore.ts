@@ -151,7 +151,7 @@ export function useAgencyHealthScore(): AgencyHealthScore {
         maxScore: 20,
         description: 'Activity over past 7 days',
         actionLabel: 'Create Content',
-        actionPath: '/dashboard/social-media',
+        actionPath: '/dashboard/content-calendar',
       });
 
       const totalScore = pillars.reduce((sum, p) => sum + p.score, 0);

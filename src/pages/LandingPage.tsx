@@ -64,10 +64,8 @@ const LandingPage = () => {
       title: 'Stay Visible to Families',
       description: 'Generate and schedule helpful posts that show families how your agency can support them.',
       details: ['Generate social media posts in seconds', 'Schedule content across platforms', 'Track what resonates with families'],
-      cta: 'Generate Posts',
-      secondaryCta: 'Calendar',
-      link: '/dashboard/social-media',
-      secondaryLink: '/dashboard/content-calendar',
+      cta: 'Open Nora',
+      link: '/dashboard/content-calendar',
     },
     {
       num: 'III',
@@ -288,22 +286,11 @@ const LandingPage = () => {
 
                       {/* Buttons */}
                       <div className="flex gap-3 mt-auto">
-                        <Link to={pillar.link} className={pillar.secondaryCta ? 'flex-1' : 'w-full'}>
+                        <Link to={pillar.link} className="w-full">
                           <Button className="w-full bg-caregrowth-green text-white rounded-none h-12 text-[10px] tracking-[0.3em] uppercase font-semibold hover:bg-caregrowth-green/90 transition-all duration-500 shadow-[0_4px_20px_hsla(104,71%,34%,0.15)] border-0">
                             {pillar.cta}
                           </Button>
                         </Link>
-                        {pillar.secondaryCta && pillar.secondaryLink && (
-                          <Link to={pillar.secondaryLink} className="flex-1">
-                            <Button
-                              variant="outline"
-                              className="w-full border-white/10 text-white/60 bg-transparent hover:bg-white/[0.04] hover:border-white/20 rounded-none h-12 text-[10px] tracking-[0.3em] uppercase font-semibold gap-2 transition-all duration-500"
-                            >
-                              <CalendarDays className="h-3.5 w-3.5" />
-                              {pillar.secondaryCta}
-                            </Button>
-                          </Link>
-                        )}
                       </div>
                     </div>
                   </div>

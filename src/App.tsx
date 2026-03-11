@@ -19,7 +19,6 @@ const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
 const PaymentCancelledPage = lazy(() => import('./pages/PaymentCancelledPage'));
 const DashboardLayout = lazy(() => import('./components/dashboard/DashboardLayout'));
 const DashboardHome = lazy(() => import('./pages/DashboardHome'));
-const SocialMediaTool = lazy(() => import('./pages/SocialMediaTool'));
 const ContentCalendarPage = lazy(() => import('./pages/ContentCalendarPage'));
 const AgencySetupPage = lazy(() => import('./pages/AgencySetupPage'));
 const QAAssistantTool = lazy(() => import('./pages/QAAssistantTool'));
@@ -124,7 +123,7 @@ const AppContent = memo(() => {
                 </ErrorBoundary>
               }>
                 <Route index element={<DashboardHome />} />
-                <Route path="social-media" element={<SocialMediaTool />} />
+                <Route path="social-media" element={<ContentCalendarPage />} />
                 <Route path="agency-setup" element={<AgencySetupPage />} />
                 <Route path="content-calendar" element={<ContentCalendarPage />} />
                 <Route path="qa-assistant" element={<QAAssistantTool />} />

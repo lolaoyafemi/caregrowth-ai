@@ -57,7 +57,7 @@ function useAgencySignals() {
         title: 'No posts scheduled',
         description: 'Your content calendar is empty this week. Generate posts to stay visible to families searching for care.',
         actionLabel: 'Generate Posts',
-        actionPath: '/dashboard/social-media',
+        actionPath: '/dashboard/content-calendar',
         priority: 90,
       });
     }

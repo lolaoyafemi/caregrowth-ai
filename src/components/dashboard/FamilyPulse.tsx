@@ -141,7 +141,7 @@ const FamilyPulse: React.FC = () => {
 
               {/* Actions */}
               <div className="flex flex-col gap-2 pt-2 border-t border-border/30">
-                <Link to={`/dashboard/social-media?pulse=${encodeURIComponent(insight.postPrompt)}`}>
+                <Link to={`/dashboard/content-calendar`}>
                   <Button size="sm" className="w-full gap-1.5">
                     <Pen className="h-3 w-3" />
                     Generate Post
