@@ -52,7 +52,7 @@ function useSeasonalInsights(): QuickInsight[] {
         label: 'Family Care Trend',
         text: 'Caregiver burnout peaks in spring. A post about respite care could resonate with families right now.',
         actionLabel: 'Create a Post',
-        actionPath: '/dashboard/social-media?pulse=' + encodeURIComponent('Create a post about recognizing caregiver burnout and how respite care helps.'),
+        actionPath: '/dashboard/content-calendar',
         color: 'border-l-chart-3',
         peak: [2, 3, 4, 5],
       },
