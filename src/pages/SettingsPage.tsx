@@ -107,6 +107,7 @@ const SettingsPage = () => {
 
         {!isSuperAdmin && <SubscriptionManager />}
         <AccountSettings />
+        <ThemeSelector />
         <NotificationSettings />
         <TeamPermissionsSection isVisible={isAgencyAdmin && !isSuperAdmin} />
         <TokenLimitsSection isVisible={isAgencyAdmin && !isSuperAdmin} />
