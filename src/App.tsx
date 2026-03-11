@@ -152,15 +152,17 @@ const AppContent = memo(() => {
 const App = memo(() => {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <SecurityProvider>
-          <UserProvider>
-            <AuthProvider>
-              <AppContent />
-            </AuthProvider>
-          </UserProvider>
-        </SecurityProvider>
-      </QueryClientProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <QueryClientProvider client={queryClient}>
+          <SecurityProvider>
+            <UserProvider>
+              <AuthProvider>
+                <AppContent />
+              </AuthProvider>
+            </UserProvider>
+          </SecurityProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 });
