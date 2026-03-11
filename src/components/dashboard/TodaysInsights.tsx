@@ -102,7 +102,7 @@ const TodaysInsights: React.FC = () => {
       label: 'Content Opportunity',
       text: `${ci.headline} — ${ci.detail}`,
       actionLabel: 'Explore',
-      actionPath: '/dashboard/social-media',
+      actionPath: '/dashboard/content-calendar',
       color: 'border-l-primary',
     }));
   }, [contentInsights]);
