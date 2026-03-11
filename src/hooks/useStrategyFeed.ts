@@ -112,7 +112,7 @@ export function useStrategyFeed() {
           insight: `"${topMoment[0]}" posts are generating more comments.`,
           reason: 'Comments signal trust and interest — families engaging with your content are closer to reaching out.',
           ctaLabel: 'Create a similar post',
-          ctaLink: '/dashboard/social-media',
+          ctaLink: '/dashboard/content-calendar',
           priority: 7,
         });
       }
