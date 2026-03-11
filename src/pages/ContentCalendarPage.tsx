@@ -753,10 +753,8 @@ const ContentCalendarPage = () => {
 
       <CalendarAnalytics posts={posts} />
 
-      {/* Calendar + Queue Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* Calendar */}
-        <div className="xl:col-span-3">
+      {/* Calendar */}
+      <div className="mb-6">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
