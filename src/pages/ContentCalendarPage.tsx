@@ -686,7 +686,7 @@ const ContentCalendarPage = () => {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white/90">
-            Onboarding
+            Nora
           </h1>
           <p className="text-white/40 mt-1 text-sm">
             Plan, schedule, and auto-publish your social media content across platforms.
@@ -724,45 +724,24 @@ const ContentCalendarPage = () => {
               </DialogContent>
             </Dialog>
           )}
-
-          <Button
-            variant="outline"
-            onClick={() => setShowBrandSetup(true)}
-            className="gap-2"
-          >
-            <Palette size={16} /> Brand Style
-          </Button>
-
-          <BrandStyleSetup
-            open={showBrandSetup}
-            onOpenChange={setShowBrandSetup}
-            onSave={saveBrandStyle}
-            initialValues={brandStyle || undefined}
-          />
-
-          <Button
-            variant="outline"
-            onClick={() => setShowBusinessForm(true)}
-            className="gap-2"
-          >
-            <Building2 size={16} /> Business Details
-          </Button>
-
-          <Dialog open={connectOpen} onOpenChange={(open) => { setConnectOpen(open); if (!open) fetchConnectedAccounts(); }}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Link2 size={16} /> Connect Accounts
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Connect Your Social Accounts</DialogTitle>
-              </DialogHeader>
-              <ConnectAccountsPanel />
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
+
+      <BrandStyleSetup
+        open={showBrandSetup}
+        onOpenChange={setShowBrandSetup}
+        onSave={saveBrandStyle}
+        initialValues={brandStyle || undefined}
+      />
+
+      <Dialog open={connectOpen} onOpenChange={(open) => { setConnectOpen(open); if (!open) fetchConnectedAccounts(); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Connect Your Social Accounts</DialogTitle>
+          </DialogHeader>
+          <ConnectAccountsPanel />
+        </DialogContent>
+      </Dialog>
 
 
       <ProactiveNudge
