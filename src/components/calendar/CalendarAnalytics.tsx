@@ -55,46 +55,6 @@ const CalendarAnalytics: React.FC<CalendarAnalyticsProps> = ({ posts }) => {
 
   return (
     <div className="space-y-4 mb-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="border-emerald-200 bg-emerald-50/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-            <div>
-              <p className="text-2xl font-bold text-emerald-700">{counts.published}</p>
-              <p className="text-xs text-emerald-600">Published</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <Clock className="h-8 w-8 text-amber-600" />
-            <div>
-              <p className="text-2xl font-bold text-amber-700">{counts.scheduled}</p>
-              <p className="text-xs text-amber-600">Scheduled</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-red-200 bg-red-50/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <XCircle className="h-8 w-8 text-red-600" />
-            <div>
-              <p className="text-2xl font-bold text-red-700">{counts.failed}</p>
-              <p className="text-xs text-red-600">Failed</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-blue-200 bg-blue-50/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <TrendingUp className="h-8 w-8 text-blue-600" />
-            <div>
-              <p className="text-2xl font-bold text-blue-700">{total}</p>
-              <p className="text-xs text-blue-600">Total Posts</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">

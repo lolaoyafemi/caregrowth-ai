@@ -753,10 +753,8 @@ const ContentCalendarPage = () => {
 
       <CalendarAnalytics posts={posts} />
 
-      {/* Calendar + Queue Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* Calendar */}
-        <div className="xl:col-span-3">
+      {/* Calendar */}
+      <div className="mb-6">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -878,56 +876,6 @@ const ContentCalendarPage = () => {
               </p>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Queue Panel */}
-        <div className="xl:col-span-1">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <CalendarDays size={16} /> Queue
-              </CardTitle>
-              <p className="text-[10px] text-muted-foreground">
-                {format(selectedDay, 'MMM d, yyyy')}
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{selectedDayLabel}</h4>
-                {selectedDayPosts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Nothing scheduled</p>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedDayPosts.map(post => <QueuePostCard key={post.id} post={post} />)}
-                  </div>
-                )}
-              </div>
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{nextDayLabel}</h4>
-                {nextDayPosts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Nothing scheduled</p>
-                ) : (
-                  <div className="space-y-2">
-                    {nextDayPosts.map(post => <QueuePostCard key={post.id} post={post} />)}
-                  </div>
-                )}
-              </div>
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Rest of Week</h4>
-                {restOfWeekPosts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">Nothing else this week</p>
-                ) : (
-                  <div className="space-y-2">
-                    {restOfWeekPosts.slice(0, 5).map(post => <QueuePostCard key={post.id} post={post} />)}
-                    {restOfWeekPosts.length > 5 && (
-                      <p className="text-xs text-muted-foreground text-center">+{restOfWeekPosts.length - 5} more</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
       {/* Side Drawer */}
