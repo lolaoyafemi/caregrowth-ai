@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface EvidenceInsight {
   id: string;
-  category: 'attention' | 'conversation' | 'trust' | 'inquiry' | 'suggestion';
+  category: 'trust' | 'inquiry' | 'suggestion';
   icon: string;
   title: string;
   message: string;
