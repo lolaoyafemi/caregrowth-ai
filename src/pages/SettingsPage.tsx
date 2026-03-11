@@ -14,6 +14,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import AccountSettings from '@/components/settings/AccountSettings';
+import ThemeSelector from '@/components/settings/ThemeSelector';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import TeamPermissionsSection from '@/components/settings/TeamPermissionsSection';
 import TokenLimitsSection from '@/components/settings/TokenLimitsSection';
