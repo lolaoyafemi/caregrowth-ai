@@ -552,6 +552,55 @@ const ContentCalendarPage = () => {
     }
   };
 
+  const togglePostSelection = (postId: string) => {
+    setSelectedPostIds(prev => {
+      const next = new Set(prev);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
+      return next;
+    });
+  };
+
+  const selectAllWeekPosts = () => {
+    const weekStart = startOfWeek(selectedDay, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(selectedDay, { weekStartsOn: 1 });
+    const weekPosts = posts.filter(p => {
+      const d = new Date(p.scheduled_at);
+      return d >= weekStart && d <= weekEnd && ['draft', 'needs_approval', 'scheduled'].includes(p.status);
+    });
+    setSelectedPostIds(new Set(weekPosts.map(p => p.id)));
+  };
+
+  const handleBatchDelete = async () => {
+    try {
+      const ids = Array.from(selectedPostIds);
+      const deletable = posts.filter(p => ids.includes(p.id) && ['draft', 'needs_approval', 'scheduled'].includes(p.status));
+      if (deletable.length === 0) return;
+      const { error } = await supabase.from('content_posts').delete().in('id', deletable.map(p => p.id));
+      if (error) throw error;
+      toast.success(`${deletable.length} post${deletable.length > 1 ? 's' : ''} deleted.`);
+      setSelectedPostIds(new Set());
+      setShowBatchDeleteConfirm(false);
+      fetchPosts();
+    } catch (err: any) {
+      toast.error('Batch delete failed: ' + err.message);
+    }
+  };
+
+  const handleBatchApprove = async () => {
+    try {
+      const ids = Array.from(selectedPostIds);
+      const approvable = posts.filter(p => ids.includes(p.id) && p.status === 'needs_approval');
+      if (approvable.length === 0) { toast.info('No posts need approval in selection.'); return; }
+      const { error } = await supabase.from('content_posts').update({ status: 'scheduled' }).in('id', approvable.map(p => p.id));
+      if (error) throw error;
+      toast.success(`${approvable.length} post${approvable.length > 1 ? 's' : ''} approved.`);
+      setSelectedPostIds(new Set());
+      fetchPosts();
+    } catch (err: any) {
+      toast.error('Batch approve failed: ' + err.message);
+    }
+  };
 
   const handleDragStart = (e: React.DragEvent, postId: string) => {
     e.dataTransfer.setData('text/plain', postId);
