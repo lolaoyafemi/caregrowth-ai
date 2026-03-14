@@ -55,6 +55,7 @@ export function useActivitySnapshot() {
       setSnapshot({
         postsScheduled: scheduledRes.count ?? 0,
         postsPublished: publishedRes.count ?? 0,
+        postsNeedsApproval: needsApprovalRes.count ?? 0,
         platformsConnected: platformsRes.count ?? 0,
         documentsUploaded: docsRes.count ?? 0,
         loading: false,
