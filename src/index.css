@@ -30,6 +30,24 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+
+    /* Calendar premium tokens */
+    --cal-surface: 210 20% 98%;
+    --cal-surface-hover: 210 20% 96%;
+    --cal-surface-selected: 222 47% 96%;
+    --cal-border: 214 20% 93%;
+    --cal-border-selected: 222 47% 70%;
+    --cal-today-ring: 222 47% 60%;
+    --status-published: 160 40% 45%;
+    --status-published-bg: 160 40% 95%;
+    --status-scheduled: 142 40% 45%;
+    --status-scheduled-bg: 142 40% 95%;
+    --status-approval: 32 80% 50%;
+    --status-approval-bg: 32 80% 95%;
+    --status-failed: 0 65% 55%;
+    --status-failed-bg: 0 65% 96%;
+    --status-draft: 215 15% 55%;
+    --status-draft-bg: 215 15% 96%;
   }
 
   .dark {
