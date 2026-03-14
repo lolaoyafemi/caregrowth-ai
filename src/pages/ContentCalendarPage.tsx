@@ -31,18 +31,18 @@ import { useBrandStyle } from '@/hooks/useBrandStyle';
 import { Building2, Palette } from 'lucide-react';
 
 const PLATFORM_CONFIG = {
-  facebook: { icon: Facebook, label: 'Facebook', color: 'bg-blue-600' },
-  instagram: { icon: Instagram, label: 'Instagram', color: 'bg-gradient-to-br from-purple-500 to-pink-500' },
-  linkedin: { icon: Linkedin, label: 'LinkedIn', color: 'bg-blue-700' },
+  facebook: { icon: Facebook, label: 'Facebook', color: 'bg-[hsl(220,46%,48%)]' },
+  instagram: { icon: Instagram, label: 'Instagram', color: 'bg-[hsl(330,60%,52%)]' },
+  linkedin: { icon: Linkedin, label: 'LinkedIn', color: 'bg-[hsl(210,60%,42%)]' },
 };
 
 const STATUS_CONFIG = {
-  scheduled: { label: 'Scheduled', className: 'bg-amber-100 text-amber-800 border-amber-200' },
-  published: { label: 'Published', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-  failed: { label: 'Failed', className: 'bg-red-100 text-red-800 border-red-200' },
-  skipped: { label: 'Skipped', className: 'bg-orange-100 text-orange-800 border-orange-200' },
-  draft: { label: 'Draft', className: 'bg-gray-100 text-gray-800 border-gray-200' },
-  needs_approval: { label: 'Needs Approval', className: 'bg-violet-100 text-violet-800 border-violet-200' },
+  scheduled: { label: 'Scheduled', className: 'bg-status-scheduled-bg text-status-scheduled border-transparent' },
+  published: { label: 'Published', className: 'bg-status-published-bg text-status-published border-transparent' },
+  failed: { label: 'Failed', className: 'bg-status-failed-bg text-status-failed border-transparent' },
+  skipped: { label: 'Skipped', className: 'bg-status-failed-bg text-status-failed border-transparent' },
+  draft: { label: 'Draft', className: 'bg-status-draft-bg text-status-draft border-transparent' },
+  needs_approval: { label: 'Needs Approval', className: 'bg-status-approval-bg text-status-approval border-transparent' },
 };
 
 interface ContentPost {
