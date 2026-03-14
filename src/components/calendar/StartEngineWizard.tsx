@@ -3,19 +3,21 @@ import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Zap, Target, Check, ChevronRight, X } from 'lucide-react';
 
 type Mode = null | 'intensity' | 'intention';
 
-interface WizardResult {
+export interface WizardResult {
   mode: 'intensity' | 'intention';
   days: number;
   platforms: string[];
-  frequency: number; // posts per day per platform
+  frequency: number;
   campaignName?: string;
   campaignGoal?: string;
+  storyLines?: string;
 }
 
 interface StartEngineWizardProps {
@@ -39,9 +41,8 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
   onDeploy,
 }) => {
   const [mode, setMode] = useState<Mode>(null);
-  const [step, setStep] = useState(0); // 0 = mode select
+  const [step, setStep] = useState(0);
 
-  // Shared state
   const [days, setDays] = useState(14);
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [frequency, setFrequency] = useState(1);
@@ -51,8 +52,10 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
   const [campaignGoal, setCampaignGoal] = useState('Launch');
   const [intensity, setIntensity] = useState<'steady' | 'ramp_up' | 'aggressive'>('steady');
 
-  const intensityToFrequency = { steady: 1, ramp_up: 2, aggressive: 3 };
+  // Story lines
+  const [storyLines, setStoryLines] = useState('');
 
+  const intensityToFrequency = { steady: 1, ramp_up: 2, aggressive: 3 };
   const effectiveFrequency = mode === 'intention' ? intensityToFrequency[intensity] : frequency;
 
   const totalPosts = useMemo(() => {
@@ -68,6 +71,7 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
     setCampaignName('');
     setCampaignGoal('Launch');
     setIntensity('steady');
+    setStoryLines('');
   };
 
   const handleClose = (open: boolean) => {
@@ -89,10 +93,10 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
       frequency: effectiveFrequency,
       campaignName: mode === 'intention' ? campaignName : undefined,
       campaignGoal: mode === 'intention' ? campaignGoal : undefined,
+      storyLines: storyLines.trim() || undefined,
     });
   };
 
-  // ── Mode selection card ──
   const ModeCard = ({ id, icon: Icon, title, description, color }: {
     id: 'intensity' | 'intention';
     icon: React.ElementType;
@@ -122,7 +126,6 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
     );
   };
 
-  // ── Selectable option ──
   const OptionCard = ({ label, selected, onClick, color = 'blue' }: {
     label: string;
     selected: boolean;
@@ -151,7 +154,6 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
   const accentColor = mode === 'intention' ? 'orange' : 'blue';
   const isBlue = accentColor === 'blue';
 
-  // ── Step header ──
   const StepHeader = ({ title }: { title: string }) => (
     <div className="mb-6">
       {mode && (
@@ -182,7 +184,6 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
     </Button>
   );
 
-  // ── Platform grid (shared) ──
   const PlatformGrid = () => (
     <div className="grid grid-cols-2 gap-3">
       {PLATFORMS.map(p => (
@@ -197,7 +198,6 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
     </div>
   );
 
-  // ── Duration selector (shared) ──
   const DurationSelector = () => (
     <div className="grid grid-cols-3 gap-3">
       {[7, 14, 30].map(d => (
@@ -212,12 +212,26 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
     </div>
   );
 
-  // ═══════════════════════════════════════
-  // RENDER STEPS
-  // ═══════════════════════════════════════
+  // Story lines step (shared between both modes — last step before deploy)
+  const StoryLinesStep = ({ onBack, onDeploy: onDeployClick, deployLabel }: { onBack: () => void; onDeploy: () => void; deployLabel: string }) => (
+    <div>
+      <StepHeader title="Specific Points You Want Covered" />
+      <p className="text-sm text-muted-foreground mb-4">
+        Add specific themes, experiences, or angles you want Nora to weave into your posts. This is optional.
+      </p>
+      <Textarea
+        value={storyLines}
+        onChange={(e) => setStoryLines(e.target.value)}
+        placeholder={"e.g.\n• families feeling guilty about asking for help\n• daughter caring for mother with dementia\n• post-hospital discharge confusion\n• reassurance around private pay\n• our caregivers help families breathe again"}
+        rows={6}
+        className="text-sm"
+      />
+      <p className="text-xs text-muted-foreground mt-2 italic">One theme per line. Leave blank to let Nora choose freely.</p>
+      <ContinueButton onClick={onDeployClick} disabled={totalPosts === 0 || credits < totalPosts} label={deployLabel} />
+    </div>
+  );
 
   const renderContent = () => {
-    // Step 0: Mode selection
     if (step === 0) {
       return (
         <div>
@@ -226,125 +240,78 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
             <p className="text-sm text-muted-foreground mt-1">Choose your deployment mode.</p>
           </div>
           <div className="space-y-4">
-            <ModeCard
-              id="intensity"
-              icon={Zap}
-              title="Intensity Mode"
-              description="Write at least one post a day on your preferred platform"
-              color="blue"
-            />
-            <ModeCard
-              id="intention"
-              icon={Target}
-              title="Intention Based Mode"
-              description="Is there any special event or day coming up? Use this."
-              color="orange"
-            />
+            <ModeCard id="intensity" icon={Zap} title="Intensity Mode" description="Write at least one post a day on your preferred platform" color="blue" />
+            <ModeCard id="intention" icon={Target} title="Intention Based Mode" description="Is there any special event or day coming up? Use this." color="orange" />
           </div>
         </div>
       );
     }
 
-    // ── INTENSITY MODE STEPS ──
+    // INTENSITY MODE
     if (mode === 'intensity') {
-      if (step === 1) {
-        return (
-          <div>
-            <StepHeader title="Select Duration" />
-            <DurationSelector />
-            <ContinueButton onClick={() => setStep(2)} />
+      if (step === 1) return (<div><StepHeader title="Select Duration" /><DurationSelector /><ContinueButton onClick={() => setStep(2)} /></div>);
+      if (step === 2) return (<div><StepHeader title="Select Platforms" /><PlatformGrid /><ContinueButton onClick={() => setStep(3)} disabled={platforms.length === 0} /></div>);
+      if (step === 3) return (
+        <div>
+          <StepHeader title="Posting Frequency" />
+          <div className="space-y-3">
+            <OptionCard label="Random spread" selected={frequency === 0} onClick={() => setFrequency(1)} color="blue" />
+            <OptionCard label="1 per day" selected={frequency === 1} onClick={() => setFrequency(1)} color="blue" />
+            <OptionCard label="2 per day" selected={frequency === 2} onClick={() => setFrequency(2)} color="blue" />
+            <OptionCard label="3 per day" selected={frequency === 3} onClick={() => setFrequency(3)} color="blue" />
           </div>
-        );
-      }
-      if (step === 2) {
-        return (
-          <div>
-            <StepHeader title="Select Platforms" />
-            <PlatformGrid />
-            <ContinueButton onClick={() => setStep(3)} disabled={platforms.length === 0} />
-          </div>
-        );
-      }
-      if (step === 3) {
-        return (
-          <div>
-            <StepHeader title="Posting Frequency" />
-            <div className="space-y-3">
-              <OptionCard label="Random spread" selected={frequency === 0} onClick={() => setFrequency(1)} color="blue" />
-              <OptionCard label="1 per day" selected={frequency === 1} onClick={() => setFrequency(1)} color="blue" />
-              <OptionCard label="2 per day" selected={frequency === 2} onClick={() => setFrequency(2)} color="blue" />
-              <OptionCard label="3 per day" selected={frequency === 3} onClick={() => setFrequency(3)} color="blue" />
-            </div>
-            <ContinueButton onClick={handleDeploy} disabled={totalPosts === 0 || credits < totalPosts} label="Deploy the Stack" />
-          </div>
-        );
-      }
+          <ContinueButton onClick={() => setStep(4)} />
+        </div>
+      );
+      if (step === 4) return <StoryLinesStep onBack={() => setStep(3)} onDeploy={handleDeploy} deployLabel="Deploy the Stack" />;
     }
 
-    // ── INTENTION BASED MODE STEPS ──
+    // INTENTION BASED MODE
     if (mode === 'intention') {
-      if (step === 1) {
-        return (
+      if (step === 1) return (
+        <div>
+          <StepHeader title="Name Your Campaign" />
           <div>
-            <StepHeader title="Name Your Campaign" />
-            <div>
-              <Label className="text-sm font-medium mb-2 block">Campaign Name</Label>
-              <Input
-                value={campaignName}
-                onChange={(e) => setCampaignName(e.target.value)}
-                placeholder="Product launch"
-                className="h-12 text-base"
-              />
-            </div>
-            <ContinueButton onClick={() => setStep(2)} disabled={!campaignName.trim()} />
+            <Label className="text-sm font-medium mb-2 block">Campaign Name</Label>
+            <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="Product launch" className="h-12 text-base" />
           </div>
-        );
-      }
-      if (step === 2) {
-        return (
-          <div>
-            <StepHeader title="Campaign Goal" />
-            <div className="space-y-3">
-              {['Launch', 'Event', 'Promotion', 'Seasonal', 'Announcement'].map(goal => (
-                <OptionCard
-                  key={goal}
-                  label={goal}
-                  selected={campaignGoal === goal}
-                  onClick={() => setCampaignGoal(goal)}
-                  color="orange"
-                />
-              ))}
-            </div>
-            <ContinueButton onClick={() => setStep(3)} />
+          <ContinueButton onClick={() => setStep(2)} disabled={!campaignName.trim()} />
+        </div>
+      );
+      if (step === 2) return (
+        <div>
+          <StepHeader title="Campaign Goal" />
+          <div className="space-y-3">
+            {['Launch', 'Event', 'Promotion', 'Seasonal', 'Announcement'].map(goal => (
+              <OptionCard key={goal} label={goal} selected={campaignGoal === goal} onClick={() => setCampaignGoal(goal)} color="orange" />
+            ))}
           </div>
-        );
-      }
-      if (step === 3) {
-        return (
-          <div>
-            <StepHeader title="Select Platforms" />
-            <PlatformGrid />
-            <div className="mt-4">
-              <Label className="text-sm font-medium mb-3 block">Duration</Label>
-              <DurationSelector />
-            </div>
-            <ContinueButton onClick={() => setStep(4)} disabled={platforms.length === 0} />
+          <ContinueButton onClick={() => setStep(3)} />
+        </div>
+      );
+      if (step === 3) return (
+        <div>
+          <StepHeader title="Select Platforms" />
+          <PlatformGrid />
+          <div className="mt-4">
+            <Label className="text-sm font-medium mb-3 block">Duration</Label>
+            <DurationSelector />
           </div>
-        );
-      }
-      if (step === 4) {
-        return (
-          <div>
-            <StepHeader title="Posting Intensity" />
-            <div className="space-y-3">
-              <OptionCard label="Steady" selected={intensity === 'steady'} onClick={() => setIntensity('steady')} color="orange" />
-              <OptionCard label="Ramp Up" selected={intensity === 'ramp_up'} onClick={() => setIntensity('ramp_up')} color="orange" />
-              <OptionCard label="Aggressive" selected={intensity === 'aggressive'} onClick={() => setIntensity('aggressive')} color="orange" />
-            </div>
-            <ContinueButton onClick={handleDeploy} disabled={totalPosts === 0 || credits < totalPosts} label="Launch the Campaign" />
+          <ContinueButton onClick={() => setStep(4)} disabled={platforms.length === 0} />
+        </div>
+      );
+      if (step === 4) return (
+        <div>
+          <StepHeader title="Posting Intensity" />
+          <div className="space-y-3">
+            <OptionCard label="Steady" selected={intensity === 'steady'} onClick={() => setIntensity('steady')} color="orange" />
+            <OptionCard label="Ramp Up" selected={intensity === 'ramp_up'} onClick={() => setIntensity('ramp_up')} color="orange" />
+            <OptionCard label="Aggressive" selected={intensity === 'aggressive'} onClick={() => setIntensity('aggressive')} color="orange" />
           </div>
-        );
-      }
+          <ContinueButton onClick={() => setStep(5)} />
+        </div>
+      );
+      if (step === 5) return <StoryLinesStep onBack={() => setStep(4)} onDeploy={handleDeploy} deployLabel="Launch the Campaign" />;
     }
 
     return null;
@@ -357,7 +324,6 @@ const StartEngineWizard: React.FC<StartEngineWizardProps> = ({
           {renderContent()}
         </div>
 
-        {/* ── Credit counter (always visible once a mode is selected) ── */}
         {mode && platforms.length > 0 && (
           <div className={cn(
             "px-6 py-3 border-t text-sm text-center",

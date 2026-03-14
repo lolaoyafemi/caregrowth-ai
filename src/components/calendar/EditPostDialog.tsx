@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -10,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { Facebook, Instagram, Linkedin, Twitter, Trash2, ImagePlus, X, RefreshCw, ChevronDown, Loader2 } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Twitter, Trash2, ImagePlus, X, RefreshCw, ChevronDown, Loader2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PLATFORM_ICONS: Record<string, any> = {
@@ -49,25 +50,20 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
   const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const Icon = PLATFORM_ICONS[post.platform] || Facebook;
+  const canDelete = ['needs_approval', 'scheduled', 'draft'].includes(post.status);
+  const canApprove = post.status === 'needs_approval';
 
   const handleRegenerateImage = async () => {
     setRegeneratingImage(true);
     try {
-      // Extract hook from content (first line or first sentence)
       const hookLine = content.split('\n')[0].substring(0, 100);
-
       const { data, error } = await supabase.functions.invoke('generate-post-image', {
-        body: {
-          hook_line: hookLine,
-          business_name: '',
-          post_id: post.id,
-          platform: post.platform,
-        },
+        body: { hook_line: hookLine, business_name: '', post_id: post.id, platform: post.platform },
       });
-
       if (error) throw error;
       if (data?.image_url) {
         setImageUrl(data.image_url);
@@ -83,36 +79,19 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file.');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be under 5MB.');
-      return;
-    }
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB.'); return; }
 
     setUploading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
       if (!userId) throw new Error('Not authenticated');
-
       const ext = file.name.split('.').pop();
       const filePath = `${userId}/${post.id}-${Date.now()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('post-images')
-        .upload(filePath, file, { upsert: true });
-
+      const { error: uploadError } = await supabase.storage.from('post-images').upload(filePath, file, { upsert: true });
       if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('post-images')
-        .getPublicUrl(filePath);
-
+      const { data: urlData } = supabase.storage.from('post-images').getPublicUrl(filePath);
       setImageUrl(urlData.publicUrl);
       toast.success('Image replaced.');
     } catch (err: any) {
@@ -122,8 +101,20 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
     }
   };
 
-  const removeImage = () => {
-    setImageUrl(null);
+  const removeImage = () => setImageUrl(null);
+
+  const handleApprove = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('content_posts').update({ status: 'scheduled' }).eq('id', post.id);
+      if (error) throw error;
+      toast.success('Post approved and scheduled.');
+      onSaved();
+    } catch (err: any) {
+      toast.error('Failed to approve: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -135,41 +126,23 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
         status,
         image_url: imageUrl,
       };
-
-      const { error } = await supabase
-        .from('content_posts')
-        .update(updateData)
-        .eq('id', post.id);
-
+      const { error } = await supabase.from('content_posts').update(updateData).eq('id', post.id);
       if (error) throw error;
 
-      // Track reschedule for smart scheduling
       const originalTime = format(new Date(post.scheduled_at), 'HH:mm');
       const newTime = scheduledAt.split('T')[1];
       if (originalTime !== newTime) {
         try {
           const { data: userData } = await supabase.auth.getUser();
           if (userData?.user?.id) {
-            // Increment reschedule count
-            await supabase
-              .from('user_profiles')
-              .update({
-                reschedule_count: (await supabase
-                  .from('user_profiles')
-                  .select('reschedule_count')
-                  .eq('user_id', userData.user.id)
-                  .single()
-                  .then(r => (r.data?.reschedule_count || 0) + 1)),
-                preferred_post_time: newTime + ':00',
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              })
-              .eq('user_id', userData.user.id);
+            await supabase.from('user_profiles').update({
+              reschedule_count: (await supabase.from('user_profiles').select('reschedule_count').eq('user_id', userData.user.id).single().then(r => (r.data?.reschedule_count || 0) + 1)),
+              preferred_post_time: newTime + ':00',
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            }).eq('user_id', userData.user.id);
           }
-        } catch {
-          // Non-critical, don't block save
-        }
+        } catch {}
       }
-
       toast.success('Post updated.');
       onSaved();
     } catch (err: any) {
@@ -181,11 +154,7 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
 
   const handleDelete = async () => {
     try {
-      const { error } = await supabase
-        .from('content_posts')
-        .delete()
-        .eq('id', post.id);
-
+      const { error } = await supabase.from('content_posts').delete().eq('id', post.id);
       if (error) throw error;
       toast.success('Post removed from calendar.');
       onSaved();
@@ -195,133 +164,123 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Icon size={20} />
-            Edit {post.platform.charAt(0).toUpperCase() + post.platform.slice(1)} Post
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          {post.error_message && (
-            <div className="text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg p-3">
-              <strong>Publishing error:</strong> {post.error_message}
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Icon size={20} />
+              Edit {post.platform.charAt(0).toUpperCase() + post.platform.slice(1)} Post
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {post.error_message && (
+              <div className="text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg p-3">
+                <strong>Publishing error:</strong> {post.error_message}
+              </div>
+            )}
+            <div>
+              <Label className="text-sm">Content</Label>
+              <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={6} className="mt-1" />
             </div>
-          )}
-          <div>
-            <Label className="text-sm">Content</Label>
-            <Textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={6}
-              className="mt-1"
-            />
-          </div>
 
-          {/* Image section */}
-          <div>
-            <Label className="text-sm">Image</Label>
-            {imageUrl ? (
-              <div className="mt-1 relative group">
-                <img
-                  src={imageUrl}
-                  alt="Post image"
-                  className="w-full max-h-48 object-cover rounded-lg border"
-                />
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={removeImage}
-                >
-                  <X size={14} />
+            {/* Image section */}
+            <div>
+              <Label className="text-sm">Image</Label>
+              {imageUrl ? (
+                <div className="mt-1 relative group">
+                  <img src={imageUrl} alt="Post image" className="w-full max-h-48 object-cover rounded-lg border" />
+                  <Button variant="destructive" size="sm" className="absolute top-2 right-2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={removeImage}>
+                    <X size={14} />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1 italic">No image attached</p>
+              )}
+              <div className="flex gap-2 mt-2">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleRegenerateImage} disabled={regeneratingImage}>
+                  {regeneratingImage ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                  {regeneratingImage ? 'Generating…' : 'Regenerate Image'}
                 </Button>
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground mt-1 italic">No image attached</p>
-            )}
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs"
-                onClick={handleRegenerateImage}
-                disabled={regeneratingImage}
-              >
-                {regeneratingImage ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                {regeneratingImage ? 'Generating…' : 'Regenerate Image'}
+              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-2">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 h-6 px-1">
+                    <ChevronDown size={12} className={cn("transition-transform", advancedOpen && "rotate-180")} />
+                    Advanced: Replace Image
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  <Button variant="outline" size="sm" className="mt-1 w-full gap-2 text-muted-foreground text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                    <ImagePlus size={14} />
+                    {uploading ? 'Uploading…' : 'Upload Custom Image'}
+                  </Button>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm">Scheduled Date & Time</Label>
+                <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-sm">Status</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="needs_approval">Needs Approval</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between">
+            <div className="flex gap-2">
+              {canDelete && (
+                <Button variant="ghost" size="sm" className="text-destructive gap-1" onClick={() => setShowDeleteConfirm(true)}>
+                  <Trash2 size={14} /> Delete
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {canApprove && (
+                <Button variant="outline" size="sm" className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleApprove} disabled={saving}>
+                  <CheckCircle size={14} /> Approve
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={handleSave} disabled={saving} className="bg-caregrowth-blue hover:bg-caregrowth-blue/90">
+                {saving ? 'Saving…' : 'Save Changes'}
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            {/* Advanced: Replace Image */}
-            <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-2">
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 h-6 px-1">
-                  <ChevronDown size={12} className={cn("transition-transform", advancedOpen && "rotate-180")} />
-                  Advanced: Replace Image
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-1 w-full gap-2 text-muted-foreground text-xs"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  <ImagePlus size={14} />
-                  {uploading ? 'Uploading…' : 'Upload Custom Image'}
-                </Button>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm">Scheduled Date & Time</Label>
-              <Input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-sm">Status</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-        <DialogFooter className="flex justify-between">
-          <Button variant="ghost" size="sm" className="text-destructive gap-1" onClick={handleDelete}>
-            <Trash2 size={14} /> Delete
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-caregrowth-blue hover:bg-caregrowth-blue/90">
-              {saving ? 'Saving…' : 'Save Changes'}
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this post from your calendar. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Post
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
