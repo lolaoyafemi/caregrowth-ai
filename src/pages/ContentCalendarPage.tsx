@@ -142,8 +142,12 @@ const ContentCalendarPage = () => {
   const [showBrandSetup, setShowBrandSetup] = useState(false);
   const [profileInitial, setProfileInitial] = useState('B');
   const [workflowMode, setWorkflowMode] = useState<'auto_post' | 'approve_before_posting'>('auto_post');
+  const [selectedPostIds, setSelectedPostIds] = useState<Set<string>>(new Set());
+  const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { brandStyle, needsSetup: brandNeedsSetup, saveBrandStyle, loading: brandLoading } = useBrandStyle();
+
+  const batchMode = selectedPostIds.size > 0;
 
   // Prompt brand setup on first visit if not configured
   useEffect(() => {
