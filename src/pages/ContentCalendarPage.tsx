@@ -288,14 +288,20 @@ const ContentCalendarPage = () => {
       const [prefHour, prefMin] = preferredTime.split(':').map(Number);
       const userBusinessName = profileData?.business_name || businessName;
 
+      const batchInsertData: any = {
+        user_id: userId,
+        days,
+        platforms: wizPlatforms,
+        created_by: userId,
+      };
+      // Add story_lines if provided
+      if (wizStoryLines) {
+        batchInsertData.story_lines = wizStoryLines;
+      }
+
       const { data: batchData, error: batchError } = await supabase
         .from('content_batches')
-        .insert({
-          user_id: userId,
-          days,
-          platforms: wizPlatforms,
-          created_by: userId,
-        })
+        .insert(batchInsertData)
         .select()
         .single();
 
