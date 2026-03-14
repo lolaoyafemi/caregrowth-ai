@@ -99,6 +99,7 @@ export type Database = {
           created_at: string
           id: string
           ideal_client_type: string | null
+          posting_workflow_mode: string
           service_area: string | null
           services_offered: string[] | null
           tone_preference: string | null
@@ -111,6 +112,7 @@ export type Database = {
           created_at?: string
           id?: string
           ideal_client_type?: string | null
+          posting_workflow_mode?: string
           service_area?: string | null
           services_offered?: string[] | null
           tone_preference?: string | null
@@ -123,6 +125,7 @@ export type Database = {
           created_at?: string
           id?: string
           ideal_client_type?: string | null
+          posting_workflow_mode?: string
           service_area?: string | null
           services_offered?: string[] | null
           tone_preference?: string | null

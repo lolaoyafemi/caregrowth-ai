@@ -18,6 +18,7 @@ import ThemeSelector from '@/components/settings/ThemeSelector';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import TeamPermissionsSection from '@/components/settings/TeamPermissionsSection';
 import TokenLimitsSection from '@/components/settings/TokenLimitsSection';
+import PostingWorkflowSection from '@/components/settings/PostingWorkflowSection';
 import SubscriptionManager from '@/components/subscription/SubscriptionManager';
 import BrandStyleSetup from '@/components/calendar/BrandStyleSetup';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
@@ -105,6 +106,7 @@ const SettingsPage = () => {
           </CardContent>
         </Card>
 
+        <PostingWorkflowSection />
         {!isSuperAdmin && <SubscriptionManager />}
         <AccountSettings />
         <ThemeSelector />

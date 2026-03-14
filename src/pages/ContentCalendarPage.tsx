@@ -40,6 +40,7 @@ const STATUS_CONFIG = {
   failed: { label: 'Failed', className: 'bg-red-100 text-red-800 border-red-200' },
   skipped: { label: 'Skipped', className: 'bg-orange-100 text-orange-800 border-orange-200' },
   draft: { label: 'Draft', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  needs_approval: { label: 'Needs Approval', className: 'bg-violet-100 text-violet-800 border-violet-200' },
 };
 
 interface ContentPost {
@@ -138,6 +139,7 @@ const ContentCalendarPage = () => {
   const [showBusinessForm, setShowBusinessForm] = useState(false);
   const [showBrandSetup, setShowBrandSetup] = useState(false);
   const [profileInitial, setProfileInitial] = useState('B');
+  const [workflowMode, setWorkflowMode] = useState<'auto_post' | 'approve_before_posting'>('auto_post');
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { brandStyle, needsSetup: brandNeedsSetup, saveBrandStyle, loading: brandLoading } = useBrandStyle();
 
@@ -172,6 +174,19 @@ const ContentCalendarPage = () => {
         const name = profile.business_name || profile.full_name || 'Your Business';
         setBusinessName(name);
         setProfileInitial(name.charAt(0).toUpperCase());
+      }
+    } catch {}
+  }, []);
+
+  const fetchWorkflowMode = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('agency_profiles')
+        .select('posting_workflow_mode')
+        .limit(1)
+        .maybeSingle();
+      if (data?.posting_workflow_mode) {
+        setWorkflowMode(data.posting_workflow_mode as 'auto_post' | 'approve_before_posting');
       }
     } catch {}
   }, []);
@@ -224,7 +239,8 @@ const ContentCalendarPage = () => {
     fetchPosts();
     fetchConnectedAccounts();
     fetchUserProfile();
-  }, [fetchPosts, fetchConnectedAccounts, fetchUserProfile]);
+    fetchWorkflowMode();
+  }, [fetchPosts, fetchConnectedAccounts, fetchUserProfile, fetchWorkflowMode]);
 
   const handleGenerate = async (wizardResult: { mode: string; days: number; platforms: string[]; frequency: number; campaignName?: string; campaignGoal?: string }) => {
     const { days, platforms: wizPlatforms, frequency } = wizardResult;
@@ -345,7 +361,7 @@ const ContentCalendarPage = () => {
               platform: req.platform,
               post_body: postBody,
               scheduled_at: req.scheduledDate.toISOString(),
-              status: 'scheduled',
+              status: workflowMode === 'approve_before_posting' ? 'needs_approval' : 'scheduled',
               hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
               headline: data?.headline || '',
               subheadline: data?.subheadline || '',
@@ -476,7 +492,7 @@ const ContentCalendarPage = () => {
 
       await supabase.rpc('deduct_credits_fifo', {
         p_user_id: userId,
-        p_credits_to_deduct: postsToInsert.filter(p => p.status === 'scheduled').length,
+        p_credits_to_deduct: postsToInsert.filter(p => p.status === 'scheduled' || p.status === 'needs_approval').length,
       });
 
       refetchCredits();
@@ -503,6 +519,21 @@ const ContentCalendarPage = () => {
       fetchPosts();
     } catch (err: any) {
       toast.error('Failed to retry: ' + err.message);
+    }
+  };
+
+  const handleApprove = async (post: ContentPost) => {
+    try {
+      const { error } = await supabase
+        .from('content_posts')
+        .update({ status: 'scheduled' })
+        .eq('id', post.id);
+
+      if (error) throw error;
+      toast.success('Post approved and scheduled.');
+      fetchPosts();
+    } catch (err: any) {
+      toast.error('Failed to approve: ' + err.message);
     }
   };
 
@@ -618,6 +649,7 @@ const ContentCalendarPage = () => {
   const drafts = posts.filter(p => p.status === 'draft').length;
   const scheduled = posts.filter(p => p.status === 'scheduled').length;
   const published = posts.filter(p => p.status === 'published').length;
+  const needsApproval = posts.filter(p => p.status === 'needs_approval').length;
 
   const PlatformIcon = ({ platform, size = 14 }: { platform: string; size?: number }) => {
     const config = PLATFORM_CONFIG[platform as keyof typeof PLATFORM_CONFIG];
@@ -648,6 +680,11 @@ const ContentCalendarPage = () => {
               <RotateCcw size={11} />
             </Button>
           )}
+          {post.status === 'needs_approval' && (
+            <Button variant="ghost" size="sm" className="h-5 px-1.5 py-0 ml-auto text-[10px] gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={(e) => { e.stopPropagation(); handleApprove(post); }} title="Approve post">
+              <CheckCircle size={11} /> Approve
+            </Button>
+          )}
         </div>
         {post.image_url && (
           <img src={post.image_url} alt="" className="w-full h-16 object-cover rounded mb-1.5" />
@@ -659,11 +696,6 @@ const ContentCalendarPage = () => {
           <Clock size={10} />
           {format(new Date(post.scheduled_at), 'MMM d, h:mm a')}
         </div>
-        {post.status === 'failed' && post.error_message && (
-          <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
-            <AlertCircle size={10} /> {post.error_message}
-          </p>
-        )}
         {post.status === 'skipped' && post.error_message && (
           <p className="text-[10px] text-orange-600 mt-1 flex items-center gap-1">
             <AlertCircle size={10} /> {post.error_message}

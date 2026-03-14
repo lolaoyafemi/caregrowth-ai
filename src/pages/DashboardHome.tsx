@@ -140,8 +140,10 @@ function useTeamAssistants(): Assistant[] {
       role: 'Visibility & Content',
       icon: Eye,
       path: '/dashboard/content-calendar',
-      statusLabel: 'Scheduled',
-      statusValue: `${activity.postsScheduled} posts`,
+      statusLabel: activity.postsNeedsApproval > 0 ? 'Awaiting' : 'Scheduled',
+      statusValue: activity.postsNeedsApproval > 0
+        ? `${activity.postsNeedsApproval} posts waiting for approval`
+        : `${activity.postsScheduled} posts`,
     },
     {
       name: 'Jared',

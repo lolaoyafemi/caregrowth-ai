@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface ActivitySnapshot {
   postsScheduled: number;
   postsPublished: number;
+  postsNeedsApproval: number;
   platformsConnected: number;
   documentsUploaded: number;
   loading: boolean;
@@ -13,6 +14,7 @@ export function useActivitySnapshot() {
   const [snapshot, setSnapshot] = useState<ActivitySnapshot>({
     postsScheduled: 0,
     postsPublished: 0,
+    postsNeedsApproval: 0,
     platformsConnected: 0,
     documentsUploaded: 0,
     loading: true,
@@ -24,7 +26,7 @@ export function useActivitySnapshot() {
       if (!userData?.user?.id) return;
       const userId = userData.user.id;
 
-      const [scheduledRes, publishedRes, platformsRes, docsRes] = await Promise.all([
+      const [scheduledRes, publishedRes, needsApprovalRes, platformsRes, docsRes] = await Promise.all([
         supabase
           .from('content_posts')
           .select('id', { count: 'exact', head: true })
@@ -35,6 +37,11 @@ export function useActivitySnapshot() {
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
           .eq('status', 'published'),
+        supabase
+          .from('content_posts')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('status', 'needs_approval'),
         supabase
           .from('connected_accounts')
           .select('id', { count: 'exact', head: true })
@@ -48,6 +55,7 @@ export function useActivitySnapshot() {
       setSnapshot({
         postsScheduled: scheduledRes.count ?? 0,
         postsPublished: publishedRes.count ?? 0,
+        postsNeedsApproval: needsApprovalRes.count ?? 0,
         platformsConnected: platformsRes.count ?? 0,
         documentsUploaded: docsRes.count ?? 0,
         loading: false,
