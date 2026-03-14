@@ -634,6 +634,7 @@ const ContentCalendarPage = () => {
   const drafts = posts.filter(p => p.status === 'draft').length;
   const scheduled = posts.filter(p => p.status === 'scheduled').length;
   const published = posts.filter(p => p.status === 'published').length;
+  const needsApproval = posts.filter(p => p.status === 'needs_approval').length;
 
   const PlatformIcon = ({ platform, size = 14 }: { platform: string; size?: number }) => {
     const config = PLATFORM_CONFIG[platform as keyof typeof PLATFORM_CONFIG];
