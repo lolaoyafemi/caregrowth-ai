@@ -14,6 +14,7 @@ export function useActivitySnapshot() {
   const [snapshot, setSnapshot] = useState<ActivitySnapshot>({
     postsScheduled: 0,
     postsPublished: 0,
+    postsNeedsApproval: 0,
     platformsConnected: 0,
     documentsUploaded: 0,
     loading: true,
