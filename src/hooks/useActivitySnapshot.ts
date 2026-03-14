@@ -26,7 +26,7 @@ export function useActivitySnapshot() {
       if (!userData?.user?.id) return;
       const userId = userData.user.id;
 
-      const [scheduledRes, publishedRes, platformsRes, docsRes] = await Promise.all([
+      const [scheduledRes, publishedRes, needsApprovalRes, platformsRes, docsRes] = await Promise.all([
         supabase
           .from('content_posts')
           .select('id', { count: 'exact', head: true })
@@ -37,6 +37,11 @@ export function useActivitySnapshot() {
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
           .eq('status', 'published'),
+        supabase
+          .from('content_posts')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('status', 'needs_approval'),
         supabase
           .from('connected_accounts')
           .select('id', { count: 'exact', head: true })
