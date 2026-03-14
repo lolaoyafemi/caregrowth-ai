@@ -106,6 +106,7 @@ const SettingsPage = () => {
           </CardContent>
         </Card>
 
+        <PostingWorkflowSection />
         {!isSuperAdmin && <SubscriptionManager />}
         <AccountSettings />
         <ThemeSelector />

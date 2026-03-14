@@ -40,6 +40,7 @@ const STATUS_CONFIG = {
   failed: { label: 'Failed', className: 'bg-red-100 text-red-800 border-red-200' },
   skipped: { label: 'Skipped', className: 'bg-orange-100 text-orange-800 border-orange-200' },
   draft: { label: 'Draft', className: 'bg-gray-100 text-gray-800 border-gray-200' },
+  needs_approval: { label: 'Needs Approval', className: 'bg-violet-100 text-violet-800 border-violet-200' },
 };
 
 interface ContentPost {
