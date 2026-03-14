@@ -724,12 +724,22 @@ const ContentCalendarPage = () => {
 
   const QueuePostCard = ({ post }: { post: ContentPost }) => {
     const statusConfig = STATUS_CONFIG[post.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
+    const isSelected = selectedPostIds.has(post.id);
+    const isSelectable = ['draft', 'needs_approval', 'scheduled'].includes(post.status);
     return (
       <div
-        className="border rounded-lg p-2.5 bg-card hover:shadow-sm transition-shadow cursor-pointer"
-        onClick={() => setEditPost(post)}
+        className={cn(
+          "border rounded-lg p-2.5 bg-card hover:shadow-sm transition-shadow cursor-pointer",
+          isSelected && "ring-2 ring-primary/40 border-primary/40"
+        )}
+        onClick={() => batchMode && isSelectable ? togglePostSelection(post.id) : setEditPost(post)}
       >
         <div className="flex items-center gap-2 mb-1.5">
+          {batchMode && isSelectable && (
+            <button onClick={(e) => { e.stopPropagation(); togglePostSelection(post.id); }} className="shrink-0">
+              {isSelected ? <CheckSquare size={14} className="text-primary" /> : <Square size={14} className="text-muted-foreground" />}
+            </button>
+          )}
           <div className={cn("w-5 h-5 rounded flex items-center justify-center text-white shrink-0", PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG]?.color || 'bg-gray-500')}>
             <PlatformIcon platform={post.platform} size={12} />
           </div>
