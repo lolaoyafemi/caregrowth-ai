@@ -239,7 +239,8 @@ const ContentCalendarPage = () => {
     fetchPosts();
     fetchConnectedAccounts();
     fetchUserProfile();
-  }, [fetchPosts, fetchConnectedAccounts, fetchUserProfile]);
+    fetchWorkflowMode();
+  }, [fetchPosts, fetchConnectedAccounts, fetchUserProfile, fetchWorkflowMode]);
 
   const handleGenerate = async (wizardResult: { mode: string; days: number; platforms: string[]; frequency: number; campaignName?: string; campaignGoal?: string }) => {
     const { days, platforms: wizPlatforms, frequency } = wizardResult;
