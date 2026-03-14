@@ -355,8 +355,11 @@ const ContentCalendarPage = () => {
         const results = await Promise.allSettled(
           batch.map(async (req, batchIdx) => {
             const globalIdx = i + batchIdx;
+            const subjectWithStoryLines = wizStoryLines
+              ? `Story lines to weave into this post (use naturally, do not repeat mechanically): ${wizStoryLines}`
+              : '';
             const { data, error } = await supabase.functions.invoke('generate-post', {
-              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: '', post_format: req.post_format, post_index: globalIdx }
+              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: subjectWithStoryLines, post_format: req.post_format, post_index: globalIdx }
             });
             if (error) throw error;
             return { req, data };
