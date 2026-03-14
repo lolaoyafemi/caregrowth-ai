@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 import { 
   CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, 
   Edit2, RotateCcw, Facebook, Instagram, Linkedin,
-  Loader2, Link2, AlertCircle, GripVertical, FileText, CheckCircle
+  Loader2, Link2, AlertCircle, GripVertical, FileText, CheckCircle,
+  Trash2, CheckSquare, Square
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserCredits } from '@/hooks/useUserCredits';
