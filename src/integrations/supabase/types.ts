@@ -281,6 +281,7 @@ export type Database = {
           days: number
           id: string
           platforms: string[]
+          story_lines: string | null
           user_id: string
         }
         Insert: {
@@ -290,6 +291,7 @@ export type Database = {
           days: number
           id?: string
           platforms: string[]
+          story_lines?: string | null
           user_id: string
         }
         Update: {
@@ -299,6 +301,7 @@ export type Database = {
           days?: number
           id?: string
           platforms?: string[]
+          story_lines?: string | null
           user_id?: string
         }
         Relationships: []

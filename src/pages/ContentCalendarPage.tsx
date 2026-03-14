@@ -4,13 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { 
   CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, 
   Edit2, RotateCcw, Facebook, Instagram, Linkedin,
-  Loader2, Link2, AlertCircle, GripVertical, FileText, CheckCircle
+  Loader2, Link2, AlertCircle, GripVertical, FileText, CheckCircle,
+  Trash2, CheckSquare, Square
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -140,8 +142,12 @@ const ContentCalendarPage = () => {
   const [showBrandSetup, setShowBrandSetup] = useState(false);
   const [profileInitial, setProfileInitial] = useState('B');
   const [workflowMode, setWorkflowMode] = useState<'auto_post' | 'approve_before_posting'>('auto_post');
+  const [selectedPostIds, setSelectedPostIds] = useState<Set<string>>(new Set());
+  const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { brandStyle, needsSetup: brandNeedsSetup, saveBrandStyle, loading: brandLoading } = useBrandStyle();
+
+  const batchMode = selectedPostIds.size > 0;
 
   // Prompt brand setup on first visit if not configured
   useEffect(() => {
@@ -242,8 +248,8 @@ const ContentCalendarPage = () => {
     fetchWorkflowMode();
   }, [fetchPosts, fetchConnectedAccounts, fetchUserProfile, fetchWorkflowMode]);
 
-  const handleGenerate = async (wizardResult: { mode: string; days: number; platforms: string[]; frequency: number; campaignName?: string; campaignGoal?: string }) => {
-    const { days, platforms: wizPlatforms, frequency } = wizardResult;
+  const handleGenerate = async (wizardResult: { mode: string; days: number; platforms: string[]; frequency: number; campaignName?: string; campaignGoal?: string; storyLines?: string }) => {
+    const { days, platforms: wizPlatforms, frequency, storyLines: wizStoryLines } = wizardResult;
     const totalPosts = days * wizPlatforms.length * frequency;
     
     if (credits < totalPosts) {
@@ -282,14 +288,20 @@ const ContentCalendarPage = () => {
       const [prefHour, prefMin] = preferredTime.split(':').map(Number);
       const userBusinessName = profileData?.business_name || businessName;
 
+      const batchInsertData: any = {
+        user_id: userId,
+        days,
+        platforms: wizPlatforms,
+        created_by: userId,
+      };
+      // Add story_lines if provided
+      if (wizStoryLines) {
+        batchInsertData.story_lines = wizStoryLines;
+      }
+
       const { data: batchData, error: batchError } = await supabase
         .from('content_batches')
-        .insert({
-          user_id: userId,
-          days,
-          platforms: wizPlatforms,
-          created_by: userId,
-        })
+        .insert(batchInsertData)
         .select()
         .single();
 
@@ -343,8 +355,11 @@ const ContentCalendarPage = () => {
         const results = await Promise.allSettled(
           batch.map(async (req, batchIdx) => {
             const globalIdx = i + batchIdx;
+            const subjectWithStoryLines = wizStoryLines
+              ? `Story lines to weave into this post (use naturally, do not repeat mechanically): ${wizStoryLines}`
+              : '';
             const { data, error } = await supabase.functions.invoke('generate-post', {
-              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: '', post_format: req.post_format, post_index: globalIdx }
+              body: { userId, postType: req.category, tone: req.tone, platform: req.platform, audience: '', subject: subjectWithStoryLines, post_format: req.post_format, post_index: globalIdx }
             });
             if (error) throw error;
             return { req, data };
@@ -537,6 +552,55 @@ const ContentCalendarPage = () => {
     }
   };
 
+  const togglePostSelection = (postId: string) => {
+    setSelectedPostIds(prev => {
+      const next = new Set(prev);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
+      return next;
+    });
+  };
+
+  const selectAllWeekPosts = () => {
+    const weekStart = startOfWeek(selectedDay, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(selectedDay, { weekStartsOn: 1 });
+    const weekPosts = posts.filter(p => {
+      const d = new Date(p.scheduled_at);
+      return d >= weekStart && d <= weekEnd && ['draft', 'needs_approval', 'scheduled'].includes(p.status);
+    });
+    setSelectedPostIds(new Set(weekPosts.map(p => p.id)));
+  };
+
+  const handleBatchDelete = async () => {
+    try {
+      const ids = Array.from(selectedPostIds);
+      const deletable = posts.filter(p => ids.includes(p.id) && ['draft', 'needs_approval', 'scheduled'].includes(p.status));
+      if (deletable.length === 0) return;
+      const { error } = await supabase.from('content_posts').delete().in('id', deletable.map(p => p.id));
+      if (error) throw error;
+      toast.success(`${deletable.length} post${deletable.length > 1 ? 's' : ''} deleted.`);
+      setSelectedPostIds(new Set());
+      setShowBatchDeleteConfirm(false);
+      fetchPosts();
+    } catch (err: any) {
+      toast.error('Batch delete failed: ' + err.message);
+    }
+  };
+
+  const handleBatchApprove = async () => {
+    try {
+      const ids = Array.from(selectedPostIds);
+      const approvable = posts.filter(p => ids.includes(p.id) && p.status === 'needs_approval');
+      if (approvable.length === 0) { toast.info('No posts need approval in selection.'); return; }
+      const { error } = await supabase.from('content_posts').update({ status: 'scheduled' }).in('id', approvable.map(p => p.id));
+      if (error) throw error;
+      toast.success(`${approvable.length} post${approvable.length > 1 ? 's' : ''} approved.`);
+      setSelectedPostIds(new Set());
+      fetchPosts();
+    } catch (err: any) {
+      toast.error('Batch approve failed: ' + err.message);
+    }
+  };
 
   const handleDragStart = (e: React.DragEvent, postId: string) => {
     e.dataTransfer.setData('text/plain', postId);
@@ -660,12 +724,22 @@ const ContentCalendarPage = () => {
 
   const QueuePostCard = ({ post }: { post: ContentPost }) => {
     const statusConfig = STATUS_CONFIG[post.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
+    const isSelected = selectedPostIds.has(post.id);
+    const isSelectable = ['draft', 'needs_approval', 'scheduled'].includes(post.status);
     return (
       <div
-        className="border rounded-lg p-2.5 bg-card hover:shadow-sm transition-shadow cursor-pointer"
-        onClick={() => setEditPost(post)}
+        className={cn(
+          "border rounded-lg p-2.5 bg-card hover:shadow-sm transition-shadow cursor-pointer",
+          isSelected && "ring-2 ring-primary/40 border-primary/40"
+        )}
+        onClick={() => batchMode && isSelectable ? togglePostSelection(post.id) : setEditPost(post)}
       >
         <div className="flex items-center gap-2 mb-1.5">
+          {batchMode && isSelectable && (
+            <button onClick={(e) => { e.stopPropagation(); togglePostSelection(post.id); }} className="shrink-0">
+              {isSelected ? <CheckSquare size={14} className="text-primary" /> : <Square size={14} className="text-muted-foreground" />}
+            </button>
+          )}
           <div className={cn("w-5 h-5 rounded flex items-center justify-center text-white shrink-0", PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG]?.color || 'bg-gray-500')}>
             <PlatformIcon platform={post.platform} size={12} />
           </div>
@@ -785,8 +859,43 @@ const ContentCalendarPage = () => {
 
       <CalendarAnalytics posts={posts} />
 
+      {/* Batch action toolbar */}
+      {batchMode && (
+        <div className="mb-4 flex items-center gap-3 bg-muted/50 border border-border rounded-lg px-4 py-3">
+          <span className="text-sm font-medium text-foreground">{selectedPostIds.size} selected</span>
+          <div className="flex-1" />
+          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={selectAllWeekPosts}>
+            Select all this week
+          </Button>
+          {workflowMode === 'approve_before_posting' && (
+            <Button variant="outline" size="sm" className="text-xs gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleBatchApprove}>
+              <CheckCircle size={14} /> Approve Selected
+            </Button>
+          )}
+          <Button variant="outline" size="sm" className="text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowBatchDeleteConfirm(true)}>
+            <Trash2 size={14} /> Delete Selected
+          </Button>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedPostIds(new Set())}>
+            Cancel
+          </Button>
+        </div>
+      )}
+
       {/* Calendar */}
       <div className="mb-6">
+
+      {/* Long-press hint for batch mode */}
+      {!batchMode && posts.some(p => ['draft', 'needs_approval', 'scheduled'].includes(p.status)) && (
+        <div className="mb-3 flex justify-end">
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => {
+            // Enable batch mode by selecting first selectable post
+            const first = posts.find(p => ['draft', 'needs_approval', 'scheduled'].includes(p.status));
+            if (first) togglePostSelection(first.id);
+          }}>
+            <CheckSquare size={12} /> Select posts
+          </Button>
+        </div>
+      )}
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -984,6 +1093,23 @@ const ContentCalendarPage = () => {
           }} 
         />
       )}
+
+      <AlertDialog open={showBatchDeleteConfirm} onOpenChange={setShowBatchDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedPostIds.size} post{selectedPostIds.size > 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the selected posts from your calendar. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Posts
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
