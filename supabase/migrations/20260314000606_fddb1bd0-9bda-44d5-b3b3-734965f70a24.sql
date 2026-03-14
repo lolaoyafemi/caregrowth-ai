@@ -1,0 +1,1 @@
+ALTER TABLE public.content_batches ADD COLUMN IF NOT EXISTS story_lines text DEFAULT NULL;
