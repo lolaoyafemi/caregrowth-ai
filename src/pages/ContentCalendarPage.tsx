@@ -361,7 +361,7 @@ const ContentCalendarPage = () => {
               platform: req.platform,
               post_body: postBody,
               scheduled_at: req.scheduledDate.toISOString(),
-              status: 'scheduled',
+              status: workflowMode === 'approve_before_posting' ? 'needs_approval' : 'scheduled',
               hook_line: data?.hook || postBody.split('\n')[0]?.substring(0, 100) || '',
               headline: data?.headline || '',
               subheadline: data?.subheadline || '',
