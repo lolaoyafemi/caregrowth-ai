@@ -492,7 +492,7 @@ const ContentCalendarPage = () => {
 
       await supabase.rpc('deduct_credits_fifo', {
         p_user_id: userId,
-        p_credits_to_deduct: postsToInsert.filter(p => p.status === 'scheduled').length,
+        p_credits_to_deduct: postsToInsert.filter(p => p.status === 'scheduled' || p.status === 'needs_approval').length,
       });
 
       refetchCredits();
