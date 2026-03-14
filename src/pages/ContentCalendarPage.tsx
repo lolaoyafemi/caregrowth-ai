@@ -178,6 +178,19 @@ const ContentCalendarPage = () => {
     } catch {}
   }, []);
 
+  const fetchWorkflowMode = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('agency_profiles')
+        .select('posting_workflow_mode')
+        .limit(1)
+        .maybeSingle();
+      if (data?.posting_workflow_mode) {
+        setWorkflowMode(data.posting_workflow_mode as 'auto_post' | 'approve_before_posting');
+      }
+    } catch {}
+  }, []);
+
   const fetchPosts = useCallback(async () => {
     try {
       const { data, error } = await supabase
