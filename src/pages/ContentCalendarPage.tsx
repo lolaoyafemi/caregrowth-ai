@@ -859,8 +859,43 @@ const ContentCalendarPage = () => {
 
       <CalendarAnalytics posts={posts} />
 
+      {/* Batch action toolbar */}
+      {batchMode && (
+        <div className="mb-4 flex items-center gap-3 bg-muted/50 border border-border rounded-lg px-4 py-3">
+          <span className="text-sm font-medium text-foreground">{selectedPostIds.size} selected</span>
+          <div className="flex-1" />
+          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={selectAllWeekPosts}>
+            Select all this week
+          </Button>
+          {workflowMode === 'approve_before_posting' && (
+            <Button variant="outline" size="sm" className="text-xs gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleBatchApprove}>
+              <CheckCircle size={14} /> Approve Selected
+            </Button>
+          )}
+          <Button variant="outline" size="sm" className="text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowBatchDeleteConfirm(true)}>
+            <Trash2 size={14} /> Delete Selected
+          </Button>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedPostIds(new Set())}>
+            Cancel
+          </Button>
+        </div>
+      )}
+
       {/* Calendar */}
       <div className="mb-6">
+
+      {/* Long-press hint for batch mode */}
+      {!batchMode && posts.some(p => ['draft', 'needs_approval', 'scheduled'].includes(p.status)) && (
+        <div className="mb-3 flex justify-end">
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => {
+            // Enable batch mode by selecting first selectable post
+            const first = posts.find(p => ['draft', 'needs_approval', 'scheduled'].includes(p.status));
+            if (first) togglePostSelection(first.id);
+          }}>
+            <CheckSquare size={12} /> Select posts
+          </Button>
+        </div>
+      )}
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
