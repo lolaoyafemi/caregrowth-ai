@@ -680,6 +680,11 @@ const ContentCalendarPage = () => {
               <RotateCcw size={11} />
             </Button>
           )}
+          {post.status === 'needs_approval' && (
+            <Button variant="ghost" size="sm" className="h-5 px-1.5 py-0 ml-auto text-[10px] gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={(e) => { e.stopPropagation(); handleApprove(post); }} title="Approve post">
+              <CheckCircle size={11} /> Approve
+            </Button>
+          )}
         </div>
         {post.image_url && (
           <img src={post.image_url} alt="" className="w-full h-16 object-cover rounded mb-1.5" />
@@ -691,11 +696,6 @@ const ContentCalendarPage = () => {
           <Clock size={10} />
           {format(new Date(post.scheduled_at), 'MMM d, h:mm a')}
         </div>
-        {post.status === 'failed' && post.error_message && (
-          <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
-            <AlertCircle size={10} /> {post.error_message}
-          </p>
-        )}
         {post.status === 'skipped' && post.error_message && (
           <p className="text-[10px] text-orange-600 mt-1 flex items-center gap-1">
             <AlertCircle size={10} /> {post.error_message}
