@@ -522,6 +522,21 @@ const ContentCalendarPage = () => {
     }
   };
 
+  const handleApprove = async (post: ContentPost) => {
+    try {
+      const { error } = await supabase
+        .from('content_posts')
+        .update({ status: 'scheduled' })
+        .eq('id', post.id);
+
+      if (error) throw error;
+      toast.success('Post approved and scheduled.');
+      fetchPosts();
+    } catch (err: any) {
+      toast.error('Failed to approve: ' + err.message);
+    }
+  };
+
 
   const handleDragStart = (e: React.DragEvent, postId: string) => {
     e.dataTransfer.setData('text/plain', postId);
