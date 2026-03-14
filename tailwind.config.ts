@@ -73,6 +73,22 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				}
+				'cal-surface': 'hsl(var(--cal-surface))',
+				'cal-surface-hover': 'hsl(var(--cal-surface-hover))',
+				'cal-surface-selected': 'hsl(var(--cal-surface-selected))',
+				'cal-border': 'hsl(var(--cal-border))',
+				'cal-border-selected': 'hsl(var(--cal-border-selected))',
+				'cal-today-ring': 'hsl(var(--cal-today-ring))',
+				'status-published': 'hsl(var(--status-published))',
+				'status-published-bg': 'hsl(var(--status-published-bg))',
+				'status-scheduled': 'hsl(var(--status-scheduled))',
+				'status-scheduled-bg': 'hsl(var(--status-scheduled-bg))',
+				'status-approval': 'hsl(var(--status-approval))',
+				'status-approval-bg': 'hsl(var(--status-approval-bg))',
+				'status-failed': 'hsl(var(--status-failed))',
+				'status-failed-bg': 'hsl(var(--status-failed-bg))',
+				'status-draft': 'hsl(var(--status-draft))',
+				'status-draft-bg': 'hsl(var(--status-draft-bg))',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

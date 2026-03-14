@@ -11,8 +11,8 @@ import { toast } from 'sonner';
 import { 
   CalendarDays, ChevronLeft, ChevronRight, Plus, Clock, 
   Edit2, RotateCcw, Facebook, Instagram, Linkedin,
-  Loader2, Link2, AlertCircle, GripVertical, FileText, CheckCircle,
-  Trash2, CheckSquare, Square
+  Loader2, Link2, AlertCircle, FileText, CheckCircle,
+  Trash2, CheckSquare, Square, CalendarClock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -31,18 +31,18 @@ import { useBrandStyle } from '@/hooks/useBrandStyle';
 import { Building2, Palette } from 'lucide-react';
 
 const PLATFORM_CONFIG = {
-  facebook: { icon: Facebook, label: 'Facebook', color: 'bg-blue-600' },
-  instagram: { icon: Instagram, label: 'Instagram', color: 'bg-gradient-to-br from-purple-500 to-pink-500' },
-  linkedin: { icon: Linkedin, label: 'LinkedIn', color: 'bg-blue-700' },
+  facebook: { icon: Facebook, label: 'Facebook', color: 'bg-[hsl(220,46%,48%)]' },
+  instagram: { icon: Instagram, label: 'Instagram', color: 'bg-[hsl(330,60%,52%)]' },
+  linkedin: { icon: Linkedin, label: 'LinkedIn', color: 'bg-[hsl(210,60%,42%)]' },
 };
 
 const STATUS_CONFIG = {
-  scheduled: { label: 'Scheduled', className: 'bg-amber-100 text-amber-800 border-amber-200' },
-  published: { label: 'Published', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-  failed: { label: 'Failed', className: 'bg-red-100 text-red-800 border-red-200' },
-  skipped: { label: 'Skipped', className: 'bg-orange-100 text-orange-800 border-orange-200' },
-  draft: { label: 'Draft', className: 'bg-gray-100 text-gray-800 border-gray-200' },
-  needs_approval: { label: 'Needs Approval', className: 'bg-violet-100 text-violet-800 border-violet-200' },
+  scheduled: { label: 'Scheduled', className: 'bg-status-scheduled-bg text-status-scheduled border-transparent' },
+  published: { label: 'Published', className: 'bg-status-published-bg text-status-published border-transparent' },
+  failed: { label: 'Failed', className: 'bg-status-failed-bg text-status-failed border-transparent' },
+  skipped: { label: 'Skipped', className: 'bg-status-failed-bg text-status-failed border-transparent' },
+  draft: { label: 'Draft', className: 'bg-status-draft-bg text-status-draft border-transparent' },
+  needs_approval: { label: 'Needs Approval', className: 'bg-status-approval-bg text-status-approval border-transparent' },
 };
 
 interface ContentPost {
@@ -729,52 +729,50 @@ const ContentCalendarPage = () => {
     return (
       <div
         className={cn(
-          "border rounded-lg p-2.5 bg-card hover:shadow-sm transition-shadow cursor-pointer",
-          isSelected && "ring-2 ring-primary/40 border-primary/40"
+          "group rounded-xl border border-cal-border bg-card p-3.5 transition-all duration-200 cursor-pointer",
+          "hover:shadow-md hover:-translate-y-0.5",
+          isSelected && "ring-2 ring-cal-border-selected border-cal-border-selected bg-cal-surface-selected"
         )}
         onClick={() => batchMode && isSelectable ? togglePostSelection(post.id) : setEditPost(post)}
       >
-        <div className="flex items-center gap-2 mb-1.5">
+        <div className="flex items-center gap-2.5 mb-2.5">
           {batchMode && isSelectable && (
             <button onClick={(e) => { e.stopPropagation(); togglePostSelection(post.id); }} className="shrink-0">
-              {isSelected ? <CheckSquare size={14} className="text-primary" /> : <Square size={14} className="text-muted-foreground" />}
+              {isSelected ? <CheckSquare size={15} className="text-primary" /> : <Square size={15} className="text-muted-foreground/50" />}
             </button>
           )}
-          <div className={cn("w-5 h-5 rounded flex items-center justify-center text-white shrink-0", PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG]?.color || 'bg-gray-500')}>
-            <PlatformIcon platform={post.platform} size={12} />
+          <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center text-white shrink-0", PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG]?.color || 'bg-muted-foreground')}>
+            <PlatformIcon platform={post.platform} size={13} />
           </div>
-          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", statusConfig.className)}>
-            {statusConfig.label}
-          </Badge>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-            {post.post_format === 'carousel' ? 'Carousel' : 'Single'}
-          </Badge>
-          {(post.status === 'failed' || post.status === 'skipped') && (
-            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-auto" onClick={(e) => { e.stopPropagation(); handleRetry(post); }} title="Retry publishing">
-              <RotateCcw size={11} />
-            </Button>
-          )}
+          <span className="text-xs font-medium text-foreground/70 capitalize">{post.platform}</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <Badge variant="outline" className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full", statusConfig.className)}>
+              {statusConfig.label}
+            </Badge>
+          </div>
+        </div>
+        {post.image_url && (
+          <img src={post.image_url} alt="" className="w-full h-20 object-cover rounded-lg mb-2.5" />
+        )}
+        <p className="text-[13px] text-foreground/80 line-clamp-2 leading-relaxed">
+          {post.content}
+        </p>
+        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-cal-border">
+          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Clock size={11} />
+            {format(new Date(post.scheduled_at), 'MMM d · h:mm a')}
+          </span>
           {post.status === 'needs_approval' && (
-            <Button variant="ghost" size="sm" className="h-5 px-1.5 py-0 ml-auto text-[10px] gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={(e) => { e.stopPropagation(); handleApprove(post); }} title="Approve post">
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] gap-1 text-status-approval hover:text-status-approval hover:bg-status-approval-bg rounded-full" onClick={(e) => { e.stopPropagation(); handleApprove(post); }}>
               <CheckCircle size={11} /> Approve
             </Button>
           )}
+          {(post.status === 'failed' || post.status === 'skipped') && (
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] gap-1 text-status-failed hover:bg-status-failed-bg rounded-full" onClick={(e) => { e.stopPropagation(); handleRetry(post); }}>
+              <RotateCcw size={11} /> Retry
+            </Button>
+          )}
         </div>
-        {post.image_url && (
-          <img src={post.image_url} alt="" className="w-full h-16 object-cover rounded mb-1.5" />
-        )}
-        <p className="text-xs text-foreground line-clamp-2 leading-relaxed">
-          {post.content}
-        </p>
-        <div className="flex items-center gap-1 mt-1.5 text-[10px] text-muted-foreground">
-          <Clock size={10} />
-          {format(new Date(post.scheduled_at), 'MMM d, h:mm a')}
-        </div>
-        {post.status === 'skipped' && post.error_message && (
-          <p className="text-[10px] text-orange-600 mt-1 flex items-center gap-1">
-            <AlertCircle size={10} /> {post.error_message}
-          </p>
-        )}
       </div>
     );
   };
@@ -782,28 +780,38 @@ const ContentCalendarPage = () => {
   const calDays = calendarView === 'week' ? getWeekDays() : getMonthDays();
 
   const selectedDayLabel = isToday(selectedDay) ? 'Today' : isTomorrow(selectedDay) ? 'Tomorrow' : format(selectedDay, 'EEE, MMM d');
-  const nextDayLabel = isToday(addDays(selectedDay, 1)) ? 'Today' : isTomorrow(addDays(selectedDay, 1)) ? 'Tomorrow' : format(addDays(selectedDay, 1), 'EEE, MMM d');
 
   const businessHandle = businessName.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
+  // Empty state component
+  const EmptyState = ({ message, sub }: { message: string; sub?: string }) => (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="w-12 h-12 rounded-2xl bg-cal-surface flex items-center justify-center mb-4">
+        <CalendarClock size={22} className="text-muted-foreground/40" />
+      </div>
+      <p className="text-sm font-medium text-foreground/60">{message}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+    </div>
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-      {/* Header — matches reference project */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      {/* Header */}
+      <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white/90">
-            Nora
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+            Content Calendar
           </h1>
-          <p className="text-white/40 mt-1 text-sm">
-            Plan, schedule, and auto-publish your social media content across platforms.
+          <p className="text-muted-foreground mt-1.5 text-sm">
+            Plan, review, and manage your content across platforms.
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <Button
             onClick={() => setGenerateOpen(true)}
-            className="bg-primary hover:bg-primary/90 gap-2 font-semibold tracking-wide"
+            className="bg-primary hover:bg-primary/90 gap-2 font-medium rounded-lg h-9 px-5 text-sm shadow-sm"
           >
-            <Plus size={16} /> Start Posting
+            <Plus size={15} /> Plan Content
           </Button>
 
           <StartEngineWizard
@@ -813,19 +821,16 @@ const ContentCalendarPage = () => {
             onDeploy={handleGenerate}
           />
 
-          {/* Generating overlay dialog */}
           {generating && (
             <Dialog open={generating}>
-              <DialogContent className="sm:max-w-md">
-                <div className="py-12 text-center space-y-4">
+              <DialogContent className="sm:max-w-md border-cal-border">
+                <div className="py-14 text-center space-y-5">
                   <div className="space-y-3">
-                    <div className="h-3 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: '70%' }} />
+                    <div className="h-1.5 bg-cal-surface rounded-full overflow-hidden">
+                      <div className="h-full bg-primary/60 rounded-full animate-pulse" style={{ width: '70%' }} />
                     </div>
-                    <div className="h-2 bg-muted rounded w-3/4 mx-auto animate-pulse" />
-                    <div className="h-2 bg-muted rounded w-1/2 mx-auto animate-pulse" />
                   </div>
-                  <p className="text-sm text-muted-foreground mt-4">{generationMessage}</p>
+                  <p className="text-sm text-muted-foreground">{generationMessage}</p>
                 </div>
               </DialogContent>
             </Dialog>
@@ -849,7 +854,6 @@ const ContentCalendarPage = () => {
         </DialogContent>
       </Dialog>
 
-
       <ProactiveNudge
         onGenerate={() => setGenerateOpen(true)}
         onConnect={() => setConnectOpen(true)}
@@ -861,193 +865,217 @@ const ContentCalendarPage = () => {
 
       {/* Batch action toolbar */}
       {batchMode && (
-        <div className="mb-4 flex items-center gap-3 bg-muted/50 border border-border rounded-lg px-4 py-3">
+        <div className="mb-5 flex items-center gap-3 bg-cal-surface border border-cal-border rounded-xl px-5 py-3.5 shadow-sm">
           <span className="text-sm font-medium text-foreground">{selectedPostIds.size} selected</span>
           <div className="flex-1" />
-          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={selectAllWeekPosts}>
+          <Button variant="outline" size="sm" className="text-xs gap-1.5 rounded-lg border-cal-border" onClick={selectAllWeekPosts}>
             Select all this week
           </Button>
           {workflowMode === 'approve_before_posting' && (
-            <Button variant="outline" size="sm" className="text-xs gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleBatchApprove}>
-              <CheckCircle size={14} /> Approve Selected
+            <Button variant="outline" size="sm" className="text-xs gap-1.5 rounded-lg text-status-scheduled border-status-scheduled/30 hover:bg-status-scheduled-bg" onClick={handleBatchApprove}>
+              <CheckCircle size={13} /> Approve Selected
             </Button>
           )}
-          <Button variant="outline" size="sm" className="text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowBatchDeleteConfirm(true)}>
-            <Trash2 size={14} /> Delete Selected
+          <Button variant="outline" size="sm" className="text-xs gap-1.5 rounded-lg text-destructive border-destructive/30 hover:bg-status-failed-bg" onClick={() => setShowBatchDeleteConfirm(true)}>
+            <Trash2 size={13} /> Delete Selected
           </Button>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedPostIds(new Set())}>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setSelectedPostIds(new Set())}>
             Cancel
           </Button>
         </div>
       )}
 
       {/* Calendar */}
-      <div className="mb-6">
+      <div className="mb-8">
+        {!batchMode && posts.some(p => ['draft', 'needs_approval', 'scheduled'].includes(p.status)) && (
+          <div className="mb-3 flex justify-end">
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground/60 gap-1.5 hover:text-muted-foreground" onClick={() => {
+              const first = posts.find(p => ['draft', 'needs_approval', 'scheduled'].includes(p.status));
+              if (first) togglePostSelection(first.id);
+            }}>
+              <CheckSquare size={12} /> Select posts
+            </Button>
+          </div>
+        )}
 
-      {/* Long-press hint for batch mode */}
-      {!batchMode && posts.some(p => ['draft', 'needs_approval', 'scheduled'].includes(p.status)) && (
-        <div className="mb-3 flex justify-end">
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => {
-            // Enable batch mode by selecting first selectable post
-            const first = posts.find(p => ['draft', 'needs_approval', 'scheduled'].includes(p.status));
-            if (first) togglePostSelection(first.id);
-          }}>
-            <CheckSquare size={12} /> Select posts
-          </Button>
+        <div className="rounded-2xl border border-cal-border bg-card shadow-sm overflow-hidden">
+          {/* Calendar header */}
+          <div className="px-5 py-4 flex items-center justify-between border-b border-cal-border">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => navigateCalendar('prev')}>
+                <ChevronLeft size={16} className="text-muted-foreground" />
+              </Button>
+              <h3 className="text-base font-semibold text-foreground min-w-[180px] text-center">
+                {calendarView === 'week'
+                  ? `${format(getWeekDays()[0], 'MMM d')} – ${format(getWeekDays()[6], 'MMM d, yyyy')}`
+                  : format(currentDate, 'MMMM yyyy')
+                }
+              </h3>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => navigateCalendar('next')}>
+                <ChevronRight size={16} className="text-muted-foreground" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7 rounded-lg text-muted-foreground hover:text-foreground"
+                onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()); }}
+              >
+                Today
+              </Button>
+              <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as 'week' | 'month')}>
+                <TabsList className="h-8 rounded-lg bg-cal-surface p-0.5">
+                  <TabsTrigger value="week" className="text-xs px-3 h-7 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm">Week</TabsTrigger>
+                  <TabsTrigger value="month" className="text-xs px-3 h-7 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm">Month</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+
+          {/* Day headers */}
+          <div className="grid grid-cols-7 border-b border-cal-border">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+              <div key={day} className="text-center text-[11px] font-medium text-muted-foreground/60 py-2.5 tracking-wider uppercase">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Day cells */}
+          <div className={cn(
+            "grid grid-cols-7",
+            calendarView === 'week' ? 'grid-rows-1' : ''
+          )}>
+            {calDays.map((day, i) => {
+              const dayPosts = getPostsForDay(day);
+              const isCurrentMonth = isSameMonth(day, currentDate);
+              const dayKey = format(day, 'yyyy-MM-dd');
+              const isSelected = isSameDay(day, selectedDay);
+              const isDragOver = dragOverDay === dayKey;
+
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "border-r border-b border-cal-border transition-all duration-150 cursor-pointer relative",
+                    calendarView === 'week' ? 'min-h-[140px] p-2.5' : 'min-h-[90px] p-2',
+                    isSelected
+                      ? 'bg-cal-surface-selected'
+                      : 'hover:bg-cal-surface-hover',
+                    !isCurrentMonth && calendarView === 'month' && 'opacity-30',
+                    isDragOver && 'bg-cal-surface-selected',
+                    i % 7 === 6 && 'border-r-0', // last column
+                  )}
+                  onClick={() => setSelectedDay(day)}
+                  onDragOver={(e) => handleDragOver(e, dayKey)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, day)}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className={cn(
+                      "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full transition-colors",
+                      isToday(day) && 'bg-primary text-primary-foreground font-semibold',
+                      isSelected && !isToday(day) && 'bg-cal-border-selected/20 text-foreground font-semibold',
+                      !isSelected && !isToday(day) && 'text-muted-foreground'
+                    )}>
+                      {format(day, 'd')}
+                    </span>
+                    {dayPosts.length > 0 && (
+                      <span className="text-[10px] text-muted-foreground/50 font-medium">{dayPosts.length}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {dayPosts.slice(0, calendarView === 'week' ? 6 : 3).map((post) => {
+                      const config = PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG];
+                      if (!config) return null;
+                      const Icon = config.icon;
+                      const statusCfg = STATUS_CONFIG[post.status as keyof typeof STATUS_CONFIG];
+                      return (
+                        <div
+                          key={post.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, post.id)}
+                          className={cn(
+                            "w-6 h-6 rounded-lg flex items-center justify-center text-white cursor-grab active:cursor-grabbing",
+                            "hover:scale-110 hover:shadow-md transition-all duration-150",
+                            config.color,
+                            post.status === 'needs_approval' && 'ring-2 ring-status-approval/40',
+                          )}
+                          title={`${config.label} · ${statusCfg?.label || post.status}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewPost(post);
+                          }}
+                        >
+                          <Icon size={12} />
+                        </div>
+                      );
+                    })}
+                    {dayPosts.length > (calendarView === 'week' ? 6 : 3) && (
+                      <span className="text-[9px] text-muted-foreground/50 self-center ml-0.5">
+                        +{dayPosts.length - (calendarView === 'week' ? 6 : 3)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <p className="text-[11px] text-muted-foreground/40 mt-2.5 ml-1">
+          Drag posts between days to reschedule · Click a day to view its queue
+        </p>
+      </div>
+
+      {/* Queue section */}
+      {selectedDayPosts.length > 0 ? (
+        <div className="mb-8">
+          <h2 className="text-base font-semibold text-foreground mb-4">{selectedDayLabel}</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {selectedDayPosts.map(post => (
+              <QueuePostCard key={post.id} post={post} />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="mb-8">
+          <h2 className="text-base font-semibold text-foreground mb-4">{selectedDayLabel}</h2>
+          <EmptyState message="Your calendar is open and ready." sub="No posts scheduled for this day." />
         </div>
       )}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="sm" onClick={() => navigateCalendar('prev')}>
-                    <ChevronLeft size={16} />
-                  </Button>
-                  <h3 className="text-lg font-semibold">
-                    {calendarView === 'week'
-                      ? `${format(getWeekDays()[0], 'MMM d')} – ${format(getWeekDays()[6], 'MMM d, yyyy')}`
-                      : format(currentDate, 'MMMM yyyy')
-                    }
-                  </h3>
-                  <Button variant="ghost" size="sm" onClick={() => navigateCalendar('next')}>
-                    <ChevronRight size={16} />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs h-7"
-                    onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date()); }}
-                  >
-                    Today
-                  </Button>
-                  <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as 'week' | 'month')}>
-                    <TabsList className="h-8">
-                      <TabsTrigger value="week" className="text-xs px-3 h-7">Week</TabsTrigger>
-                      <TabsTrigger value="month" className="text-xs px-3 h-7">Month</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-7 gap-1 mb-1">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                  <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              <div className={cn(
-                "grid grid-cols-7 gap-1",
-                calendarView === 'week' ? 'grid-rows-1' : ''
-              )}>
-                {calDays.map((day, i) => {
-                  const dayPosts = getPostsForDay(day);
-                  const isCurrentMonth = isSameMonth(day, currentDate);
-                  const dayKey = format(day, 'yyyy-MM-dd');
-                  const isSelected = isSameDay(day, selectedDay);
-                  const isDragOver = dragOverDay === dayKey;
-
-                  return (
-                    <div
-                      key={i}
-                      className={cn(
-                        "border rounded-lg p-1.5 transition-all cursor-pointer relative",
-                        calendarView === 'week' ? 'min-h-[120px]' : 'min-h-[80px]',
-                        isSelected
-                          ? 'border-primary ring-2 ring-primary/30 bg-primary/5'
-                          : isToday(day)
-                            ? 'border-primary/50 bg-primary/5'
-                            : 'border-border hover:border-muted-foreground/30',
-                        !isCurrentMonth && calendarView === 'month' && 'opacity-40',
-                        isDragOver && 'ring-2 ring-primary/50 bg-primary/5 border-primary'
-                      )}
-                      onClick={() => setSelectedDay(day)}
-                      onDragOver={(e) => handleDragOver(e, dayKey)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, day)}
-                    >
-                      <div className={cn(
-                        "text-xs font-medium mb-1 px-0.5 flex items-center gap-1",
-                        isSelected ? 'text-primary font-bold' : isToday(day) ? 'text-primary' : 'text-muted-foreground'
-                      )}>
-                        <span className={cn(
-                          "w-5 h-5 flex items-center justify-center rounded-full text-[11px]",
-                          (isToday(day) || isSelected) && 'bg-primary text-primary-foreground'
-                        )}>
-                          {format(day, 'd')}
-                        </span>
-                        {dayPosts.length > 0 && (
-                          <span className="ml-0.5 text-[9px] text-muted-foreground/60">{dayPosts.length}</span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-0.5">
-                        {dayPosts.map((post) => {
-                          const config = PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG];
-                          if (!config) return null;
-                          const Icon = config.icon;
-                          return (
-                            <div
-                              key={post.id}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, post.id)}
-                              className={cn(
-                                "w-5 h-5 rounded flex items-center justify-center text-white cursor-grab active:cursor-grabbing hover:scale-110 transition-transform",
-                                config.color
-                              )}
-                              title={`${config.label} — drag to reschedule`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPreviewPost(post);
-                              }}
-                            >
-                              <Icon size={11} />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
-                <GripVertical size={10} /> Drag icons between days to reschedule · Click a day to view its queue
-              </p>
-            </CardContent>
-          </Card>
-      </div>
 
       {/* Side Drawer */}
       <Sheet open={!!drawerPost} onOpenChange={(open) => !open && setDrawerPost(null)}>
-        <SheetContent className="sm:max-w-md overflow-y-auto">
+        <SheetContent className="sm:max-w-md overflow-y-auto border-l-cal-border">
           <SheetHeader>
-            <SheetTitle>
+            <SheetTitle className="text-lg font-semibold">
               {drawerPost && format(new Date(drawerPost.scheduled_at), 'EEEE, MMMM d')}
             </SheetTitle>
           </SheetHeader>
-          <div className="mt-4 space-y-3">
+          <div className="mt-6 space-y-4">
             {drawerPost && getPostsForDay(new Date(drawerPost.scheduled_at)).map(post => {
               const statusCfg = STATUS_CONFIG[post.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
               return (
-                <div key={post.id} className="border rounded-lg p-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className={cn("w-6 h-6 rounded flex items-center justify-center text-white", PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG]?.color || 'bg-gray-500')}>
-                      <PlatformIcon platform={post.platform} size={14} />
+                <div key={post.id} className="rounded-xl border border-cal-border p-5 space-y-3 hover:shadow-sm transition-shadow">
+                  <div className="flex items-center gap-2.5">
+                    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-white", PLATFORM_CONFIG[post.platform as keyof typeof PLATFORM_CONFIG]?.color || 'bg-muted-foreground')}>
+                      <PlatformIcon platform={post.platform} size={15} />
                     </div>
-                    <span className="text-sm font-medium capitalize">{post.platform}</span>
-                    <Badge variant="outline" className={cn("text-xs ml-auto", statusCfg.className)}>
+                    <span className="text-sm font-medium capitalize text-foreground">{post.platform}</span>
+                    <Badge variant="outline" className={cn("text-[11px] ml-auto rounded-full px-2.5 py-0.5", statusCfg.className)}>
                       {statusCfg.label}
                     </Badge>
                   </div>
                   {post.image_url && (
-                    <img src={post.image_url} alt="" className="w-full max-h-40 object-cover rounded-lg" />
+                    <img src={post.image_url} alt="" className="w-full max-h-44 object-cover rounded-xl" />
                   )}
-                  <p className="text-sm text-foreground whitespace-pre-wrap">{post.content}</p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Clock size={12} /> {format(new Date(post.scheduled_at), 'h:mm a')}</span>
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { setDrawerPost(null); setEditPost(post); }}>
+                  <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+                  <div className="flex items-center justify-between pt-2 border-t border-cal-border">
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Clock size={12} /> {format(new Date(post.scheduled_at), 'h:mm a')}
+                    </span>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 rounded-lg border-cal-border" onClick={() => { setDrawerPost(null); setEditPost(post); }}>
                       <Edit2 size={12} /> Edit
                     </Button>
                   </div>
@@ -1095,16 +1123,16 @@ const ContentCalendarPage = () => {
       )}
 
       <AlertDialog open={showBatchDeleteConfirm} onOpenChange={setShowBatchDeleteConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl border-cal-border">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedPostIds.size} post{selectedPostIds.size > 1 ? 's' : ''}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove the selected posts from your calendar. This action cannot be undone.
+              This will permanently remove the selected posts from your calendar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBatchDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg">
               Delete Posts
             </AlertDialogAction>
           </AlertDialogFooter>
