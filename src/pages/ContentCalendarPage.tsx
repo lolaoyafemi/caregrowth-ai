@@ -139,6 +139,7 @@ const ContentCalendarPage = () => {
   const [showBusinessForm, setShowBusinessForm] = useState(false);
   const [showBrandSetup, setShowBrandSetup] = useState(false);
   const [profileInitial, setProfileInitial] = useState('B');
+  const [workflowMode, setWorkflowMode] = useState<'auto_post' | 'approve_before_posting'>('auto_post');
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { brandStyle, needsSetup: brandNeedsSetup, saveBrandStyle, loading: brandLoading } = useBrandStyle();
 
