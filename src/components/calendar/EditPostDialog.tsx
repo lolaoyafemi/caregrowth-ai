@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { Facebook, Instagram, Linkedin, Twitter, Trash2, ImagePlus, X, RefreshCw, ChevronDown, Loader2, CheckCircle } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Twitter, Trash2, ImagePlus, X, RefreshCw, ChevronDown, Loader2, CheckCircle, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PLATFORM_ICONS: Record<string, any> = {
@@ -19,6 +19,14 @@ const PLATFORM_ICONS: Record<string, any> = {
   instagram: Instagram,
   linkedin: Linkedin,
   x: Twitter,
+};
+
+const STATUS_STYLES: Record<string, string> = {
+  scheduled: 'bg-status-scheduled-bg text-status-scheduled',
+  published: 'bg-status-published-bg text-status-published',
+  needs_approval: 'bg-status-approval-bg text-status-approval',
+  failed: 'bg-status-failed-bg text-status-failed',
+  draft: 'bg-status-draft-bg text-status-draft',
 };
 
 interface EditPostDialogProps {
@@ -36,12 +44,7 @@ interface EditPostDialogProps {
   onSaved: () => void;
 }
 
-const EditPostDialog: React.FC<EditPostDialogProps> = ({
-  post,
-  open,
-  onOpenChange,
-  onSaved,
-}) => {
+const EditPostDialog: React.FC<EditPostDialogProps> = ({ post, open, onOpenChange, onSaved }) => {
   const [content, setContent] = useState(post.content);
   const [scheduledAt, setScheduledAt] = useState(format(new Date(post.scheduled_at), "yyyy-MM-dd'T'HH:mm"));
   const [status, setStatus] = useState(post.status);
@@ -166,53 +169,61 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Icon size={20} />
-              Edit {post.platform.charAt(0).toUpperCase() + post.platform.slice(1)} Post
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+        <DialogContent className="sm:max-w-lg rounded-2xl border-cal-border p-0 overflow-hidden">
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 border-b border-cal-border">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2.5 text-base">
+                <div className="w-7 h-7 rounded-lg bg-cal-surface flex items-center justify-center">
+                  <Icon size={16} className="text-foreground/70" />
+                </div>
+                Edit {post.platform.charAt(0).toUpperCase() + post.platform.slice(1)} Post
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
             {post.error_message && (
-              <div className="text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg p-3">
+              <div className="text-sm bg-status-failed-bg text-status-failed rounded-xl p-3.5">
                 <strong>Publishing error:</strong> {post.error_message}
               </div>
             )}
-            <div>
-              <Label className="text-sm">Content</Label>
-              <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={6} className="mt-1" />
+
+            {/* Content */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Content</Label>
+              <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={5} className="rounded-xl border-cal-border focus:border-cal-border-selected resize-none text-sm leading-relaxed" />
             </div>
 
-            {/* Image section */}
-            <div>
-              <Label className="text-sm">Image</Label>
+            {/* Image */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Image</Label>
               {imageUrl ? (
-                <div className="mt-1 relative group">
-                  <img src={imageUrl} alt="Post image" className="w-full max-h-48 object-cover rounded-lg border" />
-                  <Button variant="destructive" size="sm" className="absolute top-2 right-2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={removeImage}>
+                <div className="relative group rounded-xl overflow-hidden">
+                  <img src={imageUrl} alt="Post image" className="w-full max-h-48 object-cover" />
+                  <Button variant="destructive" size="sm" className="absolute top-2 right-2 h-7 w-7 p-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" onClick={removeImage}>
                     <X size={14} />
                   </Button>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground mt-1 italic">No image attached</p>
+                <p className="text-xs text-muted-foreground/60 italic">No image attached</p>
               )}
               <div className="flex gap-2 mt-2">
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleRegenerateImage} disabled={regeneratingImage}>
-                  {regeneratingImage ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                  {regeneratingImage ? 'Generating…' : 'Regenerate Image'}
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg border-cal-border" onClick={handleRegenerateImage} disabled={regeneratingImage}>
+                  {regeneratingImage ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  {regeneratingImage ? 'Generating…' : 'Regenerate'}
                 </Button>
               </div>
-              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-2">
+              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen} className="mt-1">
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 h-6 px-1">
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground/60 gap-1 h-6 px-1 hover:text-muted-foreground">
                     <ChevronDown size={12} className={cn("transition-transform", advancedOpen && "rotate-180")} />
-                    Advanced: Replace Image
+                    Replace Image
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                  <Button variant="outline" size="sm" className="mt-1 w-full gap-2 text-muted-foreground text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                  <Button variant="outline" size="sm" className="mt-1.5 w-full gap-2 text-muted-foreground text-xs rounded-lg border-cal-border border-dashed" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                     <ImagePlus size={14} />
                     {uploading ? 'Uploading…' : 'Upload Custom Image'}
                   </Button>
@@ -220,15 +231,16 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
               </Collapsible>
             </div>
 
+            {/* Schedule & Status */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm">Scheduled Date & Time</Label>
-                <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="mt-1" />
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Schedule</Label>
+                <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="rounded-lg border-cal-border text-sm" />
               </div>
-              <div>
-                <Label className="text-sm">Status</Label>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</Label>
                 <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="rounded-lg border-cal-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -241,40 +253,42 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
               </div>
             </div>
           </div>
-          <DialogFooter className="flex justify-between">
-            <div className="flex gap-2">
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-cal-border flex items-center justify-between">
+            <div>
               {canDelete && (
-                <Button variant="ghost" size="sm" className="text-destructive gap-1" onClick={() => setShowDeleteConfirm(true)}>
-                  <Trash2 size={14} /> Delete
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive gap-1.5 text-xs rounded-lg" onClick={() => setShowDeleteConfirm(true)}>
+                  <Trash2 size={13} /> Delete
                 </Button>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               {canApprove && (
-                <Button variant="outline" size="sm" className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleApprove} disabled={saving}>
-                  <CheckCircle size={14} /> Approve
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs rounded-lg text-status-scheduled border-status-scheduled/30 hover:bg-status-scheduled-bg" onClick={handleApprove} disabled={saving}>
+                  <CheckCircle size={13} /> Approve
                 </Button>
               )}
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving} className="bg-caregrowth-blue hover:bg-caregrowth-blue/90">
+              <Button variant="outline" size="sm" className="rounded-lg border-cal-border text-xs" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleSave} disabled={saving} className="rounded-lg text-xs gap-1.5 px-4">
                 {saving ? 'Saving…' : 'Save Changes'}
               </Button>
             </div>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl border-cal-border">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this post?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove this post from your calendar. This action cannot be undone.
+              This will permanently remove this post from your calendar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg">
               Delete Post
             </AlertDialogAction>
           </AlertDialogFooter>
