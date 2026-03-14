@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface ActivitySnapshot {
   postsScheduled: number;
   postsPublished: number;
+  postsNeedsApproval: number;
   platformsConnected: number;
   documentsUploaded: number;
   loading: boolean;
