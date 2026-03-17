@@ -27,8 +27,10 @@ import PlatformPreview from '@/components/calendar/PlatformPreview';
 import StartEngineWizard from '@/components/calendar/StartEngineWizard';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
 import BrandStyleSetup from '@/components/calendar/BrandStyleSetup';
+import ConversationsTab from '@/components/conversations/ConversationsTab';
+import InsightsTab from '@/components/conversations/InsightsTab';
 import { useBrandStyle } from '@/hooks/useBrandStyle';
-import { Building2, Palette } from 'lucide-react';
+import { Building2, Palette, MessageCircle, BarChart3 } from 'lucide-react';
 
 const PLATFORM_CONFIG = {
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-[hsl(220,46%,48%)]' },
@@ -147,6 +149,7 @@ const ContentCalendarPage = () => {
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { brandStyle, needsSetup: brandNeedsSetup, saveBrandStyle, loading: brandLoading } = useBrandStyle();
 
+  const [activeTab, setActiveTab] = useState<'calendar' | 'conversations' | 'insights'>('calendar');
   const batchMode = selectedPostIds.size > 0;
 
   // Prompt brand setup on first visit if not configured
@@ -797,7 +800,7 @@ const ContentCalendarPage = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       {/* Header */}
-      <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
             Content Calendar
@@ -838,6 +841,31 @@ const ContentCalendarPage = () => {
         </div>
       </div>
 
+      {/* Top-level tabs */}
+      <div className="mb-8">
+        <div className="flex items-center gap-1 border-b border-cal-border">
+          {[
+            { key: 'calendar' as const, label: 'Calendar', icon: CalendarDays },
+            { key: 'conversations' as const, label: 'Conversations', icon: MessageCircle },
+            { key: 'insights' as const, label: 'Insights', icon: BarChart3 },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px",
+                activeTab === tab.key
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-cal-border"
+              )}
+            >
+              <tab.icon size={15} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <BrandStyleSetup
         open={showBrandSetup}
         onOpenChange={setShowBrandSetup}
@@ -854,14 +882,21 @@ const ContentCalendarPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Conversations Tab */}
+      {activeTab === 'conversations' && <ConversationsTab />}
+
+      {/* Insights Tab */}
+      {activeTab === 'insights' && <InsightsTab posts={posts} />}
+
+      {/* Calendar Tab */}
+      {activeTab === 'calendar' && (
+      <>
       <ProactiveNudge
         onGenerate={() => setGenerateOpen(true)}
         onConnect={() => setConnectOpen(true)}
       />
 
       <EvidencePanel />
-
-      <CalendarAnalytics posts={posts} />
 
       {/* Batch action toolbar */}
       {batchMode && (
@@ -1138,6 +1173,8 @@ const ContentCalendarPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </>
+      )}
     </div>
   );
 };

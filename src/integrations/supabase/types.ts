@@ -1559,6 +1559,91 @@ export type Database = {
         }
         Relationships: []
       }
+      social_conversations: {
+        Row: {
+          agency_id: string | null
+          ai_classification: string | null
+          ai_suggested_reply: string | null
+          comment_text: string
+          commenter_avatar_url: string | null
+          commenter_name: string | null
+          created_at: string
+          engagement_count: number | null
+          id: string
+          parent_comment_id: string | null
+          platform: string
+          platform_comment_id: string | null
+          post_id: string | null
+          replied_at: string | null
+          reply_text: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          ai_classification?: string | null
+          ai_suggested_reply?: string | null
+          comment_text: string
+          commenter_avatar_url?: string | null
+          commenter_name?: string | null
+          created_at?: string
+          engagement_count?: number | null
+          id?: string
+          parent_comment_id?: string | null
+          platform: string
+          platform_comment_id?: string | null
+          post_id?: string | null
+          replied_at?: string | null
+          reply_text?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          ai_classification?: string | null
+          ai_suggested_reply?: string | null
+          comment_text?: string
+          commenter_avatar_url?: string | null
+          commenter_name?: string | null
+          created_at?: string
+          engagement_count?: number | null
+          id?: string
+          parent_comment_id?: string | null
+          platform?: string
+          platform_comment_id?: string | null
+          post_id?: string | null
+          replied_at?: string | null
+          reply_text?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_conversations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_conversations_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "social_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_conversations_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_posts: {
         Row: {
           content: string | null
