@@ -27,8 +27,10 @@ import PlatformPreview from '@/components/calendar/PlatformPreview';
 import StartEngineWizard from '@/components/calendar/StartEngineWizard';
 import BusinessDetailsForm from '@/components/business/BusinessDetailsForm';
 import BrandStyleSetup from '@/components/calendar/BrandStyleSetup';
+import ConversationsTab from '@/components/conversations/ConversationsTab';
+import InsightsTab from '@/components/conversations/InsightsTab';
 import { useBrandStyle } from '@/hooks/useBrandStyle';
-import { Building2, Palette } from 'lucide-react';
+import { Building2, Palette, MessageCircle, BarChart3 } from 'lucide-react';
 
 const PLATFORM_CONFIG = {
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-[hsl(220,46%,48%)]' },
