@@ -72,3 +72,6 @@ verify_jwt = false
 
 [functions.voice-text-to-speech]
 verify_jwt = false
+
+[functions.classify-conversation]
+verify_jwt = false

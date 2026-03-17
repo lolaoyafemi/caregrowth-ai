@@ -149,6 +149,7 @@ const ContentCalendarPage = () => {
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { brandStyle, needsSetup: brandNeedsSetup, saveBrandStyle, loading: brandLoading } = useBrandStyle();
 
+  const [activeTab, setActiveTab] = useState<'calendar' | 'conversations' | 'insights'>('calendar');
   const batchMode = selectedPostIds.size > 0;
 
   // Prompt brand setup on first visit if not configured
