@@ -1173,6 +1173,8 @@ const ContentCalendarPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </>
+      )}
     </div>
   );
 };
