@@ -311,8 +311,23 @@ const ContentCalendarPage = () => {
       if (batchError) throw batchError;
       const batchId = batchData.id;
 
-      const categories = ['attract', 'connect', 'transact'];
-      const tones = ['professional', 'conversational', 'enthusiastic', 'authoritative', 'humorous'];
+      // Intent-driven categories replace old attract/connect/transact
+      const { selectIntentForState, getToneForIntent, type SystemState } = await import('@/lib/contentIntent');
+      
+      // Determine system state for smart category selection
+      const systemState: SystemState = {
+        visibilityLevel: 'good', // Will be refined below
+        queueCount: posts.length,
+      };
+      
+      // Quick visibility check
+      const nowCheck = new Date();
+      const scheduledCount = posts.filter(p => p.status === 'scheduled' && new Date(p.scheduled_at) > nowCheck).length;
+      if (scheduledCount === 0) {
+        systemState.visibilityLevel = 'risk';
+      } else if (scheduledCount < 3) {
+        systemState.visibilityLevel = 'warning';
+      }
 
       // Build all generation requests upfront
       const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date; post_format: 'single' | 'carousel'; template: TemplateName }[] = [];
