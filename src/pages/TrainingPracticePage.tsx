@@ -17,6 +17,8 @@ import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
 import VoicePracticeSession from '@/components/training/VoicePracticeSession';
 import WrittenScenarioPractice from '@/components/training/WrittenScenarioPractice';
+import CreateScenarioModal from '@/components/training/CreateScenarioModal';
+import { Plus } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -119,6 +121,7 @@ export default function TrainingPracticePage() {
   const [allResponses, setAllResponses] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('scenarios');
   const [voicePracticeScenario, setVoicePracticeScenario] = useState<Scenario | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { user } = useUser();
 
@@ -320,6 +323,11 @@ export default function TrainingPracticePage() {
 
         {/* Quick Stats Row */}
         <div className="flex items-center gap-3">
+          {user?.role === 'super_admin' && (
+            <Button size="sm" onClick={() => setCreateModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Create Scenario
+            </Button>
+          )}
           <div className="flex items-center gap-2 px-3 py-2 rounded-none bg-white/[0.04] border border-white/[0.06]">
             <CheckCircle className="h-4 w-4 text-caregrowth-green" />
             <span className="text-sm font-medium text-white/80">{totalCompleted}/{totalScenarios}</span>
@@ -781,6 +789,12 @@ export default function TrainingPracticePage() {
           onComplete={handleVoicePracticeComplete}
         />
       )}
+
+      <CreateScenarioModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onCreated={loadData}
+      />
     </div>
   );
 }
