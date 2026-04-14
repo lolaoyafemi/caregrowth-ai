@@ -355,8 +355,10 @@ const ContentCalendarPage = () => {
           scheduledDate.setHours(prefHour + hourOffset, prefMin, 0, 0);
 
           for (const platform of wizPlatforms) {
-            const category = categories[(day * frequency + freq) % categories.length];
-            const tone = tones[(day * frequency + freq) % tones.length];
+            const postIndex = day * frequency + freq;
+            const selectedCategory = selectIntentForState(systemState, postIndex);
+            const category = selectedCategory.postType;
+            const tone = getToneForIntent(selectedCategory.intent, postIndex);
             const idx = platformCounters[platform]++;
             const fmt = platformFormats[platform][idx];
             const tmpl = platformTemplates[platform][idx];
