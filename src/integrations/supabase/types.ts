@@ -1669,6 +1669,39 @@ export type Database = {
         }
         Relationships: []
       }
+      signal_history: {
+        Row: {
+          conversion_score: number
+          created_at: string
+          date: string
+          engagement_score: number
+          id: string
+          momentum_score: number
+          user_id: string
+          visibility_score: number
+        }
+        Insert: {
+          conversion_score?: number
+          created_at?: string
+          date?: string
+          engagement_score?: number
+          id?: string
+          momentum_score?: number
+          user_id: string
+          visibility_score?: number
+        }
+        Update: {
+          conversion_score?: number
+          created_at?: string
+          date?: string
+          engagement_score?: number
+          id?: string
+          momentum_score?: number
+          user_id?: string
+          visibility_score?: number
+        }
+        Relationships: []
+      }
       social_conversations: {
         Row: {
           agency_id: string | null

@@ -204,7 +204,20 @@ serve(async (req) => {
         else if (momentumScore >= 50) momentumLabel = 'Stable';
         else momentumLabel = 'Losing traction';
 
-        // ── STEP 5: Persist to user_state ──────────────────────────
+        // ── STEP 5: Store daily signal snapshot ────────────────────
+        const todayDate = now.toISOString().split('T')[0];
+        await supabase
+          .from('signal_history')
+          .upsert({
+            user_id: userId,
+            date: todayDate,
+            visibility_score: visibilityScore,
+            engagement_score: engNormalized,
+            conversion_score: convNormalized,
+            momentum_score: momentumScore,
+          }, { onConflict: 'user_id,date' });
+
+        // ── STEP 6: Persist to user_state ──────────────────────────
         const lastPostDate = publishedPosts.length > 0 ? publishedPosts[0].published_at : null;
         const lastEngDate = engagementLogs.length > 0 ? engagementLogs[0].created_at : null;
 
