@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { selectIntentForState, getToneForIntent, type SystemState } from '@/lib/contentIntent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -311,8 +312,22 @@ const ContentCalendarPage = () => {
       if (batchError) throw batchError;
       const batchId = batchData.id;
 
-      const categories = ['attract', 'connect', 'transact'];
-      const tones = ['professional', 'conversational', 'enthusiastic', 'authoritative', 'humorous'];
+      // Smart category selection based on system state
+      
+      // Determine system state for smart category selection
+      const systemState: SystemState = {
+        visibilityLevel: 'good', // Will be refined below
+        queueCount: posts.length,
+      };
+      
+      // Quick visibility check
+      const nowCheck = new Date();
+      const scheduledCount = posts.filter(p => p.status === 'scheduled' && new Date(p.scheduled_at) > nowCheck).length;
+      if (scheduledCount === 0) {
+        systemState.visibilityLevel = 'risk';
+      } else if (scheduledCount < 3) {
+        systemState.visibilityLevel = 'warning';
+      }
 
       // Build all generation requests upfront
       const generationRequests: { platform: string; category: string; tone: string; scheduledDate: Date; post_format: 'single' | 'carousel'; template: TemplateName }[] = [];
@@ -339,8 +354,10 @@ const ContentCalendarPage = () => {
           scheduledDate.setHours(prefHour + hourOffset, prefMin, 0, 0);
 
           for (const platform of wizPlatforms) {
-            const category = categories[(day * frequency + freq) % categories.length];
-            const tone = tones[(day * frequency + freq) % tones.length];
+            const postIndex = day * frequency + freq;
+            const selectedCategory = selectIntentForState(systemState, postIndex);
+            const category = selectedCategory.postType;
+            const tone = getToneForIntent(selectedCategory.intent, postIndex);
             const idx = platformCounters[platform]++;
             const fmt = platformFormats[platform][idx];
             const tmpl = platformTemplates[platform][idx];
