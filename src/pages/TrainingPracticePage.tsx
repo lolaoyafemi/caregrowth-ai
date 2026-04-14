@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
 import VoicePracticeSession from '@/components/training/VoicePracticeSession';
+import WrittenScenarioPractice from '@/components/training/WrittenScenarioPractice';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -346,9 +347,12 @@ export default function TrainingPracticePage() {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-sm grid-cols-2">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="scenarios" className="flex items-center gap-2">
-            <GraduationCap className="h-4 w-4" /> Scenarios
+            <GraduationCap className="h-4 w-4" /> Roleplay
+          </TabsTrigger>
+          <TabsTrigger value="written" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" /> Written
           </TabsTrigger>
           <TabsTrigger value="stats" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" /> Practice Stats
