@@ -10,6 +10,8 @@ export interface TodaysPost {
   status: string;
   scheduled_at: string;
   engagement_hook: string | null;
+  post_type: string | null;
+  content_anchor: string | null;
 }
 
 export function useTodaysPost() {
@@ -29,7 +31,7 @@ export function useTodaysPost() {
       // Get the next scheduled post (today or nearest future)
       const { data } = await supabase
         .from('content_posts')
-        .select('id, hook, post_body, headline, platform, status, scheduled_at, engagement_hook')
+        .select('id, hook, post_body, headline, platform, status, scheduled_at, engagement_hook, post_type, content_anchor')
         .eq('user_id', userData.user.id)
         .in('status', ['scheduled', 'needs_approval'])
         .gte('scheduled_at', todayStart.toISOString())
