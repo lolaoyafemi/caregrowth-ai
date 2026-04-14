@@ -1489,6 +1489,92 @@ export type Database = {
         }
         Relationships: []
       }
+      scenario_attempts: {
+        Row: {
+          created_at: string
+          feedback: string | null
+          id: string
+          improvements: string | null
+          scenario_id: string
+          score: number | null
+          strengths: string | null
+          user_id: string
+          user_response: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          improvements?: string | null
+          scenario_id: string
+          score?: number | null
+          strengths?: string | null
+          user_id: string
+          user_response: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          improvements?: string | null
+          scenario_id?: string
+          score?: number | null
+          strengths?: string | null
+          user_id?: string
+          user_response?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_attempts_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenarios: {
+        Row: {
+          category: string
+          common_mistakes: string | null
+          created_at: string
+          created_by: string
+          difficulty: string
+          id: string
+          ideal_answer: string | null
+          is_active: boolean
+          scenario_text: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          common_mistakes?: string | null
+          created_at?: string
+          created_by: string
+          difficulty?: string
+          id?: string
+          ideal_answer?: string | null
+          is_active?: boolean
+          scenario_text: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          common_mistakes?: string | null
+          created_at?: string
+          created_by?: string
+          difficulty?: string
+          id?: string
+          ideal_answer?: string | null
+          is_active?: boolean
+          scenario_text?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scheduled_posts: {
         Row: {
           audience: string | null
