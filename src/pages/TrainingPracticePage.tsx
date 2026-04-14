@@ -656,6 +656,11 @@ export default function TrainingPracticePage() {
           )}
         </TabsContent>
 
+        {/* ============ WRITTEN SCENARIOS TAB ============ */}
+        <TabsContent value="written" className="mt-4">
+          <WrittenScenarioPractice />
+        </TabsContent>
+
         {/* ============ STATS TAB ============ */}
         <TabsContent value="stats" className="mt-4">
           {!stats ? (
