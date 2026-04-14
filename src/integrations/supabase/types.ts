@@ -2316,39 +2316,54 @@ export type Database = {
       }
       user_state: {
         Row: {
+          conversion_score: number
           conversion_state: string
           created_at: string
+          engagement_score: number
           engagement_state: string
           id: string
           last_conversion_signal: string | null
           last_engagement_date: string | null
           last_post_date: string | null
+          last_signal_update: string | null
+          momentum_label: string
+          momentum_score: number
           queue_count: number
           updated_at: string
           user_id: string
           visibility_state: string
         }
         Insert: {
+          conversion_score?: number
           conversion_state?: string
           created_at?: string
+          engagement_score?: number
           engagement_state?: string
           id?: string
           last_conversion_signal?: string | null
           last_engagement_date?: string | null
           last_post_date?: string | null
+          last_signal_update?: string | null
+          momentum_label?: string
+          momentum_score?: number
           queue_count?: number
           updated_at?: string
           user_id: string
           visibility_state?: string
         }
         Update: {
+          conversion_score?: number
           conversion_state?: string
           created_at?: string
+          engagement_score?: number
           engagement_state?: string
           id?: string
           last_conversion_signal?: string | null
           last_engagement_date?: string | null
           last_post_date?: string | null
+          last_signal_update?: string | null
+          momentum_label?: string
+          momentum_score?: number
           queue_count?: number
           updated_at?: string
           user_id?: string
