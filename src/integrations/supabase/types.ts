@@ -1533,8 +1533,36 @@ export type Database = {
           },
         ]
       }
+      scenario_triggers: {
+        Row: {
+          created_at: string
+          id: string
+          source_data: Json
+          status: string
+          trigger_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_data?: Json
+          status?: string
+          trigger_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_data?: Json
+          status?: string
+          trigger_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       scenarios: {
         Row: {
+          auto_generated: boolean
           category: string
           common_mistakes: string | null
           created_at: string
@@ -1545,9 +1573,11 @@ export type Database = {
           is_active: boolean
           scenario_text: string
           title: string
+          trigger_id: string | null
           updated_at: string
         }
         Insert: {
+          auto_generated?: boolean
           category?: string
           common_mistakes?: string | null
           created_at?: string
@@ -1558,9 +1588,11 @@ export type Database = {
           is_active?: boolean
           scenario_text: string
           title: string
+          trigger_id?: string | null
           updated_at?: string
         }
         Update: {
+          auto_generated?: boolean
           category?: string
           common_mistakes?: string | null
           created_at?: string
@@ -1571,9 +1603,18 @@ export type Database = {
           is_active?: boolean
           scenario_text?: string
           title?: string
+          trigger_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scenarios_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "scenario_triggers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scheduled_posts: {
         Row: {
