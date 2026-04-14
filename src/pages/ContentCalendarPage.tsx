@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { selectIntentForState, getToneForIntent, type SystemState } from '@/lib/contentIntent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -312,7 +313,7 @@ const ContentCalendarPage = () => {
       const batchId = batchData.id;
 
       // Intent-driven categories replace old attract/connect/transact
-      const { selectIntentForState, getToneForIntent, type SystemState } = await import('@/lib/contentIntent');
+      // System state for smart category selection
       
       // Determine system state for smart category selection
       const systemState: SystemState = {
