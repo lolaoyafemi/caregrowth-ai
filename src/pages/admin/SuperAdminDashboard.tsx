@@ -14,6 +14,7 @@ import TrainingLibrary from '@/components/admin/TrainingLibrary';
 import TrainingAnalytics from '@/components/admin/TrainingAnalytics';
 import DraftScenarioManager from '@/components/admin/DraftScenarioManager';
 import VoiceSessionsViewer from '@/components/admin/VoiceSessionsViewer';
+import ScenarioManager from '@/components/admin/ScenarioManager';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const SuperAdminDashboard = () => {
@@ -132,6 +133,7 @@ const SuperAdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="training" className="space-y-6">
+            <ScenarioManager />
             <DraftScenarioManager />
             
             <Card>
