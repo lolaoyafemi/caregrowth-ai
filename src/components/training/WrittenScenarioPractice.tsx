@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText, Send, RefreshCw, CheckCircle, AlertCircle,
-  Lightbulb, BarChart3, Target, Award, ArrowLeft, ChevronRight,
+  Lightbulb, BarChart3, Target, Award, ArrowLeft, ChevronRight, Sparkles,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
@@ -20,6 +20,8 @@ interface Scenario {
   category: string;
   difficulty: string;
   is_active: boolean;
+  auto_generated?: boolean;
+  trigger_id?: string;
 }
 
 interface Attempt {
@@ -62,7 +64,7 @@ export default function WrittenScenarioPractice() {
   const loadData = async () => {
     setLoading(true);
     const [{ data: sc }, { data: att }] = await Promise.all([
-      supabase.from('scenarios').select('*').eq('is_active', true).order('created_at', { ascending: false }),
+      supabase.from('scenarios').select('*').eq('is_active', true).order('auto_generated', { ascending: false }).order('created_at', { ascending: false }),
       user ? supabase.from('scenario_attempts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
     ]);
     setScenarios((sc as Scenario[]) || []);
@@ -150,8 +152,14 @@ export default function WrittenScenarioPractice() {
                   {scenarios.map(s => {
                     const done = completedIds.has(s.id);
                     return (
-                      <Card key={s.id} className={`cursor-pointer hover:shadow-md transition-shadow ${done ? 'border-green-200' : ''}`} onClick={() => { setSelected(s); setResult(null); setResponse(''); }}>
+                      <Card key={s.id} className={`cursor-pointer hover:shadow-md transition-shadow ${done ? 'border-green-200' : ''} ${(s as any).auto_generated ? 'ring-1 ring-chart-4/30' : ''}`} onClick={() => { setSelected(s); setResult(null); setResponse(''); }}>
                         <CardContent className="p-5">
+                          {(s as any).auto_generated && (
+                            <Badge variant="outline" className="text-[10px] mb-2 gap-1 border-chart-4/30 text-chart-4">
+                              <Sparkles className="h-2.5 w-2.5" />
+                              Based on real activity
+                            </Badge>
+                          )}
                           <div className="flex items-center justify-between mb-2">
                             <Badge variant="outline" className="text-xs capitalize">{s.category}</Badge>
                             <div className="flex gap-1">
