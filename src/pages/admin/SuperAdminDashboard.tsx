@@ -133,6 +133,7 @@ const SuperAdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="training" className="space-y-6">
+            <ScenarioManager />
             <DraftScenarioManager />
             
             <Card>
