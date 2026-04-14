@@ -10,6 +10,7 @@ import PostTodayCard from '@/components/dashboard/PostTodayCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeedSection';
 import InterventionsSection from '@/components/dashboard/InterventionsSection';
 import PredictiveAlerts from '@/components/dashboard/PredictiveAlerts';
+import PredictiveAlerts from '@/components/dashboard/PredictiveAlerts';
 
 const DashboardHome = () => {
   const { user } = useUser();
@@ -69,7 +70,10 @@ const DashboardHome = () => {
       {/* 3. ACTIVITY FEED */}
       <ActivityFeed />
 
-      {/* 4. INTERVENTIONS (only when needed) */}
+      {/* 4. PREDICTIVE ALERTS */}
+      <PredictiveAlerts />
+
+      {/* 5. INTERVENTIONS (only when needed) */}
       <InterventionsSection />
     </div>
   );
