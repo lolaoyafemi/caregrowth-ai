@@ -17,6 +17,8 @@ import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
 import VoicePracticeSession from '@/components/training/VoicePracticeSession';
 import WrittenScenarioPractice from '@/components/training/WrittenScenarioPractice';
+import CreateScenarioModal from '@/components/training/CreateScenarioModal';
+import { Plus } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
