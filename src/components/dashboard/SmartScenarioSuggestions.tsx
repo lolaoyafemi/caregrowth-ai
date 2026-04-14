@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useSmartScenarios, type ScenarioSuggestion } from '@/hooks/useSmartScenarios';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Zap, Clock, CalendarDays, ArrowRight, Dumbbell } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Zap, Clock, CalendarDays, ArrowRight, Dumbbell, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ICON_MAP = {
