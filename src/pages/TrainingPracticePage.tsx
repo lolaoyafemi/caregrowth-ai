@@ -323,6 +323,11 @@ export default function TrainingPracticePage() {
 
         {/* Quick Stats Row */}
         <div className="flex items-center gap-3">
+          {user?.role === 'super_admin' && (
+            <Button size="sm" onClick={() => setCreateModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Create Scenario
+            </Button>
+          )}
           <div className="flex items-center gap-2 px-3 py-2 rounded-none bg-white/[0.04] border border-white/[0.06]">
             <CheckCircle className="h-4 w-4 text-caregrowth-green" />
             <span className="text-sm font-medium text-white/80">{totalCompleted}/{totalScenarios}</span>
