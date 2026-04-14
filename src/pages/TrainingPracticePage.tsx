@@ -789,6 +789,12 @@ export default function TrainingPracticePage() {
           onComplete={handleVoicePracticeComplete}
         />
       )}
+
+      <CreateScenarioModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onCreated={loadData}
+      />
     </div>
   );
 }
