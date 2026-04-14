@@ -2314,6 +2314,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_state: {
+        Row: {
+          conversion_state: string
+          created_at: string
+          engagement_state: string
+          id: string
+          last_conversion_signal: string | null
+          last_engagement_date: string | null
+          last_post_date: string | null
+          queue_count: number
+          updated_at: string
+          user_id: string
+          visibility_state: string
+        }
+        Insert: {
+          conversion_state?: string
+          created_at?: string
+          engagement_state?: string
+          id?: string
+          last_conversion_signal?: string | null
+          last_engagement_date?: string | null
+          last_post_date?: string | null
+          queue_count?: number
+          updated_at?: string
+          user_id: string
+          visibility_state?: string
+        }
+        Update: {
+          conversion_state?: string
+          created_at?: string
+          engagement_state?: string
+          id?: string
+          last_conversion_signal?: string | null
+          last_engagement_date?: string | null
+          last_post_date?: string | null
+          queue_count?: number
+          updated_at?: string
+          user_id?: string
+          visibility_state?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null
