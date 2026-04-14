@@ -400,6 +400,39 @@ export type Database = {
           },
         ]
       }
+      content_pipeline: {
+        Row: {
+          created_at: string
+          id: string
+          last_post_date: string | null
+          next_post_date: string | null
+          queue_count: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_post_date?: string | null
+          next_post_date?: string | null
+          queue_count?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_post_date?: string | null
+          next_post_date?: string | null
+          queue_count?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       content_posts: {
         Row: {
           batch_id: string | null
@@ -804,6 +837,47 @@ export type Database = {
         }
         Relationships: []
       }
+      engagement_logs: {
+        Row: {
+          created_at: string
+          id: string
+          intent: string
+          post_id: string | null
+          source_name: string | null
+          source_text: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intent?: string
+          post_id?: string | null
+          source_name?: string | null
+          source_text?: string | null
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intent?: string
+          post_id?: string | null
+          source_name?: string | null
+          source_text?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagement_logs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golden_tests: {
         Row: {
           created_at: string | null
@@ -969,6 +1043,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      interventions: {
+        Row: {
+          action_label: string
+          action_path: string
+          created_at: string
+          id: string
+          message: string
+          status: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_label?: string
+          action_path?: string
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_label?: string
+          action_path?: string
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       lead_signals: {
         Row: {
