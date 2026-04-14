@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Pencil, SkipForward, RefreshCw, Loader2 } from 'lucide-react';
 import { useTodaysPost } from '@/hooks/useTodaysPost';
-import { useDecisionEngine } from '@/hooks/useDecisionEngine';
+import { useVisibilityStatus } from '@/hooks/useVisibilityStatus';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,30 +15,21 @@ import {
   type ContentIntent,
 } from '@/lib/contentIntent';
 
-/** Map decision category to our intent system */
-function categoryToIntent(category: string): ContentIntent {
-  const map: Record<string, ContentIntent> = {
-    visibility: 'visibility',
-    engagement: 'engagement',
-    authority: 'authority',
-    conversion: 'conversion',
-    lead_activation: 'lead_activation',
-    results: 'conversion',
-    conversation: 'lead_activation',
-    rotation: 'visibility',
-  };
-  return map[category] || 'visibility';
-}
-
 /** Map post_type from DB to our intent system */
 function resolveCurrentIntent(postType: string | null | undefined): ContentIntent {
   if (!postType) return 'visibility';
   const match = CONTENT_CATEGORIES.find(c => c.postType === postType);
   if (match) return match.intent;
+  // Legacy mapping
   const legacy: Record<string, ContentIntent> = {
-    attract: 'visibility', connect: 'engagement', transact: 'conversion',
-    educational: 'visibility', heartfelt: 'engagement', authority: 'authority',
-    conversion: 'conversion', lead_activation: 'lead_activation',
+    attract: 'visibility',
+    connect: 'engagement',
+    transact: 'conversion',
+    educational: 'visibility',
+    heartfelt: 'engagement',
+    authority: 'authority',
+    conversion: 'conversion',
+    lead_activation: 'lead_activation',
   };
   return legacy[postType] || 'visibility';
 }
@@ -51,25 +42,10 @@ const INTENT_LABELS: Record<ContentIntent, string> = {
   lead_activation: 'Start conversations',
 };
 
-const REASON_HEADLINES: Record<string, string> = {
-  visibility: 'Post this now to stay visible',
-  engagement: 'Post this to spark connection',
-  authority: 'Post this to build trust',
-  conversion: 'Post this to drive action',
-  lead_activation: 'Post this to start conversations',
-};
-
 export default function PostTodayCard() {
-  const { post, loading: postLoading, refetch } = useTodaysPost();
-  const { decision, state, loading: decisionLoading } = useDecisionEngine();
+  const { post, loading, refetch } = useTodaysPost();
+  const { level } = useVisibilityStatus();
   const [regenerating, setRegenerating] = useState(false);
-
-  const loading = postLoading || decisionLoading;
-
-  // Determine current intent from decision engine or post type
-  const activeIntent = decision
-    ? categoryToIntent(decision.category)
-    : resolveCurrentIntent(post?.post_type);
 
   const handleAnotherAngle = useCallback(async () => {
     if (!post || regenerating) return;
@@ -128,9 +104,7 @@ export default function PostTodayCard() {
     return (
       <Card className="border border-border/50 bg-card/50">
         <CardContent className="p-6 text-center space-y-3">
-          <p className="text-sm text-muted-foreground">
-            {decision?.reason || 'Nothing to post today.'}
-          </p>
+          <p className="text-sm text-muted-foreground">Nothing to post today.</p>
           <Link to="/dashboard/content-calendar">
             <Button variant="outline" size="sm" className="text-xs">
               Plan Content
@@ -141,10 +115,16 @@ export default function PostTodayCard() {
     );
   }
 
-  const intentLabel = INTENT_LABELS[activeIntent];
-  const contextMessage = decision?.reason
-    ? REASON_HEADLINES[decision.category] || decision.reason
-    : 'Post this today';
+  const currentIntent = resolveCurrentIntent(post.post_type);
+  const intentLabel = INTENT_LABELS[currentIntent];
+
+  // Context-aware headline
+  const contextMessage =
+    level === 'risk'
+      ? 'Post this now to stay visible'
+      : level === 'warning'
+        ? 'Post this today to keep momentum'
+        : 'Post this today';
 
   const hook = post.hook || post.headline || '';
   const body = post.post_body.length > 200 ? post.post_body.slice(0, 200) + '…' : post.post_body;
@@ -170,12 +150,6 @@ export default function PostTodayCard() {
             </span>
           </div>
 
-          {decision?.reason && (
-            <p className="text-[11px] text-muted-foreground/70 italic border-l-2 border-primary/20 pl-2">
-              {decision.reason}
-            </p>
-          )}
-
           <div className="space-y-2">
             {hook && (
               <p className="text-sm font-medium text-foreground/90">{hook}</p>
@@ -190,7 +164,7 @@ export default function PostTodayCard() {
             <Button size="sm" className="text-xs gap-1.5 flex-1">
               <Sparkles className="h-3.5 w-3.5" /> Post now
             </Button>
-            <Link to="/dashboard/content-calendar">
+            <Link to={`/dashboard/content-calendar`}>
               <Button size="sm" variant="ghost" className="text-xs gap-1">
                 <Pencil className="h-3.5 w-3.5" /> Edit
               </Button>

@@ -6,9 +6,10 @@ export interface DecisionState {
   engagement_state: string;
   conversion_state: string;
   queue_count: number;
-  published_this_week: number;
-  engagement_count: number;
-  lead_count: number;
+  engagement_score: number;
+  conversion_score: number;
+  momentum_score: number;
+  momentum_label: string;
 }
 
 export interface Decision {
@@ -36,7 +37,6 @@ export function useDecisionEngine(): DecisionEngineResult {
       setError(null);
 
       const { data, error: fnError } = await supabase.functions.invoke('decide-next-action');
-
       if (fnError) throw fnError;
 
       setDecision(data?.decision ?? null);
@@ -44,16 +44,13 @@ export function useDecisionEngine(): DecisionEngineResult {
     } catch (err: any) {
       console.error('Decision engine error:', err);
       setError(err.message || 'Failed to get decision');
-      // Fallback decision
       setDecision({ category: 'visibility', reason: 'Keeping you visible.' });
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
+  useEffect(() => { fetch(); }, [fetch]);
 
   return { decision, state, loading, error, refetch: fetch };
 }

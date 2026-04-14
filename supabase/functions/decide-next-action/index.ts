@@ -2,11 +2,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 import { corsHeaders } from '../_shared/cors.ts';
 
-interface DecisionResult {
-  category: string;
-  reason: string;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -25,7 +20,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify JWT
     const token = authHeader.substring(7);
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
@@ -36,21 +30,46 @@ serve(async (req) => {
     }
 
     const userId = user.id;
-    const now = new Date();
 
-    // ── Compute live state from content_posts ──────────────────────
+    // ── Try to read cached state first ──────────────────────────────
+    const { data: cachedState } = await supabase
+      .from('user_state')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    // Use cached state if updated within last 10 minutes
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
+    if (cachedState?.last_signal_update && new Date(cachedState.last_signal_update) > tenMinAgo) {
+      const decision = deriveDecision(cachedState);
+      return new Response(JSON.stringify({
+        decision,
+        state: {
+          visibility_state: cachedState.visibility_state,
+          engagement_state: cachedState.engagement_state,
+          conversion_state: cachedState.conversion_state,
+          queue_count: cachedState.queue_count,
+          engagement_score: cachedState.engagement_score,
+          conversion_score: cachedState.conversion_score,
+          momentum_score: cachedState.momentum_score,
+          momentum_label: cachedState.momentum_label,
+        },
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Compute fresh if stale ──────────────────────────────────────
+    const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const [scheduledRes, publishedRes, engagementRes, leadRes] = await Promise.all([
-      // Queue count: future scheduled posts
+    const [scheduledRes, publishedRes, engagementRes] = await Promise.all([
       supabase
         .from('content_posts')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
         .eq('status', 'scheduled')
         .gte('scheduled_at', now.toISOString()),
-
-      // Recent published posts (last 7 days)
       supabase
         .from('content_posts')
         .select('published_at, likes, comments, shares, saves')
@@ -58,112 +77,71 @@ serve(async (req) => {
         .eq('status', 'published')
         .gte('published_at', weekAgo.toISOString())
         .order('published_at', { ascending: false }),
-
-      // Engagement logs (last 7 days)
       supabase
         .from('engagement_logs')
         .select('id, intent, created_at', { count: 'exact' })
         .eq('user_id', userId)
         .gte('created_at', weekAgo.toISOString()),
-
-      // Lead signals (last 30 days)
-      supabase
-        .from('engagement_logs')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('intent', 'lead')
-        .gte('created_at', new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()),
     ]);
 
     const queueCount = scheduledRes.count ?? 0;
     const publishedPosts = publishedRes.data ?? [];
     const engagementCount = engagementRes.count ?? 0;
-    const leadCount = leadRes.count ?? 0;
 
-    // ── Derive states ──────────────────────────────────────────────
-    // Visibility state
-    let visibilityState: string;
-    if (queueCount === 0 && publishedPosts.length === 0) {
-      visibilityState = 'empty';
-    } else if (queueCount < 3) {
-      visibilityState = 'low';
-    } else {
-      visibilityState = 'active';
+    // Derive states inline
+    let visibilityState = 'active';
+    if (queueCount === 0 && publishedPosts.length === 0) visibilityState = 'empty';
+    else if (queueCount < 3) visibilityState = 'low';
+
+    let engagementScore = 0;
+    for (const p of publishedPosts) {
+      engagementScore += (p.comments ?? 0) * 3 + (p.shares ?? 0) * 4 + (p.likes ?? 0) * 1 + (p.saves ?? 0) * 2;
     }
 
-    // Engagement state
-    const totalEngagement = publishedPosts.reduce((sum, p) => {
-      return sum + (p.likes ?? 0) + (p.comments ?? 0) + (p.shares ?? 0) + (p.saves ?? 0);
-    }, 0);
+    let engagementState = 'dead';
+    if (engagementScore > 20) engagementState = 'high';
+    else if (engagementScore > 0) engagementState = 'low';
 
-    let engagementState: string;
-    if (publishedPosts.length === 0 || (totalEngagement === 0 && engagementCount === 0)) {
-      engagementState = 'dead';
-    } else if (totalEngagement < 5 && engagementCount < 3) {
-      engagementState = 'low';
-    } else {
-      engagementState = 'high';
-    }
+    const leadCount = (engagementRes.data ?? []).filter((l: any) => l.intent === 'lead').length;
+    let conversionState = 'none';
+    if (leadCount > 0) conversionState = 'active';
+    else if (engagementCount > 0) conversionState = 'passive';
 
-    // Conversion state
-    let conversionState: string;
-    if (leadCount > 0) {
-      conversionState = 'active';
-    } else if (engagementCount > 0) {
-      conversionState = 'passive';
-    } else {
-      conversionState = 'none';
-    }
+    const visScore = visibilityState === 'active' ? 100 : visibilityState === 'low' ? 40 : 0;
+    const engNorm = Math.min(100, Math.round((engagementScore / 40) * 100));
+    const convNorm = Math.min(100, Math.round((leadCount * 5 / 20) * 100));
+    const momentumScore = Math.round(visScore * 0.3 + engNorm * 0.4 + convNorm * 0.3);
+    const momentumLabel = momentumScore >= 80 ? 'Strong momentum' : momentumScore >= 50 ? 'Stable' : 'Losing traction';
 
-    // ── Persist state ──────────────────────────────────────────────
-    const lastPostDate = publishedPosts.length > 0 ? publishedPosts[0].published_at : null;
-    const lastEngDate = engagementCount > 0 ? (engagementRes.data?.[0]?.created_at ?? null) : null;
+    // Persist
+    await supabase.from('user_state').upsert({
+      user_id: userId,
+      visibility_state: visibilityState,
+      engagement_state: engagementState,
+      conversion_state: conversionState,
+      queue_count: queueCount,
+      last_post_date: publishedPosts[0]?.published_at ?? null,
+      engagement_score: engagementScore,
+      conversion_score: leadCount * 5,
+      momentum_score: momentumScore,
+      momentum_label: momentumLabel,
+      last_signal_update: now.toISOString(),
+    }, { onConflict: 'user_id' });
 
-    await supabase
-      .from('user_state')
-      .upsert({
-        user_id: userId,
-        visibility_state: visibilityState,
-        engagement_state: engagementState,
-        conversion_state: conversionState,
-        queue_count: queueCount,
-        last_post_date: lastPostDate,
-        last_engagement_date: lastEngDate,
-        last_conversion_signal: leadCount > 0 ? now.toISOString() : null,
-      }, { onConflict: 'user_id' });
+    const stateObj = {
+      visibility_state: visibilityState,
+      engagement_state: engagementState,
+      conversion_state: conversionState,
+      queue_count: queueCount,
+      engagement_score: engagementScore,
+      conversion_score: leadCount * 5,
+      momentum_score: momentumScore,
+      momentum_label: momentumLabel,
+    };
 
-    // ── Decision logic ─────────────────────────────────────────────
-    let decision: DecisionResult;
+    const decision = deriveDecision(stateObj);
 
-    if (queueCount === 0) {
-      decision = { category: 'visibility', reason: 'You are currently invisible — no posts scheduled.' };
-    } else if (engagementState === 'dead') {
-      decision = { category: 'engagement', reason: 'Your audience is inactive — time to spark connection.' };
-    } else if (engagementState === 'low') {
-      decision = { category: 'lead_activation', reason: 'Low interaction — start conversations.' };
-    } else if (engagementState === 'high' && conversionState === 'none') {
-      decision = { category: 'lead_activation', reason: 'Good engagement but no inquiries — activate leads.' };
-    } else if (conversionState === 'active') {
-      decision = { category: 'conversion', reason: 'Leads detected — drive action now.' };
-    } else {
-      // Balanced rotation based on day of week
-      const dayRotation = ['visibility', 'engagement', 'authority', 'lead_activation', 'conversion', 'authority', 'engagement'];
-      const dayIndex = now.getDay();
-      decision = { category: dayRotation[dayIndex], reason: 'Maintaining balanced content strategy.' };
-    }
-
-    return new Response(JSON.stringify({
-      decision,
-      state: {
-        visibility_state: visibilityState,
-        engagement_state: engagementState,
-        conversion_state: conversionState,
-        queue_count: queueCount,
-        published_this_week: publishedPosts.length,
-        engagement_count: engagementCount,
-        lead_count: leadCount,
-      },
-    }), {
+    return new Response(JSON.stringify({ decision, state: stateObj }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -175,3 +153,25 @@ serve(async (req) => {
     });
   }
 });
+
+function deriveDecision(state: any): { category: string; reason: string } {
+  if (state.queue_count === 0 || state.visibility_state === 'empty') {
+    return { category: 'visibility', reason: 'You are currently invisible — no posts scheduled.' };
+  }
+  if (state.engagement_state === 'dead') {
+    return { category: 'engagement', reason: 'Your audience is inactive — time to spark connection.' };
+  }
+  if (state.engagement_state === 'low') {
+    return { category: 'lead_activation', reason: 'Low interaction — start conversations.' };
+  }
+  if (state.engagement_state === 'high' && state.conversion_state === 'none') {
+    return { category: 'lead_activation', reason: 'Good engagement but no inquiries — activate leads.' };
+  }
+  if (state.conversion_state === 'active') {
+    return { category: 'conversion', reason: 'Leads detected — drive action now.' };
+  }
+  // Balanced rotation
+  const dayRotation = ['visibility', 'engagement', 'authority', 'lead_activation', 'conversion', 'authority', 'engagement'];
+  const dayIndex = new Date().getDay();
+  return { category: dayRotation[dayIndex], reason: 'Maintaining balanced content strategy.' };
+}
