@@ -312,8 +312,7 @@ const ContentCalendarPage = () => {
       if (batchError) throw batchError;
       const batchId = batchData.id;
 
-      // Intent-driven categories replace old attract/connect/transact
-      // System state for smart category selection
+      // Smart category selection based on system state
       
       // Determine system state for smart category selection
       const systemState: SystemState = {
