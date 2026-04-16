@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 20% 97%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -24,6 +24,21 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
+
+    /* Sidebar light mode */
+    --sidebar-bg: 220 20% 97%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-muted: 215.4 16.3% 46.9%;
+    --sidebar-muted-2: 215 16% 66%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-active-bg: 104 71% 94%;
+    --sidebar-hover-bg: 210 20% 93%;
+    --sidebar-track: 214.3 31.8% 91.4%;
+
+    /* Header light mode */
+    --header-bg: 0 0% 100%;
+    --header-foreground: 222.2 84% 4.9%;
+    --header-muted: 215.4 16.3% 46.9%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -75,6 +90,21 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* Sidebar dark mode */
+    --sidebar-bg: 222.2 47.4% 11.2%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-muted: 210 40% 60%;
+    --sidebar-muted-2: 210 40% 40%;
+    --sidebar-border: 0 0% 100% / 0.06;
+    --sidebar-active-bg: 104 71% 34% / 0.1;
+    --sidebar-hover-bg: 0 0% 100% / 0.04;
+    --sidebar-track: 0 0% 100% / 0.06;
+
+    /* Header dark mode */
+    --header-bg: 222.2 47.4% 11.2%;
+    --header-foreground: 210 40% 98%;
+    --header-muted: 210 40% 60%;
   }
 }
 
