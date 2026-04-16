@@ -49,9 +49,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
   const isSuperAdmin = userRole === 'super_admin';
 
   return (
-    <header className="border-b border-white/[0.06] h-16 px-6 flex items-center justify-between bg-caregrowth-blue/95 backdrop-blur-md">
+    <header className="border-b border-[hsl(var(--sidebar-border))] h-16 px-6 flex items-center justify-between bg-[hsl(var(--header-bg))]">
       <div className="flex items-center gap-4">
-        <h1 className="text-sm font-medium tracking-[0.2em] uppercase text-white/70">CareGrowth</h1>
+        <h1 className="text-sm font-medium tracking-[0.2em] uppercase text-[hsl(var(--header-muted))]">CareGrowth</h1>
         
         {userRole && (
           <div className="px-3 py-1 rounded-none text-[10px] font-medium tracking-[0.15em] uppercase border border-caregrowth-green/30 text-caregrowth-green bg-caregrowth-green/10 flex items-center gap-1.5">
@@ -64,17 +64,17 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userRole, userName })
       <div className="flex items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Avatar className="h-9 w-9 cursor-pointer ring-1 ring-white/10 hover:ring-caregrowth-green/40 transition-all">
-              <AvatarFallback className="bg-white/[0.06] text-white/70 text-xs tracking-wider">{getInitials(userName)}</AvatarFallback>
+            <Avatar className="h-9 w-9 cursor-pointer ring-1 ring-border hover:ring-caregrowth-green/40 transition-all">
+              <AvatarFallback className="bg-muted text-muted-foreground text-xs tracking-wider">{getInitials(userName)}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-caregrowth-blue border-white/10 text-white/80">
-            <DropdownMenuLabel className="flex items-center gap-2 text-white/50 text-xs tracking-wider uppercase">
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel className="flex items-center gap-2 text-muted-foreground text-xs tracking-wider uppercase">
               {isSuperAdmin && <Shield size={14} className="text-caregrowth-green" />}
               <span>{getRoleDisplayName(userRole)}</span>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-white/[0.06]" />
-            <DropdownMenuItem onClick={handleLogout} className="text-white/70 hover:text-white hover:bg-white/[0.06] cursor-pointer">
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>

@@ -89,20 +89,20 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
   const navLinkClass = ({ isActive }: { isActive: boolean }) => cn(
     "flex items-center gap-3 px-3 py-2.5 rounded-none transition-all duration-200 text-[13px] tracking-wide",
     isActive 
-      ? "bg-caregrowth-green/10 text-caregrowth-green border-l-2 border-caregrowth-green" 
-      : "text-white/50 hover:text-white/80 hover:bg-white/[0.04] border-l-2 border-transparent",
+      ? "bg-[hsl(var(--sidebar-active-bg))] text-caregrowth-green border-l-2 border-caregrowth-green" 
+      : "text-[hsl(var(--sidebar-muted))] hover:text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-hover-bg))] border-l-2 border-transparent",
     collapsed && "justify-center px-2"
   );
   
   return (
     <div className={cn(
-      "flex flex-col border-r border-white/[0.06] transition-all duration-300 bg-caregrowth-blue",
+      "flex flex-col border-r border-[hsl(var(--sidebar-border))] transition-all duration-300 bg-[hsl(var(--sidebar-bg))]",
       collapsed ? "w-[80px]" : "w-[250px]"
     )}>
       {/* Sidebar Header */}
-      <div className="p-4 flex items-center border-b border-white/[0.06] h-16">
+      <div className="p-4 flex items-center border-b border-[hsl(var(--sidebar-border))] h-16">
         {!collapsed && (
-          <span className="text-[11px] font-medium tracking-[0.3em] uppercase text-white/40 flex items-center gap-2">
+          <span className="text-[11px] font-medium tracking-[0.3em] uppercase text-[hsl(var(--sidebar-muted-2))] flex items-center gap-2">
             {isSuperAdmin && <Shield size={14} className="text-caregrowth-green" />}
             Command Center
           </span>
@@ -115,7 +115,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="ml-auto text-white/30 hover:text-white/60 hover:bg-white/[0.04]" 
+          className="ml-auto text-[hsl(var(--sidebar-muted-2))] hover:text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-hover-bg))]" 
           onClick={() => setCollapsed(!collapsed)}
         >
           <Menu size={18} />
@@ -125,14 +125,14 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
       {/* Credit Balance */}
       {(showAdminItems && !isSuperAdmin) && (
         <div className={cn(
-          "px-3 py-3 border-b border-white/[0.06] transition-all duration-300",
+          "px-3 py-3 border-b border-[hsl(var(--sidebar-border))] transition-all duration-300",
           collapsed ? "items-center justify-center" : "",
           creditUpdateAnimation && "ring-1 ring-caregrowth-green/30"
         )}>
           {!collapsed ? (
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/40 flex items-center">
+                <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[hsl(var(--sidebar-muted-2))] flex items-center">
                   <Coins size={12} className="mr-1.5 text-caregrowth-green/60" />
                   Credits
                   {creditUpdateAnimation && (
@@ -145,7 +145,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-5 w-5 p-0 text-white/20 hover:text-white/50"
+                        className="h-5 w-5 p-0 text-[hsl(var(--sidebar-muted-2))] hover:text-[hsl(var(--sidebar-foreground))]"
                         onClick={refetch}
                         disabled={loading}
                       >
@@ -157,22 +157,22 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 </TooltipProvider>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[11px] text-white/30">Available</span>
+                <span className="text-[11px] text-[hsl(var(--sidebar-muted-2))]">Available</span>
                 <span className={cn(
-                  "font-medium text-sm text-white/80 transition-all duration-300",
+                  "font-medium text-sm text-[hsl(var(--sidebar-foreground))] transition-all duration-300",
                   creditUpdateAnimation && "scale-110 text-caregrowth-green"
                 )}>
                   {credits.toLocaleString()}
                 </span>
               </div>
               <div className="space-y-1">
-                <div className="w-full bg-white/[0.06] h-1 rounded-full overflow-hidden">
+                <div className="w-full bg-[hsl(var(--sidebar-track))] h-1 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-caregrowth-green/60 transition-all duration-500"
                     style={{ width: `${creditBalance.percentRemaining}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[10px] text-white/25">
+                <div className="flex justify-between text-[10px] text-[hsl(var(--sidebar-muted-2))]">
                   <span>Used: {creditBalance.usedThisMonth.toLocaleString()}</span>
                   <span>{creditBalance.percentUsed}%</span>
                 </div>
@@ -190,7 +190,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center justify-center">
                     <Coins size={18} className="mb-1 text-caregrowth-green/50" />
-                    <span className="text-[10px] font-medium text-white/50">
+                    <span className="text-[10px] font-medium text-[hsl(var(--sidebar-muted))]">
                       {credits.toLocaleString()}
                     </span>
                   </div>
@@ -210,7 +210,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
 
       {/* Sidebar Content */}
       <div className="flex-1 px-3 py-4 overflow-y-auto">
-        <p className={cn("text-[10px] font-medium tracking-[0.25em] uppercase text-white/25 mb-3", 
+        <p className={cn("text-[10px] font-medium tracking-[0.25em] uppercase text-[hsl(var(--sidebar-muted-2))] mb-3", 
           collapsed && "text-center"
         )}>
           {!collapsed ? "Navigation" : "Nav"}
@@ -251,7 +251,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
           {/* Agency Admin Tools */}
           {showAgencyAdminItems && (
             <>
-              <p className={cn("text-[10px] font-medium tracking-[0.25em] uppercase text-white/25 mt-6 mb-2", 
+              <p className={cn("text-[10px] font-medium tracking-[0.25em] uppercase text-[hsl(var(--sidebar-muted-2))] mt-6 mb-2", 
                 collapsed && "text-center"
               )}>
                 {!collapsed ? "Agency" : "AG"}
@@ -270,7 +270,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
           )}
           
           {/* AI Tools */}
-          <p className={cn("text-[10px] font-medium tracking-[0.25em] uppercase text-white/25 mt-6 mb-2", 
+          <p className={cn("text-[10px] font-medium tracking-[0.25em] uppercase text-[hsl(var(--sidebar-muted-2))] mt-6 mb-2", 
             collapsed && "text-center"
           )}>
             {!collapsed ? "AI Tools" : "AI"}
@@ -314,7 +314,7 @@ const Sidebar = ({ collapsed, setCollapsed, userRole }: SidebarProps) => {
       </div>
 
       {/* Sidebar Footer */}
-      <div className="mt-auto border-t border-white/[0.06]">
+      <div className="mt-auto border-t border-[hsl(var(--sidebar-border))]">
         <div className="px-3 py-4 space-y-0.5">
           <NavLink to="/dashboard/settings" className={navLinkClass}>
             <Settings size={18} />
