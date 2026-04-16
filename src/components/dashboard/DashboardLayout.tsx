@@ -122,7 +122,7 @@ const DashboardLayout = memo(() => {
               />
               <button
                 onClick={closeMobile}
-                className="absolute top-4 right-3 p-1.5 rounded-none bg-white/[0.06] text-white/50 hover:bg-white/10"
+                className="absolute top-4 right-3 p-1.5 rounded-none bg-[hsl(var(--sidebar-hover-bg))] text-[hsl(var(--sidebar-muted))] hover:bg-[hsl(var(--sidebar-track))]"
               >
                 <X size={18} />
               </button>
