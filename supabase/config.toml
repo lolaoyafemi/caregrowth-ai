@@ -64,6 +64,10 @@ verify_jwt = false
 [functions.social-oauth-callback]
 verify_jwt = false
 
+[functions.facebook-pages]
+verify_jwt = true
+
+
 [functions.simulate-training-conversation]
 verify_jwt = false
 
