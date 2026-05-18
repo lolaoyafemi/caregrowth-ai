@@ -174,18 +174,9 @@ const OpenAIKeyManager = () => {
               <TableRow key={key.id}>
                 <TableCell className="font-medium">{key.key_name}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">
-                      {showSecrets[key.id] ? key.secret_key : maskSecretKey(key.secret_key)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleSecretVisibility(key.id)}
-                    >
-                      {showSecrets[key.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
+                  <span className="font-mono text-sm text-muted-foreground">
+                    •••••••• (stored securely server-side)
+                  </span>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
