@@ -221,6 +221,9 @@ async function handleFacebook(supabase: any, code: string, user_id: string) {
 }
 
 async function upsertAccount(supabase: any, userId: string, platform: string, data: any) {
+  const { is_connected_override, ...rest } = data;
+  const isConnected = is_connected_override === false ? false : true;
+
   const { data: existing } = await supabase
     .from('connected_accounts')
     .select('id')
@@ -232,9 +235,9 @@ async function upsertAccount(supabase: any, userId: string, platform: string, da
     await supabase
       .from('connected_accounts')
       .update({
-        ...data,
-        is_connected: true,
-        connected_at: new Date().toISOString(),
+        ...rest,
+        is_connected: isConnected,
+        connected_at: isConnected ? new Date().toISOString() : null,
         error_message: null,
       })
       .eq('id', existing.id);
@@ -244,9 +247,9 @@ async function upsertAccount(supabase: any, userId: string, platform: string, da
       .insert({
         user_id: userId,
         platform,
-        ...data,
-        is_connected: true,
-        connected_at: new Date().toISOString(),
+        ...rest,
+        is_connected: isConnected,
+        connected_at: isConnected ? new Date().toISOString() : null,
       });
   }
 }
