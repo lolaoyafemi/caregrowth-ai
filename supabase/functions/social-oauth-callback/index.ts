@@ -58,6 +58,10 @@ serve(async (req) => {
         await handleX(supabase, code, user_id, state.code_verifier || '');
         break;
       }
+      case 'facebook': {
+        await handleFacebook(supabase, code, user_id);
+        return redirectToApp('/content-calendar?facebook_select_page=1');
+      }
       default:
         return redirectToApp(`/content-calendar?oauth_error=unsupported_platform`);
     }
