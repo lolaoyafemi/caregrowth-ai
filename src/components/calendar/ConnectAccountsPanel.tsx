@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
 
+import FacebookPageSelector from './FacebookPageSelector';
+
 interface ConnectedAccount {
   id: string;
   platform: string;
@@ -14,9 +16,16 @@ interface ConnectedAccount {
   is_connected: boolean;
   connected_at: string | null;
   platform_account_name: string | null;
+  platform_account_id: string | null;
   token_expires_at: string | null;
   error_message: string | null;
 }
+
+const PLATFORMS = [
+  { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200', supported: true },
+  { key: 'facebook', label: 'Facebook', icon: Facebook, color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200', supported: true },
+  { key: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-600', bgColor: 'bg-pink-50 border-pink-200', supported: false },
+];
 
 const PLATFORMS = [
   { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200', supported: true },
