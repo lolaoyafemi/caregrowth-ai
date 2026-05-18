@@ -174,6 +174,52 @@ async function handleX(supabase: any, code: string, user_id: string, codeVerifie
   });
 }
 
+async function handleFacebook(supabase: any, code: string, user_id: string) {
+  // 1) Exchange code for short-lived user token
+  const shortTokenUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+  shortTokenUrl.searchParams.set('client_id', FACEBOOK_APP_ID);
+  shortTokenUrl.searchParams.set('client_secret', FACEBOOK_APP_SECRET);
+  shortTokenUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+  shortTokenUrl.searchParams.set('code', code);
+
+  const shortRes = await fetch(shortTokenUrl);
+  if (!shortRes.ok) {
+    console.error('FB short token exchange failed:', await shortRes.text());
+    throw new Error('fb_token_exchange_failed');
+  }
+  const shortData = await shortRes.json();
+  const shortToken = shortData.access_token;
+
+  // 2) Exchange short-lived for long-lived user token (~60 days)
+  const longTokenUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+  longTokenUrl.searchParams.set('grant_type', 'fb_exchange_token');
+  longTokenUrl.searchParams.set('client_id', FACEBOOK_APP_ID);
+  longTokenUrl.searchParams.set('client_secret', FACEBOOK_APP_SECRET);
+  longTokenUrl.searchParams.set('fb_exchange_token', shortToken);
+
+  const longRes = await fetch(longTokenUrl);
+  if (!longRes.ok) {
+    console.error('FB long token exchange failed:', await longRes.text());
+    throw new Error('fb_long_token_failed');
+  }
+  const longData = await longRes.json();
+  const longToken = longData.access_token;
+  const expiresIn = longData.expires_in || 60 * 24 * 60 * 60;
+  const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+
+  // Store user-token-only record (page selection happens after).
+  // refresh_token holds the long-lived USER token; access_token will hold the PAGE token after selection.
+  await upsertAccount(supabase, user_id, 'facebook', {
+    access_token: null,
+    refresh_token: longToken,
+    token_expires_at: expiresAt,
+    account_name: 'Facebook (select a page)',
+    platform_account_id: null,
+    platform_account_name: null,
+    is_connected_override: false,
+  });
+}
+
 async function upsertAccount(supabase: any, userId: string, platform: string, data: any) {
   const { data: existing } = await supabase
     .from('connected_accounts')
