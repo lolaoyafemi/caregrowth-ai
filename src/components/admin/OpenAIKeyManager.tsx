@@ -20,7 +20,6 @@ import { toast } from 'sonner';
 interface OpenAIKey {
   id: string;
   key_name: string;
-  secret_key: string;
   active: boolean;
   created_at: string;
 }
