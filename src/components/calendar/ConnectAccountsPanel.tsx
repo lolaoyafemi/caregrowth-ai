@@ -38,6 +38,7 @@ const ConnectAccountsPanel = () => {
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [subscriptionChecked, setSubscriptionChecked] = useState(false);
+  const [fbPickerOpen, setFbPickerOpen] = useState(false);
 
   useEffect(() => {
     fetchAccounts();
@@ -47,6 +48,7 @@ const ConnectAccountsPanel = () => {
   useEffect(() => {
     const success = searchParams.get('oauth_success');
     const error = searchParams.get('oauth_error');
+    const fbSelect = searchParams.get('facebook_select_page');
 
     if (success) {
       toast.success(`${success.charAt(0).toUpperCase() + success.slice(1)} connected successfully!`);
@@ -60,6 +62,11 @@ const ConnectAccountsPanel = () => {
         : `OAuth error: ${error.replace(/_/g, ' ')}`;
       toast.error(message);
       searchParams.delete('oauth_error');
+      setSearchParams(searchParams, { replace: true });
+    }
+    if (fbSelect) {
+      setFbPickerOpen(true);
+      searchParams.delete('facebook_select_page');
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams]);
