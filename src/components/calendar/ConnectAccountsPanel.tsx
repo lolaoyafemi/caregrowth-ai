@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
 
+import FacebookPageSelector from './FacebookPageSelector';
+
 interface ConnectedAccount {
   id: string;
   platform: string;
@@ -14,15 +16,19 @@ interface ConnectedAccount {
   is_connected: boolean;
   connected_at: string | null;
   platform_account_name: string | null;
+  platform_account_id: string | null;
   token_expires_at: string | null;
   error_message: string | null;
 }
 
 const PLATFORMS = [
   { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200', supported: true },
-  { key: 'facebook', label: 'Facebook', icon: Facebook, color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200', supported: false },
+  { key: 'facebook', label: 'Facebook', icon: Facebook, color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200', supported: true },
   { key: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-600', bgColor: 'bg-pink-50 border-pink-200', supported: false },
 ];
+
+
+
 
 const ConnectAccountsPanel = () => {
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
@@ -32,6 +38,7 @@ const ConnectAccountsPanel = () => {
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [subscriptionChecked, setSubscriptionChecked] = useState(false);
+  const [fbPickerOpen, setFbPickerOpen] = useState(false);
 
   useEffect(() => {
     fetchAccounts();
@@ -41,6 +48,7 @@ const ConnectAccountsPanel = () => {
   useEffect(() => {
     const success = searchParams.get('oauth_success');
     const error = searchParams.get('oauth_error');
+    const fbSelect = searchParams.get('facebook_select_page');
 
     if (success) {
       toast.success(`${success.charAt(0).toUpperCase() + success.slice(1)} connected successfully!`);
@@ -54,6 +62,11 @@ const ConnectAccountsPanel = () => {
         : `OAuth error: ${error.replace(/_/g, ' ')}`;
       toast.error(message);
       searchParams.delete('oauth_error');
+      setSearchParams(searchParams, { replace: true });
+    }
+    if (fbSelect) {
+      setFbPickerOpen(true);
+      searchParams.delete('facebook_select_page');
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams]);
@@ -200,6 +213,8 @@ const ConnectAccountsPanel = () => {
         const connected = account?.is_connected || false;
         const expired = isTokenExpired(account?.token_expires_at || null);
         const displayName = account?.platform_account_name || account?.account_name || null;
+        // Facebook record exists but no page selected yet
+        const fbNeedsPage = key === 'facebook' && !!account && !account.platform_account_id;
 
         return (
           <div key={key} className={cn("flex items-center justify-between p-4 border rounded-lg", bgColor)}>
@@ -207,8 +222,13 @@ const ConnectAccountsPanel = () => {
               <Icon className={cn("h-6 w-6", color)} />
               <div>
                 <p className="text-sm font-medium">{label}</p>
-                {connected && displayName && (
+                {connected && displayName && !fbNeedsPage && (
                   <p className="text-xs text-muted-foreground">{displayName}</p>
+                )}
+                {fbNeedsPage && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertCircle size={10} /> Select a page to finish
+                  </p>
                 )}
                 {connected && postingPaused && (
                   <p className="text-xs text-amber-600 flex items-center gap-1">
@@ -226,7 +246,11 @@ const ConnectAccountsPanel = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {connected && !expired ? (
+              {fbNeedsPage ? (
+                <Button size="sm" variant="outline" onClick={() => setFbPickerOpen(true)}>
+                  Select Page
+                </Button>
+              ) : connected && !expired ? (
                 <>
                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1">
                     <CheckCircle2 size={12} /> Connected
@@ -251,6 +275,12 @@ const ConnectAccountsPanel = () => {
           </div>
         );
       })}
+
+      <FacebookPageSelector
+        open={fbPickerOpen}
+        onClose={() => setFbPickerOpen(false)}
+        onConnected={fetchAccounts}
+      />
     </div>
   );
 };

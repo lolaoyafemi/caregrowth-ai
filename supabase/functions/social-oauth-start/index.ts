@@ -4,6 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const LINKEDIN_CLIENT_ID = Deno.env.get('LINKEDIN_CLIENT_ID')!;
 const X_CLIENT_ID = Deno.env.get('X_CLIENT_ID')!;
+const FACEBOOK_APP_ID = Deno.env.get('FACEBOOK_APP_ID')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -90,6 +91,12 @@ serve(async (req) => {
         const state = btoa(JSON.stringify({ platform, user_id, code_verifier: verifier }));
         const scopes = 'tweet.write users.read offline.access';
         authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${encodeURIComponent(X_CLIENT_ID)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}&state=${encodeURIComponent(state)}&code_challenge=${encodeURIComponent(challenge)}&code_challenge_method=S256`;
+        break;
+      }
+      case 'facebook': {
+        const state = btoa(JSON.stringify({ platform, user_id }));
+        const scopes = 'pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_engagement,pages_manage_metadata';
+        authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${encodeURIComponent(state)}&scope=${encodeURIComponent(scopes)}&response_type=code`;
         break;
       }
       default:

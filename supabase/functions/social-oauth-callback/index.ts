@@ -6,6 +6,8 @@ const LINKEDIN_CLIENT_ID = Deno.env.get('LINKEDIN_CLIENT_ID')!;
 const LINKEDIN_CLIENT_SECRET = Deno.env.get('LINKEDIN_CLIENT_SECRET')!;
 const X_CLIENT_ID = Deno.env.get('X_CLIENT_ID')!;
 const X_CLIENT_SECRET = Deno.env.get('X_CLIENT_SECRET')!;
+const FACEBOOK_APP_ID = Deno.env.get('FACEBOOK_APP_ID')!;
+const FACEBOOK_APP_SECRET = Deno.env.get('FACEBOOK_APP_SECRET')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -55,6 +57,10 @@ serve(async (req) => {
       case 'x': {
         await handleX(supabase, code, user_id, state.code_verifier || '');
         break;
+      }
+      case 'facebook': {
+        await handleFacebook(supabase, code, user_id);
+        return redirectToApp('/content-calendar?facebook_select_page=1');
       }
       default:
         return redirectToApp(`/content-calendar?oauth_error=unsupported_platform`);
@@ -168,7 +174,56 @@ async function handleX(supabase: any, code: string, user_id: string, codeVerifie
   });
 }
 
+async function handleFacebook(supabase: any, code: string, user_id: string) {
+  // 1) Exchange code for short-lived user token
+  const shortTokenUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+  shortTokenUrl.searchParams.set('client_id', FACEBOOK_APP_ID);
+  shortTokenUrl.searchParams.set('client_secret', FACEBOOK_APP_SECRET);
+  shortTokenUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+  shortTokenUrl.searchParams.set('code', code);
+
+  const shortRes = await fetch(shortTokenUrl);
+  if (!shortRes.ok) {
+    console.error('FB short token exchange failed:', await shortRes.text());
+    throw new Error('fb_token_exchange_failed');
+  }
+  const shortData = await shortRes.json();
+  const shortToken = shortData.access_token;
+
+  // 2) Exchange short-lived for long-lived user token (~60 days)
+  const longTokenUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+  longTokenUrl.searchParams.set('grant_type', 'fb_exchange_token');
+  longTokenUrl.searchParams.set('client_id', FACEBOOK_APP_ID);
+  longTokenUrl.searchParams.set('client_secret', FACEBOOK_APP_SECRET);
+  longTokenUrl.searchParams.set('fb_exchange_token', shortToken);
+
+  const longRes = await fetch(longTokenUrl);
+  if (!longRes.ok) {
+    console.error('FB long token exchange failed:', await longRes.text());
+    throw new Error('fb_long_token_failed');
+  }
+  const longData = await longRes.json();
+  const longToken = longData.access_token;
+  const expiresIn = longData.expires_in || 60 * 24 * 60 * 60;
+  const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+
+  // Store user-token-only record (page selection happens after).
+  // refresh_token holds the long-lived USER token; access_token will hold the PAGE token after selection.
+  await upsertAccount(supabase, user_id, 'facebook', {
+    access_token: null,
+    refresh_token: longToken,
+    token_expires_at: expiresAt,
+    account_name: 'Facebook (select a page)',
+    platform_account_id: null,
+    platform_account_name: null,
+    is_connected_override: false,
+  });
+}
+
 async function upsertAccount(supabase: any, userId: string, platform: string, data: any) {
+  const { is_connected_override, ...rest } = data;
+  const isConnected = is_connected_override === false ? false : true;
+
   const { data: existing } = await supabase
     .from('connected_accounts')
     .select('id')
@@ -180,9 +235,9 @@ async function upsertAccount(supabase: any, userId: string, platform: string, da
     await supabase
       .from('connected_accounts')
       .update({
-        ...data,
-        is_connected: true,
-        connected_at: new Date().toISOString(),
+        ...rest,
+        is_connected: isConnected,
+        connected_at: isConnected ? new Date().toISOString() : null,
         error_message: null,
       })
       .eq('id', existing.id);
@@ -192,9 +247,9 @@ async function upsertAccount(supabase: any, userId: string, platform: string, da
       .insert({
         user_id: userId,
         platform,
-        ...data,
-        is_connected: true,
-        connected_at: new Date().toISOString(),
+        ...rest,
+        is_connected: isConnected,
+        connected_at: isConnected ? new Date().toISOString() : null,
       });
   }
 }
