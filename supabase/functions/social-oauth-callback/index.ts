@@ -6,6 +6,8 @@ const LINKEDIN_CLIENT_ID = Deno.env.get('LINKEDIN_CLIENT_ID')!;
 const LINKEDIN_CLIENT_SECRET = Deno.env.get('LINKEDIN_CLIENT_SECRET')!;
 const X_CLIENT_ID = Deno.env.get('X_CLIENT_ID')!;
 const X_CLIENT_SECRET = Deno.env.get('X_CLIENT_SECRET')!;
+const FACEBOOK_APP_ID = Deno.env.get('FACEBOOK_APP_ID')!;
+const FACEBOOK_APP_SECRET = Deno.env.get('FACEBOOK_APP_SECRET')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
