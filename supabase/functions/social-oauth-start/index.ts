@@ -93,6 +93,12 @@ serve(async (req) => {
         authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${encodeURIComponent(X_CLIENT_ID)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}&state=${encodeURIComponent(state)}&code_challenge=${encodeURIComponent(challenge)}&code_challenge_method=S256`;
         break;
       }
+      case 'facebook': {
+        const state = btoa(JSON.stringify({ platform, user_id }));
+        const scopes = 'pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_engagement,pages_manage_metadata';
+        authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${encodeURIComponent(state)}&scope=${encodeURIComponent(scopes)}&response_type=code`;
+        break;
+      }
       default:
         return new Response(JSON.stringify({ error: `Platform "${platform}" not yet supported` }), {
           status: 400,
