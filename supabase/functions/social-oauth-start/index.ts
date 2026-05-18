@@ -4,6 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const LINKEDIN_CLIENT_ID = Deno.env.get('LINKEDIN_CLIENT_ID')!;
 const X_CLIENT_ID = Deno.env.get('X_CLIENT_ID')!;
+const FACEBOOK_APP_ID = Deno.env.get('FACEBOOK_APP_ID')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
