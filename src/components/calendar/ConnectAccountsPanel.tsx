@@ -213,6 +213,8 @@ const ConnectAccountsPanel = () => {
         const connected = account?.is_connected || false;
         const expired = isTokenExpired(account?.token_expires_at || null);
         const displayName = account?.platform_account_name || account?.account_name || null;
+        // Facebook record exists but no page selected yet
+        const fbNeedsPage = key === 'facebook' && !!account && !account.platform_account_id;
 
         return (
           <div key={key} className={cn("flex items-center justify-between p-4 border rounded-lg", bgColor)}>
@@ -220,8 +222,13 @@ const ConnectAccountsPanel = () => {
               <Icon className={cn("h-6 w-6", color)} />
               <div>
                 <p className="text-sm font-medium">{label}</p>
-                {connected && displayName && (
+                {connected && displayName && !fbNeedsPage && (
                   <p className="text-xs text-muted-foreground">{displayName}</p>
+                )}
+                {fbNeedsPage && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertCircle size={10} /> Select a page to finish
+                  </p>
                 )}
                 {connected && postingPaused && (
                   <p className="text-xs text-amber-600 flex items-center gap-1">
@@ -239,7 +246,11 @@ const ConnectAccountsPanel = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {connected && !expired ? (
+              {fbNeedsPage ? (
+                <Button size="sm" variant="outline" onClick={() => setFbPickerOpen(true)}>
+                  Select Page
+                </Button>
+              ) : connected && !expired ? (
                 <>
                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1">
                     <CheckCircle2 size={12} /> Connected
@@ -264,6 +275,12 @@ const ConnectAccountsPanel = () => {
           </div>
         );
       })}
+
+      <FacebookPageSelector
+        open={fbPickerOpen}
+        onClose={() => setFbPickerOpen(false)}
+        onConnected={fetchAccounts}
+      />
     </div>
   );
 };
